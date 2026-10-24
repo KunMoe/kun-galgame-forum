@@ -11,7 +11,7 @@ import (
 
 var (
 	topicKeys = []string{
-		"access_scope", "author", "author_moemoepoint", "best_answer", "bumped_at", "category",
+		"access_scope", "ai_summary", "author", "author_moemoepoint", "best_answer", "bumped_at", "category",
 		"comment_count", "content", "cover_images", "created_at", "dislike_count", "edited_at",
 		"favorite_count", "hidden_by", "id", "is_nsfw", "like_count", "mini_apps", "object",
 		"pinned_reply", "reactions", "reply_count", "section", "sections", "state", "title", "upvote_count",

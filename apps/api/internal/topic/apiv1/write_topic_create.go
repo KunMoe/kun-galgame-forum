@@ -29,18 +29,7 @@ func (w *Writes) createTopic(ctx context.Context, in *createTopicInput) (*create
 	if strings.TrimSpace(in.Body.ContentMarkdown) == "" {
 		fields = append(fields, tooShort("/content_markdown"))
 	}
-	section, _ := NormalizeSectionKey(string(in.Body.Sections[0]))
-	rules, err := w.reads.taxonomy.FindSectionRules(nil, []string{section})
-	if err != nil {
-		return nil, problem.Internal(err)
-	}
-	rule, ok := rules[section]
-	if !ok {
-		return nil, problem.Internal(fmt.Errorf("topic section %q is missing", section))
-	}
-	if rule.IsArchived {
-		fields = append(fields, sectionArchived("/sections/0"))
-	}
+	requested, _ := NormalizeSectionKey(string(in.Body.Sections[0]))
 	access := accessFields{scope: in.Body.AccessScope, roles: in.Body.AccessRoles, users: in.Body.AccessUserIDs}
 	fields = append(fields, accessErrors(access)...)
 	if len(fields) > 0 {
@@ -54,12 +43,28 @@ func (w *Writes) createTopic(ctx context.Context, in *createTopicInput) (*create
 		covers = coversFromHashes(*in.Body.CoverImageHashes)
 	}
 	grants := grantsFromAccess(access, user.ID)
-	consume := rule.CostsMoemoepoint
 	moderation := topicModerationText(title, body)
 	verdict, p := w.rejectContent(ctx, moderation, user.ID)
 	if p != nil {
 		return nil, p
 	}
+	token := ""
+	if in.Body.ClassificationToken != nil {
+		token = *in.Body.ClassificationToken
+	}
+	decision := w.decideSection(ctx, user.ID, title, body, token, requested)
+	rules, err := w.reads.taxonomy.FindSectionRules(nil, []string{decision.section})
+	if err != nil {
+		return nil, problem.Internal(err)
+	}
+	rule, ok := rules[decision.section]
+	if !ok {
+		return nil, problem.Internal(fmt.Errorf("topic section %q is missing", decision.section))
+	}
+	if rule.IsArchived {
+		return nil, validationFailed(sectionArchived("/sections/0"))
+	}
+	consume := rule.CostsMoemoepoint
 
 	var awards []pendingAward
 	var topicID int
@@ -97,6 +102,14 @@ func (w *Writes) createTopic(ctx context.Context, in *createTopicInput) (*create
 		if err := w.reads.taxonomy.ReplaceSectionRelations(tx, topic.ID, []int{rule.ID}); err != nil {
 			return err
 		}
+		if decision.source != "" {
+			if err := w.ai.repo.SaveClassification(tx, repository.TopicClassification{
+				TopicID: topic.ID, Section: decision.section, Source: decision.source,
+				Model: w.ai.model(), Reason: decision.reason,
+			}); err != nil {
+				return err
+			}
+		}
 		if err := repository.WatchOwnTopic(tx, user.ID, topic.ID); err != nil {
 			return err
 		}
@@ -115,6 +128,7 @@ func (w *Writes) createTopic(ctx context.Context, in *createTopicInput) (*create
 	}
 	w.flushAwards(awards)
 	w.scanTopic(verdict, topicID, user.ID, moderation)
+	w.ai.Summarize(topicID, title, body)
 
 	topic, p := w.loadTopic(topicID)
 	if p != nil {

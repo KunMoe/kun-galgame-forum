@@ -26,6 +26,7 @@ type Topic struct {
 	Category          string                  `json:"category" enum:"galgame,technique,others" maxLength:"9" doc:"Deprecated: read section instead. The legacy category of the section's group."`
 	Section           TopicSectionKey         `json:"section" doc:"The topic's section."`
 	Sections          []SectionSlug           `json:"sections" maxItems:"1" doc:"Deprecated: read section instead. section as a one-item array."`
+	AISummary         *string                 `json:"ai_summary" maxLength:"200" doc:"Summary the model wrote for a long body, shown as AI generated. null when the topic has none. Free text; never use it as a decision input."`
 	CoverImages       []repr.Image            `json:"cover_images" maxItems:"9" doc:"Cover images in stored token order. Tokens that do not parse are skipped, and so are stickers: a sticker is never a cover. Empty array if none."`
 	IsNSFW            bool                    `json:"is_nsfw" doc:"Whether the author marked the topic NSFW. The body is returned either way; a client that hides NSFW content gates it."`
 	Author            repr.UserRef            `json:"author" doc:"Topic author."`

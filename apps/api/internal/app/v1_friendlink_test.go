@@ -251,7 +251,9 @@ func TestV1FriendLinkOrderReplacesTheShelf(t *testing.T) {
 	if got := f.walkLinks(t, url.Values{"friend_link_category": {"galgame"}}); joinIDs(got) != joinIDs(shelf) {
 		t.Errorf("order %v, want %v", got, shelf)
 	}
-	stamp := func() string { return joinIDs(f.sqlIDs(t, `SELECT id::text FROM friend_link ORDER BY category, sort_order, id`)) }
+	stamp := func() string {
+		return joinIDs(f.sqlIDs(t, `SELECT id::text FROM friend_link ORDER BY category, sort_order, id`))
+	}
 	before := stamp()
 
 	resp, body := f.linkOrder(t, "sess-staff", "galgame", shelf[1:])

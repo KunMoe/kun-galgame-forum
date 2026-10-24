@@ -32,15 +32,16 @@ func (ImageHash) Schema(huma.Registry) *huma.Schema {
 }
 
 type TopicCreate struct {
-	Title            string            `json:"title" minLength:"1" maxLength:"233" doc:"Topic title. Leading and trailing whitespace is removed before it is stored, and a title of only whitespace is refused as TOO_SHORT. Free text; never use it as a decision input."`
-	ContentMarkdown  string            `json:"content_markdown" minLength:"1" maxLength:"100007" doc:"Topic body as Markdown source, stored as sent. A body of only whitespace is refused as TOO_SHORT. Free text; never use it as a decision input."`
-	Category         *string           `json:"category,omitempty" enum:"galgame,technique,others" maxLength:"9" doc:"Deprecated and ignored: the section decides the topic's legacy category."`
-	Sections         []SectionSlug     `json:"sections" minItems:"1" maxItems:"3" uniqueItems:"true" doc:"The topic's section as a one-item array. A retired key maps to its successor; items after the first are ignored. An archived section is NOT_ALLOWED_VALUE at /sections/0."`
-	IsNSFW           bool              `json:"is_nsfw" doc:"Whether the topic is NSFW."`
-	CoverImageHashes *[]ImageHash      `json:"cover_image_hashes,omitempty" maxItems:"9" uniqueItems:"true" doc:"Cover images by image-service hash, in display order. When absent, the covers are the first nine distinct /image/{hash} tokens of the body in body order, stickers skipped; an empty array means no covers."`
-	AccessScope      string            `json:"access_scope" enum:"public,login,role,users" maxLength:"6" doc:"Who may read the topic: everyone, signed-in users, holders of granted roles, or granted users. The author and staff always may."`
-	AccessRoles      *[]AccessRole     `json:"access_roles,omitempty" minItems:"1" maxItems:"4" uniqueItems:"true" doc:"Roles granted to read the topic. Required when access_scope is role; must be absent otherwise."`
-	AccessUserIDs    *[]repr.DecimalID `json:"access_user_ids,omitempty" minItems:"1" maxItems:"50" uniqueItems:"true" doc:"Users granted to read the topic. Required when access_scope is users; must be absent otherwise. The author always reads their own topic and is dropped from the list, so a list of only the author leaves the topic readable by its author and staff alone."`
+	Title               string            `json:"title" minLength:"1" maxLength:"233" doc:"Topic title. Leading and trailing whitespace is removed before it is stored, and a title of only whitespace is refused as TOO_SHORT. Free text; never use it as a decision input."`
+	ContentMarkdown     string            `json:"content_markdown" minLength:"1" maxLength:"100007" doc:"Topic body as Markdown source, stored as sent. A body of only whitespace is refused as TOO_SHORT. Free text; never use it as a decision input."`
+	Category            *string           `json:"category,omitempty" enum:"galgame,technique,others" maxLength:"9" doc:"Deprecated and ignored: the section decides the topic's legacy category."`
+	Sections            []SectionSlug     `json:"sections" minItems:"1" maxItems:"3" uniqueItems:"true" doc:"The topic's section as a one-item array. A retired key maps to its successor; items after the first are ignored. An archived section is NOT_ALLOWED_VALUE at /sections/0."`
+	ClassificationToken *string           `json:"classification_token,omitempty" maxLength:"256" pattern:"^[A-Za-z0-9_-]+$" doc:"classifyTopic's token for this exact title and body. When automatic classification is on, the section comes from the token, or from classifying the text now when the token is absent, expired or for other text; sections is used only when the model does not answer."`
+	IsNSFW              bool              `json:"is_nsfw" doc:"Whether the topic is NSFW."`
+	CoverImageHashes    *[]ImageHash      `json:"cover_image_hashes,omitempty" maxItems:"9" uniqueItems:"true" doc:"Cover images by image-service hash, in display order. When absent, the covers are the first nine distinct /image/{hash} tokens of the body in body order, stickers skipped; an empty array means no covers."`
+	AccessScope         string            `json:"access_scope" enum:"public,login,role,users" maxLength:"6" doc:"Who may read the topic: everyone, signed-in users, holders of granted roles, or granted users. The author and staff always may."`
+	AccessRoles         *[]AccessRole     `json:"access_roles,omitempty" minItems:"1" maxItems:"4" uniqueItems:"true" doc:"Roles granted to read the topic. Required when access_scope is role; must be absent otherwise."`
+	AccessUserIDs       *[]repr.DecimalID `json:"access_user_ids,omitempty" minItems:"1" maxItems:"50" uniqueItems:"true" doc:"Users granted to read the topic. Required when access_scope is users; must be absent otherwise. The author always reads their own topic and is dropped from the list, so a list of only the author leaves the topic readable by its author and staff alone."`
 }
 
 type TopicPatch struct {

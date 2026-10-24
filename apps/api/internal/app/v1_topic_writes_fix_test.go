@@ -126,7 +126,7 @@ func newWriteFix(t *testing.T, checker gate.Checker) *writeFix {
 	return newWriteFixCommunity(t, checker, nil)
 }
 
-func newWriteFixCommunity(t *testing.T, checker gate.Checker, community http.Handler) *writeFix {
+func newWriteFixCommunity(t *testing.T, checker gate.Checker, community http.Handler, opts ...func(*App)) *writeFix {
 	t.Helper()
 	db := testdb.Open(t)
 	mr := miniredis.RunT(t)
@@ -227,6 +227,9 @@ func newWriteFixCommunity(t *testing.T, checker gate.Checker, community http.Han
 			topicRepo.NewLotteryRepository(db), state, uc,
 			msgService.NewNotifier(msgRepo.NewMessageRepository(db)), testLotteryBox(t),
 		),
+	}
+	for _, opt := range opts {
+		opt(f.App)
 	}
 	f.setupRoutes()
 	f.spec = newSpecConformance(t)

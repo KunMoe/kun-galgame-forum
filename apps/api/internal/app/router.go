@@ -25,6 +25,7 @@ import (
 	rankingapiv1 "kun-galgame-api/internal/ranking/apiv1"
 	searchapiv1 "kun-galgame-api/internal/search/apiv1"
 	sectionapiv1 "kun-galgame-api/internal/section/apiv1"
+	settingapiv1 "kun-galgame-api/internal/setting/apiv1"
 	shopapiv1 "kun-galgame-api/internal/shop/apiv1"
 	stickerapiv1 "kun-galgame-api/internal/sticker/apiv1"
 	toolsetapiv1 "kun-galgame-api/internal/toolset/apiv1"
@@ -90,6 +91,7 @@ func (a *App) setupRoutes() {
 		activityapiv1.Register(a.ActivityV1),
 		overviewapiv1.Register(a.OverviewV1),
 		sectionapiv1.Register(a.newSectionV1()),
+		settingapiv1.Register(a.newSettingV1()),
 		authapiv1.Register(a.newAuthV1()),
 		newsapiv1.Register(a.NewsV1),
 		imageapiv1.Register(a.ImagesV1),

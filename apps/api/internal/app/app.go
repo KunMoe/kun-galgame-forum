@@ -40,6 +40,7 @@ import (
 	rankingRepo "kun-galgame-api/internal/ranking/repository"
 	searchapiv1 "kun-galgame-api/internal/search/apiv1"
 	searchRepo "kun-galgame-api/internal/search/repository"
+	"kun-galgame-api/internal/setting"
 	stickerapiv1 "kun-galgame-api/internal/sticker/apiv1"
 	topicapiv1 "kun-galgame-api/internal/topic/apiv1"
 	topicRepo "kun-galgame-api/internal/topic/repository"
@@ -53,6 +54,7 @@ import (
 	"kun-galgame-api/internal/user/repository"
 	"kun-galgame-api/internal/user/service"
 	wallapiv1 "kun-galgame-api/internal/wall/apiv1"
+	"kun-galgame-api/pkg/aiclient"
 	"kun-galgame-api/pkg/artifactclient"
 	"kun-galgame-api/pkg/catalogclient"
 	"kun-galgame-api/pkg/communityclient"
@@ -128,6 +130,8 @@ type App struct {
 	ActivityPushStop       func()
 	AnchorPresentationStop func()
 	APIv1                  huma.API
+	Settings               *setting.Store
+	TopicAI                *topicapiv1.TopicAI
 }
 
 func New(cfg *config.Config) *App {
@@ -489,8 +493,13 @@ func New(cfg *config.Config) *App {
 		stickerPackRefresh = stickersV1.Refresh
 	}
 
+	settings := setting.NewStore(db)
+	topicAI := topicapiv1.NewTopicAI(aiclient.New(cfg.AI.BaseURL, cfg.AI.Token), settings, topicRepo.NewAIRepository(db))
+
 	app := &App{
 		DB: db, Redis: rdb, Config: cfg, OAuthClient: oauthClient,
+		Settings:          settings,
+		TopicAI:           topicAI,
 		UserState:         userStateRepo,
 		TrustCheck:        trustCheck,
 		TrustScan:         trustScan,
@@ -545,6 +554,7 @@ func New(cfg *config.Config) *App {
 			UserPurgeArchiveExpiry:     expirePurgeArchive(adminPurgeRepo),
 			StickerPackRefresh:         stickerPackRefresh,
 			NotificationRetention:      expireReadNotifications(messageRepository, cfg.Notification.RetentionDays),
+			TopicAISweep:               topicAI.Sweep,
 		}),
 		StoreLinkStop:       storeLinks.Start(),
 		CommunityNotifyStop: communitynotify.New(communityCli, messageRepository, anchorResolver, rdb).Start(),

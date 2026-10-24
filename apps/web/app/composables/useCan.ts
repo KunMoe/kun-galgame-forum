@@ -65,7 +65,8 @@ const ADMIN_ONLY_PERMISSIONS = [
   'user.purge_content',
   'topic.delete_any',
   'update_log.reopen',
-  'topic.manage_sections'
+  'topic.manage_sections',
+  'setting.manage'
 ] as const
 
 const ADMIN_PERMISSIONS = [

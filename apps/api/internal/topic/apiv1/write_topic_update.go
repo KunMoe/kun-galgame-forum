@@ -8,6 +8,7 @@ import (
 	"kun-galgame-api/internal/infrastructure/markdown"
 	"kun-galgame-api/internal/topic/model"
 	"kun-galgame-api/internal/trust/gate"
+	"kun-galgame-api/pkg/perm"
 	"kun-galgame-api/pkg/problem"
 
 	"gorm.io/gorm"
@@ -93,6 +94,9 @@ func (w *Writes) updateTopic(ctx context.Context, in *updateTopicInput) (*update
 	if patch.ContentMarkdown != nil && stringsTrimEmpty(*patch.ContentMarkdown) {
 		fields = append(fields, tooShort("/content_markdown"))
 	}
+	if section != storedSection && w.ai.ClassifyEnabled() && !user.Can(perm.TopicEditAny) {
+		fields = append(fields, problem.AtPointer("/sections", problem.ReasonNotPermitted, "the model decides the section; ask staff to move the topic", nil))
+	}
 	if section != storedSection && rule.IsArchived {
 		fields = append(fields, sectionArchived("/sections/0"))
 	}
@@ -135,6 +139,10 @@ func (w *Writes) updateTopic(ctx context.Context, in *updateTopicInput) (*update
 		}
 	}
 
+	drift := 0
+	if bodyChanged {
+		drift = editDrift(topic.Content, body)
+	}
 	var awards []pendingAward
 	err = w.db().Transaction(func(tx *gorm.DB) error {
 		updates := map[string]any{}
@@ -192,6 +200,11 @@ func (w *Writes) updateTopic(ctx context.Context, in *updateTopicInput) (*update
 				return err
 			}
 		}
+		if drift > 0 && w.ai != nil {
+			if err := w.ai.repo.AddSummaryDrift(tx, topic.ID, drift); err != nil {
+				return err
+			}
+		}
 		if textChanged {
 			if err := w.notifyTopicMentions(tx, topic.UserID, topic.ID, body); err != nil {
 				return err
@@ -211,6 +224,9 @@ func (w *Writes) updateTopic(ctx context.Context, in *updateTopicInput) (*update
 	w.flushAwards(awards)
 	if textChanged {
 		w.scanTopic(verdict, topic.ID, topic.UserID, moderation)
+	}
+	if bodyChanged {
+		w.ai.AfterEdit(topic, drift, title, body)
 	}
 
 	fresh, p := w.loadTopic(topic.ID)

@@ -26,7 +26,7 @@ var allPerms = []Permission{
 	FriendLinkCreate, FriendLinkEdit, FriendLinkDelete,
 	UpdateLogCreate, UpdateLogEdit, UpdateLogDelete, UpdateLogReopen,
 	TrustReview,
-	AdminDashboard, UserPurgeContent, TopicManageSections,
+	AdminDashboard, UserPurgeContent, TopicManageSections, SettingManage,
 }
 
 var adminOnly = map[Permission]bool{
@@ -35,10 +35,11 @@ var adminOnly = map[Permission]bool{
 	TopicDeleteAny:      true,
 	UpdateLogReopen:     true,
 	TopicManageSections: true,
+	SettingManage:       true,
 }
 
 const (
-	totalPerms = 61
+	totalPerms = 62
 	modPerms   = 56
 )
 

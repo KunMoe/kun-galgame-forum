@@ -87,6 +87,7 @@ const topic = (id: string, over: Partial<Topic> = {}): Topic => ({
   reactions: [],
   reply_count: 4,
   section: 'galgame-discussion',
+  ai_summary: null,
   sections: ['galgame-discussion'],
   state: 'published',
   upvote_count: 0,

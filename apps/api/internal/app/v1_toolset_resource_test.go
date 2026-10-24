@@ -13,9 +13,9 @@ func TestV1CreateToolsetResourceLink(t *testing.T) {
 	f := newToolsetFix(t, nil)
 	body := map[string]any{
 		"toolset_resource_type": "link",
-		"link_url":      "https://cdn.example/tool.7z",
-		"size_label":    "12mb",
-		"note":          "n",
+		"link_url":              "https://cdn.example/tool.7z",
+		"size_label":            "12mb",
+		"note":                  "n",
 	}
 	resp, got := f.ts(t, http.MethodPost, "/api/v1/toolsets/"+idStr(g1TSMain)+"/resources",
 		"/toolsets/{toolset_id}/resources", "sess-other", keyUUID(10), body)

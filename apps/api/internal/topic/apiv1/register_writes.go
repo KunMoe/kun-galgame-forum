@@ -10,6 +10,7 @@ import (
 
 func RegisterWrites(w *Writes) func(huma.API) {
 	return func(api huma.API) {
+		registerSectionRequests(api, w)
 		huma.Register(api, v1.IdempotencyRequired(v1.Required(huma.Operation{
 			OperationID:   "createTopic",
 			Method:        http.MethodPost,
@@ -19,6 +20,7 @@ func RegisterWrites(w *Writes) func(huma.API) {
 			Description: "Creates a topic and returns it as getTopic would to its author. " +
 				"A caller may create as many topics in any 24 hours as their cached moemoepoint balance divided by 10, plus one. " +
 				"A section whose moemoepoint_on_create is negative (resource-seeking and tech-help) costs 10 moemoepoint and needs that balance; the others earn 3. " +
+				"When automatic classification is on, the model decides the section (see classification_token) and sections is only the fallback for when it does not answer. " +
 				"Mentions in the body notify up to 10 users.",
 			Tags: []string{"topics"},
 			Responses: problemResponses(map[int]string{
@@ -29,6 +31,20 @@ func RegisterWrites(w *Writes) func(huma.API) {
 		})), w.createTopic)
 
 		huma.Register(api, v1.Required(huma.Operation{
+			OperationID: "classifyTopic",
+			Method:      http.MethodPost,
+			Path:        "/topics/classify",
+			Summary:     "Classify a topic before publishing",
+			Description: "Asks the model which section a topic with this title and body belongs in, so the author sees the section and its moemoepoint cost before publishing. " +
+				"Writes nothing. A caller may classify 10 times in ten minutes.",
+			Tags: []string{"topics"},
+			Responses: problemResponses(map[int]string{
+				429: "RATE_LIMITED after 10 classifications in ten minutes.",
+				503: "SERVICE_UNAVAILABLE when automatic classification is off or the model did not answer; the author picks a section by hand.",
+			}),
+		}), w.classifyTopic)
+
+		huma.Register(api, v1.Required(huma.Operation{
 			OperationID: "updateTopic",
 			Method:      http.MethodPatch,
 			Path:        "/topics/{topic_id}",
@@ -37,6 +53,7 @@ func RegisterWrites(w *Writes) func(huma.API) {
 				"Editing needs can_edit; state needs can_hide or can_unhide. " +
 				"A change of the title or body sets edited_at and bumps the topic. " +
 				"Moving between paid and free sections charges or refunds the author the difference. " +
+				"While automatic classification is on, only staff with topic.edit_any change the section; an author asks with createTopicSectionRequest. " +
 				"NOT_FOUND under the same conditions as getTopic.",
 			Tags: []string{"topics"},
 			Responses: problemResponses(map[int]string{

@@ -9,9 +9,9 @@ import (
 )
 
 type PollTotals struct {
-	PollID     int `gorm:"column:poll_id"`
+	PollID         int `gorm:"column:poll_id"`
 	TotalVoteCount int `gorm:"column:total_votes"`
-	VoterCount int `gorm:"column:voter_count"`
+	VoterCount     int `gorm:"column:voter_count"`
 }
 
 type PollVoterSample struct {

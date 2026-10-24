@@ -699,7 +699,7 @@ func TestV1TopicsItemFields(t *testing.T) {
 		t.Fatal(err)
 	}
 	itemKeys := []string{
-		"author", "bumped_at", "category", "comment_count", "cover_images", "created_at", "edited_at", "has_best_answer", "id",
+		"ai_summary", "author", "bumped_at", "category", "comment_count", "cover_images", "created_at", "edited_at", "has_best_answer", "id",
 		"is_nsfw", "like_count", "mini_apps", "object", "reply_count", "section", "sections", "state", "title", "upvoted_at", "view_count",
 	}
 	for _, it := range list.Items {

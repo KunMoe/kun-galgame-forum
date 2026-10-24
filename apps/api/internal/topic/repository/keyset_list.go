@@ -29,6 +29,7 @@ type TopicKeysetRow struct {
 	Category         string
 	FavoriteCount    int
 	UpvoteCount      int
+	AISummary        *string   `gorm:"column:ai_summary"`
 	SortInt          int64     `gorm:"column:sort_int"`
 	SortTime         time.Time `gorm:"column:sort_time"`
 }
@@ -82,7 +83,7 @@ func (r *TopicListRepository) FindKeyset(q KeysetQuery) ([]TopicKeysetRow, error
 			topic.is_nsfw, topic.like_count, topic.reply_count,
 			topic.comment_count, topic.best_answer_id,
 			topic.status_update_time, topic.created, topic.upvote_time, topic.edited,
-			topic.cover_images, topic.user_id, topic.category,
+			topic.cover_images, topic.user_id, topic.category, topic.ai_summary,
 			topic.favorite_count, topic.upvote_count, ` + alias
 
 	query := r.db.Table("topic").

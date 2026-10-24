@@ -116,6 +116,7 @@ func (s *Service) buildTopic(ctx context.Context, topic *model.Topic, viewer *mi
 		Category:          topic.Category,
 		Section:           firstSection(sectionMap[topic.ID]),
 		Sections:          toSectionSlugs(sectionMap[topic.ID]),
+		AISummary:         topic.AISummary,
 		CoverImages:       coverImagesWithMeta(s.cdn, topic.CoverImages, coverMeta),
 		IsNSFW:            topic.IsNSFW,
 		Author:            author,

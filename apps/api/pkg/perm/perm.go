@@ -79,6 +79,7 @@ const (
 	TrustReview Permission = "trust.review"
 
 	AdminDashboard   Permission = "admin.dashboard"
+	SettingManage    Permission = "setting.manage"
 	UserPurgeContent Permission = "user.purge_content"
 )
 
@@ -141,7 +142,7 @@ var moderatorPerms = []Permission{
 	TrustReview,
 }
 
-var adminPerms = append(append([]Permission{}, moderatorPerms...), AdminDashboard, UserPurgeContent, TopicDeleteAny, UpdateLogReopen, TopicManageSections)
+var adminPerms = append(append([]Permission{}, moderatorPerms...), AdminDashboard, UserPurgeContent, TopicDeleteAny, UpdateLogReopen, TopicManageSections, SettingManage)
 
 var Bundles = map[string][]Permission{
 	"moderator": moderatorPerms,

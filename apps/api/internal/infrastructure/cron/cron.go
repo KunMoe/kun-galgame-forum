@@ -39,6 +39,7 @@ type Jobs struct {
 	UserPurgeArchiveExpiry     func()
 	StickerPackRefresh         func()
 	NotificationRetention      func()
+	TopicAISweep               func()
 }
 
 func Start(
@@ -124,6 +125,10 @@ func Start(
 
 	if jobs.UserPurgeArchiveExpiry != nil {
 		schedule(c, "30 3 * * *", "清空存档过期清理", jobs.UserPurgeArchiveExpiry)
+	}
+
+	if jobs.TopicAISweep != nil {
+		schedule(c, "*/10 * * * *", "话题自动分区复核与摘要补全", jobs.TopicAISweep)
 	}
 
 	if jobs.NotificationRetention != nil {

@@ -36,6 +36,7 @@ const topic = (id: string, over: Partial<TopicSummary> = {}): TopicSummary => ({
   state: 'published',
   category: 'galgame',
   section: 'galgame-discussion',
+  ai_summary: null,
   sections: ['galgame-discussion'],
   cover_images: [],
   author: user(),

@@ -251,7 +251,7 @@ func (r *TopicRepository) ListSubscribed(q SubscribedQuery) ([]SubscribedTopicRo
 			topic.is_nsfw, topic.like_count, topic.reply_count,
 			topic.comment_count, topic.best_answer_id,
 			topic.status_update_time, topic.created, topic.upvote_time, topic.edited,
-			topic.cover_images, topic.user_id, topic.category,
+			topic.cover_images, topic.user_id, topic.category, topic.ai_summary,
 			topic.favorite_count, topic.upvote_count, topic.access_scope, topic.hidden_by,
 			s.last_read_floor, s.activity_at,
 			(SELECT COUNT(*) `+unreadReplies+`) AS unread_count,

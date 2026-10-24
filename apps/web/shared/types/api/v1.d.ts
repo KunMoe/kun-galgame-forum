@@ -388,6 +388,50 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/admin/section-requests": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * List section requests for staff
+         * @description The 100 newest section requests in the given state, newest first. Needs topic.edit_any, which a Bearer request never carries. Not paged.
+         */
+        get: operations["listAdminSectionRequests"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/admin/section-requests/{section_request_id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Get a section request
+         * @description One section request. Needs topic.edit_any.
+         */
+        get: operations["getAdminSectionRequest"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        /**
+         * Decide a section request
+         * @description approved moves the topic to to_section and charges or refunds the author the difference between paid and free sections; rejected leaves it. Either way the author is notified. Needs topic.edit_any.
+         */
+        patch: operations["updateAdminSectionRequest"];
+        trace?: never;
+    };
     "/admin/sections/{section}": {
         parameters: {
             query?: never;
@@ -406,6 +450,30 @@ export interface paths {
          * @description Changes the fields that are sent: display name, description, icon, color, archived. Which topics the section holds, its group and its moemoepoint rule are not editable. Needs topic.manage_sections, which a Bearer request never carries. The caller is checked against the account service's current record first: a banned account is ACCOUNT_BANNED. An empty object writes nothing.
          */
         patch: operations["updateAdminSection"];
+        trace?: never;
+    };
+    "/admin/settings": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Read the site settings
+         * @description Every runtime setting with its current value; a setting nobody changed reads as its default. Needs setting.manage.
+         */
+        get: operations["getAdminSettings"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        /**
+         * Change site settings
+         * @description Writes the settings that are sent and returns all of them. Other API instances see a change within 30 seconds. Needs setting.manage. An empty object writes nothing.
+         */
+        patch: operations["updateAdminSettings"];
         trace?: never;
     };
     "/admin/topics/{topic_id}": {
@@ -4136,9 +4204,29 @@ export interface paths {
         put?: never;
         /**
          * Create a topic
-         * @description Creates a topic and returns it as getTopic would to its author. A caller may create as many topics in any 24 hours as their cached moemoepoint balance divided by 10, plus one. A section whose moemoepoint_on_create is negative (resource-seeking and tech-help) costs 10 moemoepoint and needs that balance; the others earn 3. Mentions in the body notify up to 10 users.
+         * @description Creates a topic and returns it as getTopic would to its author. A caller may create as many topics in any 24 hours as their cached moemoepoint balance divided by 10, plus one. A section whose moemoepoint_on_create is negative (resource-seeking and tech-help) costs 10 moemoepoint and needs that balance; the others earn 3. When automatic classification is on, the model decides the section (see classification_token) and sections is only the fallback for when it does not answer. Mentions in the body notify up to 10 users.
          */
         post: operations["createTopic"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/topics/classify": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Classify a topic before publishing
+         * @description Asks the model which section a topic with this title and body belongs in, so the author sees the section and its moemoepoint cost before publishing. Writes nothing. A caller may classify 10 times in ten minutes.
+         */
+        post: operations["classifyTopic"];
         delete?: never;
         options?: never;
         head?: never;
@@ -4164,7 +4252,7 @@ export interface paths {
         head?: never;
         /**
          * Update a topic
-         * @description Changes the fields present in the body and returns the topic as getTopic would. Absent fields keep their value. Editing needs can_edit; state needs can_hide or can_unhide. A change of the title or body sets edited_at and bumps the topic. Moving between paid and free sections charges or refunds the author the difference. NOT_FOUND under the same conditions as getTopic.
+         * @description Changes the fields present in the body and returns the topic as getTopic would. Absent fields keep their value. Editing needs can_edit; state needs can_hide or can_unhide. A change of the title or body sets edited_at and bumps the topic. Moving between paid and free sections charges or refunds the author the difference. While automatic classification is on, only staff with topic.edit_any change the section; an author asks with createTopicSectionRequest. NOT_FOUND under the same conditions as getTopic.
          */
         patch: operations["updateTopic"];
         trace?: never;
@@ -4351,6 +4439,30 @@ export interface paths {
          * @description Creates a reply at the next floor and returns it as getReply would to its author. Floors are never reused, so deleting the last reply leaves a gap. The topic author earns 1 moemoepoint from another user's reply and is notified; mentions notify up to 10 users. NOT_FOUND under the same conditions as getTopic.
          */
         post: operations["createReply"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/topics/{topic_id}/section-requests": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * List a topic's section requests
+         * @description The topic's 10 newest section requests, newest first. For its author and for staff with topic.edit_any. Not paged.
+         */
+        get: operations["listTopicSectionRequests"];
+        put?: never;
+        /**
+         * Ask staff to move a topic to another section
+         * @description The author asks staff to move their topic. Staff decide with updateAdminSectionRequest; the author is notified either way. A topic has at most one pending request.
+         */
+        post: operations["createTopicSectionRequest"];
         delete?: never;
         options?: never;
         head?: never;
@@ -8406,6 +8518,17 @@ export interface components {
              */
             object: "list";
         };
+        ListTopicSectionRequest: {
+            /** @description Members of this page. Empty array, never null. */
+            items: components["schemas"]["TopicSectionRequest"][];
+            /** @description Opaque keyset cursor. Omitted on the last page. */
+            next_cursor?: string;
+            /**
+             * @description Type discriminant. Always list.
+             * @constant
+             */
+            object: "list";
+        };
         ListTopicSummary: {
             /** @description Members of this page. Empty array, never null. */
             items: components["schemas"]["TopicSummary"][];
@@ -11738,6 +11861,10 @@ export interface components {
             /** @description New display name. Trimmed; a blank one is TOO_SHORT. Free text; never use it as a decision input. */
             label?: string;
         };
+        /** @enum {string} */
+        SectionRequestDecision: "approved" | "rejected";
+        /** @enum {string} */
+        SectionRequestState: "pending" | "approved" | "rejected";
         Series: {
             /**
              * Format: int64
@@ -11828,6 +11955,54 @@ export interface components {
         SetUserFollowNotifyBody: {
             /** @description Whether the caller is notified when this user publishes: all (the default) or feed (the user's activity shows in the following feed only). */
             notify: components["schemas"]["FollowNotifyLevel"];
+        };
+        Settings: {
+            /** @description Whether the server has a model endpoint (KUN_AI_BASE_URL and KUN_AI_TOKEN). Without one the two switches below have no effect. */
+            is_ai_configured: boolean;
+            /** @description Whether the model decides a new topic's section. Off, the author picks one. */
+            is_topic_classify_enabled: boolean;
+            /** @description Whether the model writes summaries for long topics. */
+            is_topic_summary_enabled: boolean;
+            /** @description Model id sent to the endpoint. */
+            topic_ai_model: string;
+            /**
+             * Format: int64
+             * @description How long publishing waits for the model before it falls back to the author's section.
+             */
+            topic_ai_timeout_ms: number;
+            /**
+             * Format: int64
+             * @description A body needs at least this many characters of text to get a summary.
+             */
+            topic_summary_min_length: number;
+            /**
+             * Format: int64
+             * @description Characters inserted plus deleted by edits since the summary was written before it is written again.
+             */
+            topic_summary_regenerate_threshold: number;
+        };
+        SettingsPatch: {
+            /** @description New value. */
+            is_topic_classify_enabled?: boolean;
+            /** @description New value. */
+            is_topic_summary_enabled?: boolean;
+            /** @description New value. */
+            topic_ai_model?: string;
+            /**
+             * Format: int64
+             * @description New value.
+             */
+            topic_ai_timeout_ms?: number;
+            /**
+             * Format: int64
+             * @description New value.
+             */
+            topic_summary_min_length?: number;
+            /**
+             * Format: int64
+             * @description New value.
+             */
+            topic_summary_regenerate_threshold?: number;
         };
         /** @enum {string} */
         SexualGrade: "safe" | "suggestive" | "explicit";
@@ -12935,6 +13110,8 @@ export interface components {
         Topic: {
             /** @description Who may read the topic: everyone, signed-in users, holders of granted roles, or granted users. The author and staff always may. */
             access_scope: components["schemas"]["AccessScope"];
+            /** @description Summary the model wrote for a long body, shown as AI generated. null when the topic has none. Free text; never use it as a decision input. */
+            ai_summary: string | null;
             /** @description Topic author. */
             author: components["schemas"]["UserRef"];
             /**
@@ -13035,6 +13212,30 @@ export interface components {
         };
         /** @enum {string} */
         TopicCategory: "galgame" | "technique" | "others";
+        TopicClassification: {
+            /** @description Send as createTopic's classification_token with the same title and body to publish in this section without classifying again. */
+            classification_token: string;
+            /**
+             * @description Type discriminant. Always topic_classification.
+             * @constant
+             */
+            object: "topic_classification";
+            /** @description The model's reason, for the author. Free text; never use it as a decision input. */
+            reason: string;
+            /** @description The section the topic will be published in. */
+            section: components["schemas"]["TopicSectionKey"];
+            /**
+             * Format: date-time
+             * @description When the token stops being accepted.
+             */
+            token_expires_at: string;
+        };
+        TopicClassifyRequest: {
+            /** @description Body as it will be published. Free text; never use it as a decision input. */
+            content_markdown: string;
+            /** @description Title as it will be published. Free text; never use it as a decision input. */
+            title: string;
+        };
         TopicCreate: {
             /** @description Roles granted to read the topic. Required when access_scope is role; must be absent otherwise. */
             access_roles?: components["schemas"]["SiteRole"][];
@@ -13044,6 +13245,8 @@ export interface components {
             access_user_ids?: string[];
             /** @description Deprecated and ignored: the section decides the topic's legacy category. */
             category?: components["schemas"]["TopicCategory"];
+            /** @description classifyTopic's token for this exact title and body. When automatic classification is on, the section comes from the token, or from classifying the text now when the token is absent, expired or for other text; sections is used only when the model does not answer. */
+            classification_token?: string;
             /** @description Topic body as Markdown source, stored as sent. A body of only whitespace is refused as TOO_SHORT. Free text; never use it as a decision input. */
             content_markdown: string;
             /** @description Cover images by image-service hash, in display order. When absent, the covers are the first nine distinct /image/{hash} tokens of the body in body order, stickers skipped; an empty array means no covers. */
@@ -13344,6 +13547,49 @@ export interface components {
         };
         /** @enum {string} */
         TopicSectionKey: "galgame-discussion" | "galgame-walkthrough" | "review" | "news" | "resource-seeking" | "resource-release" | "tech-help" | "game-running" | "development" | "acgn" | "daily" | "site";
+        TopicSectionRequest: {
+            /**
+             * Format: date-time
+             * @description When it was filed.
+             */
+            created_at: string;
+            /**
+             * Format: date-time
+             * @description When staff decided. null while pending.
+             */
+            decided_at: string | null;
+            /** @description The topic's section when the request was filed. */
+            from_section: components["schemas"]["TopicSectionKey"];
+            /** @description Request id. */
+            id: string;
+            /**
+             * @description Type discriminant. Always topic_section_request.
+             * @constant
+             */
+            object: "topic_section_request";
+            /** @description Why, in the requester's words. Free text; never use it as a decision input. */
+            reason: string;
+            /** @description Who asked. null when the automatic check filed it because the model disagreed with the section a topic was published in while the model was unreachable. */
+            requester: components["schemas"]["UserRef"] | null;
+            /** @description pending until staff decide. */
+            state: components["schemas"]["SectionRequestState"];
+            /** @description The section asked for. */
+            to_section: components["schemas"]["TopicSectionKey"];
+            /** @description The topic to move. */
+            topic_id: string;
+            /** @description The topic's title. Free text; never use it as a decision input. */
+            topic_title: string;
+        };
+        TopicSectionRequestCreate: {
+            /** @description Why the topic belongs there. Trimmed; blank is TOO_SHORT. Free text; never use it as a decision input. */
+            reason: string;
+            /** @description The section the topic should be in. */
+            section: components["schemas"]["TopicSectionKey"];
+        };
+        TopicSectionRequestDecision: {
+            /** @description approved moves the topic; rejected leaves it. */
+            state: components["schemas"]["SectionRequestDecision"];
+        };
         /** @enum {string} */
         TopicSort: "bumped_asc" | "bumped_desc" | "created_asc" | "created_desc" | "views_asc" | "views_desc" | "views_1d_asc" | "views_1d_desc" | "views_7d_asc" | "views_7d_desc" | "views_30d_asc" | "views_30d_desc" | "likes_asc" | "likes_desc" | "favorites_asc" | "favorites_desc" | "upvotes_asc" | "upvotes_desc";
         TopicSource: {
@@ -13409,6 +13655,8 @@ export interface components {
             notification_level: components["schemas"]["TopicNotificationLevel"];
         };
         TopicSummary: {
+            /** @description Summary the model wrote for a long body, shown as AI generated. null when the topic has none. Free text; never use it as a decision input. */
+            ai_summary: string | null;
             /** @description Topic author. */
             author: components["schemas"]["UserRef"];
             /**
@@ -17608,6 +17856,268 @@ export interface operations {
             };
         };
     };
+    listAdminSectionRequests: {
+        parameters: {
+            query?: {
+                /** @description Which requests. Default pending. */
+                state?: components["schemas"]["SectionRequestState"];
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ListTopicSectionRequest"];
+                };
+            };
+            /** @description Bad Request */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Unauthorized */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description PERMISSION_REQUIRED without topic.edit_any. */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Internal Server Error */
+            500: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Service Unavailable */
+            503: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+        };
+    };
+    getAdminSectionRequest: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description Section request id. */
+                section_request_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["TopicSectionRequest"];
+                };
+            };
+            /** @description Bad Request */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Unauthorized */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description PERMISSION_REQUIRED without topic.edit_any. */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description NOT_FOUND when the request does not exist. */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Internal Server Error */
+            500: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Service Unavailable */
+            503: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+        };
+    };
+    updateAdminSectionRequest: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description Section request id. */
+                section_request_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["TopicSectionRequestDecision"];
+            };
+        };
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["TopicSectionRequest"];
+                };
+            };
+            /** @description Bad Request */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Unauthorized */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description PERMISSION_REQUIRED without topic.edit_any. */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description NOT_FOUND when the request does not exist. */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description INVALID_STATE_TRANSITION when it was already decided. */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Request Entity Too Large */
+            413: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Unsupported Media Type */
+            415: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Unprocessable Entity */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Internal Server Error */
+            500: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Service Unavailable */
+            503: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+        };
+    };
     updateAdminSection: {
         parameters: {
             query?: never;
@@ -17686,6 +18196,158 @@ export interface operations {
                 };
             };
             /** @description VALIDATION_FAILED for a blank label or a field outside its format. */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Internal Server Error */
+            500: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Service Unavailable */
+            503: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+        };
+    };
+    getAdminSettings: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Settings"];
+                };
+            };
+            /** @description Unauthorized */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description PERMISSION_REQUIRED without setting.manage, which a Bearer request never carries. */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Internal Server Error */
+            500: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Service Unavailable */
+            503: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+        };
+    };
+    updateAdminSettings: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["SettingsPatch"];
+            };
+        };
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Settings"];
+                };
+            };
+            /** @description Bad Request */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Unauthorized */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description PERMISSION_REQUIRED without setting.manage, which a Bearer request never carries. */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Request Entity Too Large */
+            413: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Unsupported Media Type */
+            415: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Unprocessable Entity */
             422: {
                 headers: {
                     [name: string]: unknown;
@@ -37591,6 +38253,111 @@ export interface operations {
             };
         };
     };
+    classifyTopic: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["TopicClassifyRequest"];
+            };
+        };
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["TopicClassification"];
+                };
+            };
+            /** @description Bad Request */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Unauthorized */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Forbidden */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Request Entity Too Large */
+            413: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Unsupported Media Type */
+            415: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Unprocessable Entity */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description RATE_LIMITED after 10 classifications in ten minutes. */
+            429: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Internal Server Error */
+            500: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description SERVICE_UNAVAILABLE when automatic classification is off or the model did not answer; the author picks a section by hand. */
+            503: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+        };
+    };
     getTopic: {
         parameters: {
             query?: never;
@@ -39118,6 +39885,200 @@ export interface operations {
                 };
             };
             /** @description VALIDATION_FAILED, or CONTENT_REJECTED when the trust-and-safety check refuses the body. */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Internal Server Error */
+            500: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Service Unavailable */
+            503: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+        };
+    };
+    listTopicSectionRequests: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description Topic id. */
+                topic_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ListTopicSectionRequest"];
+                };
+            };
+            /** @description Bad Request */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Unauthorized */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description PERMISSION_REQUIRED for anyone else. */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description NOT_FOUND under the same conditions as getTopic. */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Internal Server Error */
+            500: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Service Unavailable */
+            503: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+        };
+    };
+    createTopicSectionRequest: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description Topic id. */
+                topic_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["TopicSectionRequestCreate"];
+            };
+        };
+        responses: {
+            /** @description Created */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["TopicSectionRequest"];
+                };
+            };
+            /** @description Bad Request */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Unauthorized */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description PERMISSION_REQUIRED when the caller is not the author. */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description NOT_FOUND under the same conditions as getTopic. */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description ALREADY_EXISTS when a request for this topic is still pending. */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Request Entity Too Large */
+            413: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Unsupported Media Type */
+            415: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description VALIDATION_FAILED for a blank reason, the topic's own section, or an archived section. */
             422: {
                 headers: {
                     [name: string]: unknown;

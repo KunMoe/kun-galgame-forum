@@ -186,6 +186,11 @@ x-kungal-api-env: &kungal-api-env
   # the inbound enforcement callback: empty → callbacks fail-closed 401 while
   # reports still flow, so enforcement stays off until you set it to the SAME
   # secret registered on kungal's subject_kind rows in the trust registry.
+  # Topic classification and summaries (OpenAI-compatible endpoint, e.g.
+  # Cloudflare Workers AI .../ai/v1). Empty turns both off; the admin settings
+  # page switches them on once these are set.
+  KUN_AI_BASE_URL: ${KUN_AI_BASE_URL:-}
+  KUN_AI_TOKEN: ${KUN_AI_TOKEN:-}
   KUN_TRUST_BASE_URL: http://trust:9283
   KUN_TRUST_SITE: kungal
   KUN_TRUST_CALLBACK_SECRET: ${KUN_TRUST_CALLBACK_SECRET:-}

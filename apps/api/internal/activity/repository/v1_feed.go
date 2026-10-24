@@ -157,7 +157,7 @@ func (r *ActivityRepository) TopicCards(ids []int) (map[int]TopicCardRow, error)
 	var rows []TopicCardRow
 	if err := r.db.Raw(`
 		SELECT id, title, view, status, is_nsfw, like_count, reply_count, comment_count, best_answer_id,
-			status_update_time, created, upvote_time, cover_images, user_id, category, favorite_count, upvote_count,
+			status_update_time, created, upvote_time, cover_images, user_id, category, favorite_count, upvote_count, ai_summary,
 			SUBSTRING(content, 1, 300) AS excerpt, edited
 		FROM topic WHERE id IN ?`, ids).Scan(&rows).Error; err != nil {
 		return nil, err

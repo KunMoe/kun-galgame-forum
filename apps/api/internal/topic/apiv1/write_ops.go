@@ -16,6 +16,14 @@ type Writes struct {
 	scan   *gate.ScanService
 	award  AwardFunc
 	notify msgService.Notifier
+
+	ai            *TopicAI
+	classifyLimit classifyLimiter
+}
+
+// SetAI turns on model classification and summaries; without it both are off.
+func (w *Writes) SetAI(a *TopicAI) {
+	w.ai = a
 }
 
 func NewWrites(

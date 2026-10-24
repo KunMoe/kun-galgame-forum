@@ -31,6 +31,11 @@ type Topic struct {
 	FavoriteCount  int `gorm:"column:favorite_count;default:0" json:"favorite_count"`
 	UpvoteCount    int `gorm:"column:upvote_count;default:0" json:"upvote_count"`
 
+	AISummary      *string    `gorm:"column:ai_summary" json:"ai_summary"`
+	AISummaryModel string     `gorm:"column:ai_summary_model;not null;default:''" json:"-"`
+	AISummaryAt    *time.Time `gorm:"column:ai_summary_at" json:"-"`
+	AISummaryDrift int        `gorm:"column:ai_summary_drift;not null;default:0" json:"-"`
+
 	CreatedAt time.Time `gorm:"column:created" json:"created"`
 	UpdatedAt time.Time `gorm:"column:updated" json:"updated"`
 }

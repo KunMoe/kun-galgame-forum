@@ -62,6 +62,9 @@ GET    /api/v1/admin/permission-changes               cors.New → v1Headers →
 GET    /api/v1/admin/review-items                     cors.New → v1Headers → fiberAdapter.Handle
 GET    /api/v1/admin/review-items/:review_item_id     cors.New → v1Headers → fiberAdapter.Handle
 GET    /api/v1/admin/role-permissions                 cors.New → v1Headers → fiberAdapter.Handle
+GET    /api/v1/admin/section-requests                 cors.New → v1Headers → fiberAdapter.Handle
+GET    /api/v1/admin/section-requests/:section_request_id cors.New → v1Headers → fiberAdapter.Handle
+GET    /api/v1/admin/settings                         cors.New → v1Headers → fiberAdapter.Handle
 GET    /api/v1/admin/topics/:topic_id                 cors.New → v1Headers → fiberAdapter.Handle
 GET    /api/v1/admin/user-contents/:user_id           cors.New → v1Headers → fiberAdapter.Handle
 GET    /api/v1/admin/user-permissions/:user_id        cors.New → v1Headers → fiberAdapter.Handle
@@ -202,6 +205,7 @@ GET    /api/v1/topics/:topic_id/lotteries             cors.New → v1Headers →
 GET    /api/v1/topics/:topic_id/polls                 cors.New → v1Headers → fiberAdapter.Handle
 GET    /api/v1/topics/:topic_id/reactions             cors.New → v1Headers → fiberAdapter.Handle
 GET    /api/v1/topics/:topic_id/replies               cors.New → v1Headers → fiberAdapter.Handle
+GET    /api/v1/topics/:topic_id/section-requests      cors.New → v1Headers → fiberAdapter.Handle
 GET    /api/v1/topics/:topic_id/source                cors.New → v1Headers → fiberAdapter.Handle
 GET    /api/v1/topics/:topic_id/subscription          cors.New → v1Headers → fiberAdapter.Handle
 GET    /api/v1/topics/:topic_id/upvotes               cors.New → v1Headers → fiberAdapter.Handle
@@ -250,7 +254,9 @@ PATCH  /api/v1/admin/friend-links/:friend_link_id     cors.New → v1Headers →
 PATCH  /api/v1/admin/review-items/:review_item_id     cors.New → v1Headers → fiberAdapter.Handle
 PATCH  /api/v1/admin/role-permissions                 cors.New → v1Headers → fiberAdapter.Handle
 PATCH  /api/v1/admin/section-groups/:group            cors.New → v1Headers → fiberAdapter.Handle
+PATCH  /api/v1/admin/section-requests/:section_request_id cors.New → v1Headers → fiberAdapter.Handle
 PATCH  /api/v1/admin/sections/:section                cors.New → v1Headers → fiberAdapter.Handle
+PATCH  /api/v1/admin/settings                         cors.New → v1Headers → fiberAdapter.Handle
 PATCH  /api/v1/admin/website-categories/:website_category_id cors.New → v1Headers → fiberAdapter.Handle
 PATCH  /api/v1/admin/website-tag-groups/:website_tag_group_id cors.New → v1Headers → fiberAdapter.Handle
 PATCH  /api/v1/admin/website-tags/:website_tag_id     cors.New → v1Headers → fiberAdapter.Handle
@@ -314,8 +320,10 @@ POST   /api/v1/topics                                 cors.New → v1Headers →
 POST   /api/v1/topics/:topic_id/lotteries             cors.New → v1Headers → fiberAdapter.Handle
 POST   /api/v1/topics/:topic_id/polls                 cors.New → v1Headers → fiberAdapter.Handle
 POST   /api/v1/topics/:topic_id/replies               cors.New → v1Headers → fiberAdapter.Handle
+POST   /api/v1/topics/:topic_id/section-requests      cors.New → v1Headers → fiberAdapter.Handle
 POST   /api/v1/topics/:topic_id/upvotes               cors.New → v1Headers → fiberAdapter.Handle
 POST   /api/v1/topics/:topic_id/views                 cors.New → v1Headers → fiberAdapter.Handle
+POST   /api/v1/topics/classify                        cors.New → v1Headers → fiberAdapter.Handle
 POST   /api/v1/update-logs                            cors.New → v1Headers → fiberAdapter.Handle
 POST   /api/v1/wall-comments                          cors.New → v1Headers → fiberAdapter.Handle
 POST   /api/v1/wall-comments/:wall_comment_id/flags   cors.New → v1Headers → fiberAdapter.Handle

@@ -33,6 +33,14 @@ type Config struct {
 	Bearer         BearerConfig
 	AppRelease     AppReleaseConfig
 	Notification   NotificationConfig
+	AI             AIConfig
+}
+
+// AIConfig points at an OpenAI-compatible chat completions endpoint. Either
+// value empty turns topic classification and summaries off.
+type AIConfig struct {
+	BaseURL string
+	Token   string
 }
 
 type NotificationConfig struct {
@@ -341,6 +349,10 @@ func Load() (*Config, error) {
 		},
 		Catalog: CatalogClientConfig{
 			BaseURL: envOrDefault("KUN_CATALOG_API_BASE", "http://127.0.0.1:9281"),
+		},
+		AI: AIConfig{
+			BaseURL: envOrDefault("KUN_AI_BASE_URL", ""),
+			Token:   envOrDefault("KUN_AI_TOKEN", ""),
 		},
 		Lottery: LotteryConfig{
 			CodeKey: envOrDefault("KUN_LOTTERY_CODE_KEY", ""),

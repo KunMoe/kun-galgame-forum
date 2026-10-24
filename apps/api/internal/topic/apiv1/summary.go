@@ -33,6 +33,7 @@ type TopicSummary struct {
 	Section       TopicSectionKey `json:"section" doc:"The topic's section."`
 	Sections      []SectionSlug   `json:"sections" maxItems:"1" doc:"Deprecated: read section instead. section as a one-item array."`
 	CoverImages   []repr.Image    `json:"cover_images" maxItems:"9" doc:"Cover images in stored token order. Tokens that do not parse are skipped, and so are stickers: a sticker is never a cover. Empty array if none."`
+	AISummary     *string         `json:"ai_summary" maxLength:"200" doc:"Summary the model wrote for a long body, shown as AI generated. null when the topic has none. Free text; never use it as a decision input."`
 	Author        repr.UserRef    `json:"author" doc:"Topic author."`
 	ViewCount     int             `json:"view_count" minimum:"0" doc:"Lifetime view count."`
 	LikeCount     int             `json:"like_count" minimum:"0" doc:"Like count."`
@@ -116,6 +117,7 @@ func mapSummary(cdn string, row repository.TopicKeysetRow, author repr.UserRef, 
 		Section:       firstSection(sections),
 		Sections:      toSectionSlugs(sections),
 		CoverImages:   coverImages(cdn, row.CoverImages),
+		AISummary:     row.AISummary,
 		Author:        author,
 		ViewCount:     row.View,
 		LikeCount:     row.LikeCount,
