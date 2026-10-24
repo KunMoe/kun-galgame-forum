@@ -105,7 +105,7 @@ func TestV1GetWorkIncrementsViewWithoutTouchingUpdated(t *testing.T) {
 
 func TestV1GetWorkMakesNoUserTokenCalls(t *testing.T) {
 	f := newWorkFix(t)
-	f.user.covers = []catalogclient.CoverTally{{ID: 11, ImageHash: g4PortraitHash, VoteCount: 3}}
+	f.user.covers = []catalogclient.CoverTally{{ID: 12, ImageHash: g4SafeHash, VoteCount: 3}}
 	f.user.containing = map[int64]bool{g4WorkLive: true}
 	f.user.play = &catalogclient.PlaytimeSelf{Minutes: 120}
 	for i := range 2 {
@@ -153,13 +153,24 @@ func TestV1GetWorkCoverSexual(t *testing.T) {
 		t.Errorf("unjudged portrait sexual %+v", cover)
 	}
 	covers, _ := body["covers"].([]any)
-	if len(covers) < 2 {
-		t.Fatalf("covers %v", body["covers"])
+	if len(covers) != 1 || strID(covers[0].(map[string]any)["id"]) != "12" {
+		t.Fatalf("an SFW read kept a cover not graded safe: %v", body["covers"])
 	}
-	second, _ := covers[1].(map[string]any)
-	img, _ := second["image"].(map[string]any)
+	img, _ := covers[0].(map[string]any)["image"].(map[string]any)
 	if img["sexual"] != "safe" {
 		t.Errorf("judged-0 cover sexual %+v", img)
+	}
+
+	resp, nsfw := f.wk(t, http.MethodGet, g4WorkPath(g4WorkLive)+"?include_nsfw=true", "/works/{work_id}", "", nil)
+	if resp.StatusCode != http.StatusOK {
+		t.Fatalf("include_nsfw get %d %+v", resp.StatusCode, nsfw)
+	}
+	all, _ := nsfw["covers"].([]any)
+	if len(all) != 2 {
+		t.Fatalf("include_nsfw covers %v", nsfw["covers"])
+	}
+	if first, _ := all[0].(map[string]any)["image"].(map[string]any); first == nil || first["sexual"] != nil {
+		t.Errorf("unjudged cover sexual %+v", first)
 	}
 	if cover["sexual"] != nil && asJSONType(cover["sexual"]) != asJSONType(img["sexual"]) {
 		t.Errorf("Work.cover.sexual %+v vs portrait slot", cover["sexual"])

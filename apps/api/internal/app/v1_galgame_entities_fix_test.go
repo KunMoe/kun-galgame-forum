@@ -826,7 +826,7 @@ func (f *geFix) seedCatalog(t *testing.T) {
 	c.series[strconv.Itoa(geSeries)] = &series
 
 	c.hits["names"] = decodeHits(t, `[{"id":9101,"display_name":"瀬戸","latin":"Seto"}]`)
-	decodeInto(t, fmt.Sprintf(`[{"id":"9201","display_name":"夏帆","latin":"Kaho","image":{"url":%q,"hash":%q},"work_count":3}]`,
+	decodeInto(t, fmt.Sprintf(`[{"id":"9201","display_name":"夏帆","latin":"Kaho","image":{"url":%q,"hash":%q,"sexual":"safe"},"work_count":3}]`,
 		geImageURL(9201), geHash(9201)), &c.charRows)
 	decodeInto(t, `[{"id":"1","display_name":"Hair","name_zh":"毛发","group_id":null,"root_order":1,"character_count":9},
 		{"id":"10","display_name":"Blonde","name_zh":"金发","group_id":"1","parents":[{"id":"1"}],"is_searchable":true,"character_count":3}]`, &c.traits)
@@ -847,7 +847,7 @@ func (f *geFix) seedCatalog(t *testing.T) {
 		geWorkMin, geWorkMin+1, geWorkMin+2, geWorkMin+3), &name)
 	c.names[geCreditName] = &name
 	var char client.CatalogCharacter
-	decodeInto(t, fmt.Sprintf(`{"id":9201,"display_name":"夏帆","latin":"Kaho","lang":"ja","image":%q,
+	decodeInto(t, fmt.Sprintf(`{"id":9201,"display_name":"夏帆","latin":"Kaho","lang":"ja","image":%q,"image_sexual":0,
 		"intros":[{"lang":"ja","intro":"養母","source":"erogamescape"}],
 		"traits":[{"id":1,"display_name":"Blonde","name_zh":"金发","group":"Hair","group_zh":"毛发","spoiler":0},
 			{"id":2,"display_name":"Adult trait","group":"Body","spoiler":2,"sexual":true},
@@ -857,6 +857,9 @@ func (f *geFix) seedCatalog(t *testing.T) {
 		"works":[{"work":{"id":%d},"voices":[{"id":9101,"display_name":"瀬戸","lang":"ja"}]},{"work":{"id":%d},"voices":[]},{"work":{"id":%d},"voices":[]}]}`,
 		geImageURL(9201), geWorkMin, geWorkMin+2, geWorkMin+5), &char)
 	c.chars[geCharacter] = &char
+	var ungraded client.CatalogCharacter
+	decodeInto(t, fmt.Sprintf(`{"id":9203,"display_name":"Ungraded","image":%q,"figure":%q}`, geImageURL(9203), geImageURL(9204)), &ungraded)
+	c.chars[geCharacter+2] = &ungraded
 }
 
 func decodeTax(t *testing.T, raw string) []client.CatalogTaxonomyItem {

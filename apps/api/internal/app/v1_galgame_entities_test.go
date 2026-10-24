@@ -528,6 +528,14 @@ func TestV1EntityCharacters(t *testing.T) {
 	}
 	resp, body = f.get(t, "/api/v1/characters/9202", "/characters/{character_id}")
 	geStatus(t, resp, body, http.StatusNotFound, "ENTITY_MERGED")
+	_, body = f.get(t, "/api/v1/characters/9203", "/characters/{character_id}")
+	if body["image"] != nil || body["figure"] != nil {
+		t.Fatalf("an SFW read drew ungraded art: %+v", body)
+	}
+	_, body = f.get(t, "/api/v1/characters/9203?include_nsfw=true", "/characters/{character_id}")
+	if img, _ := body["image"].(map[string]any); img == nil || img["hash"] != geHash(9203) || img["sexual"] != nil || body["figure"] == nil {
+		t.Fatalf("include_nsfw art %+v / %+v", body["image"], body["figure"])
+	}
 
 	path, spec := "/api/v1/characters/9201/appearances", "/characters/{character_id}/appearances"
 	geWant(t, "appearances", f.geStream(t, path, spec, url.Values{"limit": {"2"}}), wid(0), wid(5))
