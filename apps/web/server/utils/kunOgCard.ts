@@ -3,7 +3,7 @@ import { kungal } from '../../app/config/kungal'
 import { KUN_GALGAME_OFFICIAL_CATEGORY_MAP } from '../../app/constants/galgameOfficial'
 import { KUN_TOPIC_SECTION } from '../../app/constants/topic'
 import { deletedUserName } from '#shared/utils/deletedUser'
-import type { Topic } from '../../shared/utils/api/schemas'
+import type { Image, Topic } from '../../shared/utils/api/schemas'
 import { createApiClient } from '../../shared/utils/api/client'
 import {
   catalogEntityName,
@@ -148,6 +148,9 @@ const originalOf = (n: CatalogName): string | undefined => {
   return other && other !== name ? text(other, 120) : undefined
 }
 
+const safeUrl = (image: Image | null | undefined) =>
+  image?.sexual === 'safe' ? image.url : undefined
+
 const buildCharacter = async (id: number): Promise<KunOgCard | null> => {
   const api = catalogApi()
   const path = { character_id: String(id) }
@@ -170,7 +173,7 @@ const buildCharacter = async (id: number): Promise<KunOgCard | null> => {
     fields: {
       name: text(catalogEntityName(c).name, 120),
       originalName: originalOf(c),
-      portrait: c.figure?.url || c.image?.url || undefined,
+      portrait: safeUrl(c.figure) || safeUrl(c.image),
       work: first ? text(catalogEntityName(first.work_summary).name, 200) : undefined,
       voice: voice
         ? `CV. ${truncateRunes(catalogEntityName(voice).name, 74)}`

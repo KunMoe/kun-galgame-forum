@@ -237,7 +237,7 @@ func voicedNames(d *client.CatalogWorkDetail) map[int64]VoicedCharacter {
 	return out
 }
 
-func charactersOf(ctx context.Context, d *client.CatalogWorkDetail, cdn string) []WorkCharacter {
+func charactersOf(ctx context.Context, d *client.CatalogWorkDetail, cdn string, includeNSFW bool) []WorkCharacter {
 	out := []WorkCharacter{}
 	for _, c := range d.Characters {
 		kind := strings.ToLower(c.Kind)
@@ -259,8 +259,8 @@ func charactersOf(ctx context.Context, d *client.CatalogWorkDetail, cdn string) 
 				Object: "character", ID: repr.ID(int(c.ID)),
 				CatalogName: workrepr.Name(c.DisplayName, c.Latin, client.LocalizedValues(c.Localized)),
 			},
-			Image:         workrepr.ImageFromURL(cdn, c.Image, c.ImageMeta.Width, c.ImageMeta.Height, c.ImageMeta.Thumbhash, nil),
-			Figure:        workrepr.ImageFromURL(cdn, c.Figure, c.FigureMeta.Width, c.FigureMeta.Height, c.FigureMeta.Thumbhash, nil),
+			Image:         workrepr.GatedImageFromURL(cdn, c.Image, c.ImageMeta.Width, c.ImageMeta.Height, c.ImageMeta.Thumbhash, c.ImageSexual, includeNSFW),
+			Figure:        workrepr.GatedImageFromURL(cdn, c.Figure, c.FigureMeta.Width, c.FigureMeta.Height, c.FigureMeta.Thumbhash, c.FigureSexual, includeNSFW),
 			CharacterKind: kind,
 			Spoiler:       spoilerOf(c.Spoiler),
 			Voices:        voices,
@@ -534,7 +534,7 @@ func (s *Service) fillSeriesSamples(ctx context.Context, seriesID int, card *ent
 	}
 }
 
-func coversOf(d *client.CatalogWorkDetail, cdn string, tallies []catalogclient.CoverTally) []WorkCover {
+func coversOf(d *client.CatalogWorkDetail, cdn string, tallies []catalogclient.CoverTally, includeNSFW bool) []WorkCover {
 	byHash := map[string]catalogclient.CoverTally{}
 	for _, t := range tallies {
 		if t.ImageHash != "" {
@@ -545,6 +545,9 @@ func coversOf(d *client.CatalogWorkDetail, cdn string, tallies []catalogclient.C
 	for i, c := range d.Covers {
 		if i > 9999 {
 			slog.Warn("work covers: sort_order above 9999, row dropped", "index", i)
+			continue
+		}
+		if !includeNSFW && !workrepr.IsSafeArt(c.Sexual) {
 			continue
 		}
 		hash := c.Hash
@@ -578,11 +581,14 @@ func coversOf(d *client.CatalogWorkDetail, cdn string, tallies []catalogclient.C
 	return out
 }
 
-func screenshotsOf(d *client.CatalogWorkDetail, cdn string) []WorkScreenshot {
+func screenshotsOf(d *client.CatalogWorkDetail, cdn string, includeNSFW bool) []WorkScreenshot {
 	out := []WorkScreenshot{}
 	for i, sh := range d.Screenshots {
 		if i > 9999 {
 			slog.Warn("work screenshots: sort_order above 9999, row dropped", "index", i)
+			continue
+		}
+		if !includeNSFW && !workrepr.IsSafeArt(sh.Sexual) {
 			continue
 		}
 		img := workrepr.ImageFromURL(cdn, sh.URL, sh.Width, sh.Height, sh.Thumbhash, sh.Sexual)

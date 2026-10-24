@@ -27,7 +27,7 @@ func (s *Service) getWorkCover(ctx context.Context, in *workCoverInput) (*workCo
 	if p != nil {
 		return nil, p
 	}
-	covers := coversOf(d, s.cdn, s.coverTallies(ctx, workID))
+	covers := coversOf(d, s.cdn, s.coverTallies(ctx, workID), true)
 	for _, c := range covers {
 		id, ok := repr.ParseID(c.ID)
 		if ok && id == coverID {

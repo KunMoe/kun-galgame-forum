@@ -118,22 +118,22 @@ const toggleVote = async (cover: WorkCover) => {
 
 const coverSrc = (cover: WorkCover) => cover.image?.url ?? ''
 
-const isExplicit = (cover: WorkCover) => cover.image?.sexual === 'explicit'
+const isSafe = (cover: WorkCover) => cover.image?.sexual === 'safe'
 
 // This modal listed every cover catalog has, whatever the reader's stance: 9 of
 // 37 SFW-shelved works sampled on 2026-10-02 carried an explicit one, a click
-// away for a reader who hides adult content. The threshold is catalog's own
-// cover gate, which already shows that reader a suggestive main cover.
+// away for a reader who hides adult content. Hiding only explicit still let
+// suggestive and ungraded covers through, so only a safe one passes now.
 const withImage = computed(() => props.covers.filter((c) => !!c.image))
 const sorted = computed(() =>
   withImage.value
-    .filter((c) => allowsNsfw.value || !isExplicit(c))
+    .filter((c) => allowsNsfw.value || isSafe(c))
     .sort((a, b) => a.sort_order - b.sort_order)
 )
 const hiddenCount = computed(() => withImage.value.length - sorted.value.length)
 
 const isMasked = (cover: WorkCover) =>
-  isBlurred.value && (props.isNsfw || isExplicit(cover))
+  isBlurred.value && (props.isNsfw || !isSafe(cover))
 
 const groups = computed(() => {
   const byKind = new Map<string, WorkCover[]>()

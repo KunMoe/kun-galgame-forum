@@ -149,6 +149,36 @@ func TestRewriteV2JSON_TraitLieAndCreditCharacter(t *testing.T) {
 	}
 }
 
+func TestRewriteV2JSON_CharacterArtKeepsItsGrade(t *testing.T) {
+	raw := `{"characters":[
+		{"id":"1","image":{"url":"https://cdn.test/a.webp","sexual":"safe"},"figure":{"url":"https://cdn.test/b.webp","sexual":"explicit"}},
+		{"id":"2","image":{"url":"https://cdn.test/c.webp","sexual":null},"figure":{"url":"https://cdn.test/d.webp","sexual":"suggestive"}}
+	]}`
+	var d CatalogWorkDetail
+	if err := json.Unmarshal(rewriteV2JSON([]byte(raw), ""), &d); err != nil {
+		t.Fatal(err)
+	}
+	level := func(p *int) any {
+		if p == nil {
+			return nil
+		}
+		return *p
+	}
+	got := [][2]any{
+		{level(d.Characters[0].ImageSexual), level(d.Characters[0].FigureSexual)},
+		{level(d.Characters[1].ImageSexual), level(d.Characters[1].FigureSexual)},
+	}
+	want := [][2]any{{0, 2}, {nil, 1}}
+	for i := range want {
+		if got[i] != want[i] {
+			t.Errorf("character %d grades = %v, want %v", i, got[i], want[i])
+		}
+	}
+	if d.Characters[0].Image != "https://cdn.test/a.webp" || d.Characters[1].Figure != "https://cdn.test/d.webp" {
+		t.Errorf("art urls = %+v", d.Characters)
+	}
+}
+
 func TestOffsetCursorRoundTrip(t *testing.T) {
 	// The sub-faces drop `offset` silently and page by an opaque cursor that is
 	// the next offset in base64 — cur_Mw skips exactly three rows on a live

@@ -218,6 +218,18 @@ func ImageFromURL(cdn, url string, width, height int, thumbhash string, sexual *
 	return repr.NewImage(cdn, hash, meta)
 }
 
+// IsSafeArt reads an ungraded image (nil) as not safe, the way moyu does.
+func IsSafeArt(sexual *int) bool {
+	return sexual != nil && *sexual == 0
+}
+
+func GatedImageFromURL(cdn, url string, width, height int, thumbhash string, sexual *int, includeNSFW bool) *repr.Image {
+	if !includeNSFW && !IsSafeArt(sexual) {
+		return nil
+	}
+	return ImageFromURL(cdn, url, width, height, thumbhash, sexual)
+}
+
 func ImageFromHash(cdn, hash string) *repr.Image {
 	if hash == "" {
 		return nil
