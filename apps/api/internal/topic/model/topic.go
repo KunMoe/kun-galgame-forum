@@ -44,14 +44,36 @@ func BumpCutoff(now time.Time) time.Time {
 }
 
 type TopicSection struct {
-	ID   int    `gorm:"primaryKey;autoIncrement" json:"id"`
-	Name string `gorm:"not null" json:"name"`
+	ID               int    `gorm:"primaryKey;autoIncrement" json:"id"`
+	Name             string `gorm:"not null" json:"name"`
+	GroupID          int    `gorm:"column:group_id" json:"group_id"`
+	Label            string `gorm:"column:label;not null" json:"label"`
+	Description      string `gorm:"column:description;not null" json:"description"`
+	Icon             string `gorm:"column:icon;not null" json:"icon"`
+	Color            string `gorm:"column:color;not null" json:"color"`
+	Position         int    `gorm:"column:position;not null" json:"position"`
+	IsArchived       bool   `gorm:"column:is_archived;not null" json:"is_archived"`
+	CostsMoemoepoint bool   `gorm:"column:costs_moemoepoint;not null" json:"costs_moemoepoint"`
+	HiddenFromFeeds  bool   `gorm:"column:hidden_from_feeds;not null" json:"hidden_from_feeds"`
 
 	CreatedAt time.Time `gorm:"column:created" json:"created"`
 	UpdatedAt time.Time `gorm:"column:updated" json:"updated"`
 }
 
 func (TopicSection) TableName() string { return "topic_section" }
+
+type TopicSectionGroup struct {
+	ID             int    `gorm:"primaryKey;autoIncrement" json:"id"`
+	Key            string `gorm:"column:key;not null" json:"key"`
+	Label          string `gorm:"column:label;not null" json:"label"`
+	Position       int    `gorm:"column:position;not null" json:"position"`
+	LegacyCategory string `gorm:"column:legacy_category;not null" json:"legacy_category"`
+
+	CreatedAt time.Time `gorm:"column:created" json:"created"`
+	UpdatedAt time.Time `gorm:"column:updated" json:"updated"`
+}
+
+func (TopicSectionGroup) TableName() string { return "topic_section_group" }
 
 type TopicSectionRelation struct {
 	TopicID        int `gorm:"column:topic_id;primaryKey" json:"topic_id"`

@@ -1,8 +1,4 @@
-import type {
-  TopicAccessRole,
-  TopicAccessScope,
-  TopicCategoryKey
-} from '~/constants/topic'
+import type { TopicAccessRole, TopicAccessScope } from '~/constants/topic'
 
 export const useTopicEditorStore = () => {
   const tempStore = useTempEditStore()
@@ -11,13 +7,6 @@ export const useTopicEditorStore = () => {
   const activeStore = computed(() =>
     tempStore.isTopicRewriting ? tempStore : persistStore
   )
-
-  const category = computed<TopicCategoryKey | ''>({
-    get: () => activeStore.value.category as TopicCategoryKey | '',
-    set: (value) => {
-      activeStore.value.category = value
-    }
-  })
 
   const section = computed<string[]>({
     get: () => activeStore.value.section,
@@ -79,7 +68,6 @@ export const useTopicEditorStore = () => {
   const { polls, lotteries } = storeToRefs(persistStore)
 
   return {
-    category,
     section,
     title,
     content,

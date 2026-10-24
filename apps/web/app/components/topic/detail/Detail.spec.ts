@@ -1,9 +1,24 @@
 // @vitest-environment nuxt
 import { afterEach, describe, expect, it, vi } from 'vitest'
-import { mountSuspended } from '@nuxt/test-utils/runtime'
+import { mockNuxtImport, mountSuspended } from '@nuxt/test-utils/runtime'
 import type { VueWrapper } from '@vue/test-utils'
 import type { Reply, Topic, UserRef } from '#shared/utils/api/schemas'
 import TopicDetail from './Detail.vue'
+
+mockNuxtImport('useTopicSections', () => () => {
+  const discussion = {
+    section: 'galgame-discussion',
+    label: 'Galgame 讨论',
+    color: 'primary',
+    icon_name: 'lucide:messages-square'
+  }
+  const sectionOf = (key?: string | null) =>
+    key === discussion.section ? discussion : undefined
+  return {
+    sectionOf,
+    sectionLabel: (key?: string | null) => sectionOf(key)?.label ?? ''
+  }
+})
 
 const user = (): UserRef => ({
   object: 'user',
@@ -71,7 +86,8 @@ const topic = (id: string, over: Partial<Topic> = {}): Topic => ({
   pinned_reply: null,
   reactions: [],
   reply_count: 4,
-  sections: ['g-chatting'],
+  section: 'galgame-discussion',
+  sections: ['galgame-discussion'],
   state: 'published',
   upvote_count: 0,
   upvoted_at: null,

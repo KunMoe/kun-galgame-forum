@@ -137,7 +137,7 @@ func TestV1TopicCreateWatchesOwnTopic(t *testing.T) {
 	f.alice(t)
 	resp, raw := f.doJSON(t, http.MethodPost, "/api/v1/topics", "sess-alice", "/topics", keyUUID(90), nil, map[string]any{
 		"title": "watch me", "content_markdown": "x", "category": "galgame",
-		"sections": []string{"g-news"}, "is_nsfw": false, "access_scope": "public",
+		"sections": []string{"news"}, "is_nsfw": false, "access_scope": "public",
 	})
 	if resp.StatusCode != 201 {
 		t.Fatalf("%d %s", resp.StatusCode, raw)

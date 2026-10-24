@@ -17,6 +17,12 @@ const { navigateTo, reportProblem, api } = vi.hoisted(() => ({
 mockNuxtImport('navigateTo', () => navigateTo)
 mockNuxtImport('reportProblem', () => reportProblem)
 mockNuxtImport('useApiClient', () => () => api)
+mockNuxtImport('useTopicSections', () => () => ({
+  sectionOf: (key?: string | null) =>
+    key && ['galgame-discussion', 'development', 'daily'].includes(key)
+      ? { section: key, is_archived: false, moemoepoint_on_create: 3 }
+      : undefined
+}))
 
 const HASH = 'ab'.repeat(32)
 
@@ -52,7 +58,8 @@ const topic = (over: Partial<Topic> = {}): Topic => ({
   pinned_reply: null,
   reactions: [],
   reply_count: 0,
-  sections: ['g-chatting'],
+  section: 'galgame-discussion',
+  sections: ['galgame-discussion'],
   state: 'published',
   upvote_count: 0,
   upvoted_at: null,
@@ -77,8 +84,7 @@ const fillCreate = () => {
   const persist = usePersistEditTopicStore()
   persist.title = 'Hello'
   persist.content = 'Body of the topic'
-  persist.category = 'galgame'
-  persist.section = ['g-chatting']
+  persist.section = ['galgame-discussion']
   persist.isNSFW = true
   persist.coverImages = []
   persist.accessScope = 'public'
@@ -141,8 +147,7 @@ describe('useTopicSubmitter', () => {
     expect(captured[0]!.body).toEqual({
       title: 'Hello',
       content_markdown: 'Body of the topic',
-      category: 'galgame',
-      sections: ['g-chatting'],
+      sections: ['galgame-discussion'],
       is_nsfw: true,
       access_scope: 'public'
     })
@@ -206,8 +211,7 @@ describe('useTopicSubmitter', () => {
     temp.id = 42
     temp.title = 'Rewritten'
     temp.content = 'New body'
-    temp.category = 'technique'
-    temp.section = ['t-web']
+    temp.section = ['development']
     temp.isNSFW = false
     temp.coverImages = []
     temp.accessScope = 'public'
@@ -222,8 +226,7 @@ describe('useTopicSubmitter', () => {
     expect(captured[0]!.body).toEqual({
       title: 'Rewritten',
       content_markdown: 'New body',
-      category: 'technique',
-      sections: ['t-web'],
+      sections: ['development'],
       is_nsfw: false,
       cover_image_hashes: [],
       access_scope: 'public'
@@ -383,7 +386,8 @@ describe('applyTopicSource', () => {
       title: 'Source title',
       content_markdown: 'Source body',
       category: 'others',
-      sections: ['o-daily', 'o-essay'],
+      section: 'daily',
+      sections: ['daily'],
       is_nsfw: true,
       access_scope: 'users',
       cover_images: [
@@ -409,8 +413,7 @@ describe('applyTopicSource', () => {
     expect(temp.id).toBe(88)
     expect(temp.title).toBe('Source title')
     expect(temp.content).toBe('Source body')
-    expect(temp.category).toBe('others')
-    expect(temp.section).toEqual(['o-daily', 'o-essay'])
+    expect(temp.section).toEqual(['daily'])
     expect(temp.isNSFW).toBe(true)
     expect(temp.coverImages).toEqual([`/image/${HASH}`])
     expect(temp.accessScope).toBe('users')

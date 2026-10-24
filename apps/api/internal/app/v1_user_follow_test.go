@@ -210,7 +210,7 @@ func TestV1CreateTopicWritesNoFolloweeTopic(t *testing.T) {
 
 	body := map[string]any{
 		"title": "hello", "content_markdown": "x", "category": "galgame",
-		"sections": []string{"g-news"}, "is_nsfw": false, "access_scope": "public",
+		"sections": []string{"news"}, "is_nsfw": false, "access_scope": "public",
 	}
 	resp, raw := f.doJSON(t, http.MethodPost, "/api/v1/topics", "sess-alice", "/topics", keyUUID(81), nil, body)
 	if resp.StatusCode != http.StatusCreated {
@@ -231,7 +231,7 @@ func TestV1CreateTopicNonPublicNotifiesNobody(t *testing.T) {
 	f.cm.seedFollow(int64(w3UserBob), int64(w3UserAlice), "2026-09-25T00:00:00Z")
 	body := map[string]any{
 		"title": "private", "content_markdown": "x", "category": "galgame",
-		"sections": []string{"g-news"}, "is_nsfw": false, "access_scope": "login",
+		"sections": []string{"news"}, "is_nsfw": false, "access_scope": "login",
 	}
 	resp, raw := f.doJSON(t, http.MethodPost, "/api/v1/topics", "sess-alice", "/topics", keyUUID(82), nil, body)
 	if resp.StatusCode != http.StatusCreated {
@@ -253,7 +253,7 @@ func TestV1CreateTopicCommunityFailureStillCreates(t *testing.T) {
 	f.cm.down.Store(true)
 	body := map[string]any{
 		"title": "still", "content_markdown": "x", "category": "galgame",
-		"sections": []string{"g-news"}, "is_nsfw": false, "access_scope": "public",
+		"sections": []string{"news"}, "is_nsfw": false, "access_scope": "public",
 	}
 	resp, raw := f.doJSON(t, http.MethodPost, "/api/v1/topics", "sess-alice", "/topics", keyUUID(83), nil, body)
 	if resp.StatusCode != http.StatusCreated {

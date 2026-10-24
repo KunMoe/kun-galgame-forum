@@ -1,7 +1,6 @@
 package apiv1
 
 import (
-	"fmt"
 	"strconv"
 	"strings"
 	"unicode"
@@ -48,47 +47,8 @@ func moemoepointInsufficient(required int) *problem.Problem {
 	return p
 }
 
-func sectionCategory(slug string) string {
-	switch {
-	case strings.HasPrefix(slug, "g-"):
-		return "galgame"
-	case strings.HasPrefix(slug, "t-"):
-		return "technique"
-	case strings.HasPrefix(slug, "o-"):
-		return "others"
-	default:
-		return ""
-	}
-}
-
-func sectionMismatch(sections []string, category string) []int {
-	var bad []int
-	for i, slug := range sections {
-		if sectionCategory(slug) != category {
-			bad = append(bad, i)
-		}
-	}
-	return bad
-}
-
-func sectionFields(sections []string, category string) []problem.FieldError {
-	var fields []problem.FieldError
-	for _, i := range sectionMismatch(sections, category) {
-		fields = append(fields, problem.AtPointer(
-			fmt.Sprintf("/sections/%d", i),
-			problem.ReasonInconsistentWith,
-			"/category",
-			nil,
-		))
-	}
-	return fields
-}
-
-func categorySectionField(sections []string, category string) []problem.FieldError {
-	if len(sectionMismatch(sections, category)) == 0 {
-		return nil
-	}
-	return []problem.FieldError{problem.AtPointer("/category", problem.ReasonInconsistentWith, "/sections", nil)}
+func sectionArchived(pointer string) problem.FieldError {
+	return problem.AtPointer(pointer, problem.ReasonNotAllowedValue, "the section is archived and takes no new topics", nil)
 }
 
 func coversFromHashes(hashes []ImageHash) model.ImageTokens {
@@ -108,15 +68,6 @@ func deriveCovers(body string) model.ImageTokens {
 		return model.ImageTokens{}
 	}
 	return model.ImageTokens(tokens)
-}
-
-func anyConsumeSection(sections []string) bool {
-	for _, sec := range sections {
-		if constants.TopicSectionConsume[sec] {
-			return true
-		}
-	}
-	return false
 }
 
 func topicSectionFootprint(consume bool) int {

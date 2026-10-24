@@ -186,9 +186,11 @@ func (d *Drafts) createTopicDraft(ctx context.Context, in *createTopicDraftInput
 	if in.Body.Category != nil {
 		category = *in.Body.Category
 	}
-	sections := make(model.StringSlice, 0, len(in.Body.Sections))
-	for _, s := range in.Body.Sections {
-		sections = append(sections, string(s))
+	sections := model.StringSlice{}
+	if len(in.Body.Sections) > 0 {
+		if key, ok := NormalizeSectionKey(string(in.Body.Sections[0])); ok {
+			sections = append(sections, key)
+		}
 	}
 	miniApps, err := encodeDraftMiniApps(in.Body.Polls, in.Body.Lotteries)
 	if err != nil {

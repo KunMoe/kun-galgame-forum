@@ -12,16 +12,11 @@ import {
   pollFormToCreate
 } from './pendingMiniApps'
 import type { HeldMiniApp } from '~/store/temp/topic/miniAppHandoff'
-import {
-  TOPIC_SECTION_CONSUME_MOEMOEPOINTS,
-  MOEMOEPOINT_COST_FOR_CONSUME_SECTION
-} from '~/config/moemoepoint'
 import { settle } from '#shared/utils/api/problem'
 import type { TopicCreate, TopicPatch } from '#shared/utils/api/schemas'
 
 export const useTopicSubmitter = () => {
   const {
-    category,
     section,
     title,
     content,
@@ -36,6 +31,7 @@ export const useTopicSubmitter = () => {
   const tempStore = useTempEditStore()
   const persistStore = usePersistEditTopicStore()
   const { moemoepoint } = usePersistUserStore()
+  const { sectionOf } = useTopicSections()
   const api = useApiClient()
   const createKey = useIdempotencyKey()
   const handoff = useTempTopicMiniAppHandoffStore()
@@ -57,7 +53,6 @@ export const useTopicSubmitter = () => {
     const body: TopicCreate = {
       title: title.value,
       content_markdown: content.value,
-      category: category.value as TopicCreate['category'],
       sections: section.value as TopicCreate['sections'],
       is_nsfw: isNSFW.value,
       access_scope: accessScope.value
@@ -139,13 +134,12 @@ export const useTopicSubmitter = () => {
       return
     }
 
-    const hasConsumeSection = TOPIC_SECTION_CONSUME_MOEMOEPOINTS.some((item) =>
-      payload.sections.includes(item)
-    )
-    if (
-      hasConsumeSection &&
-      moemoepoint < MOEMOEPOINT_COST_FOR_CONSUME_SECTION
-    ) {
+    const chosen = sectionOf(payload.sections[0])
+    if (!chosen || (chosen.is_archived && mode === 'create')) {
+      useMessage('请选择话题的分区', 'warn')
+      return
+    }
+    if (moemoepoint < -chosen.moemoepoint_on_create) {
       useMessage(
         `您没有足够的萌萌点来发布求助或者寻求资源的话题, 您可以通过发布 Galgame, 签到, 接受别人的赞赏, 等等来获取萌萌点`,
         'warn'

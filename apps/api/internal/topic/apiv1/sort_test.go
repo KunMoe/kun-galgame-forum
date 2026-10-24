@@ -1,9 +1,6 @@
 package apiv1
 
-import (
-	"strings"
-	"testing"
-)
+import "testing"
 
 func TestTopicLifecycle(t *testing.T) {
 	state, by, err := topicLifecycle(0, "author")
@@ -71,9 +68,16 @@ func TestSortTableHasEighteenTokens(t *testing.T) {
 	}
 }
 
-func TestSectionEnumHasTwentySeven(t *testing.T) {
-	parts := strings.Split(sectionEnum, ",")
-	if len(parts) != 27 {
-		t.Fatalf("sections %d, want 27", len(parts))
+func TestRetiredSectionKeysMapToCurrentOnes(t *testing.T) {
+	if len(legacySectionKeys) != 27 {
+		t.Fatalf("retired keys %d, want 27", len(legacySectionKeys))
+	}
+	for old, key := range legacySectionKeys {
+		if !IsSectionKey(key) {
+			t.Errorf("%s maps to %q, which is not a current key", old, key)
+		}
+		if got, ok := NormalizeSectionKey(old); !ok || got != key {
+			t.Errorf("NormalizeSectionKey(%q) = %q, %v", old, got, ok)
+		}
 	}
 }

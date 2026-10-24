@@ -16526,7 +16526,44 @@
         "properties": {
           "category": {
             "$ref": "#/components/schemas/TopicCategory",
-            "description": "The topic category the section belongs to."
+            "description": "Deprecated: read group instead. The legacy category topics in this section still carry."
+          },
+          "color": {
+            "$ref": "#/components/schemas/SectionColor",
+            "description": "Color to show the section's badge in."
+          },
+          "description": {
+            "description": "What belongs in the section, edited by admins. Free text; never use it as a decision input.",
+            "maxLength": 500,
+            "type": "string"
+          },
+          "group": {
+            "$ref": "#/components/schemas/SectionGroupKey",
+            "description": "The group the section is shown under."
+          },
+          "group_label": {
+            "description": "The group's display name, edited by admins. Free text; never use it as a decision input.",
+            "maxLength": 40,
+            "type": "string"
+          },
+          "icon_name": {
+            "description": "Icon to show beside the label.",
+            "maxLength": 64,
+            "pattern": "^lucide:[a-z0-9]+(-[a-z0-9]+)*$",
+            "type": "string"
+          },
+          "is_archived": {
+            "description": "An archived section keeps its topics and takes no new ones.",
+            "type": "boolean"
+          },
+          "is_hidden_from_feeds": {
+            "description": "Whether its topics are left out of the home activity feed's normal tab.",
+            "type": "boolean"
+          },
+          "label": {
+            "description": "Display name, edited by admins. Free text; never use it as a decision input.",
+            "maxLength": 40,
+            "type": "string"
           },
           "latest_topic": {
             "anyOf": [
@@ -16539,6 +16576,13 @@
             ],
             "description": "The newest of those topics whose author is still shown. null when there is none."
           },
+          "moemoepoint_on_create": {
+            "description": "What publishing a topic here does to the author's moemoepoint: negative is a cost the balance must cover, positive a reward.",
+            "format": "int64",
+            "maximum": 3,
+            "minimum": -10,
+            "type": "integer"
+          },
           "object": {
             "const": "section",
             "description": "Type discriminant. Always section.",
@@ -16546,8 +16590,8 @@
             "type": "string"
           },
           "section": {
-            "$ref": "#/components/schemas/SectionKey",
-            "description": "The section, as filed on a topic's sections and as the /section/{section} page segment."
+            "$ref": "#/components/schemas/TopicSectionKey",
+            "description": "The section, as filed on a topic's section and as the /section/{section} page segment."
           },
           "topic_count": {
             "description": "Published topics filed under the section that anyone may open, NSFW ones included. A size statistic, not the total of any list.",
@@ -16565,44 +16609,127 @@
         "required": [
           "object",
           "section",
+          "group",
+          "group_label",
+          "label",
+          "description",
+          "icon_name",
+          "color",
           "category",
+          "is_archived",
+          "moemoepoint_on_create",
+          "is_hidden_from_feeds",
           "topic_count",
           "view_count",
           "latest_topic"
         ],
         "type": "object"
       },
+      "SectionColor": {
+        "enum": [
+          "default",
+          "primary",
+          "secondary",
+          "success",
+          "warning",
+          "danger"
+        ],
+        "maxLength": 9,
+        "type": "string",
+        "x-vocabulary-closed": true
+      },
+      "SectionGroupKey": {
+        "enum": [
+          "galgame",
+          "resource",
+          "technique",
+          "community"
+        ],
+        "maxLength": 9,
+        "type": "string",
+        "x-vocabulary-closed": true
+      },
+      "SectionGroupOrder": {
+        "properties": {
+          "group": {
+            "$ref": "#/components/schemas/SectionGroupKey",
+            "description": "A group."
+          },
+          "sections": {
+            "description": "Every section of the group, in the new order. Current keys only.",
+            "items": {
+              "$ref": "#/components/schemas/SectionKey",
+              "description": "Deprecated: read section instead. A section key, or one of the 27 keys retired on 2026-10-24 (g-, t- and o- prefixed), which requests may still send and which map to their successor. Responses carry only current keys."
+            },
+            "maxItems": 20,
+            "minItems": 1,
+            "type": "array",
+            "uniqueItems": true
+          }
+        },
+        "required": [
+          "group",
+          "sections"
+        ],
+        "type": "object"
+      },
+      "SectionGroupPatch": {
+        "properties": {
+          "label": {
+            "description": "New display name. Trimmed; a blank one is TOO_SHORT. Free text; never use it as a decision input.",
+            "maxLength": 40,
+            "minLength": 1,
+            "type": "string"
+          }
+        },
+        "required": [
+          "label"
+        ],
+        "type": "object"
+      },
       "SectionKey": {
         "enum": [
-          "g-walkthrough",
-          "g-chatting",
+          "galgame-discussion",
+          "galgame-walkthrough",
+          "review",
+          "news",
+          "resource-seeking",
+          "resource-release",
+          "tech-help",
+          "game-running",
+          "development",
+          "acgn",
+          "daily",
+          "site",
           "g-article",
-          "g-seeking",
+          "g-chatting",
           "g-news",
-          "g-releases",
           "g-other",
-          "t-crack",
-          "t-web",
-          "t-languages",
-          "t-help",
-          "t-linux",
-          "t-practical",
-          "t-ai",
-          "t-android",
-          "t-adobe",
-          "t-algorithm",
-          "t-other",
+          "g-releases",
+          "g-seeking",
+          "g-walkthrough",
           "o-anime",
           "o-comics",
-          "o-music",
-          "o-novel",
           "o-daily",
           "o-essay",
           "o-forum",
+          "o-music",
+          "o-novel",
+          "o-other",
           "o-patch",
-          "o-other"
+          "t-adobe",
+          "t-ai",
+          "t-algorithm",
+          "t-android",
+          "t-crack",
+          "t-help",
+          "t-languages",
+          "t-linux",
+          "t-other",
+          "t-practical",
+          "t-web"
         ],
-        "maxLength": 13,
+        "maxLength": 19,
         "type": "string",
         "x-vocabulary-closed": true
       },
@@ -16641,6 +16768,53 @@
           "title",
           "created_at"
         ],
+        "type": "object"
+      },
+      "SectionOrder": {
+        "properties": {
+          "groups": {
+            "description": "Every group, in the new order.",
+            "items": {
+              "$ref": "#/components/schemas/SectionGroupOrder"
+            },
+            "maxItems": 4,
+            "minItems": 4,
+            "type": "array"
+          }
+        },
+        "required": [
+          "groups"
+        ],
+        "type": "object"
+      },
+      "SectionPatch": {
+        "properties": {
+          "color": {
+            "$ref": "#/components/schemas/SectionColor",
+            "description": "New color."
+          },
+          "description": {
+            "description": "New description. Trimmed. Free text; never use it as a decision input.",
+            "maxLength": 500,
+            "type": "string"
+          },
+          "icon_name": {
+            "description": "New icon.",
+            "maxLength": 64,
+            "pattern": "^lucide:[a-z0-9]+(-[a-z0-9]+)*$",
+            "type": "string"
+          },
+          "is_archived": {
+            "description": "Archive or restore the section. Archiving keeps its topics and refuses new ones.",
+            "type": "boolean"
+          },
+          "label": {
+            "description": "New display name. Trimmed; a blank one is TOO_SHORT. Free text; never use it as a decision input.",
+            "maxLength": 40,
+            "minLength": 1,
+            "type": "string"
+          }
+        },
         "type": "object"
       },
       "Series": {
@@ -19882,7 +20056,7 @@
           },
           "category": {
             "$ref": "#/components/schemas/TopicCategory",
-            "description": "Topic category."
+            "description": "Deprecated: read section instead. The legacy category of the section's group."
           },
           "comment_count": {
             "description": "Comment count.",
@@ -20001,13 +20175,17 @@
             "minimum": 0,
             "type": "integer"
           },
+          "section": {
+            "$ref": "#/components/schemas/TopicSectionKey",
+            "description": "The topic's section."
+          },
           "sections": {
-            "description": "Section slugs, in stored order. Empty array if none. Hyphenated URL segments of /section/{key}.",
+            "description": "Deprecated: read section instead. section as a one-item array.",
             "items": {
               "$ref": "#/components/schemas/SectionKey",
-              "description": "Section slug. Hyphenated URL segment of /section/{key}."
+              "description": "Deprecated: read section instead. A section key, or one of the 27 keys retired on 2026-10-24 (g-, t- and o- prefixed), which requests may still send and which map to their successor. Responses carry only current keys."
             },
-            "maxItems": 3,
+            "maxItems": 1,
             "type": "array"
           },
           "state": {
@@ -20062,6 +20240,7 @@
           "hidden_by",
           "access_scope",
           "category",
+          "section",
           "sections",
           "cover_images",
           "is_nsfw",
@@ -20129,7 +20308,7 @@
           },
           "category": {
             "$ref": "#/components/schemas/TopicCategory",
-            "description": "Topic category."
+            "description": "Deprecated and ignored: the section decides the topic's legacy category."
           },
           "content_markdown": {
             "description": "Topic body as Markdown source, stored as sent. A body of only whitespace is refused as TOO_SHORT. Free text; never use it as a decision input.",
@@ -20155,10 +20334,10 @@
             "type": "boolean"
           },
           "sections": {
-            "description": "Section slugs. Each must belong to category: g- slugs to galgame, t- slugs to technique, o- slugs to others.",
+            "description": "The topic's section as a one-item array. A retired key maps to its successor; items after the first are ignored. An archived section is NOT_ALLOWED_VALUE at /sections/0.",
             "items": {
               "$ref": "#/components/schemas/SectionKey",
-              "description": "Section slug. Hyphenated URL segment of /section/{key}."
+              "description": "Deprecated: read section instead. A section key, or one of the 27 keys retired on 2026-10-24 (g-, t- and o- prefixed), which requests may still send and which map to their successor. Responses carry only current keys."
             },
             "maxItems": 3,
             "minItems": 1,
@@ -20175,7 +20354,6 @@
         "required": [
           "title",
           "content_markdown",
-          "category",
           "sections",
           "is_nsfw",
           "access_scope"
@@ -20294,7 +20472,7 @@
                 "type": "null"
               }
             ],
-            "description": "Chosen category. null when the author has not chosen one, which is the stored state of most drafts."
+            "description": "Deprecated: the section decides a topic's category. The category the draft was saved with; null when none."
           },
           "content_markdown": {
             "description": "Draft body as Markdown source, stored as sent. Empty string when the author has not written one. Free text; never use it as a decision input.",
@@ -20355,10 +20533,10 @@
             "type": "array"
           },
           "sections": {
-            "description": "Chosen section slugs, in stored order. Empty array if none. A draft is unfinished, so they are not checked against category.",
+            "description": "The chosen section as a one-item array of a current key. Empty array if none.",
             "items": {
               "$ref": "#/components/schemas/SectionKey",
-              "description": "Section slug. Hyphenated URL segment of /section/{key}."
+              "description": "Deprecated: read section instead. A section key, or one of the 27 keys retired on 2026-10-24 (g-, t- and o- prefixed), which requests may still send and which map to their successor. Responses carry only current keys."
             },
             "maxItems": 3,
             "type": "array"
@@ -20397,7 +20575,7 @@
         "properties": {
           "category": {
             "$ref": "#/components/schemas/TopicCategory",
-            "description": "Chosen category. Absent or null when the author has not chosen one."
+            "description": "Deprecated and stored only for older clients: the section decides a topic's category."
           },
           "content_markdown": {
             "description": "Draft body as Markdown source. Stored as sent. Free text; never use it as a decision input.",
@@ -20438,10 +20616,10 @@
             "type": "array"
           },
           "sections": {
-            "description": "Chosen section slugs. Unlike createTopic they are not checked against category, and an empty list is allowed: a draft is unfinished by definition.",
+            "description": "The chosen section as a one-item array. A retired key is stored as its successor, items after the first are dropped, and an empty list is allowed: a draft is unfinished by definition.",
             "items": {
               "$ref": "#/components/schemas/SectionKey",
-              "description": "Section slug. Hyphenated URL segment of /section/{key}."
+              "description": "Deprecated: read section instead. A section key, or one of the 27 keys retired on 2026-10-24 (g-, t- and o- prefixed), which requests may still send and which map to their successor. Responses carry only current keys."
             },
             "maxItems": 3,
             "type": "array",
@@ -20883,7 +21061,7 @@
           },
           "category": {
             "$ref": "#/components/schemas/TopicCategory",
-            "description": "New category. The resulting sections must belong to the resulting category."
+            "description": "Deprecated and ignored: the section decides the topic's legacy category."
           },
           "content_markdown": {
             "description": "New body as Markdown source. Checked as in createTopic. Free text; never use it as a decision input.",
@@ -20909,10 +21087,10 @@
             "type": "boolean"
           },
           "sections": {
-            "description": "New section slugs, replacing the stored ones.",
+            "description": "New section as a one-item array, as in createTopic. Moving into an archived section is NOT_ALLOWED_VALUE at /sections/0; a topic already there may stay.",
             "items": {
               "$ref": "#/components/schemas/SectionKey",
-              "description": "Section slug. Hyphenated URL segment of /section/{key}."
+              "description": "Deprecated: read section instead. A section key, or one of the 27 keys retired on 2026-10-24 (g-, t- and o- prefixed), which requests may still send and which map to their successor. Responses carry only current keys."
             },
             "maxItems": 3,
             "minItems": 1,
@@ -21010,6 +21188,25 @@
         ],
         "type": "object"
       },
+      "TopicSectionKey": {
+        "enum": [
+          "galgame-discussion",
+          "galgame-walkthrough",
+          "review",
+          "news",
+          "resource-seeking",
+          "resource-release",
+          "tech-help",
+          "game-running",
+          "development",
+          "acgn",
+          "daily",
+          "site"
+        ],
+        "maxLength": 19,
+        "type": "string",
+        "x-vocabulary-closed": true
+      },
       "TopicSort": {
         "enum": [
           "bumped_asc",
@@ -21047,7 +21244,7 @@
           },
           "category": {
             "$ref": "#/components/schemas/TopicCategory",
-            "description": "Topic category."
+            "description": "Deprecated: read section instead. The legacy category of the section's group."
           },
           "content_markdown": {
             "description": "Topic body as the stored Markdown source. Free text; never use it as a decision input.",
@@ -21072,13 +21269,17 @@
             "maxLength": 12,
             "type": "string"
           },
+          "section": {
+            "$ref": "#/components/schemas/TopicSectionKey",
+            "description": "The topic's section."
+          },
           "sections": {
-            "description": "Section slugs, in stored order. Empty array if none. Hyphenated URL segments of /section/{key}.",
+            "description": "Deprecated: read section instead. section as a one-item array.",
             "items": {
               "$ref": "#/components/schemas/SectionKey",
-              "description": "Section slug. Hyphenated URL segment of /section/{key}."
+              "description": "Deprecated: read section instead. A section key, or one of the 27 keys retired on 2026-10-24 (g-, t- and o- prefixed), which requests may still send and which map to their successor. Responses carry only current keys."
             },
-            "maxItems": 3,
+            "maxItems": 1,
             "type": "array"
           },
           "title": {
@@ -21100,6 +21301,7 @@
           "title",
           "content_markdown",
           "category",
+          "section",
           "sections",
           "is_nsfw",
           "cover_images",
@@ -21219,7 +21421,7 @@
           },
           "category": {
             "$ref": "#/components/schemas/TopicCategory",
-            "description": "Topic category."
+            "description": "Deprecated: read section instead. The legacy category of the section's group."
           },
           "comment_count": {
             "description": "Comment count.",
@@ -21296,13 +21498,17 @@
             "minimum": 0,
             "type": "integer"
           },
+          "section": {
+            "$ref": "#/components/schemas/TopicSectionKey",
+            "description": "The topic's section."
+          },
           "sections": {
-            "description": "Section slugs, in stored order. Empty array if none. Hyphenated URL segments of /section/{key}.",
+            "description": "Deprecated: read section instead. section as a one-item array.",
             "items": {
               "$ref": "#/components/schemas/SectionKey",
-              "description": "Section slug. Hyphenated URL segment of /section/{key}."
+              "description": "Deprecated: read section instead. A section key, or one of the 27 keys retired on 2026-10-24 (g-, t- and o- prefixed), which requests may still send and which map to their successor. Responses carry only current keys."
             },
-            "maxItems": 3,
+            "maxItems": 1,
             "type": "array"
           },
           "state": {
@@ -21338,6 +21544,7 @@
           "title",
           "state",
           "category",
+          "section",
           "sections",
           "cover_images",
           "author",
@@ -27118,14 +27325,14 @@
             }
           },
           {
-            "description": "Which topic_creation activities to include: help is the resource and help sections (g-seeking, g-other, t-help), normal is every other section, all is both. Other kinds are not affected.",
+            "description": "Which topic_creation activities to include: help is the sections listSections marks is_hidden_from_feeds (resource-seeking and tech-help), normal is every other section, all is both. Other kinds are not affected.",
             "explode": false,
             "in": "query",
             "name": "topic_sections",
             "schema": {
               "$ref": "#/components/schemas/ActivityTopicSection",
               "default": "normal",
-              "description": "Which topic_creation activities to include: help is the resource and help sections (g-seeking, g-other, t-help), normal is every other section, all is both. Other kinds are not affected."
+              "description": "Which topic_creation activities to include: help is the sections listSections marks is_hidden_from_feeds (resource-seeking and tech-help), normal is every other section, all is both. Other kinds are not affected."
             }
           },
           {
@@ -29555,6 +29762,389 @@
         "summary": "Replace the overrides of some roles",
         "tags": [
           "permissions"
+        ]
+      }
+    },
+    "/admin/section-groups/{group}": {
+      "patch": {
+        "description": "Changes the group's display name. Needs topic.manage_sections, which a Bearer request never carries. The caller is checked against the account service's current record first: a banned account is ACCOUNT_BANNED. ",
+        "operationId": "updateAdminSectionGroup",
+        "parameters": [
+          {
+            "description": "The group to rename.",
+            "in": "path",
+            "name": "group",
+            "required": true,
+            "schema": {
+              "$ref": "#/components/schemas/SectionGroupKey",
+              "description": "The group to rename."
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/SectionGroupPatch"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "204": {
+            "description": "No Content"
+          },
+          "400": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            },
+            "description": "Bad Request"
+          },
+          "401": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            },
+            "description": "Unauthorized"
+          },
+          "403": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            },
+            "description": "PERMISSION_REQUIRED without topic.manage_sections; ACCOUNT_BANNED."
+          },
+          "404": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            },
+            "description": "NOT_FOUND when the group does not exist."
+          },
+          "413": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            },
+            "description": "Request Entity Too Large"
+          },
+          "415": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            },
+            "description": "Unsupported Media Type"
+          },
+          "422": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            },
+            "description": "VALIDATION_FAILED for a blank label."
+          },
+          "500": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            },
+            "description": "Internal Server Error"
+          },
+          "503": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            },
+            "description": "Service Unavailable"
+          }
+        },
+        "security": [
+          {
+            "session": []
+          },
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "Rename a topic section group",
+        "tags": [
+          "topics"
+        ]
+      }
+    },
+    "/admin/section-order": {
+      "put": {
+        "description": "Sets the order of the groups and of the sections inside each group. Every group appears once, listing exactly the sections it holds: a section cannot move to another group. Needs topic.manage_sections, which a Bearer request never carries. The caller is checked against the account service's current record first: a banned account is ACCOUNT_BANNED. ",
+        "operationId": "putAdminSectionOrder",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/SectionOrder"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "204": {
+            "description": "No Content"
+          },
+          "400": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            },
+            "description": "Bad Request"
+          },
+          "401": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            },
+            "description": "Unauthorized"
+          },
+          "403": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            },
+            "description": "PERMISSION_REQUIRED without topic.manage_sections; ACCOUNT_BANNED."
+          },
+          "413": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            },
+            "description": "Request Entity Too Large"
+          },
+          "415": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            },
+            "description": "Unsupported Media Type"
+          },
+          "422": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            },
+            "description": "VALIDATION_FAILED for a group listed twice, or a group whose sections are not exactly the ones it holds."
+          },
+          "500": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            },
+            "description": "Internal Server Error"
+          },
+          "503": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            },
+            "description": "Service Unavailable"
+          }
+        },
+        "security": [
+          {
+            "session": []
+          },
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "Reorder topic sections",
+        "tags": [
+          "topics"
+        ]
+      }
+    },
+    "/admin/sections/{section}": {
+      "patch": {
+        "description": "Changes the fields that are sent: display name, description, icon, color, archived. Which topics the section holds, its group and its moemoepoint rule are not editable. Needs topic.manage_sections, which a Bearer request never carries. The caller is checked against the account service's current record first: a banned account is ACCOUNT_BANNED. An empty object writes nothing.",
+        "operationId": "updateAdminSection",
+        "parameters": [
+          {
+            "description": "The section to edit.",
+            "in": "path",
+            "name": "section",
+            "required": true,
+            "schema": {
+              "$ref": "#/components/schemas/TopicSectionKey",
+              "description": "The section to edit."
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/SectionPatch"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "204": {
+            "description": "No Content"
+          },
+          "400": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            },
+            "description": "Bad Request"
+          },
+          "401": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            },
+            "description": "Unauthorized"
+          },
+          "403": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            },
+            "description": "PERMISSION_REQUIRED without topic.manage_sections; ACCOUNT_BANNED."
+          },
+          "404": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            },
+            "description": "NOT_FOUND when the section does not exist."
+          },
+          "413": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            },
+            "description": "Request Entity Too Large"
+          },
+          "415": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            },
+            "description": "Unsupported Media Type"
+          },
+          "422": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            },
+            "description": "VALIDATION_FAILED for a blank label or a field outside its format."
+          },
+          "500": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            },
+            "description": "Internal Server Error"
+          },
+          "503": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            },
+            "description": "Service Unavailable"
+          }
+        },
+        "security": [
+          {
+            "session": []
+          },
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "Edit a topic section's display",
+        "tags": [
+          "topics"
         ]
       }
     },
@@ -53749,17 +54339,17 @@
     },
     "/sections": {
       "get": {
-        "description": "Every topic section in vocabulary order with its size and newest topic, empty sections included. Not paged: the vocabulary is closed and small. The topics of one section are listTopics with section set.",
+        "description": "Every topic section in display order (by group, then within the group), archived ones included, with its display text, rules, size and newest topic. Not paged: the vocabulary is closed and small. The topics of one section are listTopics with section set.",
         "operationId": "listSections",
         "parameters": [
           {
-            "description": "When set, only this category's sections. Omitted means all of them.",
+            "description": "Deprecated. When set, only the sections whose legacy category is this one.",
             "explode": false,
             "in": "query",
             "name": "category",
             "schema": {
               "$ref": "#/components/schemas/TopicCategory",
-              "description": "When set, only this category's sections. Omitted means all of them."
+              "description": "Deprecated. When set, only the sections whose legacy category is this one."
             }
           }
         ],
@@ -58486,13 +59076,13 @@
             }
           },
           {
-            "description": "When set, only this category. Omitted means every category. There is no all token.",
+            "description": "Deprecated: filter by section instead. When set, only topics whose section's group has this legacy category.",
             "explode": false,
             "in": "query",
             "name": "category",
             "schema": {
               "$ref": "#/components/schemas/TopicCategory",
-              "description": "When set, only this category. Omitted means every category. There is no all token."
+              "description": "Deprecated: filter by section instead. When set, only topics whose section's group has this legacy category."
             }
           },
           {
@@ -58507,13 +59097,13 @@
             }
           },
           {
-            "description": "When set, only topics filed under this section. Omitted means every section.",
+            "description": "When set, only topics filed under this section. A retired key filters by its successor. Omitted means every section.",
             "explode": false,
             "in": "query",
             "name": "section",
             "schema": {
               "$ref": "#/components/schemas/SectionKey",
-              "description": "When set, only topics filed under this section. Omitted means every section."
+              "description": "When set, only topics filed under this section. A retired key filters by its successor. Omitted means every section."
             }
           }
         ],
@@ -58594,7 +59184,7 @@
         ]
       },
       "post": {
-        "description": "Creates a topic and returns it as getTopic would to its author. A caller may create as many topics in any 24 hours as their cached moemoepoint balance divided by 10, plus one. The sections g-seeking, g-other and t-help cost 10 moemoepoint and need that balance; the others earn 3. Mentions in the body notify up to 10 users.",
+        "description": "Creates a topic and returns it as getTopic would to its author. A caller may create as many topics in any 24 hours as their cached moemoepoint balance divided by 10, plus one. A section whose moemoepoint_on_create is negative (resource-seeking and tech-help) costs 10 moemoepoint and needs that balance; the others earn 3. Mentions in the body notify up to 10 users.",
         "operationId": "createTopic",
         "parameters": [
           {

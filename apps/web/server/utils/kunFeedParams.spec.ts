@@ -43,9 +43,9 @@ describe('parseSiteFeed', () => {
 
   it('accepts a known section and rejects anything else', () => {
     expect(
-      parseSiteFeed('topic.xml', { section: 'g-chatting' })?.params
-    ).toEqual({ name: 'topic', includeNsfw: false, section: 'g-chatting' })
-    expect(parseSiteFeed('topic.xml', { section: 'g-nope' })).toBeNull()
+      parseSiteFeed('topic.xml', { section: 'galgame-discussion' })?.params
+    ).toEqual({ name: 'topic', includeNsfw: false, section: 'galgame-discussion' })
+    expect(parseSiteFeed('topic.xml', { section: 'G_nope' })).toBeNull()
     expect(parseSiteFeed('topic.xml', { section: 'G-chatting' })).toBeNull()
     expect(parseSiteFeed('topic.xml', { section: '' })).toBeNull()
   })
@@ -133,7 +133,7 @@ describe('feedCacheKey', () => {
       parseSiteFeed('topic.xml', {}),
       parseSiteFeed('topic.atom', {}),
       parseSiteFeed('topic.xml', { include_nsfw: '1' }),
-      parseSiteFeed('topic.xml', { section: 'g-chatting' }),
+      parseSiteFeed('topic.xml', { section: 'galgame-discussion' }),
       parseWorkFeed('12.xml', {}),
       parseWorkFeed('123.xml', {}),
       parseUserFeed('12', 'topic.xml', {}),

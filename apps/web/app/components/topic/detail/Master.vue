@@ -56,7 +56,7 @@ provide(
         </h1>
 
         <TopicBadgeGroup
-          :section="topic.sections"
+          :section="topic.section"
           :upvote-time="topic.upvoted_at"
           :has-best-answer="false"
           :mini-apps="topic.mini_apps"

@@ -36,9 +36,6 @@ const (
 	acUserBob    = 950000002
 	acUserBanned = 950000003
 
-	acSecChat = 950000011
-	acSecSeek = 950000012
-
 	acTopicNormal = 950000101
 	acTopicHelp   = 950000102
 	acTopicNSFW   = 950000103
@@ -184,7 +181,6 @@ func (f *activityFix) cleanup() {
 	_ = f.db.Exec(`DELETE FROM topic_reply WHERE topic_id BETWEEN ? AND ?`, acTopicMin, acTopicMax).Error
 	_ = f.db.Exec(`DELETE FROM topic_section_relation WHERE topic_id BETWEEN ? AND ?`, acTopicMin, acTopicMax).Error
 	_ = f.db.Exec(`DELETE FROM topic WHERE id BETWEEN ? AND ?`, acTopicMin, acTopicMax).Error
-	_ = f.db.Exec(`DELETE FROM topic_section WHERE id BETWEEN ? AND ?`, acSecChat, acSecSeek).Error
 	_ = f.db.Exec(`DELETE FROM galgame_resource WHERE work_id BETWEEN ? AND ?`, lo, hi).Error
 	_ = f.db.Exec(`DELETE FROM galgame_activity WHERE work_id BETWEEN ? AND ?`, lo, hi).Error
 	_ = f.db.Exec(`DELETE FROM galgame_rating WHERE work_id BETWEEN ? AND ?`, lo, hi).Error
@@ -197,15 +193,7 @@ func (f *activityFix) seed(t *testing.T) {
 	t.Helper()
 	f.cleanup()
 	t.Cleanup(f.cleanup)
-	f.run(t, `INSERT INTO topic_section (id, name, created, updated) VALUES (?, 'g-chatting', ?, ?) ON CONFLICT DO NOTHING`, acSecChat, acTie, acTie)
-	f.run(t, `INSERT INTO topic_section (id, name, created, updated) VALUES (?, 'g-seeking', ?, ?) ON CONFLICT DO NOTHING`, acSecSeek, acTie, acTie)
-	var chatID, seekID int
-	if err := f.db.Raw(`SELECT id FROM topic_section WHERE name = 'g-chatting'`).Scan(&chatID).Error; err != nil || chatID == 0 {
-		t.Fatalf("g-chatting section: %v", err)
-	}
-	if err := f.db.Raw(`SELECT id FROM topic_section WHERE name = 'g-seeking'`).Scan(&seekID).Error; err != nil || seekID == 0 {
-		t.Fatalf("g-seeking section: %v", err)
-	}
+	chatID, seekID := sectionID(t, f.db, "galgame-discussion"), sectionID(t, f.db, "resource-seeking")
 	topic := func(id, user int, title string, nsfw bool, created time.Time) {
 		f.run(t, `INSERT INTO topic (
 			id, title, content, view, status, category, status_update_time, created, updated,
@@ -220,6 +208,7 @@ func (f *activityFix) seed(t *testing.T) {
 	topic(acTopicBanned, acUserBanned, "banned", false, acTie)
 	f.run(t, `INSERT INTO topic_section_relation (topic_id, topic_section_id, created, updated) VALUES (?, ?, ?, ?), (?, ?, ?, ?)`,
 		acTopicNormal, chatID, acTie, acTie, acTopicHelp, seekID, acTie, acTie)
+	fileUnsectionedTopics(t, f.db, acTopicMin, acTopicMax)
 
 	reply := func(id, user, floor, status, likes int, body string) {
 		f.run(t, `INSERT INTO topic_reply (id, content, floor, user_id, topic_id, status, like_count, created, updated)

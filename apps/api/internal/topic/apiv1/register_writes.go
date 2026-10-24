@@ -18,7 +18,7 @@ func RegisterWrites(w *Writes) func(huma.API) {
 			DefaultStatus: http.StatusCreated,
 			Description: "Creates a topic and returns it as getTopic would to its author. " +
 				"A caller may create as many topics in any 24 hours as their cached moemoepoint balance divided by 10, plus one. " +
-				"The sections g-seeking, g-other and t-help cost 10 moemoepoint and need that balance; the others earn 3. " +
+				"A section whose moemoepoint_on_create is negative (resource-seeking and tech-help) costs 10 moemoepoint and needs that balance; the others earn 3. " +
 				"Mentions in the body notify up to 10 users.",
 			Tags: []string{"topics"},
 			Responses: problemResponses(map[int]string{

@@ -45,7 +45,8 @@ const topicSummary = (over: Record<string, unknown> = {}) => ({
   title: 'A topic title',
   state: 'published',
   category: 'galgame',
-  sections: ['g-chatting'],
+  section: 'galgame-discussion',
+  sections: ['galgame-discussion'],
   cover_images: [],
   author: user(),
   view_count: 0,
@@ -211,21 +212,28 @@ describe('loadTopicFeed', () => {
       const url = new URL(input.url)
       if (segs(url)[3] === 'topics' && segs(url).length === 4) {
         expect(url.searchParams.get('include_nsfw')).toBe('true')
-        expect(url.searchParams.get('section')).toBe('g-chatting')
+        expect(url.searchParams.get('section')).toBe('galgame-discussion')
         return jsonResponse(200, cursorList([]))
+      }
+      if (segs(url)[3] === 'sections') {
+        return jsonResponse(200, {
+          object: 'list',
+          items: [{ section: 'galgame-discussion', label: 'Galgame 讨论' }],
+          next_cursor: null
+        })
       }
       throw new Error(url.pathname)
     })
     const result = await loadTopicFeed(client(fetchSpy), baseUrl, {
       includeNsfw: true,
-      section: 'g-chatting'
+      section: 'galgame-discussion'
     })
     expect(result.ok).toBe(true)
     if (!result.ok) return
     expect(result.channel.title).toBe(
-      '鲲 Galgame 论坛 - Galgame · 闲聊 分区新话题'
+      '鲲 Galgame 论坛 - Galgame 讨论 分区新话题'
     )
-    expect(result.channel.link).toBe(`${baseUrl}/section/g-chatting`)
+    expect(result.channel.link).toBe(`${baseUrl}/section/galgame-discussion`)
   })
 
   it('keeps the item with an empty description when the detail read fails', async () => {

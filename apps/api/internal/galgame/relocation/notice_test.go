@@ -137,11 +137,6 @@ func TestAnnouncePostsOneTopicInTheForumSection(t *testing.T) {
 	}
 	clean()
 	t.Cleanup(clean)
-	if err := db.Exec(`INSERT INTO topic_section (name, updated)
-		SELECT 'o-forum', now() WHERE NOT EXISTS (SELECT 1 FROM topic_section WHERE name = 'o-forum')`).Error; err != nil {
-		t.Fatal(err)
-	}
-
 	if _, err := store.Announce(announcer, "  ", "body"); err == nil {
 		t.Error("an announcement without a title was posted")
 	}
@@ -161,8 +156,8 @@ func TestAnnouncePostsOneTopicInTheForumSection(t *testing.T) {
 		t.Errorf("topic = %+v", topic)
 	}
 	if n := count(t, db, `SELECT COUNT(*) FROM topic_section_relation r JOIN topic_section s ON s.id = r.topic_section_id
-		WHERE r.topic_id = ? AND s.name = 'o-forum'`, id); n != 1 {
-		t.Errorf("o-forum relations = %d, want 1", n)
+		WHERE r.topic_id = ? AND s.name = 'site'`, id); n != 1 {
+		t.Errorf("site relations = %d, want 1", n)
 	}
 	if n := count(t, db, `SELECT COUNT(*) FROM topic_subscription WHERE topic_id = ? AND user_id = ? AND notification_level = 'watching'`,
 		id, announcer); n != 1 {

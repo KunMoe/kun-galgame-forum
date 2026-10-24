@@ -24,7 +24,7 @@ const actionsCount = computed(
     </h3>
 
     <TopicBadgeGroup
-      :section="topic.sections"
+      :section="topic.section"
       :has-best-answer="topic.has_best_answer"
       :mini-apps="topic.mini_apps"
       :is-n-s-f-w-topic="topic.is_nsfw"

@@ -1,11 +1,9 @@
 <script setup lang="ts">
-import { KUN_TOPIC_SECTION } from '~/constants/topic'
 import { topicMiniAppsOf } from './miniapp/registry'
-import type { KunUIColor, KunUISize } from '@kungal/ui-core'
 
 const props = withDefaults(
   defineProps<{
-    section: string[]
+    section?: string
     upvoteTime?: Date | string | null
     hasBestAnswer?: boolean
     miniApps?: string[]
@@ -13,6 +11,7 @@ const props = withDefaults(
     isNavToSection?: boolean
   }>(),
   {
+    section: undefined,
     upvoteTime: null,
     miniApps: () => [],
     isNavToSection: false
@@ -21,17 +20,8 @@ const props = withDefaults(
 
 const miniApps = computed(() => topicMiniAppsOf(props.miniApps))
 
-const iconMap: Record<string, string> = {
-  g: 'lucide:gamepad-2',
-  t: 'lucide:drafting-compass',
-  o: 'lucide:circle-ellipsis'
-}
-
-const sectionColors: Record<string, KunUIColor> = {
-  g: 'primary',
-  t: 'success',
-  o: 'secondary'
-}
+const { sectionOf } = useTopicSections()
+const sectionInfo = computed(() => sectionOf(props.section))
 
 const isRecentlyUpvoted = useState(`kun-recent-upvote-${useId()}`, () =>
   hourDiff(props.upvoteTime || 0, 24)
@@ -40,9 +30,9 @@ onMounted(() => {
   isRecentlyUpvoted.value = hourDiff(props.upvoteTime || 0, 24)
 })
 
-const handleClickSection = async (section: string) => {
-  if (props.isNavToSection) {
-    await navigateTo(`/section/${section}`)
+const handleClickSection = async () => {
+  if (props.isNavToSection && sectionInfo.value) {
+    await navigateTo(`/section/${sectionInfo.value.section}`)
   }
 }
 </script>
@@ -79,19 +69,14 @@ const handleClickSection = async (section: string) => {
       </KunChip>
     </span>
 
-    <span class="flex gap-1">
+    <span v-if="sectionInfo" class="flex gap-1">
       <KunChip
-        v-for="(sec, index) in props.section"
-        :key="index"
-        :color="sectionColors[sec.toLowerCase()[0]!]"
-        @click="handleClickSection(sec.toLowerCase())"
+        :color="sectionInfo.color"
+        @click="handleClickSection"
         :class-name="cn(props.isNavToSection ? 'cursor-pointer' : '')"
       >
-        <KunIcon
-          :name="iconMap[sec.toLowerCase()[0]!]"
-          class="size-4 text-inherit"
-        />
-        {{ KUN_TOPIC_SECTION[sec] }}
+        <KunIcon :name="sectionInfo.icon_name" class="size-4 text-inherit" />
+        {{ sectionInfo.label }}
       </KunChip>
     </span>
   </div>

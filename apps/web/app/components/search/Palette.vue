@@ -1,7 +1,6 @@
 <script setup lang="ts">
 import type { KunCommandGroup, KunCommandItem } from '@kungal/ui-vue'
 import { watchDebounced } from '@vueuse/core'
-import { KUN_TOPIC_SECTION } from '~/constants/topic'
 import { settle } from '#shared/utils/api/problem'
 import type {
   TopicSummary,
@@ -27,6 +26,7 @@ const QUICK_LIMIT = 5
 
 const result = ref<QuickResult | null>(null)
 const api = useApiClient()
+const { sectionLabel } = useTopicSections()
 const { allowsNsfw } = useContentStance()
 const { excludeQuery } = useTagBlocks()
 const workName = useWorkName()
@@ -152,9 +152,7 @@ const groups = computed<KunCommandGroup[]>(() => {
       items: topics.map((topic) => ({
         value: `/topic/${topic.id}`,
         label: topic.title,
-        description: topic.sections
-          .map((name) => KUN_TOPIC_SECTION[name] ?? name)
-          .join(' · '),
+        description: sectionLabel(topic.section),
         icon: 'lucide:message-square-text'
       }))
     })

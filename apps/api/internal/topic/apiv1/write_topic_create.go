@@ -29,11 +29,18 @@ func (w *Writes) createTopic(ctx context.Context, in *createTopicInput) (*create
 	if strings.TrimSpace(in.Body.ContentMarkdown) == "" {
 		fields = append(fields, tooShort("/content_markdown"))
 	}
-	sections := make([]string, len(in.Body.Sections))
-	for i, s := range in.Body.Sections {
-		sections[i] = string(s)
+	section, _ := NormalizeSectionKey(string(in.Body.Sections[0]))
+	rules, err := w.reads.taxonomy.FindSectionRules(nil, []string{section})
+	if err != nil {
+		return nil, problem.Internal(err)
 	}
-	fields = append(fields, sectionFields(sections, in.Body.Category)...)
+	rule, ok := rules[section]
+	if !ok {
+		return nil, problem.Internal(fmt.Errorf("topic section %q is missing", section))
+	}
+	if rule.IsArchived {
+		fields = append(fields, sectionArchived("/sections/0"))
+	}
 	access := accessFields{scope: in.Body.AccessScope, roles: in.Body.AccessRoles, users: in.Body.AccessUserIDs}
 	fields = append(fields, accessErrors(access)...)
 	if len(fields) > 0 {
@@ -47,7 +54,7 @@ func (w *Writes) createTopic(ctx context.Context, in *createTopicInput) (*create
 		covers = coversFromHashes(*in.Body.CoverImageHashes)
 	}
 	grants := grantsFromAccess(access, user.ID)
-	consume := anyConsumeSection(sections)
+	consume := rule.CostsMoemoepoint
 	moderation := topicModerationText(title, body)
 	verdict, p := w.rejectContent(ctx, moderation, user.ID)
 	if p != nil {
@@ -56,7 +63,7 @@ func (w *Writes) createTopic(ctx context.Context, in *createTopicInput) (*create
 
 	var awards []pendingAward
 	var topicID int
-	err := w.db().Transaction(func(tx *gorm.DB) error {
+	err = w.db().Transaction(func(tx *gorm.DB) error {
 		state, err := w.state.LockForUpdate(tx, user.ID)
 		if err != nil {
 			return err
@@ -76,7 +83,7 @@ func (w *Writes) createTopic(ctx context.Context, in *createTopicInput) (*create
 			AccessScope: in.Body.AccessScope,
 			Title:       title,
 			Content:     body,
-			Category:    in.Body.Category,
+			Category:    rule.LegacyCategory,
 			IsNSFW:      in.Body.IsNSFW,
 			UserID:      user.ID,
 			CoverImages: covers,
@@ -87,7 +94,7 @@ func (w *Writes) createTopic(ctx context.Context, in *createTopicInput) (*create
 		if err := w.reads.topics.ReplaceAccessGrants(tx, topic.ID, grants); err != nil {
 			return err
 		}
-		if err := w.writeSections(tx, topic.ID, sections); err != nil {
+		if err := w.reads.taxonomy.ReplaceSectionRelations(tx, topic.ID, []int{rule.ID}); err != nil {
 			return err
 		}
 		if err := repository.WatchOwnTopic(tx, user.ID, topic.ID); err != nil {
@@ -121,27 +128,4 @@ func (w *Writes) createTopic(ctx context.Context, in *createTopicInput) (*create
 		Location: "/api/v1/topics/" + strconv.Itoa(topicID),
 		Body:     *out,
 	}, nil
-}
-
-func (w *Writes) writeSections(tx *gorm.DB, topicID int, names []string) error {
-	if len(names) == 0 {
-		return w.reads.taxonomy.ReplaceSectionRelations(tx, topicID, nil)
-	}
-	found, err := w.reads.taxonomy.FindSectionsByNamesTx(tx, names)
-	if err != nil {
-		return err
-	}
-	byName := make(map[string]int, len(found))
-	for _, s := range found {
-		byName[s.Name] = s.ID
-	}
-	ids := make([]int, 0, len(names))
-	for _, name := range names {
-		id, ok := byName[name]
-		if !ok {
-			return fmt.Errorf("topic section %q is missing", name)
-		}
-		ids = append(ids, id)
-	}
-	return w.reads.taxonomy.ReplaceSectionRelations(tx, topicID, ids)
 }

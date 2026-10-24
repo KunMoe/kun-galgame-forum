@@ -42,7 +42,6 @@ const (
 	d1ReplyMax   = 920000399
 	d1CommentMin = 920000401
 	d1CommentMax = 920000499
-	d1SectionID  = 920000001
 	d1CoverHash  = "cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc"
 
 	d1TopicPublic = 920000201
@@ -166,8 +165,6 @@ func (f *detailFix) seed(t *testing.T) {
 		}
 	}
 
-	run(`INSERT INTO topic_section (id, name, created, updated) VALUES (?, 'g-news', ?, ?)
-		ON CONFLICT (id) DO NOTHING`, d1SectionID, base, base)
 	run(`INSERT INTO kungal_user_state (user_id, moemoepoint, created, updated)
 		VALUES (?, -16, ?, ?) ON CONFLICT (user_id) DO UPDATE SET moemoepoint = EXCLUDED.moemoepoint`,
 		d1UserAlice, base, base)
@@ -203,7 +200,8 @@ func (f *detailFix) seed(t *testing.T) {
 		"", "d1-fill", "fill-body", nil)
 
 	run(`INSERT INTO topic_section_relation (topic_id, topic_section_id, created, updated) VALUES (?, ?, ?, ?)`,
-		d1TopicPublic, d1SectionID, base, base)
+		d1TopicPublic, sectionID(t, f.db, "news"), base, base)
+	fileUnsectionedTopics(t, f.db, d1TopicMin, d1TopicMax)
 	run(`INSERT INTO topic_poll (title, topic_id, user_id, created, updated) VALUES ('p', ?, ?, ?, ?)`,
 		d1TopicPublic, d1UserAlice, base, base)
 	run(`INSERT INTO topic_access_grant (topic_id, subject_type, subject_value) VALUES (?, 'role', 'creator')`, d1TopicRole)
@@ -317,7 +315,6 @@ func (f *detailFix) cleanup(t *testing.T) {
 		}
 	}
 	_ = f.db.Exec("DELETE FROM kungal_user_state WHERE user_id BETWEEN ? AND ?", d1UserAlice, d1UserStaff).Error
-	_ = f.db.Exec("DELETE FROM topic_section WHERE id = ?", d1SectionID).Error
 }
 
 func (f *detailFix) putSession(t *testing.T, token string, userID int, roles ...string) {

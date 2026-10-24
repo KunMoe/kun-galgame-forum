@@ -348,6 +348,66 @@ export interface paths {
         patch: operations["updateRolePermissionMatrix"];
         trace?: never;
     };
+    "/admin/section-groups/{group}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        /**
+         * Rename a topic section group
+         * @description Changes the group's display name. Needs topic.manage_sections, which a Bearer request never carries. The caller is checked against the account service's current record first: a banned account is ACCOUNT_BANNED.
+         */
+        patch: operations["updateAdminSectionGroup"];
+        trace?: never;
+    };
+    "/admin/section-order": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        /**
+         * Reorder topic sections
+         * @description Sets the order of the groups and of the sections inside each group. Every group appears once, listing exactly the sections it holds: a section cannot move to another group. Needs topic.manage_sections, which a Bearer request never carries. The caller is checked against the account service's current record first: a banned account is ACCOUNT_BANNED.
+         */
+        put: operations["putAdminSectionOrder"];
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/admin/sections/{section}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        /**
+         * Edit a topic section's display
+         * @description Changes the fields that are sent: display name, description, icon, color, archived. Which topics the section holds, its group and its moemoepoint rule are not editable. Needs topic.manage_sections, which a Bearer request never carries. The caller is checked against the account service's current record first: a banned account is ACCOUNT_BANNED. An empty object writes nothing.
+         */
+        patch: operations["updateAdminSection"];
+        trace?: never;
+    };
     "/admin/topics/{topic_id}": {
         parameters: {
             query?: never;
@@ -3505,7 +3565,7 @@ export interface paths {
         };
         /**
          * List topic sections
-         * @description Every topic section in vocabulary order with its size and newest topic, empty sections included. Not paged: the vocabulary is closed and small. The topics of one section are listTopics with section set.
+         * @description Every topic section in display order (by group, then within the group), archived ones included, with its display text, rules, size and newest topic. Not paged: the vocabulary is closed and small. The topics of one section are listTopics with section set.
          */
         get: operations["listSections"];
         put?: never;
@@ -4076,7 +4136,7 @@ export interface paths {
         put?: never;
         /**
          * Create a topic
-         * @description Creates a topic and returns it as getTopic would to its author. A caller may create as many topics in any 24 hours as their cached moemoepoint balance divided by 10, plus one. The sections g-seeking, g-other and t-help cost 10 moemoepoint and need that balance; the others earn 3. Mentions in the body notify up to 10 users.
+         * @description Creates a topic and returns it as getTopic would to its author. A caller may create as many topics in any 24 hours as their cached moemoepoint balance divided by 10, plus one. A section whose moemoepoint_on_create is negative (resource-seeking and tech-help) costs 10 moemoepoint and needs that balance; the others earn 3. Mentions in the body notify up to 10 users.
          */
         post: operations["createTopic"];
         delete?: never;
@@ -11587,17 +11647,38 @@ export interface components {
             can_edit: boolean;
         };
         Section: {
-            /** @description The topic category the section belongs to. */
+            /** @description Deprecated: read group instead. The legacy category topics in this section still carry. */
             category: components["schemas"]["TopicCategory"];
+            /** @description Color to show the section's badge in. */
+            color: components["schemas"]["SectionColor"];
+            /** @description What belongs in the section, edited by admins. Free text; never use it as a decision input. */
+            description: string;
+            /** @description The group the section is shown under. */
+            group: components["schemas"]["SectionGroupKey"];
+            /** @description The group's display name, edited by admins. Free text; never use it as a decision input. */
+            group_label: string;
+            /** @description Icon to show beside the label. */
+            icon_name: string;
+            /** @description An archived section keeps its topics and takes no new ones. */
+            is_archived: boolean;
+            /** @description Whether its topics are left out of the home activity feed's normal tab. */
+            is_hidden_from_feeds: boolean;
+            /** @description Display name, edited by admins. Free text; never use it as a decision input. */
+            label: string;
             /** @description The newest of those topics whose author is still shown. null when there is none. */
             latest_topic: components["schemas"]["SectionLatestTopic"] | null;
+            /**
+             * Format: int64
+             * @description What publishing a topic here does to the author's moemoepoint: negative is a cost the balance must cover, positive a reward.
+             */
+            moemoepoint_on_create: number;
             /**
              * @description Type discriminant. Always section.
              * @constant
              */
             object: "section";
-            /** @description The section, as filed on a topic's sections and as the /section/{section} page segment. */
-            section: components["schemas"]["SectionKey"];
+            /** @description The section, as filed on a topic's section and as the /section/{section} page segment. */
+            section: components["schemas"]["TopicSectionKey"];
             /**
              * Format: int64
              * @description Published topics filed under the section that anyone may open, NSFW ones included. A size statistic, not the total of any list.
@@ -11610,7 +11691,21 @@ export interface components {
             view_count: number;
         };
         /** @enum {string} */
-        SectionKey: "g-walkthrough" | "g-chatting" | "g-article" | "g-seeking" | "g-news" | "g-releases" | "g-other" | "t-crack" | "t-web" | "t-languages" | "t-help" | "t-linux" | "t-practical" | "t-ai" | "t-android" | "t-adobe" | "t-algorithm" | "t-other" | "o-anime" | "o-comics" | "o-music" | "o-novel" | "o-daily" | "o-essay" | "o-forum" | "o-patch" | "o-other";
+        SectionColor: "default" | "primary" | "secondary" | "success" | "warning" | "danger";
+        /** @enum {string} */
+        SectionGroupKey: "galgame" | "resource" | "technique" | "community";
+        SectionGroupOrder: {
+            /** @description A group. */
+            group: components["schemas"]["SectionGroupKey"];
+            /** @description Every section of the group, in the new order. Current keys only. */
+            sections: components["schemas"]["SectionKey"][];
+        };
+        SectionGroupPatch: {
+            /** @description New display name. Trimmed; a blank one is TOO_SHORT. Free text; never use it as a decision input. */
+            label: string;
+        };
+        /** @enum {string} */
+        SectionKey: "galgame-discussion" | "galgame-walkthrough" | "review" | "news" | "resource-seeking" | "resource-release" | "tech-help" | "game-running" | "development" | "acgn" | "daily" | "site" | "g-article" | "g-chatting" | "g-news" | "g-other" | "g-releases" | "g-seeking" | "g-walkthrough" | "o-anime" | "o-comics" | "o-daily" | "o-essay" | "o-forum" | "o-music" | "o-novel" | "o-other" | "o-patch" | "t-adobe" | "t-ai" | "t-algorithm" | "t-android" | "t-crack" | "t-help" | "t-languages" | "t-linux" | "t-other" | "t-practical" | "t-web";
         SectionLatestTopic: {
             /**
              * Format: date-time
@@ -11626,6 +11721,22 @@ export interface components {
             object: "topic";
             /** @description Topic title. Free text; never use it as a decision input. */
             title: string;
+        };
+        SectionOrder: {
+            /** @description Every group, in the new order. */
+            groups: components["schemas"]["SectionGroupOrder"][];
+        };
+        SectionPatch: {
+            /** @description New color. */
+            color?: components["schemas"]["SectionColor"];
+            /** @description New description. Trimmed. Free text; never use it as a decision input. */
+            description?: string;
+            /** @description New icon. */
+            icon_name?: string;
+            /** @description Archive or restore the section. Archiving keeps its topics and refuses new ones. */
+            is_archived?: boolean;
+            /** @description New display name. Trimmed; a blank one is TOO_SHORT. Free text; never use it as a decision input. */
+            label?: string;
         };
         Series: {
             /**
@@ -12838,7 +12949,7 @@ export interface components {
              * @description Bump time. A reply, a comment, an upvote, a new best answer, an edit of the title or body, and creating a poll or a lottery set it to now, but only for topics created within the last 3 months. Casting a vote and entering a lottery do not. It is not a last-activity time.
              */
             bumped_at: string;
-            /** @description Topic category. */
+            /** @description Deprecated: read section instead. The legacy category of the section's group. */
             category: components["schemas"]["TopicCategory"];
             /**
              * Format: int64
@@ -12896,7 +13007,9 @@ export interface components {
              * @description Reply count.
              */
             reply_count: number;
-            /** @description Section slugs, in stored order. Empty array if none. Hyphenated URL segments of /section/{key}. */
+            /** @description The topic's section. */
+            section: components["schemas"]["TopicSectionKey"];
+            /** @description Deprecated: read section instead. section as a one-item array. */
             sections: components["schemas"]["SectionKey"][];
             /** @description Lifecycle state. A hidden topic is visible only to its author and to staff. */
             state: components["schemas"]["TopicPublishState"];
@@ -12929,15 +13042,15 @@ export interface components {
             access_scope: components["schemas"]["AccessScope"];
             /** @description Users granted to read the topic. Required when access_scope is users; must be absent otherwise. The author always reads their own topic and is dropped from the list, so a list of only the author leaves the topic readable by its author and staff alone. */
             access_user_ids?: string[];
-            /** @description Topic category. */
-            category: components["schemas"]["TopicCategory"];
+            /** @description Deprecated and ignored: the section decides the topic's legacy category. */
+            category?: components["schemas"]["TopicCategory"];
             /** @description Topic body as Markdown source, stored as sent. A body of only whitespace is refused as TOO_SHORT. Free text; never use it as a decision input. */
             content_markdown: string;
             /** @description Cover images by image-service hash, in display order. When absent, the covers are the first nine distinct /image/{hash} tokens of the body in body order, stickers skipped; an empty array means no covers. */
             cover_image_hashes?: string[];
             /** @description Whether the topic is NSFW. */
             is_nsfw: boolean;
-            /** @description Section slugs. Each must belong to category: g- slugs to galgame, t- slugs to technique, o- slugs to others. */
+            /** @description The topic's section as a one-item array. A retired key maps to its successor; items after the first are ignored. An archived section is NOT_ALLOWED_VALUE at /sections/0. */
             sections: components["schemas"]["SectionKey"][];
             /** @description Topic title. Leading and trailing whitespace is removed before it is stored, and a title of only whitespace is refused as TOO_SHORT. Free text; never use it as a decision input. */
             title: string;
@@ -12969,7 +13082,7 @@ export interface components {
             top_reply: components["schemas"]["ReplyExcerpt"] | null;
         };
         TopicDraft: {
-            /** @description Chosen category. null when the author has not chosen one, which is the stored state of most drafts. */
+            /** @description Deprecated: the section decides a topic's category. The category the draft was saved with; null when none. */
             category: components["schemas"]["TopicCategory"] | null;
             /** @description Draft body as Markdown source, stored as sent. Empty string when the author has not written one. Free text; never use it as a decision input. */
             content_markdown: string;
@@ -12993,7 +13106,7 @@ export interface components {
             object: "topic_draft";
             /** @description Polls the author attached, in order. The web creates them on the topic right after createTopic. Empty array if none. */
             polls: components["schemas"]["TopicDraftPoll"][];
-            /** @description Chosen section slugs, in stored order. Empty array if none. A draft is unfinished, so they are not checked against category. */
+            /** @description The chosen section as a one-item array of a current key. Empty array if none. */
             sections: components["schemas"]["SectionKey"][];
             /** @description Draft title as stored, empty string when the author has not written one. Free text; never use it as a decision input. */
             title: string;
@@ -13004,7 +13117,7 @@ export interface components {
             updated_at: string;
         };
         TopicDraftCreate: {
-            /** @description Chosen category. Absent or null when the author has not chosen one. */
+            /** @description Deprecated and stored only for older clients: the section decides a topic's category. */
             category?: components["schemas"]["TopicCategory"];
             /** @description Draft body as Markdown source. Stored as sent. Free text; never use it as a decision input. */
             content_markdown?: string;
@@ -13016,7 +13129,7 @@ export interface components {
             lotteries?: components["schemas"]["TopicDraftLottery"][];
             /** @description Polls attached to the draft, in order. Stored as sent; nothing is created. */
             polls?: components["schemas"]["TopicDraftPoll"][];
-            /** @description Chosen section slugs. Unlike createTopic they are not checked against category, and an empty list is allowed: a draft is unfinished by definition. */
+            /** @description The chosen section as a one-item array. A retired key is stored as its successor, items after the first are dropped, and an empty list is allowed: a draft is unfinished by definition. */
             sections?: components["schemas"]["SectionKey"][];
             /** @description Draft title. Stored as sent. Free text; never use it as a decision input. */
             title?: string;
@@ -13184,7 +13297,7 @@ export interface components {
             access_scope?: components["schemas"]["AccessScope"];
             /** @description New granted users, replacing the stored ones. Only with a resulting access_scope of users. The author is dropped as in createTopic. */
             access_user_ids?: string[];
-            /** @description New category. The resulting sections must belong to the resulting category. */
+            /** @description Deprecated and ignored: the section decides the topic's legacy category. */
             category?: components["schemas"]["TopicCategory"];
             /** @description New body as Markdown source. Checked as in createTopic. Free text; never use it as a decision input. */
             content_markdown?: string;
@@ -13192,7 +13305,7 @@ export interface components {
             cover_image_hashes?: string[];
             /** @description New NSFW flag. */
             is_nsfw?: boolean;
-            /** @description New section slugs, replacing the stored ones. */
+            /** @description New section as a one-item array, as in createTopic. Moving into an archived section is NOT_ALLOWED_VALUE at /sections/0; a topic already there may stay. */
             sections?: components["schemas"]["SectionKey"][];
             /** @description hidden hides the topic; published shows it again. Hiding needs can_hide and showing needs can_unhide. Sending the current state changes nothing. */
             state?: components["schemas"]["TopicPublishState"];
@@ -13230,13 +13343,15 @@ export interface components {
             floor: number;
         };
         /** @enum {string} */
+        TopicSectionKey: "galgame-discussion" | "galgame-walkthrough" | "review" | "news" | "resource-seeking" | "resource-release" | "tech-help" | "game-running" | "development" | "acgn" | "daily" | "site";
+        /** @enum {string} */
         TopicSort: "bumped_asc" | "bumped_desc" | "created_asc" | "created_desc" | "views_asc" | "views_desc" | "views_1d_asc" | "views_1d_desc" | "views_7d_asc" | "views_7d_desc" | "views_30d_asc" | "views_30d_desc" | "likes_asc" | "likes_desc" | "favorites_asc" | "favorites_desc" | "upvotes_asc" | "upvotes_desc";
         TopicSource: {
             /** @description The stored grants. */
             access_grants: components["schemas"]["AccessGrants"];
             /** @description Who may read the topic: everyone, signed-in users, holders of granted roles, or granted users. The author and staff always may. */
             access_scope: components["schemas"]["AccessScope"];
-            /** @description Topic category. */
+            /** @description Deprecated: read section instead. The legacy category of the section's group. */
             category: components["schemas"]["TopicCategory"];
             /** @description Topic body as the stored Markdown source. Free text; never use it as a decision input. */
             content_markdown: string;
@@ -13249,7 +13364,9 @@ export interface components {
              * @constant
              */
             object: "topic_source";
-            /** @description Section slugs, in stored order. Empty array if none. Hyphenated URL segments of /section/{key}. */
+            /** @description The topic's section. */
+            section: components["schemas"]["TopicSectionKey"];
+            /** @description Deprecated: read section instead. section as a one-item array. */
             sections: components["schemas"]["SectionKey"][];
             /** @description Topic title as stored. Free text; never use it as a decision input. */
             title: string;
@@ -13299,7 +13416,7 @@ export interface components {
              * @description Bump time. A reply, a comment, an upvote, a new best answer, an edit of the title or body, and creating a poll or a lottery set it to now, but only for topics created within the last 3 months. Casting a vote and entering a lottery do not. It is not a last-activity time.
              */
             bumped_at: string;
-            /** @description Topic category. */
+            /** @description Deprecated: read section instead. The legacy category of the section's group. */
             category: components["schemas"]["TopicCategory"];
             /**
              * Format: int64
@@ -13341,7 +13458,9 @@ export interface components {
              * @description Reply count.
              */
             reply_count: number;
-            /** @description Section slugs, in stored order. Empty array if none. Hyphenated URL segments of /section/{key}. */
+            /** @description The topic's section. */
+            section: components["schemas"]["TopicSectionKey"];
+            /** @description Deprecated: read section instead. section as a one-item array. */
             sections: components["schemas"]["SectionKey"][];
             /** @description Lifecycle state. A hidden topic is visible only to its author and to staff. */
             state: components["schemas"]["TopicPublishState"];
@@ -15529,7 +15648,7 @@ export interface operations {
                 limit?: number;
                 /** @description Only these activity types, comma-separated. Absent means every type. */
                 activity_types?: components["schemas"]["ActivityType"][];
-                /** @description Which topic_creation activities to include: help is the resource and help sections (g-seeking, g-other, t-help), normal is every other section, all is both. Other kinds are not affected. */
+                /** @description Which topic_creation activities to include: help is the sections listSections marks is_hidden_from_feeds (resource-seeking and tech-help), normal is every other section, all is both. Other kinds are not affected. */
                 topic_sections?: components["schemas"]["ActivityTopicSection"];
                 /** @description occurred_desc (default) or bumped_desc. bumped_desc sorts topics by bump time and needs activity_types to be exactly topic_creation. */
                 sort?: components["schemas"]["ActivitySort"];
@@ -17261,6 +17380,312 @@ export interface operations {
                 };
             };
             /** @description VALIDATION_FAILED, with one error per refused position: ren, a repeated role or key, a role at or above the caller, a key outside the catalog, an override that changes nothing against the baseline, a key the caller does not hold, and, at /changes, each key moderator would hold without admin. */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Internal Server Error */
+            500: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Service Unavailable */
+            503: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+        };
+    };
+    updateAdminSectionGroup: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description The group to rename. */
+                group: components["schemas"]["SectionGroupKey"];
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["SectionGroupPatch"];
+            };
+        };
+        responses: {
+            /** @description No Content */
+            204: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Bad Request */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Unauthorized */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description PERMISSION_REQUIRED without topic.manage_sections; ACCOUNT_BANNED. */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description NOT_FOUND when the group does not exist. */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Request Entity Too Large */
+            413: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Unsupported Media Type */
+            415: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description VALIDATION_FAILED for a blank label. */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Internal Server Error */
+            500: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Service Unavailable */
+            503: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+        };
+    };
+    putAdminSectionOrder: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["SectionOrder"];
+            };
+        };
+        responses: {
+            /** @description No Content */
+            204: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Bad Request */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Unauthorized */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description PERMISSION_REQUIRED without topic.manage_sections; ACCOUNT_BANNED. */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Request Entity Too Large */
+            413: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Unsupported Media Type */
+            415: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description VALIDATION_FAILED for a group listed twice, or a group whose sections are not exactly the ones it holds. */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Internal Server Error */
+            500: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Service Unavailable */
+            503: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+        };
+    };
+    updateAdminSection: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description The section to edit. */
+                section: components["schemas"]["TopicSectionKey"];
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["SectionPatch"];
+            };
+        };
+        responses: {
+            /** @description No Content */
+            204: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Bad Request */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Unauthorized */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description PERMISSION_REQUIRED without topic.manage_sections; ACCOUNT_BANNED. */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description NOT_FOUND when the section does not exist. */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Request Entity Too Large */
+            413: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Unsupported Media Type */
+            415: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description VALIDATION_FAILED for a blank label or a field outside its format. */
             422: {
                 headers: {
                     [name: string]: unknown;
@@ -33858,7 +34283,7 @@ export interface operations {
     listSections: {
         parameters: {
             query?: {
-                /** @description When set, only this category's sections. Omitted means all of them. */
+                /** @description Deprecated. When set, only the sections whose legacy category is this one. */
                 category?: components["schemas"]["TopicCategory"];
             };
             header?: never;
@@ -36979,11 +37404,11 @@ export interface operations {
                 limit?: number;
                 /** @description Sort order; ties break on id in the same direction. Default bumped_desc. bumped: bumped_at. created: created_at. views: view_count. views_1d: views today. views_7d and views_30d: views in the last 7 or 30 days, recomputed daily. likes: like_count. favorites: times favorited. upvotes: times upvoted. */
                 sort?: components["schemas"]["TopicSort"];
-                /** @description When set, only this category. Omitted means every category. There is no all token. */
+                /** @description Deprecated: filter by section instead. When set, only topics whose section's group has this legacy category. */
                 category?: components["schemas"]["TopicCategory"];
                 /** @description When true, NSFW topics are included. Default false. */
                 include_nsfw?: boolean;
-                /** @description When set, only topics filed under this section. Omitted means every section. */
+                /** @description When set, only topics filed under this section. A retired key filters by its successor. Omitted means every section. */
                 section?: components["schemas"]["SectionKey"];
             };
             header?: never;

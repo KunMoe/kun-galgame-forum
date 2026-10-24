@@ -1,8 +1,23 @@
 // @vitest-environment nuxt
 import { describe, expect, it } from 'vitest'
-import { mountSuspended } from '@nuxt/test-utils/runtime'
+import { mockNuxtImport, mountSuspended } from '@nuxt/test-utils/runtime'
 import type { TopicSummary, UserRef } from '#shared/utils/api/schemas'
 import TopicCard from './Card.vue'
+
+mockNuxtImport('useTopicSections', () => () => {
+  const discussion = {
+    section: 'galgame-discussion',
+    label: 'Galgame 讨论',
+    color: 'primary',
+    icon_name: 'lucide:messages-square'
+  }
+  const sectionOf = (key?: string | null) =>
+    key === discussion.section ? discussion : undefined
+  return {
+    sectionOf,
+    sectionLabel: (key?: string | null) => sectionOf(key)?.label ?? ''
+  }
+})
 
 const user = (over: Partial<UserRef> = {}): UserRef => ({
   object: 'user',
@@ -26,7 +41,8 @@ const topic = (over: Partial<TopicSummary> = {}): TopicSummary => ({
   title: 'A topic',
   state: 'published',
   category: 'galgame',
-  sections: ['g-chatting'],
+  section: 'galgame-discussion',
+  sections: ['galgame-discussion'],
   cover_images: [],
   author: user(),
   view_count: 12345,
@@ -52,7 +68,7 @@ describe('TopicCard', () => {
     })
     expect(wrapper.text()).toContain('已注销用户')
     expect(wrapper.text()).toContain('1.2w')
-    expect(wrapper.text()).toContain('闲聊')
+    expect(wrapper.text()).toContain('Galgame 讨论')
   })
 
   it('shows the bump and edit times, not the creation time', async () => {

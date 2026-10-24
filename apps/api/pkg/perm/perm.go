@@ -9,6 +9,7 @@ const (
 	TopicViewRestricted Permission = "topic.view_restricted"
 	TopicDeleteAny      Permission = "topic.delete_any"
 	TopicSetBestAnswer  Permission = "topic.set_best_answer"
+	TopicManageSections Permission = "topic.manage_sections"
 
 	ReplyEditAny   Permission = "reply.edit_any"
 	ReplyDeleteAny Permission = "reply.delete_any"
@@ -140,7 +141,7 @@ var moderatorPerms = []Permission{
 	TrustReview,
 }
 
-var adminPerms = append(append([]Permission{}, moderatorPerms...), AdminDashboard, UserPurgeContent, TopicDeleteAny, UpdateLogReopen)
+var adminPerms = append(append([]Permission{}, moderatorPerms...), AdminDashboard, UserPurgeContent, TopicDeleteAny, UpdateLogReopen, TopicManageSections)
 
 var Bundles = map[string][]Permission{
 	"moderator": moderatorPerms,

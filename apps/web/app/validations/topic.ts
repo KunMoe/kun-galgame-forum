@@ -4,24 +4,13 @@ import {
   KUN_TOPIC_ACCESS_ROLE_CONST,
   KUN_TOPIC_ACCESS_SCOPE_CONST,
   KUN_TOPIC_ACCESS_USER_LIMIT,
-  KUN_TOPIC_SECTION_CONST,
-  TOPIC_SECTIONS,
-  TOPIC_SORT_FIELD_CONST,
-  type TopicCategoryKey
+  TOPIC_SORT_FIELD_CONST
 } from '~/constants/topic'
 
 const SORT_ORDER_CONST = ['asc', 'desc'] as const
 
-const TOPIC_WRITE_CATEGORY = ['galgame', 'technique', 'others'] as const
-
 const COVER_HASH = /^[0-9a-f]{64}$/
 const USER_ID = /^[0-9]+$/
-
-const sectionPrefix: Record<(typeof TOPIC_WRITE_CATEGORY)[number], string> = {
-  galgame: 'g-',
-  technique: 't-',
-  others: 'o-'
-}
 
 export const getTopicSchema = z.object({
   page: z.coerce.number<number>().min(1).max(9999999),
@@ -45,11 +34,7 @@ export const createTopicSchema = z
       .min(1, { message: '话题内容最少 1 个字符' })
       .max(100007, { message: '话题内容最大长度为 100007 个字符' })
       .refine((t) => t.trim().length, { message: '话题内容最少为 1 个字符' }),
-    category: z.enum(TOPIC_WRITE_CATEGORY),
-    sections: z
-      .array(z.enum(KUN_TOPIC_SECTION_CONST))
-      .min(1, { message: '您至少选择一个话题的分区' })
-      .max(3, { message: '您至多选择三个话题的分区' }),
+    sections: z.array(z.string()).length(1, { message: '请选择话题的分区' }),
     is_nsfw: z.boolean({ message: '未找到话题的 NSFW 设置' }),
     cover_image_hashes: z
       .array(z.string().regex(COVER_HASH, { message: '封面图格式不正确' }))
@@ -72,19 +57,6 @@ export const createTopicSchema = z
       .optional()
   })
   .superRefine((data, ctx) => {
-    const prefix = sectionPrefix[data.category]
-    const allowed = Object.keys(
-      TOPIC_SECTIONS[data.category as TopicCategoryKey]
-    )
-    for (const [index, section] of data.sections.entries()) {
-      if (!section.startsWith(prefix) || !allowed.includes(section)) {
-        ctx.addIssue({
-          code: 'custom',
-          message: '话题分区必须属于所选分类',
-          path: ['sections', index]
-        })
-      }
-    }
     if (data.access_scope === 'role' && !data.access_roles?.length) {
       ctx.addIssue({
         code: 'custom',

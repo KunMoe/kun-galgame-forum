@@ -1,39 +1,23 @@
 <script setup lang="ts">
-import type { TopicSummary } from '#shared/utils/api/schemas'
-import type { operations } from '#shared/types/api/v1'
+import type { Section, TopicSummary } from '#shared/utils/api/schemas'
 import { problemMessage } from '#shared/utils/api/message'
-import { KUN_TOPIC_CATEGORY, KUN_TOPIC_SECTION } from '~/constants/topic'
-import { KUN_TOPIC_SECTION_DESCRIPTION_MAP } from '~/constants/section'
 import { useCursorList } from '~/composables/useCursorList'
 
-type SectionSlug = NonNullable<
-  NonNullable<operations['listTopics']['parameters']['query']>['section']
->
-
 const props = defineProps<{
-  section: SectionSlug
+  section: Section
 }>()
-
-const categoryMap: Record<string, string> = {
-  g: 'galgame',
-  t: 'technique',
-  o: 'others'
-}
-const category = computed(
-  () => KUN_TOPIC_CATEGORY[categoryMap[props.section[0]!]!]!
-)
 
 const { allowsNsfw: includeNsfw } = useContentStance()
 
 const { items, hasMore, problem, status, loadingMore, loadMore, refresh } =
   await useCursorList<TopicSummary>(
     () =>
-      `section-topics:${props.section}:${includeNsfw.value ? 'nsfw' : 'sfw'}`,
+      `section-topics:${props.section.section}:${includeNsfw.value ? 'nsfw' : 'sfw'}`,
     (api, cursor, { signal }) =>
       api.GET('/topics', {
         params: {
           query: {
-            section: props.section,
+            section: props.section.section,
             sort: 'created_desc',
             limit: 30,
             include_nsfw: includeNsfw.value,
@@ -47,18 +31,18 @@ const { items, hasMore, problem, status, loadingMore, loadMore, refresh } =
 
 <template>
   <div class="space-y-6">
-    <KunHeader :description="KUN_TOPIC_SECTION_DESCRIPTION_MAP[section]">
+    <KunHeader :description="section.description">
       <template #title>
         <div class="flex items-center gap-2">
           <KunLink
             underline="hover"
-            :to="`/category/${categoryMap[props.section[0]!]}`"
+            :to="`/category/${section.group}`"
             class-name="text-2xl font-medium"
           >
-            {{ category }}
+            {{ section.group_label }}
           </KunLink>
           /
-          <span class="text-lg">{{ KUN_TOPIC_SECTION[section] }}</span>
+          <span class="text-lg">{{ section.label }}</span>
         </div>
       </template>
     </KunHeader>

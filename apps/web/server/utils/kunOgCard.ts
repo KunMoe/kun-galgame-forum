@@ -1,7 +1,6 @@
 import { createHmac } from 'node:crypto'
 import { kungal } from '../../app/config/kungal'
 import { KUN_GALGAME_OFFICIAL_CATEGORY_MAP } from '../../app/constants/galgameOfficial'
-import { KUN_TOPIC_SECTION } from '../../app/constants/topic'
 import { deletedUserName } from '#shared/utils/deletedUser'
 import type { Image, Topic } from '../../shared/utils/api/schemas'
 import { createApiClient } from '../../shared/utils/api/client'
@@ -54,17 +53,19 @@ export const kunOgSiteCard = (origin: string): KunOgCard => ({
   }
 })
 
-export const topicToOgCard = (topic: Topic): KunOgCard | null => {
+export const topicToOgCard = (
+  topic: Topic,
+  sectionLabel?: string
+): KunOgCard | null => {
   if (topic.is_nsfw || topic.state === 'hidden') {
     return null
   }
-  const section = topic.sections[0]
   return {
     template: 'topic',
     fields: {
       title: text(topic.title, 200),
       excerpt: text(documentPlainText(topic.content, deletedUserName), 120),
-      section: section ? KUN_TOPIC_SECTION[section] : undefined,
+      section: sectionLabel || undefined,
       author: text(topic.author.name ?? deletedUserName, 80),
       authorAvatar: topic.author.avatar?.url || undefined,
       views: topic.view_count,
@@ -78,15 +79,21 @@ export const fetchTopicOgCard = async (
   api: ReturnType<typeof createApiClient>,
   topicId: string
 ): Promise<KunOgCard | null> => {
-  const result = await settle(
-    api.GET('/topics/{topic_id}', {
-      params: { path: { topic_id: topicId } }
-    })
-  )
+  const [result, sections] = await Promise.all([
+    settle(
+      api.GET('/topics/{topic_id}', {
+        params: { path: { topic_id: topicId } }
+      })
+    ),
+    settle(api.GET('/sections'))
+  ])
   if (!result.ok) {
     return null
   }
-  return topicToOgCard(result.data)
+  const label = sections.ok
+    ? sections.data.items.find((s) => s.section === result.data.section)?.label
+    : undefined
+  return topicToOgCard(result.data, label)
 }
 
 const buildTopic = async (id: number): Promise<KunOgCard | null> => {

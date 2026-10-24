@@ -7,8 +7,8 @@ type TopicDraft struct {
 	ID               repr.DecimalID      `json:"id" doc:"Draft id. JSON string of a decimal integer."`
 	Title            string              `json:"title" maxLength:"233" doc:"Draft title as stored, empty string when the author has not written one. Free text; never use it as a decision input."`
 	ContentMarkdown  string              `json:"content_markdown" maxLength:"100007" doc:"Draft body as Markdown source, stored as sent. Empty string when the author has not written one. Free text; never use it as a decision input."`
-	Category         *string             `json:"category" enum:"galgame,technique,others" maxLength:"9" doc:"Chosen category. null when the author has not chosen one, which is the stored state of most drafts."`
-	Sections         []SectionSlug       `json:"sections" maxItems:"3" doc:"Chosen section slugs, in stored order. Empty array if none. A draft is unfinished, so they are not checked against category."`
+	Category         *string             `json:"category" enum:"galgame,technique,others" maxLength:"9" doc:"Deprecated: the section decides a topic's category. The category the draft was saved with; null when none."`
+	Sections         []SectionSlug       `json:"sections" maxItems:"3" doc:"The chosen section as a one-item array of a current key. Empty array if none."`
 	IsNSFW           bool                `json:"is_nsfw" doc:"Whether the author marked the draft NSFW."`
 	CoverImageHashes []ImageHash         `json:"cover_image_hashes" maxItems:"9" doc:"Cover images by image-service hash, in stored order. Tokens that do not parse are skipped. Empty array if none."`
 	Polls            []TopicDraftPoll    `json:"polls" maxItems:"30" doc:"Polls the author attached, in order. The web creates them on the topic right after createTopic. Empty array if none."`
@@ -29,8 +29,8 @@ type TopicDraftSummary struct {
 type TopicDraftCreate struct {
 	Title            string              `json:"title" required:"false" maxLength:"233" doc:"Draft title. Stored as sent. Free text; never use it as a decision input."`
 	ContentMarkdown  string              `json:"content_markdown" required:"false" maxLength:"100007" doc:"Draft body as Markdown source. Stored as sent. Free text; never use it as a decision input."`
-	Category         *string             `json:"category,omitempty" enum:"galgame,technique,others" maxLength:"9" doc:"Chosen category. Absent or null when the author has not chosen one."`
-	Sections         []SectionSlug       `json:"sections" required:"false" maxItems:"3" uniqueItems:"true" doc:"Chosen section slugs. Unlike createTopic they are not checked against category, and an empty list is allowed: a draft is unfinished by definition."`
+	Category         *string             `json:"category,omitempty" enum:"galgame,technique,others" maxLength:"9" doc:"Deprecated and stored only for older clients: the section decides a topic's category."`
+	Sections         []SectionSlug       `json:"sections" required:"false" maxItems:"3" uniqueItems:"true" doc:"The chosen section as a one-item array. A retired key is stored as its successor, items after the first are dropped, and an empty list is allowed: a draft is unfinished by definition."`
 	IsNSFW           bool                `json:"is_nsfw" required:"false" doc:"Whether to mark the draft NSFW. Defaults to false."`
 	CoverImageHashes []ImageHash         `json:"cover_image_hashes" required:"false" maxItems:"9" uniqueItems:"true" doc:"Cover images by image-service hash, in display order. Unlike createTopic, nothing is derived from the body."`
 	Polls            []TopicDraftPoll    `json:"polls" required:"false" maxItems:"30" doc:"Polls attached to the draft, in order. Stored as sent; nothing is created."`

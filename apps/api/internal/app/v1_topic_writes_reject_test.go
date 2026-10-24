@@ -24,7 +24,7 @@ func TestV1CreateTopicRejections(t *testing.T) {
 	base := func(over map[string]any) map[string]any {
 		b := map[string]any{
 			"title": "ok", "content_markdown": "ok", "category": "galgame",
-			"sections": []string{"g-news"}, "is_nsfw": false, "access_scope": "public",
+			"sections": []string{"news"}, "is_nsfw": false, "access_scope": "public",
 		}
 		for k, v := range over {
 			if v == nil {
@@ -38,7 +38,7 @@ func TestV1CreateTopicRejections(t *testing.T) {
 	cases := []hit{
 		{"blank title", base(map[string]any{"title": "   "}), 422, problem.CodeValidationFailed, "/title", problem.ReasonTooShort, 1},
 		{"blank body", base(map[string]any{"content_markdown": "\n\t"}), 422, problem.CodeValidationFailed, "/content_markdown", problem.ReasonTooShort, 1},
-		{"section mismatch", base(map[string]any{"sections": []string{"t-web"}}), 422, problem.CodeValidationFailed, "/sections/0", problem.ReasonInconsistentWith, 0},
+		{"archived section", base(map[string]any{"sections": []string{"resource-release"}}), 422, problem.CodeValidationFailed, "/sections/0", problem.ReasonNotAllowedValue, 0},
 		{"role missing roles", base(map[string]any{"access_scope": "role"}), 422, problem.CodeValidationFailed, "/access_roles", problem.ReasonRequired, 0},
 		{"role with users", base(map[string]any{"access_scope": "role", "access_roles": []string{"creator"}, "access_user_ids": []string{"2"}}), 422, problem.CodeValidationFailed, "/access_user_ids", problem.ReasonInconsistentWith, 0},
 		{"users missing users", base(map[string]any{"access_scope": "users"}), 422, problem.CodeValidationFailed, "/access_user_ids", problem.ReasonRequired, 0},
@@ -82,7 +82,7 @@ func TestV1CreateTopicDailyLimit(t *testing.T) {
 	}
 	resp, raw := f.doJSON(t, http.MethodPost, "/api/v1/topics", "sess-alice", "/topics", keyUUID(40), nil, map[string]any{
 		"title": "x", "content_markdown": "y", "category": "galgame",
-		"sections": []string{"g-news"}, "is_nsfw": false, "access_scope": "public",
+		"sections": []string{"news"}, "is_nsfw": false, "access_scope": "public",
 	})
 	if resp.StatusCode != http.StatusTooManyRequests {
 		t.Fatalf("%d %s", resp.StatusCode, raw)
@@ -104,7 +104,7 @@ func TestV1CreateTopicDailyLimitBeatsPaid(t *testing.T) {
 	}
 	resp, raw := f.doJSON(t, http.MethodPost, "/api/v1/topics", "sess-alice", "/topics", keyUUID(41), nil, map[string]any{
 		"title": "x", "content_markdown": "y", "category": "galgame",
-		"sections": []string{"g-seeking"}, "is_nsfw": false, "access_scope": "public",
+		"sections": []string{"resource-seeking"}, "is_nsfw": false, "access_scope": "public",
 	})
 	if resp.StatusCode != http.StatusTooManyRequests {
 		t.Fatalf("%d %s", resp.StatusCode, raw)
@@ -120,7 +120,7 @@ func TestV1CreateTopicPaidInsufficient(t *testing.T) {
 	f.putSession(t, "sess-bob", w3UserBob)
 	resp, raw := f.doJSON(t, http.MethodPost, "/api/v1/topics", "sess-bob", "/topics", keyUUID(42), nil, map[string]any{
 		"title": "x", "content_markdown": "y", "category": "galgame",
-		"sections": []string{"g-seeking"}, "is_nsfw": false, "access_scope": "public",
+		"sections": []string{"t-help"}, "is_nsfw": false, "access_scope": "public",
 	})
 	if resp.StatusCode != http.StatusForbidden {
 		t.Fatalf("%d %s", resp.StatusCode, raw)
@@ -138,7 +138,7 @@ func TestV1CreateTopicTrustDeny(t *testing.T) {
 	f.db.Raw(`SELECT COUNT(*) FROM topic WHERE user_id = ?`, w3UserAlice).Scan(&before)
 	resp, raw := f.doJSON(t, http.MethodPost, "/api/v1/topics", "sess-alice", "/topics", keyUUID(43), nil, map[string]any{
 		"title": "x", "content_markdown": "y", "category": "galgame",
-		"sections": []string{"g-news"}, "is_nsfw": false, "access_scope": "public",
+		"sections": []string{"news"}, "is_nsfw": false, "access_scope": "public",
 	})
 	if resp.StatusCode != http.StatusUnprocessableEntity {
 		t.Fatalf("%d %s", resp.StatusCode, raw)

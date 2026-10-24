@@ -200,6 +200,7 @@ func (f *rkFix) seed(t *testing.T) {
 	topic(rkTopicNSFW, rkUserA, 0, "public", true, 1900000700)
 	topic(rkTopicBanned, rkUserBanned, 0, "public", false, 1900000600)
 	topic(rkTopicMissing, rkUserMissing, 0, "public", false, 1900000500)
+	fileUnsectionedTopics(t, f.db, rkTopicMin, rkTopicMax)
 
 	replyID, floor := rkReplyMin, 0
 	reply := func(topicID, author, status int) {

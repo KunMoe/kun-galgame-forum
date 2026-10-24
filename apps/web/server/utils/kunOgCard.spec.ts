@@ -51,7 +51,8 @@ const topic = (over: Partial<Topic> = {}): Topic => ({
   pinned_reply: null,
   reactions: [],
   reply_count: 4,
-  sections: ['g-chatting'],
+  section: 'galgame-discussion',
+  sections: ['galgame-discussion'],
   state: 'published',
   upvote_count: 1,
   upvoted_at: null,
@@ -78,12 +79,12 @@ describe('topicToOgCard', () => {
   })
 
   it('maps v1 fields onto the topic card', () => {
-    expect(topicToOgCard(topic())).toEqual({
+    expect(topicToOgCard(topic(), 'Galgame 讨论')).toEqual({
       template: 'topic',
       fields: {
         title: 'A topic title',
         excerpt: 'plain excerpt',
-        section: '闲聊',
+        section: 'Galgame 讨论',
         author: 'Neko',
         authorAvatar: 'https://cdn.example/ab.webp',
         views: 88,
@@ -121,10 +122,9 @@ describe('fetchTopicOgCard', () => {
       timeoutMs: 1000
     })
     expect(await fetchTopicOgCard(api, '42')).toBeNull()
-    expect(fetchSpy).toHaveBeenCalledTimes(1)
-    const [first] = fetchSpy.mock.calls
-    expect(first?.[0]).toBeInstanceOf(Request)
-    const url = new URL((first![0] as Request).url)
-    expect(url.pathname.endsWith('/topics/42')).toBe(true)
+    const paths = fetchSpy.mock.calls.map(
+      ([req]) => new URL((req as Request).url).pathname
+    )
+    expect(paths.some((p) => p.endsWith('/topics/42'))).toBe(true)
   })
 })

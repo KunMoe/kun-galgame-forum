@@ -99,30 +99,45 @@ func TestV1PatchTopicNoop(t *testing.T) {
 	_ = updated
 }
 
-func TestV1PatchTopicCategorySections(t *testing.T) {
+func TestV1PatchTopicSectionDecidesCategory(t *testing.T) {
 	f := newWriteFix(t, nil)
 	f.alice(t)
 	path := fmt.Sprintf("/api/v1/topics/%d", w3TopicPub)
+	patch := func(body map[string]any) (int, map[string]any) {
+		t.Helper()
+		resp, raw := f.doJSON(t, http.MethodPatch, path, "sess-alice", "/topics/{topic_id}", "", nil, body)
+		var out map[string]any
+		_ = json.Unmarshal(raw, &out)
+		return resp.StatusCode, out
+	}
+	category := func() string {
+		var cat string
+		f.db.Raw(`SELECT category FROM topic WHERE id = ?`, w3TopicPub).Scan(&cat)
+		return cat
+	}
+	if code, out := patch(map[string]any{"category": "technique"}); code != 200 || out["category"] != "galgame" || out["section"] != "news" || category() != "galgame" {
+		t.Fatalf("category alone %d %v, stored %s", code, out, category())
+	}
+	if code, out := patch(map[string]any{"category": "others", "sections": []string{"t-web"}}); code != 200 ||
+		out["section"] != "development" || fmt.Sprint(out["sections"]) != "[development]" || out["category"] != "technique" || category() != "technique" {
+		t.Fatalf("retired key %d %v, stored %s", code, out, category())
+	}
 	resp, raw := f.doJSON(t, http.MethodPatch, path, "sess-alice", "/topics/{topic_id}", "", nil, map[string]any{
-		"category": "technique",
+		"sections": []string{"resource-release"},
 	})
 	if resp.StatusCode != 422 {
-		t.Fatalf("mismatch without sections %d %s", resp.StatusCode, raw)
+		t.Fatalf("archived %d %s", resp.StatusCode, raw)
 	}
 	errs := problemErrors(t, raw)
-	if len(errs) == 0 || fmt.Sprint(errs[0]["pointer"]) != "/category" || fmt.Sprint(errs[0]["reason"]) != problem.ReasonInconsistentWith {
+	if len(errs) == 0 || fmt.Sprint(errs[0]["pointer"]) != "/sections/0" || fmt.Sprint(errs[0]["reason"]) != problem.ReasonNotAllowedValue {
 		t.Fatalf("%v", errs)
 	}
-	resp, raw = f.doJSON(t, http.MethodPatch, path, "sess-alice", "/topics/{topic_id}", "", nil, map[string]any{
-		"category": "technique", "sections": []string{"t-web"},
-	})
-	if resp.StatusCode != 200 {
-		t.Fatalf("%d %s", resp.StatusCode, raw)
+	if err := f.db.Exec(`UPDATE topic_section_relation SET topic_section_id = ? WHERE topic_id = ?`,
+		sectionID(t, f.db, "resource-release"), w3TopicPub).Error; err != nil {
+		t.Fatal(err)
 	}
-	var cat string
-	f.db.Raw(`SELECT category FROM topic WHERE id = ?`, w3TopicPub).Scan(&cat)
-	if cat != "technique" {
-		t.Fatalf("cat %s", cat)
+	if code, out := patch(map[string]any{"title": "still archived", "sections": []string{"resource-release"}}); code != 200 || out["section"] != "resource-release" {
+		t.Fatalf("a topic already archived may stay %d %v", code, out)
 	}
 }
 
@@ -149,7 +164,7 @@ func TestV1PatchTopicPaidFreeAwards(t *testing.T) {
 	f.alice(t)
 	f.putSession(t, "sess-staff", w3UserStaff, "user", "moderator")
 	resp, raw := f.doJSON(t, http.MethodPatch, fmt.Sprintf("/api/v1/topics/%d", w3TopicPaid), "sess-staff", "/topics/{topic_id}", "", nil, map[string]any{
-		"sections": []string{"g-news"},
+		"sections": []string{"news"},
 	})
 	if resp.StatusCode != 200 {
 		t.Fatalf("to free %d %s", resp.StatusCode, raw)
@@ -160,7 +175,7 @@ func TestV1PatchTopicPaidFreeAwards(t *testing.T) {
 		t.Fatalf("refund %+v", aw)
 	}
 	resp, raw = f.doJSON(t, http.MethodPatch, fmt.Sprintf("/api/v1/topics/%d", w3TopicPaid), "sess-staff", "/topics/{topic_id}", "", nil, map[string]any{
-		"sections": []string{"g-seeking"},
+		"sections": []string{"tech-help"},
 	})
 	if resp.StatusCode != 200 {
 		t.Fatalf("to paid %d %s", resp.StatusCode, raw)

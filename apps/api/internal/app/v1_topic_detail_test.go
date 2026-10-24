@@ -14,7 +14,7 @@ var (
 		"access_scope", "author", "author_moemoepoint", "best_answer", "bumped_at", "category",
 		"comment_count", "content", "cover_images", "created_at", "dislike_count", "edited_at",
 		"favorite_count", "hidden_by", "id", "is_nsfw", "like_count", "mini_apps", "object",
-		"pinned_reply", "reactions", "reply_count", "sections", "state", "title", "upvote_count",
+		"pinned_reply", "reactions", "reply_count", "section", "sections", "state", "title", "upvote_count",
 		"upvoted_at", "view_count", "viewer",
 	}
 	replyKeys = []string{
@@ -47,7 +47,7 @@ func TestV1GetTopicPublicFields(t *testing.T) {
 	want := map[string]string{
 		"object": `"topic"`, "id": `"920000201"`, "title": `"d1-public"`, "state": `"published"`,
 		"hidden_by": "null", "access_scope": `"public"`, "category": `"galgame"`,
-		"sections": `["g-news"]`, "cover_images": cover, "is_nsfw": `false`,
+		"section": `"news"`, "sections": `["news"]`, "cover_images": cover, "is_nsfw": `false`,
 		"author":             `{"object":"user","id":"920000001","name":"alice","avatar":null,"avatar_frame":null}`,
 		"author_moemoepoint": `-16`,
 		"view_count":         `10`, "like_count": `4`, "dislike_count": `0`,

@@ -1,10 +1,8 @@
 <script setup lang="ts">
-import type { components } from '#shared/types/api/v1'
-import { KUN_TOPIC_SECTION } from '~/constants/topic'
+import type { Section } from '#shared/utils/api/schemas'
 
 defineProps<{
-  sections: components['schemas']['Section'][]
-  categoryName: string
+  sections: Section[]
 }>()
 </script>
 
@@ -17,8 +15,9 @@ defineProps<{
       :href="`/section/${section.section}`"
     >
       <div class="mb-4 flex items-center justify-between">
-        <h2 class="text-lg font-semibold">
-          {{ KUN_TOPIC_SECTION[section.section] }}
+        <h2 class="flex items-center gap-2 text-lg font-semibold">
+          <KunIcon :name="section.icon_name" />
+          {{ section.label }}
         </h2>
         <div class="text-default-500 flex items-center gap-4 text-sm">
           <div class="flex items-center gap-2 text-inherit">

@@ -1,11 +1,5 @@
 package constants
 
-var TopicSectionConsume = map[string]bool{
-	"g-seeking": true,
-	"g-other":   true,
-	"t-help":    true,
-}
-
 const (
 	// A lottery hands out scarce goods, so the entry bar is higher than the
 	// poll's: either an account old enough to be inconvenient to farm, or enough

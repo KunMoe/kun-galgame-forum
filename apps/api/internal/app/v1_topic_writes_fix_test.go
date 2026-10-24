@@ -52,14 +52,6 @@ const (
 	w3MentionMin = 930000021
 	w3MentionMax = 930000032
 
-	w3SecNews  = 930000010
-	w3SecSeek  = 930000011
-	w3SecOther = 930000012
-	w3SecHelp  = 930000013
-	w3SecWeb   = 930000014
-	w3SecDaily = 930000015
-	w3SecWalk  = 930000016
-
 	w3TopicMin = 930000201
 	w3TopicMax = 930000299
 	w3ReplyMin = 930000301
@@ -282,17 +274,7 @@ func (f *writeFix) seed(t *testing.T) {
 	// the limit's window.
 	seeded := now.AddDate(0, 0, -2)
 	old := now.AddDate(0, -4, 0)
-	for _, row := range []struct {
-		id   int
-		name string
-	}{
-		{w3SecNews, "g-news"}, {w3SecSeek, "g-seeking"}, {w3SecOther, "g-other"},
-		{w3SecHelp, "t-help"}, {w3SecWeb, "t-web"}, {w3SecDaily, "o-daily"},
-		{w3SecWalk, "g-walkthrough"},
-	} {
-		run(`INSERT INTO topic_section (id, name, created, updated) VALUES (?, ?, ?, ?) ON CONFLICT (id) DO NOTHING`,
-			row.id, row.name, base, base)
-	}
+	secNews, secSeek := sectionID(t, f.db, "news"), sectionID(t, f.db, "resource-seeking")
 	for _, uid := range []int{w3UserAlice, w3UserBob, w3UserStaff, w3UserBanned, w3UserOther, w3UserGrant} {
 		moe := 30
 		if uid == w3UserBob {
@@ -326,13 +308,14 @@ func (f *writeFix) seed(t *testing.T) {
 	ins(w3TopicPaid, w3UserAlice, 0, "galgame", "public", "", "paid", "paid-body", false, seeded, seeded)
 
 	run(`INSERT INTO topic_section_relation (topic_id, topic_section_id, created, updated) VALUES (?, ?, ?, ?)`,
-		w3TopicPub, w3SecNews, base, base)
+		w3TopicPub, secNews, base, base)
 	run(`INSERT INTO topic_section_relation (topic_id, topic_section_id, created, updated) VALUES (?, ?, ?, ?)`,
-		w3TopicNSFW, w3SecNews, base, base)
+		w3TopicNSFW, secNews, base, base)
 	run(`INSERT INTO topic_section_relation (topic_id, topic_section_id, created, updated) VALUES (?, ?, ?, ?)`,
-		w3TopicPaid, w3SecSeek, base, base)
+		w3TopicPaid, secSeek, base, base)
 	run(`INSERT INTO topic_section_relation (topic_id, topic_section_id, created, updated) VALUES (?, ?, ?, ?)`,
-		w3TopicOld, w3SecNews, base, base)
+		w3TopicOld, secNews, base, base)
+	fileUnsectionedTopics(t, f.db, w3TopicMin, w3TopicMax)
 	run(`INSERT INTO topic_access_grant (topic_id, subject_type, subject_value) VALUES (?, 'role', 'creator')`, w3TopicRole)
 	run(`UPDATE topic SET cover_images = ? WHERE id = ?`, `["/image/`+w3CoverHash+`"]`, w3TopicNSFW)
 
@@ -389,7 +372,6 @@ func (f *writeFix) cleanup(t *testing.T) {
 	_ = f.db.Exec(`DELETE FROM topic WHERE user_id BETWEEN ? AND ? OR id BETWEEN ? AND ?`,
 		ours[0], ours[1], w3TopicMin, w3TopicMax).Error
 	_ = f.db.Exec(`DELETE FROM kungal_user_state WHERE user_id BETWEEN ? AND ?`, 930000001, 930000999).Error
-	_ = f.db.Exec(`DELETE FROM topic_section WHERE id BETWEEN ? AND ?`, w3SecNews, w3SecDaily).Error
 }
 
 func (f *writeFix) putSession(t *testing.T, token string, userID int, roles ...string) {

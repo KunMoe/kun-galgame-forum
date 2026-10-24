@@ -215,6 +215,7 @@ func (f *engageFix) seed(t *testing.T) {
 	insTopic(e1TopicLists, e1UserAlice, 0, "public", "", "e1-lists", base)
 	insTopic(e1TopicMigrateA, e1UserAlice, 0, "public", "", "e1-migrate-a", base)
 	insTopic(e1TopicMigrateB, e1UserAlice, 0, "public", "", "e1-migrate-b", base)
+	fileUnsectionedTopics(t, f.db, e1TopicMin, e1TopicMax)
 
 	insReply := func(id, user, topic, floor, status int, body string) {
 		t.Helper()

@@ -1,5 +1,4 @@
 <script setup lang="ts">
-import { KUN_TOPIC_SECTION } from '~/constants/topic'
 import type {
   Activity,
   ReplyExcerpt,
@@ -8,6 +7,8 @@ import type {
 import { toKunUser } from '~/utils/userRef'
 
 const props = defineProps<{ activity: Activity; topic: TopicSummary }>()
+
+const { sectionLabel } = useTopicSections()
 
 const digest = computed(() => props.activity.topic_digest)
 const topicId = computed(() => Number(props.topic.id))
@@ -133,25 +134,23 @@ provide(
       </KunLink>
 
       <div
-        v-if="hasBadge || topic.sections.length"
+        v-if="hasBadge || sectionLabel(topic.section)"
         class="flex flex-wrap items-center gap-1.5"
       >
         <TopicBadgeGroup
           v-if="hasBadge"
-          :section="[]"
           :upvote-time="topic.upvoted_at"
           :has-best-answer="topic.has_best_answer"
           :mini-apps="topic.mini_apps"
           :is-n-s-f-w-topic="topic.is_nsfw"
         />
         <KunChip
-          v-for="sec in topic.sections"
-          :key="sec"
+          v-if="sectionLabel(topic.section)"
           size="sm"
           variant="flat"
           color="primary"
         >
-          {{ KUN_TOPIC_SECTION[sec] }}
+          {{ sectionLabel(topic.section) }}
         </KunChip>
       </div>
 

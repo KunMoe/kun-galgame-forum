@@ -127,7 +127,7 @@ func TestV1CreateTopicDraftRoundTrips(t *testing.T) {
 			t.Errorf("%s: created %v, read back %v", field, body[field], got[field])
 		}
 	}
-	if fmt.Sprint(got["sections"]) != "[g-news g-other]" {
+	if fmt.Sprint(got["sections"]) != "[news]" {
 		t.Errorf("sections %v", got["sections"])
 	}
 	if fmt.Sprint(got["cover_image_hashes"]) != "["+hash+"]" {

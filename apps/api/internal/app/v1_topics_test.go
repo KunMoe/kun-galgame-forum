@@ -39,7 +39,6 @@ const (
 	v1TopicMax   = 910000299
 	v1CoverHash  = "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"
 	v1CoverHash2 = "bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb"
-	v1SectionID  = 910000001
 )
 
 // The compiler and its cache are shared, and the concurrency tests call
@@ -216,9 +215,6 @@ func (f *topicsFix) seed(t *testing.T) {
 		}
 	}
 
-	runSQL(`INSERT INTO topic_section (id, name, created, updated) VALUES (?, 'g-walkthrough', ?, ?)
-		ON CONFLICT (id) DO NOTHING`, v1SectionID, base, base)
-
 	type row struct {
 		id, user, view, like, fav, up, v7, v30, status int
 		cat, scope                                     string
@@ -262,7 +258,8 @@ func (f *topicsFix) seed(t *testing.T) {
 	}
 
 	runSQL(`UPDATE topic SET edited = ? WHERE id = 910000201`, base.Add(2*time.Hour))
-	runSQL(`INSERT INTO topic_section_relation (topic_id, topic_section_id, created, updated) VALUES (910000201, ?, ?, ?)`, v1SectionID, base, base)
+	runSQL(`INSERT INTO topic_section_relation (topic_id, topic_section_id, created, updated) VALUES (910000201, ?, ?, ?)`, sectionID(t, f.db, "galgame-walkthrough"), base, base)
+	fileUnsectionedTopics(t, f.db, v1TopicMin, v1TopicMax)
 	runSQL(`INSERT INTO topic_poll (title, topic_id, user_id, created, updated) VALUES ('p', 910000201, ?, ?, ?)`, v1UserAlice, base, base)
 	runSQL(`INSERT INTO topic_lottery (topic_id, user_id, title, created, updated) VALUES (910000202, ?, 'l', ?, ?)`, v1UserAlice, base, base)
 	runSQL(`INSERT INTO topic_reply (id, content, user_id, topic_id, created, updated) VALUES (910000301, 'answer', ?, 910000203, ?, ?)`, v1UserBob, base, base)
@@ -284,9 +281,6 @@ func (f *topicsFix) cleanup(t *testing.T) {
 		if err := f.db.Exec(q, v1TopicMin, v1TopicMax).Error; err != nil {
 			t.Errorf("cleanup %q: %v", q, err)
 		}
-	}
-	if err := f.db.Exec("DELETE FROM topic_section WHERE id = ?", v1SectionID).Error; err != nil {
-		t.Errorf("cleanup topic_section: %v", err)
 	}
 }
 
@@ -706,7 +700,7 @@ func TestV1TopicsItemFields(t *testing.T) {
 	}
 	itemKeys := []string{
 		"author", "bumped_at", "category", "comment_count", "cover_images", "created_at", "edited_at", "has_best_answer", "id",
-		"is_nsfw", "like_count", "mini_apps", "object", "reply_count", "sections", "state", "title", "upvoted_at", "view_count",
+		"is_nsfw", "like_count", "mini_apps", "object", "reply_count", "section", "sections", "state", "title", "upvoted_at", "view_count",
 	}
 	for _, it := range list.Items {
 		if keys := slices.Sorted(maps.Keys(it)); !slices.Equal(keys, itemKeys) {
@@ -726,20 +720,20 @@ func TestV1TopicsItemFields(t *testing.T) {
 	for id, want := range map[string]map[string]string{
 		"910000201": {
 			"object": `"topic"`, "title": `"v1-topic-910000201"`, "state": `"published"`, "category": `"galgame"`,
-			"sections": `["g-walkthrough"]`, "cover_images": cover, "mini_apps": `["poll"]`,
+			"section": `"galgame-walkthrough"`, "sections": `["galgame-walkthrough"]`, "cover_images": cover, "mini_apps": `["poll"]`,
 			"author":     `{"object":"user","id":"910000001","name":"alice","avatar":null,"avatar_frame":null}`,
 			"view_count": `10`, "like_count": `1`, "reply_count": `0`, "comment_count": `0`,
 			"has_best_answer": `false`, "is_nsfw": `false`,
 			"bumped_at": `"2026-01-15T15:00:00Z"`, "created_at": `"2026-01-15T12:00:00Z"`, "upvoted_at": `"2026-01-15T12:00:00Z"`,
 			"edited_at": `"2026-01-15T14:00:00Z"`,
 		},
-		"910000202": {"sections": `[]`, "cover_images": `[]`, "mini_apps": `["lottery"]`, "upvoted_at": `null`, "edited_at": `null`},
+		"910000202": {"section": `"galgame-discussion"`, "sections": `["galgame-discussion"]`, "cover_images": `[]`, "mini_apps": `["lottery"]`, "upvoted_at": `null`, "edited_at": `null`},
 		"910000203": {
 			"has_best_answer": `true`,
 			"cover_images": `[{"url":"https://image.test.example/bb/bb/` + v1CoverHash2 + `.webp","hash":"` + v1CoverHash2 +
 				`","width":null,"height":null,"thumbhash":null,"sexual":null}]`,
 		},
-		"910000204": {"category": `"others"`, "view_count": `30`},
+		"910000204": {"category": `"others"`, "section": `"daily"`, "view_count": `30`},
 		"910000213": {"author": `{"object":"user","id":"910000003","name":"bob","avatar":null,"avatar_frame":null}`},
 		"910000217": {"author": `{"object":"user","id":"910000004","name":null,"avatar":null,"avatar_frame":null}`},
 	} {

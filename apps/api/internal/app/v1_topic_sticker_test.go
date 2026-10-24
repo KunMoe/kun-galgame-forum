@@ -56,7 +56,7 @@ func TestV1StickerOnlyTopicHasNoCover(t *testing.T) {
 		"title":            "moon cakes",
 		"content_markdown": `![鲲 Galgame 表情包 \[1\] - 1](/image/` + sticker + `_320 "鲲 Galgame 表情包 \[1] - 1") and /image/` + w3CoverHash,
 		"category":         "galgame",
-		"sections":         []string{"g-news"},
+		"sections":         []string{"news"},
 		"is_nsfw":          false,
 		"access_scope":     "public",
 	}

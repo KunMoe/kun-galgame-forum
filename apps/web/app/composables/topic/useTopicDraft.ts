@@ -18,7 +18,6 @@ export const useTopicDraft = () => {
   const {
     title,
     content,
-    category,
     section,
     isNSFW,
     coverImages,
@@ -57,9 +56,6 @@ export const useTopicDraft = () => {
       polls: polls.value.map(pollFormToDraft),
       lotteries: lotteries.value.map(lotteryFormToDraft)
     }
-    if (category.value) {
-      body.category = category.value as TopicDraftCreate['category']
-    }
     const saved = await settle(
       api.POST('/me/topic-drafts', {
         params: {
@@ -91,8 +87,7 @@ export const useTopicDraft = () => {
     const d = draft.data
     title.value = d.title
     content.value = d.content_markdown
-    category.value = d.category ?? ''
-    section.value = [...d.sections]
+    section.value = d.sections.slice(0, 1)
     isNSFW.value = d.is_nsfw
     coverImages.value = d.cover_image_hashes.map(coverTokenFromHash)
     polls.value = d.polls.map(pollFormFromDraft)

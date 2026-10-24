@@ -22,7 +22,7 @@ const (
 	noticeNameLimit = 40
 
 	announcementCategory = "others"
-	announcementSection  = "o-forum"
+	announcementSection  = "site"
 )
 
 var ErrAnnounced = errors.New("relocation: this author already has a topic with that title")

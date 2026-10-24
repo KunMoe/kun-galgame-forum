@@ -73,6 +73,7 @@ func (w *Writes) getTopicSource(ctx context.Context, in *getTopicSourceInput) (*
 		Title:           topic.Title,
 		ContentMarkdown: topic.Content,
 		Category:        topic.Category,
+		Section:         firstSection(sections),
 		Sections:        toSectionSlugs(sections),
 		IsNSFW:          topic.IsNSFW,
 		CoverImages:     coverImagesWithMeta(w.reads.cdn, topic.CoverImages, coverMeta),

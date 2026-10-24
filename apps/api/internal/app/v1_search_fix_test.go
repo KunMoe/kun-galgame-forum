@@ -248,6 +248,7 @@ func (f *searchFix) seed(t *testing.T) {
 	for id := srTopicTieMin; id <= srTopicTieMax; id++ {
 		topic(id, srUserBob, 0, "public", false, "xsrchtie", "body", base)
 	}
+	fileUnsectionedTopics(t, f.db, srTopicTitle, srTopicTieMax)
 
 	reply := func(id, topicID, user, floor int, body string, at time.Time) {
 		t.Helper()

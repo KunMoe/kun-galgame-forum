@@ -16,8 +16,7 @@ export const applyTopicSource = (source: TopicSource) => {
   temp.id = Number(source.topic_id)
   temp.title = source.title
   temp.content = source.content_markdown
-  temp.category = source.category
-  temp.section = [...source.sections]
+  temp.section = [source.section]
   temp.isNSFW = source.is_nsfw
   temp.coverImages = source.cover_images.map((image) =>
     coverTokenFromHash(image.hash)

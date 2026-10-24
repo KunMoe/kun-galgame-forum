@@ -8,21 +8,6 @@ import (
 	"kun-galgame-api/internal/topic/model"
 )
 
-func TestSectionCategoryMatch(t *testing.T) {
-	if got := sectionFields([]string{"g-news", "t-help"}, "galgame"); len(got) != 1 || *got[0].Pointer != "/sections/1" {
-		t.Fatalf("mismatch indexes: %+v", got)
-	}
-	if got := sectionFields([]string{"g-news", "g-seeking"}, "galgame"); len(got) != 0 {
-		t.Fatalf("matched: %+v", got)
-	}
-	if got := categorySectionField([]string{"t-web"}, "galgame"); len(got) != 1 || *got[0].Pointer != "/category" {
-		t.Fatalf("category pointer: %+v", got)
-	}
-	if got := sectionCategory("o-daily"); got != "others" {
-		t.Fatalf("o- prefix = %q", got)
-	}
-}
-
 func TestAccessErrors(t *testing.T) {
 	roles := []AccessRole{"creator"}
 	users := []repr.DecimalID{"2"}

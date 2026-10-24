@@ -18,8 +18,8 @@ func TestV1CreateTopicSuccess(t *testing.T) {
 	body := map[string]any{
 		"title":            "  hello world  ",
 		"content_markdown": "see /image/" + h1 + " and more",
-		"category":         "galgame",
-		"sections":         []string{"g-news", "g-walkthrough"},
+		"category":         "others",
+		"sections":         []string{"g-news", "galgame-walkthrough"},
 		"is_nsfw":          true,
 		"access_scope":     "public",
 	}
@@ -39,8 +39,8 @@ func TestV1CreateTopicSuccess(t *testing.T) {
 		t.Fatalf("title %v", out["title"])
 	}
 	secs, _ := out["sections"].([]any)
-	if len(secs) != 2 || secs[0] != "g-news" || secs[1] != "g-walkthrough" {
-		t.Fatalf("sections %v", out["sections"])
+	if len(secs) != 1 || secs[0] != "news" || out["section"] != "news" || out["category"] != "galgame" {
+		t.Fatalf("section %v sections %v category %v", out["section"], out["sections"], out["category"])
 	}
 	covers, _ := out["cover_images"].([]any)
 	if len(covers) != 1 {
@@ -69,7 +69,7 @@ func TestV1CreateTopicSuccess(t *testing.T) {
 	}
 	var nRel int64
 	f.db.Raw(`SELECT COUNT(*) FROM topic_section_relation WHERE topic_id = ?`, id).Scan(&nRel)
-	if nRel != 2 {
+	if nRel != 1 {
 		t.Fatalf("section rels %d", nRel)
 	}
 	aw := f.snapshotAwards()
@@ -87,7 +87,7 @@ func TestV1CreateTopicCoversExactAndNone(t *testing.T) {
 	mk := func(covers any, key int) map[string]any {
 		return map[string]any{
 			"title": "c", "content_markdown": "see /image/" + w3CoverHash,
-			"category": "galgame", "sections": []string{"g-news"}, "is_nsfw": false,
+			"category": "galgame", "sections": []string{"news"}, "is_nsfw": false,
 			"access_scope": "public", "cover_image_hashes": covers,
 		}
 	}
@@ -117,7 +117,7 @@ func TestV1CreateTopicPaidAward(t *testing.T) {
 	f.alice(t)
 	body := map[string]any{
 		"title": "paid", "content_markdown": "x", "category": "galgame",
-		"sections": []string{"g-seeking"}, "is_nsfw": false, "access_scope": "public",
+		"sections": []string{"tech-help"}, "is_nsfw": false, "access_scope": "public",
 	}
 	resp, raw := f.doJSON(t, http.MethodPost, "/api/v1/topics", "sess-alice", "/topics", keyUUID(4), nil, body)
 	if resp.StatusCode != 201 {
@@ -143,7 +143,7 @@ func TestV1CreateTopicMentionsCap(t *testing.T) {
 	}
 	body := map[string]any{
 		"title": "m", "content_markdown": mentionBody(ids...),
-		"category": "galgame", "sections": []string{"g-news"}, "is_nsfw": false, "access_scope": "public",
+		"category": "galgame", "sections": []string{"news"}, "is_nsfw": false, "access_scope": "public",
 	}
 	resp, raw := f.doJSON(t, http.MethodPost, "/api/v1/topics", "sess-alice", "/topics", keyUUID(5), nil, body)
 	if resp.StatusCode != 201 {
@@ -180,7 +180,7 @@ func TestV1CreateTopicIdempotentReplay(t *testing.T) {
 	f.alice(t)
 	body := map[string]any{
 		"title": "idem", "content_markdown": "x", "category": "galgame",
-		"sections": []string{"g-news"}, "is_nsfw": false, "access_scope": "public",
+		"sections": []string{"news"}, "is_nsfw": false, "access_scope": "public",
 	}
 	key := keyUUID(6)
 	resp1, raw1 := f.doJSON(t, http.MethodPost, "/api/v1/topics", "sess-alice", "/topics", key, nil, body)
@@ -206,7 +206,7 @@ func TestV1CreateTopicMissingIdempotencyKey(t *testing.T) {
 	f.alice(t)
 	resp, raw := f.doJSON(t, http.MethodPost, "/api/v1/topics", "sess-alice", "/topics", "", nil, map[string]any{
 		"title": "x", "content_markdown": "y", "category": "galgame",
-		"sections": []string{"g-news"}, "is_nsfw": false, "access_scope": "public",
+		"sections": []string{"news"}, "is_nsfw": false, "access_scope": "public",
 	})
 	if resp.StatusCode != http.StatusBadRequest {
 		t.Fatalf("%d %s", resp.StatusCode, raw)
@@ -226,7 +226,7 @@ func TestV1CreateTopicUsersScopeDropsAuthor(t *testing.T) {
 	f.alice(t)
 	body := map[string]any{
 		"title": "u", "content_markdown": "x", "category": "galgame",
-		"sections": []string{"g-news"}, "is_nsfw": false, "access_scope": "users",
+		"sections": []string{"news"}, "is_nsfw": false, "access_scope": "users",
 		"access_user_ids": []string{fmt.Sprint(w3UserAlice), fmt.Sprint(w3UserBob), fmt.Sprint(w3UserGrant)},
 	}
 	resp, raw := f.doJSON(t, http.MethodPost, "/api/v1/topics", "sess-alice", "/topics", keyUUID(7), nil, body)

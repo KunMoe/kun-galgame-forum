@@ -28,7 +28,7 @@ const author = computed(() => toKunUser(props.topic.author))
 
     <div class="flex w-full flex-wrap items-center gap-x-3 gap-y-1 text-xs">
       <TopicBadgeGroup
-        :section="topic.sections"
+        :section="topic.section"
         :upvote-time="topic.upvoted_at"
         :has-best-answer="topic.has_best_answer"
         :mini-apps="topic.mini_apps"

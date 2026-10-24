@@ -49,7 +49,7 @@ type TopicFeedPos struct {
 
 const helpSections = "EXISTS (SELECT 1 FROM topic_section_relation tsr " +
 	"JOIN topic_section ts ON ts.id = tsr.topic_section_id " +
-	"WHERE tsr.topic_id = %s AND ts.name IN ('g-seeking','g-other','t-help'))"
+	"WHERE tsr.topic_id = %s AND ts.hidden_from_feeds)"
 
 func sectionCond(mode, topicCol string, onlyTopicCreation bool) string {
 	in := fmt.Sprintf(helpSections, topicCol)

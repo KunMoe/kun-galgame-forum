@@ -18,7 +18,7 @@ const maxRounds = 5
 type listInput struct {
 	collect.Page
 	Types              []ActivityType `query:"activity_types" required:"false" maxItems:"22" doc:"Only these activity types, comma-separated. Absent means every type."`
-	TopicSections      string         `query:"topic_sections" enum:"normal,help,all" default:"normal" maxLength:"6" doc:"Which topic_creation activities to include: help is the resource and help sections (g-seeking, g-other, t-help), normal is every other section, all is both. Other kinds are not affected."`
+	TopicSections      string         `query:"topic_sections" enum:"normal,help,all" default:"normal" maxLength:"6" doc:"Which topic_creation activities to include: help is the sections listSections marks is_hidden_from_feeds (resource-seeking and tech-help), normal is every other section, all is both. Other kinds are not affected."`
 	Sort               string         `query:"sort" enum:"occurred_desc,bumped_desc" default:"occurred_desc" maxLength:"13" doc:"occurred_desc (default) or bumped_desc. bumped_desc sorts topics by bump time and needs activity_types to be exactly topic_creation."`
 	IncludeNSFW        bool           `query:"include_nsfw" default:"false" doc:"When true, NSFW activities and works are included. Default false."`
 	IncludeUnresourced bool           `query:"include_galgames_without_resources" default:"false" doc:"When true, galgame_creation includes works that have no download resource yet. Default false."`

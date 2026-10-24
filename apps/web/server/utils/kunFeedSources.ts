@@ -6,7 +6,6 @@ import type {
   TopicSummary
 } from '../../shared/utils/api/schemas'
 import type { components } from '../../shared/types/api/v1'
-import { TOPIC_SECTION_OPTIONS } from '../../app/constants/topic'
 import {
   KUN_GALGAME_TOOLSET_LANGUAGE_MAP,
   KUN_GALGAME_TOOLSET_PLATFORM_MAP,
@@ -72,18 +71,21 @@ export const loadTopicFeed = async (
   baseUrl: string,
   params: { includeNsfw: boolean; section?: SectionKey }
 ): Promise<KunFeedResult> => {
-  const list = await settle(
-    api.GET('/topics', {
-      params: {
-        query: {
-          sort: 'created_desc',
-          limit: 20,
-          ...nsfwQuery(params.includeNsfw),
-          ...(params.section ? { section: params.section } : {})
+  const [list, sections] = await Promise.all([
+    settle(
+      api.GET('/topics', {
+        params: {
+          query: {
+            sort: 'created_desc',
+            limit: 20,
+            ...nsfwQuery(params.includeNsfw),
+            ...(params.section ? { section: params.section } : {})
+          }
         }
-      }
-    })
-  )
+      })
+    ),
+    params.section ? settle(api.GET('/sections')) : null
+  ])
   if (!list.ok) {
     return feedFailure(list.problem)
   }
@@ -96,9 +98,9 @@ export const loadTopicFeed = async (
       topicDescription(details[index]!)
     )
   )
-  const sectionLabel = TOPIC_SECTION_OPTIONS.find(
-    (option) => option.value === params.section
-  )?.label
+  const sectionLabel = sections?.ok
+    ? sections.data.items.find((s) => s.section === params.section)?.label
+    : undefined
   return feedOk({
     title: sectionLabel
       ? `鲲 Galgame 论坛 - ${sectionLabel} 分区新话题`

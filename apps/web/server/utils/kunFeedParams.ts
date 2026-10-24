@@ -1,5 +1,4 @@
 import { createHash } from 'node:crypto'
-import { KUN_TOPIC_SECTION } from '../../app/constants/topic'
 import type { components } from '../../shared/types/api/v1'
 import {
   kunFeedUrl,
@@ -28,7 +27,7 @@ export type UserFeedParams = {
 }
 
 const FEED_ID = /^[1-9][0-9]{0,18}$/
-const SECTION_SHAPE = /^[a-z]-[a-z]{2,20}$/
+const SECTION_SHAPE = /^[a-z]+(-[a-z]+)*$/
 const SOURCE_SHAPE = /^[a-z0-9_]{1,40}$/
 
 const queryString = (query: Query, key: string): string | undefined => {
@@ -73,7 +72,7 @@ export const parseSiteFeed = (
       const raw = queryString(query, 'section')
       if (
         raw !== undefined &&
-        (!SECTION_SHAPE.test(raw) || !(raw in KUN_TOPIC_SECTION))
+        (!SECTION_SHAPE.test(raw) || raw.length > 40)
       ) {
         return null
       }

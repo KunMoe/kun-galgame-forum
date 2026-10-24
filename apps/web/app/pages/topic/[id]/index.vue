@@ -1,5 +1,4 @@
 <script setup lang="ts">
-import { KUN_TOPIC_SECTION } from '~/constants/topic'
 import type {
   DiscussionForumPosting,
   WithContext,
@@ -16,6 +15,7 @@ import { problemMessage } from '#shared/utils/api/message'
 definePageMeta({ key: (route) => route.path })
 
 const route = useRoute()
+const { sectionLabel } = useTopicSections()
 
 const { allowsNsfw } = useContentStance()
 
@@ -151,9 +151,7 @@ if (data.value) {
       interactionStatistic: interactionStatistics,
       commentCount: topic.reply_count,
       ...(acceptedAnswerSchema && { acceptedAnswer: acceptedAnswerSchema }),
-      keywords: [
-        ...topic.sections.map((s) => KUN_TOPIC_SECTION[s]).filter(Boolean)
-      ].join(', ')
+      keywords: sectionLabel(topic.section)
     }
   })
 

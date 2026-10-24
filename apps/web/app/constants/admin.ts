@@ -98,6 +98,13 @@ export const KUN_ADMIN_PAGE_ASIDE_NAV_ITEM: KunAdminPageAsideItem[] = [
     permissions: ['topic.view_hidden']
   },
   {
+    name: 'topic-section',
+    label: '话题分区管理',
+    icon: 'lucide:columns-3',
+    router: 'topic-section',
+    permissions: ['topic.manage_sections']
+  },
+  {
     name: 'friend-link',
     label: '友链管理',
     icon: 'lucide:link',

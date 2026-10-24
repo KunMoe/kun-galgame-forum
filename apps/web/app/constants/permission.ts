@@ -30,6 +30,7 @@ export const KUN_PERMISSION_META: Record<ForumPermission, KunPermissionMeta> = {
   'topic.view_restricted': { label: '查看受限话题', group: '话题' },
   'topic.delete_any': { label: '彻底删除话题', group: '话题' },
   'topic.set_best_answer': { label: '设置最佳答案', group: '话题' },
+  'topic.manage_sections': { label: '管理话题分区', group: '话题' },
   'reply.edit_any': { label: '编辑任意回复', group: '回复' },
   'reply.delete_any': { label: '删除任意回复', group: '回复' },
   'reply.pin': { label: '置顶回复', group: '回复' },

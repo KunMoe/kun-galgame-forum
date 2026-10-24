@@ -8,7 +8,6 @@ export const useTempEditStore = defineStore(
     const id = ref<EditStoreTemp['id']>(0)
     const title = ref<EditStoreTemp['title']>('')
     const content = ref<EditStoreTemp['content']>('')
-    const category = ref<EditStoreTemp['category']>('')
     const section = ref<EditStoreTemp['section']>([])
     const isNSFW = ref<EditStoreTemp['isNSFW']>(false)
     const coverImages = ref<EditStoreTemp['coverImages']>([])
@@ -22,7 +21,6 @@ export const useTempEditStore = defineStore(
       id.value = 0
       title.value = ''
       content.value = ''
-      category.value = ''
       section.value = []
       isNSFW.value = false
       coverImages.value = []
@@ -37,7 +35,6 @@ export const useTempEditStore = defineStore(
       id,
       title,
       content,
-      category,
       section,
       isNSFW,
       coverImages,

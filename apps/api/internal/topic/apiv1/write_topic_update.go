@@ -2,6 +2,7 @@ package apiv1
 
 import (
 	"context"
+	"fmt"
 	"time"
 
 	"kun-galgame-api/internal/infrastructure/markdown"
@@ -55,17 +56,26 @@ func (w *Writes) updateTopic(ctx context.Context, in *updateTopicInput) (*update
 	if patch.ContentMarkdown != nil {
 		body = markdown.NormalizeStoredContent(*patch.ContentMarkdown)
 	}
-	category := topic.Category
-	if patch.Category != nil {
-		category = *patch.Category
+	section := ""
+	if len(storedSections) > 0 {
+		section = storedSections[0]
 	}
-	sections := storedSections
+	storedSection := section
 	if patch.Sections != nil {
-		sections = make([]string, len(*patch.Sections))
-		for i, s := range *patch.Sections {
-			sections[i] = string(s)
-		}
+		section, _ = NormalizeSectionKey(string((*patch.Sections)[0]))
 	}
+	if section == "" {
+		return nil, validationFailed(problem.AtPointer("/sections", problem.ReasonRequired, "the topic has no section yet", nil))
+	}
+	rules, err := w.reads.taxonomy.FindSectionRules(nil, []string{storedSection, section})
+	if err != nil {
+		return nil, problem.Internal(err)
+	}
+	rule, ok := rules[section]
+	if !ok {
+		return nil, problem.Internal(fmt.Errorf("topic section %q is missing", section))
+	}
+	category := rule.LegacyCategory
 	nsfw := topic.IsNSFW
 	if patch.IsNSFW != nil {
 		nsfw = *patch.IsNSFW
@@ -83,10 +93,8 @@ func (w *Writes) updateTopic(ctx context.Context, in *updateTopicInput) (*update
 	if patch.ContentMarkdown != nil && stringsTrimEmpty(*patch.ContentMarkdown) {
 		fields = append(fields, tooShort("/content_markdown"))
 	}
-	if patch.Sections != nil {
-		fields = append(fields, sectionFields(sections, category)...)
-	} else if patch.Category != nil {
-		fields = append(fields, categorySectionField(sections, category)...)
+	if section != storedSection && rule.IsArchived {
+		fields = append(fields, sectionArchived("/sections/0"))
 	}
 	fields = append(fields, accessErrors(access)...)
 	if len(fields) > 0 {
@@ -97,19 +105,19 @@ func (w *Writes) updateTopic(ctx context.Context, in *updateTopicInput) (*update
 	titleChanged := patch.Title != nil && title != topic.Title
 	bodyChanged := patch.ContentMarkdown != nil && body != topic.Content
 	textChanged := titleChanged || bodyChanged
-	categoryChanged := patch.Category != nil && category != topic.Category
+	categoryChanged := category != topic.Category
 	nsfwChanged := patch.IsNSFW != nil && nsfw != topic.IsNSFW
 	coversChanged := patch.CoverImageHashes != nil && !coversEqual(covers, topic.CoverImages)
 	scopeChanged := access.scope != topic.AccessScope
 	grantsTouched := patch.AccessScope != nil || patch.AccessRoles != nil || patch.AccessUserIDs != nil
-	sectionsTouched := patch.Sections != nil
+	sectionChanged := section != storedSection
 	stateChanged := needHide || needUnhide
-	oldConsume := anyConsumeSection(storedSections)
-	newConsume := anyConsumeSection(sections)
+	oldConsume := rules[storedSection].CostsMoemoepoint
+	newConsume := rule.CostsMoemoepoint
 	footprintDelta := topicSectionFootprint(newConsume) - topicSectionFootprint(oldConsume)
 
 	if !titleChanged && !bodyChanged && !categoryChanged && !nsfwChanged && !coversChanged &&
-		!scopeChanged && !grantsTouched && !sectionsTouched && !stateChanged {
+		!scopeChanged && !grantsTouched && !sectionChanged && !stateChanged {
 		out, p := w.reads.buildTopic(ctx, topic, user)
 		if p != nil {
 			return nil, p
@@ -179,8 +187,8 @@ func (w *Writes) updateTopic(ctx context.Context, in *updateTopicInput) (*update
 				return err
 			}
 		}
-		if sectionsTouched {
-			if err := w.writeSections(tx, topic.ID, sections); err != nil {
+		if sectionChanged {
+			if err := w.reads.taxonomy.ReplaceSectionRelations(tx, topic.ID, []int{rule.ID}); err != nil {
 				return err
 			}
 		}

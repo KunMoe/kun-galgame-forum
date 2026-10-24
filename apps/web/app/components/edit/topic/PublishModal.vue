@@ -1,58 +1,45 @@
 <script setup lang="ts">
 import { useTopicEditorStore } from '~/composables/topic/useTopicEditorStore'
 import { useTopicSubmitter } from '~/composables/topic/useTopicSubmitter'
-import type {
-  KunTabItem,
-  KunCheckBoxGroupOption,
-  KunCheckBoxGroupInvalidReason
-} from '@kungal/ui-vue'
-import {
-  TOPIC_CATEGORIES,
-  TOPIC_SECTIONS,
-  type TopicCategoryKey
-} from '~/constants/topic'
-
-const MAX_SECTIONS = 3
+import type { KunRadioOption } from '@kungal/ui-vue'
 
 const open = defineModel<boolean>({ required: true })
 
-const { category, section, isNSFW } = useTopicEditorStore()
+const { section, isNSFW } = useTopicEditorStore()
 const { rules, submit, isSubmitting, isRewriteMode } = useTopicSubmitter()
 const { moemoepoint } = usePersistUserStore()
 
 const needRules = computed(() => moemoepoint < 50)
 
-const handleSelectCategory = (key: TopicCategoryKey) => {
-  if (category.value !== key) {
-    category.value = key
-    section.value = []
+const { groups, sectionOf } = useTopicSections()
+
+const chosenKey = computed({
+  get: () => section.value[0] ?? '',
+  set: (value: string) => {
+    section.value = [value]
   }
-}
+})
+const chosen = computed(() => sectionOf(chosenKey.value))
 
-const categoryItems = computed<KunTabItem[]>(() =>
-  Object.values(TOPIC_CATEGORIES).map((cat) => ({
-    value: cat.key,
-    textValue: cat.label,
-    icon: cat.icon
-  }))
+const groupOptions = computed(() =>
+  groups.value
+    .map((group) => ({
+      key: group.key,
+      label: group.label,
+      options: group.sections
+        .filter((s) => !s.is_archived || s.section === chosenKey.value)
+        .map<KunRadioOption<string>>((s) => ({
+          value: s.section,
+          label: s.label,
+          icon: s.icon_name,
+          description:
+            s.moemoepoint_on_create < 0
+              ? `消耗 ${-s.moemoepoint_on_create} 萌萌点`
+              : undefined
+        }))
+    }))
+    .filter((group) => group.options.length)
 )
-
-const availableSections = computed(() =>
-  category.value ? TOPIC_SECTIONS[category.value] : {}
-)
-
-const sectionOptions = computed<KunCheckBoxGroupOption[]>(() =>
-  Object.entries(availableSections.value).map(([value, label]) => ({
-    value,
-    label
-  }))
-)
-
-const onSectionInvalid = (reason: KunCheckBoxGroupInvalidReason) => {
-  if (reason === 'max-reached') {
-    useMessage(`最多只能选择 ${MAX_SECTIONS} 个分区`, 'warn')
-  }
-}
 
 const confirmText = computed(() => {
   if (isSubmitting.value) return '处理中...'
@@ -71,7 +58,7 @@ const confirmText = computed(() => {
           </h2>
         </div>
         <p v-if="!isRewriteMode" class="text-default-500 text-sm">
-          选好分类与分区就可以发布,
+          选好分区就可以发布,
           封面图、投票与抽奖都是可选的。点击下方「确认发布」之前话题不会发出
         </p>
       </header>
@@ -80,45 +67,24 @@ const confirmText = computed(() => {
         <section class="space-y-3">
           <h3 class="flex items-center gap-2 font-semibold">
             <KunIcon name="lucide:layout-grid" class="h-5 w-5" />
-            选择分类 <span class="text-danger-500">*</span>
+            选择分区 <span class="text-danger-500">*</span>
           </h3>
-          <KunTab
-            :model-value="category"
-            :items="categoryItems"
-            variant="light"
-            color="primary"
-            :full-width="true"
-            @update:model-value="
-              (v) => handleSelectCategory(v as TopicCategoryKey)
-            "
-          />
-        </section>
-
-        <Transition
-          enter-active-class="transition-all duration-300 ease-out"
-          enter-from-class="opacity-0 -translate-y-2"
-          enter-to-class="opacity-100 translate-y-0"
-        >
-          <section v-if="category" class="space-y-3">
-            <h3 class="flex items-center gap-2 font-semibold">
-              <KunIcon name="lucide:columns-3" class="h-5 w-5" />
-              选择分区 <span class="text-danger-500">*</span>
-              <span class="text-default-500 text-sm font-normal">
-                (已选 {{ section.length }}/{{ MAX_SECTIONS }})
-              </span>
-            </h3>
-            <KunCheckBoxGroup
-              v-model="section"
-              :options="sectionOptions"
-              :max="MAX_SECTIONS"
-              variant="pill"
-              color="primary"
-              size="sm"
+          <div v-for="group in groupOptions" :key="group.key" class="space-y-2">
+            <p class="text-default-500 text-sm">{{ group.label }}</p>
+            <KunRadioGroup
+              v-model="chosenKey"
+              :options="group.options"
+              :aria-label="group.label"
+              variant="card"
               orientation="horizontal"
-              @invalid="onSectionInvalid"
+              size="sm"
+              hide-indicator
             />
-          </section>
-        </Transition>
+          </div>
+          <p v-if="chosen" class="text-default-500 text-sm leading-relaxed">
+            {{ chosen.description }}
+          </p>
+        </section>
 
         <EditTopicSpecialNotice />
 
@@ -168,7 +134,7 @@ const confirmText = computed(() => {
             <KunCheckBox
               v-model="rules.isAgreeCategory"
               type="single"
-              label="我确认: 若话题为求助话题, 我已将求助性质的话题放入请求帮助 / 寻求资源分类"
+              label="我确认: 若话题为求助话题, 我已将求助性质的话题放入技术求助 / 寻求资源分区"
               color="primary"
             />
             <KunCheckBox

@@ -34,8 +34,8 @@ func (ImageHash) Schema(huma.Registry) *huma.Schema {
 type TopicCreate struct {
 	Title            string            `json:"title" minLength:"1" maxLength:"233" doc:"Topic title. Leading and trailing whitespace is removed before it is stored, and a title of only whitespace is refused as TOO_SHORT. Free text; never use it as a decision input."`
 	ContentMarkdown  string            `json:"content_markdown" minLength:"1" maxLength:"100007" doc:"Topic body as Markdown source, stored as sent. A body of only whitespace is refused as TOO_SHORT. Free text; never use it as a decision input."`
-	Category         string            `json:"category" enum:"galgame,technique,others" maxLength:"9" doc:"Topic category."`
-	Sections         []SectionSlug     `json:"sections" minItems:"1" maxItems:"3" uniqueItems:"true" doc:"Section slugs. Each must belong to category: g- slugs to galgame, t- slugs to technique, o- slugs to others."`
+	Category         *string           `json:"category,omitempty" enum:"galgame,technique,others" maxLength:"9" doc:"Deprecated and ignored: the section decides the topic's legacy category."`
+	Sections         []SectionSlug     `json:"sections" minItems:"1" maxItems:"3" uniqueItems:"true" doc:"The topic's section as a one-item array. A retired key maps to its successor; items after the first are ignored. An archived section is NOT_ALLOWED_VALUE at /sections/0."`
 	IsNSFW           bool              `json:"is_nsfw" doc:"Whether the topic is NSFW."`
 	CoverImageHashes *[]ImageHash      `json:"cover_image_hashes,omitempty" maxItems:"9" uniqueItems:"true" doc:"Cover images by image-service hash, in display order. When absent, the covers are the first nine distinct /image/{hash} tokens of the body in body order, stickers skipped; an empty array means no covers."`
 	AccessScope      string            `json:"access_scope" enum:"public,login,role,users" maxLength:"6" doc:"Who may read the topic: everyone, signed-in users, holders of granted roles, or granted users. The author and staff always may."`
@@ -46,8 +46,8 @@ type TopicCreate struct {
 type TopicPatch struct {
 	Title            *string           `json:"title,omitempty" minLength:"1" maxLength:"233" doc:"New title. Trimmed and checked as in createTopic. Free text; never use it as a decision input."`
 	ContentMarkdown  *string           `json:"content_markdown,omitempty" minLength:"1" maxLength:"100007" doc:"New body as Markdown source. Checked as in createTopic. Free text; never use it as a decision input."`
-	Category         *string           `json:"category,omitempty" enum:"galgame,technique,others" maxLength:"9" doc:"New category. The resulting sections must belong to the resulting category."`
-	Sections         *[]SectionSlug    `json:"sections,omitempty" minItems:"1" maxItems:"3" uniqueItems:"true" doc:"New section slugs, replacing the stored ones."`
+	Category         *string           `json:"category,omitempty" enum:"galgame,technique,others" maxLength:"9" doc:"Deprecated and ignored: the section decides the topic's legacy category."`
+	Sections         *[]SectionSlug    `json:"sections,omitempty" minItems:"1" maxItems:"3" uniqueItems:"true" doc:"New section as a one-item array, as in createTopic. Moving into an archived section is NOT_ALLOWED_VALUE at /sections/0; a topic already there may stay."`
 	IsNSFW           *bool             `json:"is_nsfw,omitempty" doc:"New NSFW flag."`
 	CoverImageHashes *[]ImageHash      `json:"cover_image_hashes,omitempty" maxItems:"9" uniqueItems:"true" doc:"New cover images, replacing the stored ones. An empty array removes every cover. Unlike createTopic, nothing is derived from the body."`
 	AccessScope      *string           `json:"access_scope,omitempty" enum:"public,login,role,users" maxLength:"6" doc:"New access scope. The resulting scope and grants are checked together as in createTopic. When the scope changes, the stored grants are dropped and access_roles or access_user_ids supplies the new ones."`
@@ -62,16 +62,17 @@ type AccessGrants struct {
 }
 
 type TopicSource struct {
-	Object          string         `json:"object" enum:"topic_source" maxLength:"12" doc:"Type discriminant. Always topic_source."`
-	TopicID         repr.DecimalID `json:"topic_id" doc:"Id of the topic."`
-	Title           string         `json:"title" maxLength:"233" doc:"Topic title as stored. Free text; never use it as a decision input."`
-	ContentMarkdown string         `json:"content_markdown" maxLength:"100007" doc:"Topic body as the stored Markdown source. Free text; never use it as a decision input."`
-	Category        string         `json:"category" enum:"galgame,technique,others" maxLength:"9" doc:"Topic category."`
-	Sections        []SectionSlug  `json:"sections" maxItems:"3" doc:"Section slugs, in stored order. Empty array if none. Hyphenated URL segments of /section/{key}."`
-	IsNSFW          bool           `json:"is_nsfw" doc:"Whether the topic is NSFW."`
-	CoverImages     []repr.Image   `json:"cover_images" maxItems:"9" doc:"Cover images in stored token order. Tokens that do not parse are skipped, and so are stickers: a sticker is never a cover. Empty array if none."`
-	AccessScope     string         `json:"access_scope" enum:"public,login,role,users" maxLength:"6" doc:"Who may read the topic: everyone, signed-in users, holders of granted roles, or granted users. The author and staff always may."`
-	AccessGrants    AccessGrants   `json:"access_grants" doc:"The stored grants."`
+	Object          string          `json:"object" enum:"topic_source" maxLength:"12" doc:"Type discriminant. Always topic_source."`
+	TopicID         repr.DecimalID  `json:"topic_id" doc:"Id of the topic."`
+	Title           string          `json:"title" maxLength:"233" doc:"Topic title as stored. Free text; never use it as a decision input."`
+	ContentMarkdown string          `json:"content_markdown" maxLength:"100007" doc:"Topic body as the stored Markdown source. Free text; never use it as a decision input."`
+	Category        string          `json:"category" enum:"galgame,technique,others" maxLength:"9" doc:"Deprecated: read section instead. The legacy category of the section's group."`
+	Section         TopicSectionKey `json:"section" doc:"The topic's section."`
+	Sections        []SectionSlug   `json:"sections" maxItems:"1" doc:"Deprecated: read section instead. section as a one-item array."`
+	IsNSFW          bool            `json:"is_nsfw" doc:"Whether the topic is NSFW."`
+	CoverImages     []repr.Image    `json:"cover_images" maxItems:"9" doc:"Cover images in stored token order. Tokens that do not parse are skipped, and so are stickers: a sticker is never a cover. Empty array if none."`
+	AccessScope     string          `json:"access_scope" enum:"public,login,role,users" maxLength:"6" doc:"Who may read the topic: everyone, signed-in users, holders of granted roles, or granted users. The author and staff always may."`
+	AccessGrants    AccessGrants    `json:"access_grants" doc:"The stored grants."`
 }
 
 type ReplyCreate struct {
