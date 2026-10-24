@@ -190,7 +190,25 @@ watch([isSentinelVisible, hasMore, loadingMore], ([visible, more, busy]) => {
         </template>
 
         <template v-else>
-          <KunLoading :loading="status === 'pending'">
+          <div
+            v-if="status === 'pending'"
+            class="divide-default-200/60 divide-y"
+            aria-busy="true"
+          >
+            <div v-for="n in 6" :key="n" class="space-y-2 py-4 first:pt-0">
+              <KunSkeleton width="70%" height="1.25rem" />
+              <KunSkeleton width="6rem" height="1.25rem" rounded="full" />
+              <div class="flex items-center gap-2">
+                <KunSkeleton
+                  variant="circle"
+                  width="1.25rem"
+                  height="1.25rem"
+                />
+                <KunSkeleton width="40%" height="0.875rem" />
+              </div>
+            </div>
+          </div>
+          <template v-else>
             <div class="divide-default-200/60 divide-y">
               <TopicCard
                 v-for="topic in items"
@@ -198,7 +216,7 @@ watch([isSentinelVisible, hasMore, loadingMore], ([visible, more, busy]) => {
                 :topic="topic"
               />
             </div>
-          </KunLoading>
+          </template>
 
           <KunNull
             v-if="status !== 'pending' && !items.length"
@@ -206,7 +224,7 @@ watch([isSentinelVisible, hasMore, loadingMore], ([visible, more, busy]) => {
           />
 
           <div
-            v-if="items.length"
+            v-if="status !== 'pending' && items.length"
             ref="sentinel"
             class="text-default-400 flex justify-center pt-4 text-sm"
           >

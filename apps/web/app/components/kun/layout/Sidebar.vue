@@ -60,7 +60,7 @@ const links = [
         </NuxtLink>
       </template>
       <template v-else>
-        <KunTooltip position="right">
+        <KunTooltip position="right" class-name="flex w-full justify-center">
           <KunLink
             class-name="flex justify-center items-center gap-0"
             underline="none"

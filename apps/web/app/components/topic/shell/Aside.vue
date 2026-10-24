@@ -20,24 +20,26 @@ const list = (sort: 'created_desc' | 'views_7d_desc') =>
         },
         signal
       }),
-    { server: false, lazy: true }
+    { lazy: true }
   )
 
-const { data: latest } = list('created_desc')
-const { data: hot } = list('views_7d_desc')
+const latest = list('created_desc')
+const hot = list('views_7d_desc')
 
 const blocks = computed<
-  { title: string; items: TopicSummary[]; hot: boolean }[]
+  { title: string; items: TopicSummary[]; hot: boolean; pending: boolean }[]
 >(() => [
   {
     title: '最新话题',
-    items: latest.value?.items ?? [],
-    hot: false
+    items: latest.data.value?.items ?? [],
+    hot: false,
+    pending: latest.status.value === 'pending'
   },
   {
     title: '本周热门',
-    items: hot.value?.items ?? [],
-    hot: true
+    items: hot.data.value?.items ?? [],
+    hot: true,
+    pending: hot.status.value === 'pending'
   }
 ])
 </script>
@@ -52,7 +54,13 @@ const blocks = computed<
       <h2 class="px-2 text-base font-semibold">
         {{ block.title }}
       </h2>
-      <ol v-if="block.items.length" class="space-y-0.5">
+      <div v-if="block.pending && !block.items.length" class="space-y-3 px-2">
+        <div v-for="n in ASIDE_LIMIT" :key="n" class="space-y-1.5">
+          <KunSkeleton width="90%" height="0.875rem" />
+          <KunSkeleton width="30%" height="0.75rem" />
+        </div>
+      </div>
+      <ol v-else-if="block.items.length" class="space-y-0.5">
         <li v-for="topic in block.items" :key="topic.id">
           <NuxtLink
             :to="`/topic/${topic.id}`"

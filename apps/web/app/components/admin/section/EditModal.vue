@@ -122,13 +122,13 @@ const handleSubmit = () => {
       <KunCoverUpload
         v-model="form.banner_image_hash"
         :preview-url="bannerPreview"
-        label="分区头图 (显示在分区标题的背景上)"
+        label="分区头图 (横图, 宽 1500px 左右即可, 上传后压缩为不超过 1920×1080 的 WebP)"
       />
 
       <div class="space-y-2">
         <p class="text-sm font-medium">
           站娘图片 ({{ form.mascot_image_hashes.length }}/{{ MAX_MASCOTS }},
-          每次进入分区随机显示一张, 建议使用透明背景的 PNG)
+          每次进入分区随机显示一张, 建议使用高 400px 左右、透明背景的 PNG)
         </p>
         <div class="flex flex-wrap gap-2">
           <div

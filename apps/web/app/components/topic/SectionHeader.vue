@@ -36,6 +36,7 @@ const isAboutOpen = ref(false)
         :src="section.banner.url"
         alt=""
         aria-hidden="true"
+        decoding="async"
         class="absolute inset-0 size-full object-cover"
       />
       <img
