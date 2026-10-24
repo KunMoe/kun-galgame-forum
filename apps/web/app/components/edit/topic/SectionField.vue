@@ -6,8 +6,17 @@ import { useTopicEditorStore } from '~/composables/topic/useTopicEditorStore'
 const props = defineProps<{
   classification: TopicClassification | null
   isClassifying: boolean
+  classifyIssue: 'empty' | 'limited' | 'failed' | null
   isRewriteMode: boolean
 }>()
+
+defineEmits<{ reclassify: [] }>()
+
+const ISSUE_TEXT = {
+  empty: '写好标题和正文后会自动判断分区, 现在也可以手动选择',
+  limited: '自动判断的次数太多了, 请稍后重新判断, 或者手动选择分区',
+  failed: '自动分区这次没有成功, 可以重新判断, 或者手动选择分区'
+} as const
 
 const { section } = useTopicEditorStore()
 const { sections, sectionOf } = useTopicSections()
@@ -112,9 +121,21 @@ const options = computed(() =>
     </template>
 
     <template v-else>
-      <p v-if="!isRewriteMode" class="text-default-500 text-sm">
-        自动分区暂时不可用, 请手动选择话题所属的分区
-      </p>
+      <div
+        v-if="!isRewriteMode && classifyIssue"
+        class="text-default-500 flex flex-wrap items-center gap-2 text-sm"
+      >
+        <span>{{ ISSUE_TEXT[classifyIssue] }}</span>
+        <KunButton
+          v-if="classifyIssue !== 'empty'"
+          size="xs"
+          variant="flat"
+          color="primary"
+          @click="$emit('reclassify')"
+        >
+          重新判断
+        </KunButton>
+      </div>
       <div class="space-y-2">
         <KunRadioGroup
           v-model="chosenKey"

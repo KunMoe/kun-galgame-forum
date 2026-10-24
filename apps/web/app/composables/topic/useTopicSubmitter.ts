@@ -54,10 +54,13 @@ export const useTopicSubmitter = () => {
 
   const classification = ref<TopicClassification | null>(null)
   const isClassifying = ref(false)
+  const classifyIssue = ref<'empty' | 'limited' | 'failed' | null>(null)
 
   const classify = async () => {
     classification.value = null
+    classifyIssue.value = null
     if (!title.value.trim() || !content.value.trim()) {
+      classifyIssue.value = 'empty'
       return
     }
     isClassifying.value = true
@@ -70,6 +73,8 @@ export const useTopicSubmitter = () => {
     if (result.ok) {
       classification.value = result.data
       section.value = [result.data.section]
+    } else {
+      classifyIssue.value = result.problem.status === 429 ? 'limited' : 'failed'
     }
   }
 
@@ -240,6 +245,7 @@ export const useTopicSubmitter = () => {
     isRewriteMode,
     classification,
     isClassifying,
+    classifyIssue,
     classify
   }
 }

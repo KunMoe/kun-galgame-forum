@@ -12,6 +12,7 @@ const {
   isRewriteMode,
   classification,
   isClassifying,
+  classifyIssue,
   classify
 } = useTopicSubmitter()
 const { moemoepoint } = usePersistUserStore()
@@ -50,6 +51,8 @@ const confirmText = computed(() => {
         <EditTopicSectionField
           :classification="classification"
           :is-classifying="isClassifying"
+          :classify-issue="classifyIssue"
+          @reclassify="classify"
           :is-rewrite-mode="isRewriteMode"
         />
 
