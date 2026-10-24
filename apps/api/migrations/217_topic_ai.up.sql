@@ -60,4 +60,6 @@ ALTER TABLE topic
   ADD COLUMN IF NOT EXISTS ai_summary_at    timestamptz(3),
   ADD COLUMN IF NOT EXISTS ai_summary_drift integer NOT NULL DEFAULT 0;
 
+SELECT user_purge_archive_attach();
+
 COMMIT;

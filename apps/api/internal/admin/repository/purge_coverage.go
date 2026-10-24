@@ -62,6 +62,7 @@ var UserColumns = []UserColumn{
 	{"message", "sender_id", HandlingDelete, ""},
 	{"permission_audit_log", "operator_id", HandlingKeep, "audit trail"},
 	{"role_permission_override", "updated_by", HandlingKeep, "audit trail"},
+	{"site_setting", "updated_by", HandlingKeep, "audit trail"},
 	{"system_message", "user_id", HandlingDelete, ""},
 	{"system_message_read_state", "user_id", HandlingDelete, ""},
 	{"todo", "claimed_user_id", HandlingRelease, "an open claim goes back to the board; a closed one keeps who worked it"},

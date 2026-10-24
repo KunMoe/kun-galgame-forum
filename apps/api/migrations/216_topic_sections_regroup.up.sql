@@ -150,4 +150,6 @@ DELETE FROM topic_section s USING section_regroup m WHERE m.old_name = s.name;
 CREATE UNIQUE INDEX IF NOT EXISTS topic_section_name_key ON topic_section (name);
 CREATE UNIQUE INDEX IF NOT EXISTS topic_section_relation_one_per_topic ON topic_section_relation (topic_id);
 
+SELECT user_purge_archive_attach();
+
 COMMIT;
