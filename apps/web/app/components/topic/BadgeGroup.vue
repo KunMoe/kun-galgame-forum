@@ -32,7 +32,7 @@ onMounted(() => {
 
 const handleClickSection = async () => {
   if (props.isNavToSection && sectionInfo.value) {
-    await navigateTo(`/section/${sectionInfo.value.section}`)
+    await navigateTo(`/topic?section=${sectionInfo.value.section}`)
   }
 }
 </script>

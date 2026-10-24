@@ -111,7 +111,11 @@ export const collectEntityUrls = async (
   const groups = await Promise.all([
     collectPagedIds(
       async (page) =>
-        ok(await settle(api.GET('/companies', { params: { query: query(page) } }))),
+        ok(
+          await settle(
+            api.GET('/companies', { params: { query: query(page) } })
+          )
+        ),
       (id) => `/galgame/official/${id}`
     ),
     collectPagedIds(
@@ -121,7 +125,9 @@ export const collectEntityUrls = async (
     ),
     collectPagedIds(
       async (page) =>
-        ok(await settle(api.GET('/engines', { params: { query: query(page) } }))),
+        ok(
+          await settle(api.GET('/engines', { params: { query: query(page) } }))
+        ),
       (id) => `/galgame/engine/${id}`
     )
   ])
@@ -204,9 +210,7 @@ export const collectWorkUrls = async (
     Math.ceil(first.total / WORK_PAGE_LIMIT),
     WORK_MAX_PAGES
   )
-  const rest = await Promise.all(
-    range(2, pages).map((page) => fetchPage(page))
-  )
+  const rest = await Promise.all(range(2, pages).map((page) => fetchPage(page)))
   for (const body of rest) {
     if (body) {
       push(body.items)

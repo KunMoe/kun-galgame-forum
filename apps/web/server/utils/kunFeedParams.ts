@@ -70,10 +70,7 @@ export const parseSiteFeed = (
   switch (name) {
     case 'topic': {
       const raw = queryString(query, 'section')
-      if (
-        raw !== undefined &&
-        (!SECTION_SHAPE.test(raw) || raw.length > 40)
-      ) {
+      if (raw !== undefined && (!SECTION_SHAPE.test(raw) || raw.length > 40)) {
         return null
       }
       const section = raw as SectionKey | undefined

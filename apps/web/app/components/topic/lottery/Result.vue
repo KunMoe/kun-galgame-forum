@@ -158,11 +158,7 @@ const advance = async (
         </p>
         <p v-else-if="myEntry.claim_expires_at">
           请在
-          <KunTime
-            :time="myEntry.claim_expires_at"
-            type="datetime"
-            show-year
-          />
+          <KunTime :time="myEntry.claim_expires_at" type="datetime" show-year />
           前领取兑换码, 逾期作废。
         </p>
         <div

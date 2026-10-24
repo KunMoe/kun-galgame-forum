@@ -7,7 +7,7 @@ const props = defineProps<{
 
 const route = useRoute()
 const isLinkActive = (router: string) =>
-  route.fullPath === router || route.fullPath.startsWith(`${router}/`)
+  route.path === router || route.path.startsWith(`${router}/`)
 
 const isGroupActive = computed(() => {
   if (props.group.router && isLinkActive(props.group.router)) return true
@@ -18,7 +18,30 @@ const isGroupActive = computed(() => {
 </script>
 
 <template>
+  <KunButton
+    v-if="!group.sections.length"
+    variant="light"
+    color="default"
+    :href="group.router"
+    :aria-label="group.label"
+    :class-name="
+      cn(
+        'relative h-auto w-full flex-col gap-1 py-2',
+        isGroupActive ? 'text-primary' : 'text-foreground'
+      )
+    "
+  >
+    <KunIcon :name="group.icon" class="text-xl" />
+    <span class="text-[11px] leading-none">{{ group.label }}</span>
+    <span
+      v-if="group.hint"
+      class="bg-secondary absolute top-0.5 right-0.5 rounded px-1 text-[9px] leading-tight text-white"
+    >
+      {{ group.hint }}
+    </span>
+  </KunButton>
   <KunPopover
+    v-else
     position="right-start"
     trigger="hover"
     group="kun-sidebar-rail"
@@ -36,13 +59,19 @@ const isGroupActive = computed(() => {
         :aria-label="group.label"
         :class-name="
           cn(
-            'h-auto w-full flex-col gap-1 py-2',
+            'relative h-auto w-full flex-col gap-1 py-2',
             isGroupActive ? 'text-primary' : 'text-foreground'
           )
         "
       >
         <KunIcon :name="group.icon" class="text-xl" />
         <span class="text-[11px] leading-none">{{ group.label }}</span>
+        <span
+          v-if="group.hint"
+          class="bg-secondary absolute top-0.5 right-0.5 rounded px-1 text-[9px] leading-tight text-white"
+        >
+          {{ group.hint }}
+        </span>
       </KunButton>
     </template>
 

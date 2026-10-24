@@ -181,7 +181,9 @@ const buildCharacter = async (id: number): Promise<KunOgCard | null> => {
       name: text(catalogEntityName(c).name, 120),
       originalName: originalOf(c),
       portrait: safeUrl(c.figure) || safeUrl(c.image),
-      work: first ? text(catalogEntityName(first.work_summary).name, 200) : undefined,
+      work: first
+        ? text(catalogEntityName(first.work_summary).name, 200)
+        : undefined,
       voice: voice
         ? `CV. ${truncateRunes(catalogEntityName(voice).name, 74)}`
         : undefined

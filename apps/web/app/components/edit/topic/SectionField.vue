@@ -10,7 +10,7 @@ const props = defineProps<{
 }>()
 
 const { section } = useTopicEditorStore()
-const { groups, sectionOf } = useTopicSections()
+const { sections, sectionOf } = useTopicSections()
 const canMoveAny = useCan('topic.edit_any')
 
 const chosenKey = computed({
@@ -38,24 +38,18 @@ const costText = (delta?: number) =>
       ? `发布消耗 ${-delta} 萌萌点`
       : `发布获得 ${delta} 萌萌点`
 
-const groupOptions = computed(() =>
-  groups.value
-    .map((group) => ({
-      key: group.key,
-      label: group.label,
-      options: group.sections
-        .filter((s) => !s.is_archived || s.section === chosenKey.value)
-        .map<KunRadioOption<string>>((s) => ({
-          value: s.section,
-          label: s.label,
-          icon: s.icon_name,
-          description:
-            s.moemoepoint_on_create < 0
-              ? `消耗 ${-s.moemoepoint_on_create} 萌萌点`
-              : undefined
-        }))
+const options = computed(() =>
+  sections.value
+    .filter((s) => !s.is_archived || s.section === chosenKey.value)
+    .map<KunRadioOption<string>>((s) => ({
+      value: s.section,
+      label: s.label,
+      icon: s.icon_name,
+      description:
+        s.moemoepoint_on_create < 0
+          ? `消耗 ${-s.moemoepoint_on_create} 萌萌点`
+          : undefined
     }))
-    .filter((group) => group.options.length)
 )
 </script>
 
@@ -83,7 +77,7 @@ const groupOptions = computed(() =>
         <div class="flex flex-wrap items-center gap-2">
           <KunChip :color="chosen.color">
             <KunIcon :name="chosen.icon_name" class="size-4 text-inherit" />
-            {{ chosen.group_label }} · {{ chosen.label }}
+            {{ chosen.label }}
           </KunChip>
           <span
             :class="
@@ -121,12 +115,11 @@ const groupOptions = computed(() =>
       <p v-if="!isRewriteMode" class="text-default-500 text-sm">
         自动分区暂时不可用, 请手动选择话题所属的分区
       </p>
-      <div v-for="group in groupOptions" :key="group.key" class="space-y-2">
-        <p class="text-default-500 text-sm">{{ group.label }}</p>
+      <div class="space-y-2">
         <KunRadioGroup
           v-model="chosenKey"
-          :options="group.options"
-          :aria-label="group.label"
+          :options="options"
+          aria-label="分区"
           variant="card"
           orientation="horizontal"
           size="sm"

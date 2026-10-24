@@ -233,7 +233,9 @@ describe('loadTopicFeed', () => {
     expect(result.channel.title).toBe(
       '鲲 Galgame 论坛 - Galgame 讨论 分区新话题'
     )
-    expect(result.channel.link).toBe(`${baseUrl}/section/galgame-discussion`)
+    expect(result.channel.link).toBe(
+      `${baseUrl}/topic?section=galgame-discussion`
+    )
   })
 
   it('keeps the item with an empty description when the detail read fails', async () => {

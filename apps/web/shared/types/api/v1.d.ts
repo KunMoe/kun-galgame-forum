@@ -348,26 +348,6 @@ export interface paths {
         patch: operations["updateRolePermissionMatrix"];
         trace?: never;
     };
-    "/admin/section-groups/{group}": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        get?: never;
-        put?: never;
-        post?: never;
-        delete?: never;
-        options?: never;
-        head?: never;
-        /**
-         * Rename a topic section group
-         * @description Changes the group's display name. Needs topic.manage_sections, which a Bearer request never carries. The caller is checked against the account service's current record first: a banned account is ACCOUNT_BANNED.
-         */
-        patch: operations["updateAdminSectionGroup"];
-        trace?: never;
-    };
     "/admin/section-order": {
         parameters: {
             query?: never;
@@ -378,7 +358,7 @@ export interface paths {
         get?: never;
         /**
          * Reorder topic sections
-         * @description Sets the order of the groups and of the sections inside each group. Every group appears once, listing exactly the sections it holds: a section cannot move to another group. Needs topic.manage_sections, which a Bearer request never carries. The caller is checked against the account service's current record first: a banned account is ACCOUNT_BANNED.
+         * @description Sets the order sections are listed in. Every section appears exactly once. Needs topic.manage_sections, which a Bearer request never carries. The caller is checked against the account service's current record first: a banned account is ACCOUNT_BANNED.
          */
         put: operations["putAdminSectionOrder"];
         post?: never;
@@ -447,7 +427,7 @@ export interface paths {
         head?: never;
         /**
          * Edit a topic section's display
-         * @description Changes the fields that are sent: display name, description, icon, color, archived. Which topics the section holds, its group and its moemoepoint rule are not editable. Needs topic.manage_sections, which a Bearer request never carries. The caller is checked against the account service's current record first: a banned account is ACCOUNT_BANNED. An empty object writes nothing.
+         * @description Changes the fields that are sent: display name, description, icon, color, header banner, mascot images, archived. Which topics the section holds and its moemoepoint rule are not editable. Needs topic.manage_sections, which a Bearer request never carries. The caller is checked against the account service's current record first: a banned account is ACCOUNT_BANNED. An empty object writes nothing.
          */
         patch: operations["updateAdminSection"];
         trace?: never;
@@ -3633,7 +3613,7 @@ export interface paths {
         };
         /**
          * List topic sections
-         * @description Every topic section in display order (by group, then within the group), archived ones included, with its display text, rules, size and newest topic. Not paged: the vocabulary is closed and small. The topics of one section are listTopics with section set.
+         * @description Every topic section in display order, archived ones included, with its display text, art, rules, size and newest topic. Not paged: the vocabulary is closed and small. The topics of one section are listTopics with section set.
          */
         get: operations["listSections"];
         put?: never;
@@ -11772,16 +11752,14 @@ export interface components {
             can_edit: boolean;
         };
         Section: {
+            /** @description Header banner. null when the section has none. */
+            banner: components["schemas"]["Image"] | null;
             /** @description Deprecated: read group instead. The legacy category topics in this section still carry. */
             category: components["schemas"]["TopicCategory"];
             /** @description Color to show the section's badge in. */
             color: components["schemas"]["SectionColor"];
             /** @description What belongs in the section, edited by admins. Free text; never use it as a decision input. */
             description: string;
-            /** @description The group the section is shown under. */
-            group: components["schemas"]["SectionGroupKey"];
-            /** @description The group's display name, edited by admins. Free text; never use it as a decision input. */
-            group_label: string;
             /** @description Icon to show beside the label. */
             icon_name: string;
             /** @description An archived section keeps its topics and takes no new ones. */
@@ -11792,6 +11770,8 @@ export interface components {
             label: string;
             /** @description The newest of those topics whose author is still shown. null when there is none. */
             latest_topic: components["schemas"]["SectionLatestTopic"] | null;
+            /** @description Mascot images; the section header shows one at random. Empty array if none. */
+            mascots: components["schemas"]["Image"][];
             /**
              * Format: int64
              * @description What publishing a topic here does to the author's moemoepoint: negative is a cost the balance must cover, positive a reward.
@@ -11818,18 +11798,6 @@ export interface components {
         /** @enum {string} */
         SectionColor: "default" | "primary" | "secondary" | "success" | "warning" | "danger";
         /** @enum {string} */
-        SectionGroupKey: "galgame" | "resource" | "technique" | "community";
-        SectionGroupOrder: {
-            /** @description A group. */
-            group: components["schemas"]["SectionGroupKey"];
-            /** @description Every section of the group, in the new order. Current keys only. */
-            sections: components["schemas"]["SectionKey"][];
-        };
-        SectionGroupPatch: {
-            /** @description New display name. Trimmed; a blank one is TOO_SHORT. Free text; never use it as a decision input. */
-            label: string;
-        };
-        /** @enum {string} */
         SectionKey: "galgame-discussion" | "galgame-walkthrough" | "review" | "news" | "resource-seeking" | "resource-release" | "tech-help" | "game-running" | "development" | "acgn" | "daily" | "site" | "g-article" | "g-chatting" | "g-news" | "g-other" | "g-releases" | "g-seeking" | "g-walkthrough" | "o-anime" | "o-comics" | "o-daily" | "o-essay" | "o-forum" | "o-music" | "o-novel" | "o-other" | "o-patch" | "t-adobe" | "t-ai" | "t-algorithm" | "t-android" | "t-crack" | "t-help" | "t-languages" | "t-linux" | "t-other" | "t-practical" | "t-web";
         SectionLatestTopic: {
             /**
@@ -11848,10 +11816,12 @@ export interface components {
             title: string;
         };
         SectionOrder: {
-            /** @description Every group, in the new order. */
-            groups: components["schemas"]["SectionGroupOrder"][];
+            /** @description Every section, in the new order. Current keys only. */
+            sections: components["schemas"]["SectionKey"][];
         };
         SectionPatch: {
+            /** @description New header banner by image-service hash. An empty string removes it. */
+            banner_image_hash?: string;
             /** @description New color. */
             color?: components["schemas"]["SectionColor"];
             /** @description New description. Trimmed. Free text; never use it as a decision input. */
@@ -11862,6 +11832,8 @@ export interface components {
             is_archived?: boolean;
             /** @description New display name. Trimmed; a blank one is TOO_SHORT. Free text; never use it as a decision input. */
             label?: string;
+            /** @description New mascot images, replacing the stored ones; the section header shows one of them at random. An empty array removes them all. */
+            mascot_image_hashes?: string[];
         };
         /** @enum {string} */
         SectionRequestDecision: "approved" | "rejected";
@@ -17658,112 +17630,6 @@ export interface operations {
             };
         };
     };
-    updateAdminSectionGroup: {
-        parameters: {
-            query?: never;
-            header?: never;
-            path: {
-                /** @description The group to rename. */
-                group: components["schemas"]["SectionGroupKey"];
-            };
-            cookie?: never;
-        };
-        requestBody: {
-            content: {
-                "application/json": components["schemas"]["SectionGroupPatch"];
-            };
-        };
-        responses: {
-            /** @description No Content */
-            204: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content?: never;
-            };
-            /** @description Bad Request */
-            400: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/problem+json": components["schemas"]["Problem"];
-                };
-            };
-            /** @description Unauthorized */
-            401: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/problem+json": components["schemas"]["Problem"];
-                };
-            };
-            /** @description PERMISSION_REQUIRED without topic.manage_sections; ACCOUNT_BANNED. */
-            403: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/problem+json": components["schemas"]["Problem"];
-                };
-            };
-            /** @description NOT_FOUND when the group does not exist. */
-            404: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/problem+json": components["schemas"]["Problem"];
-                };
-            };
-            /** @description Request Entity Too Large */
-            413: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/problem+json": components["schemas"]["Problem"];
-                };
-            };
-            /** @description Unsupported Media Type */
-            415: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/problem+json": components["schemas"]["Problem"];
-                };
-            };
-            /** @description VALIDATION_FAILED for a blank label. */
-            422: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/problem+json": components["schemas"]["Problem"];
-                };
-            };
-            /** @description Internal Server Error */
-            500: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/problem+json": components["schemas"]["Problem"];
-                };
-            };
-            /** @description Service Unavailable */
-            503: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/problem+json": components["schemas"]["Problem"];
-                };
-            };
-        };
-    };
     putAdminSectionOrder: {
         parameters: {
             query?: never;
@@ -17829,7 +17695,7 @@ export interface operations {
                     "application/problem+json": components["schemas"]["Problem"];
                 };
             };
-            /** @description VALIDATION_FAILED for a group listed twice, or a group whose sections are not exactly the ones it holds. */
+            /** @description VALIDATION_FAILED unless the list holds every current section exactly once. */
             422: {
                 headers: {
                     [name: string]: unknown;

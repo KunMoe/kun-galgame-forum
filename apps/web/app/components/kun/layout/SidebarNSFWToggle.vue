@@ -6,8 +6,11 @@ withDefaults(
   { isCollapsed: false }
 )
 
-const { isSignedIn, allowsNsfw: isEnabled, setAnonymousNsfw } =
-  useContentStance()
+const {
+  isSignedIn,
+  allowsNsfw: isEnabled,
+  setAnonymousNsfw
+} = useContentStance()
 const { open } = useSettingPanel()
 
 // Signed in there is no single opposite to flip to — the account holds three

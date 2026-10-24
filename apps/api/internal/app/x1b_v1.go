@@ -9,5 +9,9 @@ func (a *App) newSectionV1() *sectionapiv1.Service {
 	if a.DB == nil || a.UserClient == nil {
 		return nil
 	}
-	return sectionapiv1.New(sectionRepo.NewSectionRepository(a.DB), a.UserClient)
+	cdn := ""
+	if a.Config != nil {
+		cdn = a.Config.NextMoeAPI.ImageCDNBase
+	}
+	return sectionapiv1.New(sectionRepo.NewSectionRepository(a.DB), a.UserClient, a.ImageMeta, cdn)
 }

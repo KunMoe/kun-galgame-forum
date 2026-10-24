@@ -60,17 +60,25 @@ const links = [
         </NuxtLink>
       </template>
       <template v-else>
-        <KunLink
-          class-name="flex justify-center items-center gap-0"
-          underline="none"
-          to="/"
-        >
-          <KunImage
-            class="size-12 rounded-2xl"
-            src="/favicon.webp"
-            :alt="kungal.titleShort"
-          />
-        </KunLink>
+        <KunTooltip position="right">
+          <KunLink
+            class-name="flex justify-center items-center gap-0"
+            underline="none"
+            to="/"
+          >
+            <KunImage
+              class="size-12 rounded-2xl"
+              src="/favicon.webp"
+              :alt="kungal.titleShort"
+            />
+          </KunLink>
+          <template #content>
+            <div class="space-y-0.5">
+              <p class="text-base font-bold">鲲 Galgame 论坛</p>
+              <p class="text-xs">世界上最萌的 Galgame 论坛!</p>
+            </div>
+          </template>
+        </KunTooltip>
       </template>
 
       <KunLayoutSidebarNSFWToggle :is-collapsed="isCollapsed" />

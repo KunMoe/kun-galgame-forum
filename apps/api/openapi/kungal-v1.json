@@ -16561,6 +16561,17 @@
       },
       "Section": {
         "properties": {
+          "banner": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/Image"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "Header banner. null when the section has none."
+          },
           "category": {
             "$ref": "#/components/schemas/TopicCategory",
             "description": "Deprecated: read group instead. The legacy category topics in this section still carry."
@@ -16572,15 +16583,6 @@
           "description": {
             "description": "What belongs in the section, edited by admins. Free text; never use it as a decision input.",
             "maxLength": 500,
-            "type": "string"
-          },
-          "group": {
-            "$ref": "#/components/schemas/SectionGroupKey",
-            "description": "The group the section is shown under."
-          },
-          "group_label": {
-            "description": "The group's display name, edited by admins. Free text; never use it as a decision input.",
-            "maxLength": 40,
             "type": "string"
           },
           "icon_name": {
@@ -16612,6 +16614,14 @@
               }
             ],
             "description": "The newest of those topics whose author is still shown. null when there is none."
+          },
+          "mascots": {
+            "description": "Mascot images; the section header shows one at random. Empty array if none.",
+            "items": {
+              "$ref": "#/components/schemas/Image"
+            },
+            "maxItems": 12,
+            "type": "array"
           },
           "moemoepoint_on_create": {
             "description": "What publishing a topic here does to the author's moemoepoint: negative is a cost the balance must cover, positive a reward.",
@@ -16646,13 +16656,13 @@
         "required": [
           "object",
           "section",
-          "group",
-          "group_label",
           "label",
           "description",
           "icon_name",
           "color",
           "category",
+          "banner",
+          "mascots",
           "is_archived",
           "moemoepoint_on_create",
           "is_hidden_from_feeds",
@@ -16674,55 +16684,6 @@
         "maxLength": 9,
         "type": "string",
         "x-vocabulary-closed": true
-      },
-      "SectionGroupKey": {
-        "enum": [
-          "galgame",
-          "resource",
-          "technique",
-          "community"
-        ],
-        "maxLength": 9,
-        "type": "string",
-        "x-vocabulary-closed": true
-      },
-      "SectionGroupOrder": {
-        "properties": {
-          "group": {
-            "$ref": "#/components/schemas/SectionGroupKey",
-            "description": "A group."
-          },
-          "sections": {
-            "description": "Every section of the group, in the new order. Current keys only.",
-            "items": {
-              "$ref": "#/components/schemas/SectionKey",
-              "description": "Deprecated: read section instead. A section key, or one of the 27 keys retired on 2026-10-24 (g-, t- and o- prefixed), which requests may still send and which map to their successor. Responses carry only current keys."
-            },
-            "maxItems": 20,
-            "minItems": 1,
-            "type": "array",
-            "uniqueItems": true
-          }
-        },
-        "required": [
-          "group",
-          "sections"
-        ],
-        "type": "object"
-      },
-      "SectionGroupPatch": {
-        "properties": {
-          "label": {
-            "description": "New display name. Trimmed; a blank one is TOO_SHORT. Free text; never use it as a decision input.",
-            "maxLength": 40,
-            "minLength": 1,
-            "type": "string"
-          }
-        },
-        "required": [
-          "label"
-        ],
-        "type": "object"
       },
       "SectionKey": {
         "enum": [
@@ -16809,23 +16770,31 @@
       },
       "SectionOrder": {
         "properties": {
-          "groups": {
-            "description": "Every group, in the new order.",
+          "sections": {
+            "description": "Every section, in the new order. Current keys only.",
             "items": {
-              "$ref": "#/components/schemas/SectionGroupOrder"
+              "$ref": "#/components/schemas/SectionKey",
+              "description": "Deprecated: read section instead. A section key, or one of the 27 keys retired on 2026-10-24 (g-, t- and o- prefixed), which requests may still send and which map to their successor. Responses carry only current keys."
             },
-            "maxItems": 4,
-            "minItems": 4,
-            "type": "array"
+            "maxItems": 40,
+            "minItems": 1,
+            "type": "array",
+            "uniqueItems": true
           }
         },
         "required": [
-          "groups"
+          "sections"
         ],
         "type": "object"
       },
       "SectionPatch": {
         "properties": {
+          "banner_image_hash": {
+            "description": "New header banner by image-service hash. An empty string removes it.",
+            "maxLength": 64,
+            "pattern": "^([0-9a-f]{64})?$",
+            "type": "string"
+          },
           "color": {
             "$ref": "#/components/schemas/SectionColor",
             "description": "New color."
@@ -16850,6 +16819,19 @@
             "maxLength": 40,
             "minLength": 1,
             "type": "string"
+          },
+          "mascot_image_hashes": {
+            "description": "New mascot images, replacing the stored ones; the section header shows one of them at random. An empty array removes them all.",
+            "items": {
+              "description": "Image-service content hash of an uploaded image.",
+              "maxLength": 64,
+              "minLength": 64,
+              "pattern": "^[0-9a-f]{64}$",
+              "type": "string"
+            },
+            "maxItems": 12,
+            "type": "array",
+            "uniqueItems": true
           }
         },
         "type": "object"
@@ -30122,144 +30104,9 @@
         ]
       }
     },
-    "/admin/section-groups/{group}": {
-      "patch": {
-        "description": "Changes the group's display name. Needs topic.manage_sections, which a Bearer request never carries. The caller is checked against the account service's current record first: a banned account is ACCOUNT_BANNED. ",
-        "operationId": "updateAdminSectionGroup",
-        "parameters": [
-          {
-            "description": "The group to rename.",
-            "in": "path",
-            "name": "group",
-            "required": true,
-            "schema": {
-              "$ref": "#/components/schemas/SectionGroupKey",
-              "description": "The group to rename."
-            }
-          }
-        ],
-        "requestBody": {
-          "content": {
-            "application/json": {
-              "schema": {
-                "$ref": "#/components/schemas/SectionGroupPatch"
-              }
-            }
-          },
-          "required": true
-        },
-        "responses": {
-          "204": {
-            "description": "No Content"
-          },
-          "400": {
-            "content": {
-              "application/problem+json": {
-                "schema": {
-                  "$ref": "#/components/schemas/Problem"
-                }
-              }
-            },
-            "description": "Bad Request"
-          },
-          "401": {
-            "content": {
-              "application/problem+json": {
-                "schema": {
-                  "$ref": "#/components/schemas/Problem"
-                }
-              }
-            },
-            "description": "Unauthorized"
-          },
-          "403": {
-            "content": {
-              "application/problem+json": {
-                "schema": {
-                  "$ref": "#/components/schemas/Problem"
-                }
-              }
-            },
-            "description": "PERMISSION_REQUIRED without topic.manage_sections; ACCOUNT_BANNED."
-          },
-          "404": {
-            "content": {
-              "application/problem+json": {
-                "schema": {
-                  "$ref": "#/components/schemas/Problem"
-                }
-              }
-            },
-            "description": "NOT_FOUND when the group does not exist."
-          },
-          "413": {
-            "content": {
-              "application/problem+json": {
-                "schema": {
-                  "$ref": "#/components/schemas/Problem"
-                }
-              }
-            },
-            "description": "Request Entity Too Large"
-          },
-          "415": {
-            "content": {
-              "application/problem+json": {
-                "schema": {
-                  "$ref": "#/components/schemas/Problem"
-                }
-              }
-            },
-            "description": "Unsupported Media Type"
-          },
-          "422": {
-            "content": {
-              "application/problem+json": {
-                "schema": {
-                  "$ref": "#/components/schemas/Problem"
-                }
-              }
-            },
-            "description": "VALIDATION_FAILED for a blank label."
-          },
-          "500": {
-            "content": {
-              "application/problem+json": {
-                "schema": {
-                  "$ref": "#/components/schemas/Problem"
-                }
-              }
-            },
-            "description": "Internal Server Error"
-          },
-          "503": {
-            "content": {
-              "application/problem+json": {
-                "schema": {
-                  "$ref": "#/components/schemas/Problem"
-                }
-              }
-            },
-            "description": "Service Unavailable"
-          }
-        },
-        "security": [
-          {
-            "session": []
-          },
-          {
-            "bearer": []
-          }
-        ],
-        "summary": "Rename a topic section group",
-        "tags": [
-          "topics"
-        ]
-      }
-    },
     "/admin/section-order": {
       "put": {
-        "description": "Sets the order of the groups and of the sections inside each group. Every group appears once, listing exactly the sections it holds: a section cannot move to another group. Needs topic.manage_sections, which a Bearer request never carries. The caller is checked against the account service's current record first: a banned account is ACCOUNT_BANNED. ",
+        "description": "Sets the order sections are listed in. Every section appears exactly once. Needs topic.manage_sections, which a Bearer request never carries. The caller is checked against the account service's current record first: a banned account is ACCOUNT_BANNED. ",
         "operationId": "putAdminSectionOrder",
         "requestBody": {
           "content": {
@@ -30333,7 +30180,7 @@
                 }
               }
             },
-            "description": "VALIDATION_FAILED for a group listed twice, or a group whose sections are not exactly the ones it holds."
+            "description": "VALIDATION_FAILED unless the list holds every current section exactly once."
           },
           "500": {
             "content": {
@@ -30721,7 +30568,7 @@
     },
     "/admin/sections/{section}": {
       "patch": {
-        "description": "Changes the fields that are sent: display name, description, icon, color, archived. Which topics the section holds, its group and its moemoepoint rule are not editable. Needs topic.manage_sections, which a Bearer request never carries. The caller is checked against the account service's current record first: a banned account is ACCOUNT_BANNED. An empty object writes nothing.",
+        "description": "Changes the fields that are sent: display name, description, icon, color, header banner, mascot images, archived. Which topics the section holds and its moemoepoint rule are not editable. Needs topic.manage_sections, which a Bearer request never carries. The caller is checked against the account service's current record first: a banned account is ACCOUNT_BANNED. An empty object writes nothing.",
         "operationId": "updateAdminSection",
         "parameters": [
           {
@@ -55233,7 +55080,7 @@
     },
     "/sections": {
       "get": {
-        "description": "Every topic section in display order (by group, then within the group), archived ones included, with its display text, rules, size and newest topic. Not paged: the vocabulary is closed and small. The topics of one section are listTopics with section set.",
+        "description": "Every topic section in display order, archived ones included, with its display text, art, rules, size and newest topic. Not paged: the vocabulary is closed and small. The topics of one section are listTopics with section set.",
         "operationId": "listSections",
         "parameters": [
           {

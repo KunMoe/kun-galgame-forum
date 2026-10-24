@@ -271,10 +271,7 @@ const handleClaim = async () => {
         :key="prize.id"
         class="border-default-200 flex items-start gap-3 rounded-lg border p-3"
       >
-        <div
-          v-if="prize.images.length"
-          class="flex shrink-0 items-start gap-1"
-        >
+        <div v-if="prize.images.length" class="flex shrink-0 items-start gap-1">
           <KunLightboxGallery v-if="visibleImages(prize).length">
             <div class="flex shrink-0 gap-1">
               <KunLightboxGalleryItem

@@ -18,7 +18,10 @@ export const parseImageRef = (ref: string): ParsedImageRef | null => {
   return m[2] ? { hash: m[1]!, variant: m[2] } : { hash: m[1]! }
 }
 
-export const imageRefCdnUrl = (base: string, parsed: ParsedImageRef): string => {
+export const imageRefCdnUrl = (
+  base: string,
+  parsed: ParsedImageRef
+): string => {
   const b = (base || '').replace(/\/+$/, '')
   const file = parsed.variant
     ? `${parsed.hash}_${parsed.variant}.webp`

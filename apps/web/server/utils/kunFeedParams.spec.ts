@@ -44,7 +44,11 @@ describe('parseSiteFeed', () => {
   it('accepts a known section and rejects anything else', () => {
     expect(
       parseSiteFeed('topic.xml', { section: 'galgame-discussion' })?.params
-    ).toEqual({ name: 'topic', includeNsfw: false, section: 'galgame-discussion' })
+    ).toEqual({
+      name: 'topic',
+      includeNsfw: false,
+      section: 'galgame-discussion'
+    })
     expect(parseSiteFeed('topic.xml', { section: 'G_nope' })).toBeNull()
     expect(parseSiteFeed('topic.xml', { section: 'G-chatting' })).toBeNull()
     expect(parseSiteFeed('topic.xml', { section: '' })).toBeNull()

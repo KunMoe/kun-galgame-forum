@@ -15,7 +15,7 @@ const items = computed<KunTabItem[]>(() => [
 ])
 
 const go = (value: string | number) =>
-  navigateTo(value ? `/section/${value}` : '/topic')
+  navigateTo(value ? `/topic?section=${value}` : '/topic')
 </script>
 
 <template>

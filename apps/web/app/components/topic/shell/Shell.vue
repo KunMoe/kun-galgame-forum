@@ -22,8 +22,13 @@ defineProps<{
       <slot />
     </div>
 
-    <aside class="sticky top-20 hidden self-start xl:col-start-3 xl:block">
-      <TopicShellAside />
+    <aside
+      class="sticky top-20 hidden h-[calc(100dvh-6rem)] flex-col self-start xl:col-start-3 xl:flex"
+    >
+      <div class="min-h-0 overflow-y-auto">
+        <TopicShellAside />
+      </div>
+      <HomeFooter class="mt-auto shrink-0 pt-4" />
     </aside>
   </div>
 </template>

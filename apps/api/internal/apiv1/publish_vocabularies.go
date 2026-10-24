@@ -85,7 +85,6 @@ var vocabularies = []vocabulary{
 	{"SectionRequestState", []string{"pending", "approved", "rejected"}},
 	{"HiddenSectionsMode", []string{"include", "exclude"}},
 	{"SectionColor", []string{"default", "primary", "secondary", "success", "warning", "danger"}},
-	{"SectionGroupKey", []string{"galgame", "resource", "technique", "community"}},
 	{"SectionKey", []string{"galgame-discussion", "galgame-walkthrough", "review", "news", "resource-seeking", "resource-release", "tech-help", "game-running", "development", "acgn", "daily", "site", "g-article", "g-chatting", "g-news", "g-other", "g-releases", "g-seeking", "g-walkthrough", "o-anime", "o-comics", "o-daily", "o-essay", "o-forum", "o-music", "o-novel", "o-other", "o-patch", "t-adobe", "t-ai", "t-algorithm", "t-android", "t-crack", "t-help", "t-languages", "t-linux", "t-other", "t-practical", "t-web"}},
 	{"SexualGrade", []string{"safe", "suggestive", "explicit"}},
 	{"ShopAcquiredVia", []string{"purchase", "grant"}},

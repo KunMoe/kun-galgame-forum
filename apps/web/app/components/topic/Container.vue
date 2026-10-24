@@ -2,7 +2,33 @@
 import type { operations } from '#shared/types/api/v1'
 import type { TopicSummary } from '#shared/utils/api/schemas'
 import { problemMessage } from '#shared/utils/api/message'
+import { useElementVisibility } from '@vueuse/core'
 import { useCursorList } from '~/composables/useCursorList'
+
+const props = withDefaults(defineProps<{ sectionKey?: string }>(), {
+  sectionKey: ''
+})
+
+const { sectionOf } = useTopicSections()
+const section = computed(() => sectionOf(props.sectionKey))
+const isUnknownSection = computed(() => !!props.sectionKey && !section.value)
+
+const seoTitle = () => `${section.value?.label ?? '话题列表'} - ${kungal.title}`
+const seoDescription = () =>
+  section.value?.description ??
+  `${kungal.titleShort} 话题列表, Galgame 讨论, Galgame 攻略, 长文评价, 新作资讯, 游戏运行, 开发技术, ACGN, 日常杂谈`
+
+useKunSeoMeta({ title: '话题列表', description: seoDescription() })
+// Switching sections only changes the query, so the page is not set up again
+// and the head has to follow the section reactively.
+useSeoMeta({
+  title: seoTitle,
+  description: seoDescription,
+  ogTitle: seoTitle,
+  ogDescription: seoDescription,
+  twitterTitle: seoTitle,
+  twitterDescription: seoDescription
+})
 
 type TopicSort = NonNullable<
   NonNullable<operations['listTopics']['parameters']['query']>['sort']
@@ -81,7 +107,8 @@ const setSortOrder = (value: SortOrder) => {
 
 const { items, hasMore, problem, status, loadingMore, loadMore, refresh } =
   await useCursorList<TopicSummary>(
-    () => `topics:${offeredSort.value}:${includeNsfw.value ? 'nsfw' : 'sfw'}`,
+    () =>
+      `topics:${props.sectionKey || 'all'}:${offeredSort.value}:${includeNsfw.value ? 'nsfw' : 'sfw'}`,
     (api, cursor, { signal }) =>
       api.GET('/topics', {
         params: {
@@ -89,84 +116,108 @@ const { items, hasMore, problem, status, loadingMore, loadMore, refresh } =
             limit: 50,
             sort: offeredSort.value,
             include_nsfw: includeNsfw.value,
-            hidden_sections: 'exclude',
+            ...(props.sectionKey
+              ? { section: props.sectionKey as TopicSummary['section'] }
+              : { hidden_sections: 'exclude' as const }),
             ...(cursor ? { cursor } : {})
           }
         },
         signal
       })
   )
+
+const sentinel = useTemplateRef<HTMLElement>('sentinel')
+const isSentinelVisible = useElementVisibility(sentinel, {
+  rootMargin: '0px 0px 400px 0px'
+})
+watch([isSentinelVisible, hasMore, loadingMore], ([visible, more, busy]) => {
+  if (visible && more && !busy) {
+    loadMore()
+  }
+})
 </script>
 
 <template>
-  <div class="flex flex-col gap-6">
-    <KunHeader
-      name="全部话题"
-      description="按更新时间排列的全部话题。技术求助与寻求资源不在这里, 可以进入对应分区查看"
-    />
+  <div>
+    <Transition name="kun-page" mode="out-in">
+      <div :key="sectionKey" class="flex flex-col gap-6">
+        <TopicSectionHeader v-if="section" :section="section" />
+        <KunHeader
+          v-else
+          name="全部话题"
+          description="按更新时间排列的全部话题。技术求助与寻求资源不在这里, 可以进入对应分区查看"
+        />
 
-    <div class="flex items-center justify-between gap-3">
-      <KunSelect
-        class-name="w-44"
-        :model-value="sortField"
-        :options="SORT_FIELD_OPTIONS"
-        @update:model-value="setSortField"
-      />
+        <div class="flex items-center justify-between gap-3">
+          <KunSelect
+            class-name="w-44"
+            :model-value="sortField"
+            :options="SORT_FIELD_OPTIONS"
+            @update:model-value="setSortField"
+          />
 
-      <div class="flex shrink-0 items-center gap-1">
-        <KunButton
-          :is-icon-only="true"
-          :variant="sortOrder === 'desc' ? 'flat' : 'light'"
-          color="primary"
-          size="sm"
-          @click="setSortOrder('desc')"
-        >
-          <KunIcon class="text-inherit" name="lucide:arrow-down" />
-        </KunButton>
-        <KunButton
-          :is-icon-only="true"
-          :variant="sortOrder === 'asc' ? 'flat' : 'light'"
-          color="primary"
-          size="sm"
-          @click="setSortOrder('asc')"
-        >
-          <KunIcon class="text-inherit" name="lucide:arrow-up" />
-        </KunButton>
-      </div>
-    </div>
-
-    <template v-if="problem">
-      <KunNull :description="problemMessage(problem)" />
-      <div class="flex justify-center">
-        <KunButton variant="flat" size="sm" @click="() => refresh()">
-          重试
-        </KunButton>
-      </div>
-    </template>
-
-    <template v-else>
-      <KunLoading :loading="status === 'pending'">
-        <div class="divide-default-200/60 divide-y">
-          <TopicCard v-for="topic in items" :key="topic.id" :topic="topic" />
+          <div class="flex shrink-0 items-center gap-1">
+            <KunButton
+              :is-icon-only="true"
+              :variant="sortOrder === 'desc' ? 'flat' : 'light'"
+              color="primary"
+              size="sm"
+              @click="setSortOrder('desc')"
+            >
+              <KunIcon class="text-inherit" name="lucide:arrow-down" />
+            </KunButton>
+            <KunButton
+              :is-icon-only="true"
+              :variant="sortOrder === 'asc' ? 'flat' : 'light'"
+              color="primary"
+              size="sm"
+              @click="setSortOrder('asc')"
+            >
+              <KunIcon class="text-inherit" name="lucide:arrow-up" />
+            </KunButton>
+          </div>
         </div>
-      </KunLoading>
 
-      <KunNull
-        v-if="status !== 'pending' && !items.length"
-        description="真的一滴也不剩了呜呜呜"
-      />
+        <KunNull v-if="isUnknownSection" description="没有这个分区" />
 
-      <div v-if="items.length" class="flex justify-center pt-4">
-        <KunButton
-          v-if="hasMore"
-          variant="light"
-          :loading="loadingMore"
-          @click="loadMore"
-        >
-          加载更多
-        </KunButton>
-        <span v-else class="text-default-400 text-sm">没有更多话题了</span>
+        <template v-else-if="problem">
+          <KunNull :description="problemMessage(problem)" />
+          <div class="flex justify-center">
+            <KunButton variant="flat" size="sm" @click="() => refresh()">
+              重试
+            </KunButton>
+          </div>
+        </template>
+
+        <template v-else>
+          <KunLoading :loading="status === 'pending'">
+            <div class="divide-default-200/60 divide-y">
+              <TopicCard
+                v-for="topic in items"
+                :key="topic.id"
+                :topic="topic"
+              />
+            </div>
+          </KunLoading>
+
+          <KunNull
+            v-if="status !== 'pending' && !items.length"
+            description="真的一滴也不剩了呜呜呜"
+          />
+
+          <div
+            v-if="items.length"
+            ref="sentinel"
+            class="text-default-400 flex justify-center pt-4 text-sm"
+          >
+            <span v-if="hasMore" class="flex items-center gap-2">
+              <KunIcon name="svg-spinners:90-ring-with-bg" />
+              正在加载更多话题
+            </span>
+            <span v-else>没有更多话题了</span>
+          </div>
+        </template>
       </div>
-    </template>
+    </Transition>
   </div>
 </template>

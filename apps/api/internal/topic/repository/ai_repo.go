@@ -58,7 +58,7 @@ func (r *AIRepository) SectionChoices() ([]SectionChoiceRow, error) {
 	var rows []SectionChoiceRow
 	err := r.db.Raw(`SELECT ts.name, ts.label, ts.description, ts.is_archived
 		FROM topic_section ts JOIN topic_section_group g ON g.id = ts.group_id
-		ORDER BY g.position, g.id, ts.position, ts.id`).Scan(&rows).Error
+		ORDER BY ts.position, ts.id`).Scan(&rows).Error
 	return rows, err
 }
 

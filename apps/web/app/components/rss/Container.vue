@@ -1,6 +1,6 @@
 <script setup lang="ts">
 const config = useRuntimeConfig()
-const { groups } = useTopicSections()
+const { sections } = useTopicSections()
 const baseUrl = computed(() => config.public.KUN_GALGAME_URL || '')
 const includeNsfw = ref(false)
 const section = ref('')
@@ -17,12 +17,7 @@ const newsParams = computed(() => (lane.value ? { lane: lane.value } : {}))
 
 const sectionOptions = computed(() => [
   { value: '', label: '全部分区' },
-  ...groups.value.flatMap((group) =>
-    group.sections.map((s) => ({
-      value: s.section,
-      label: `${group.label} · ${s.label}`
-    }))
-  )
+  ...sections.value.map((s) => ({ value: s.section, label: s.label }))
 ])
 
 const laneOptions = [

@@ -5,6 +5,24 @@ import type { VueWrapper } from '@vue/test-utils'
 import type { TopicSummary, UserRef } from '#shared/utils/api/schemas'
 import TopicContainer from './Container.vue'
 
+const { sentinelVisible } = vi.hoisted(() => ({
+  sentinelVisible: { value: false }
+}))
+vi.mock('@vueuse/core', async (original) => {
+  const { ref } = await import('vue')
+  const visible = ref(false)
+  Object.defineProperty(sentinelVisible, 'value', {
+    get: () => visible.value,
+    set: (v: boolean) => {
+      visible.value = v
+    }
+  })
+  return {
+    ...(await original<typeof import('@vueuse/core')>()),
+    useElementVisibility: () => visible
+  }
+})
+
 mockNuxtImport('useTopicSections', () => () => {
   const discussion = {
     section: 'galgame-discussion',
@@ -156,7 +174,7 @@ describe('TopicContainer', () => {
     })
   })
 
-  it('shows 加载更多 while next_cursor is present and 没有更多话题了 after the last page', async () => {
+  it('loads the next page once the end of the list scrolls into view, then says 没有更多话题了', async () => {
     const fetchSpy = stubTopics((url) => {
       const cursor = url.searchParams.get('cursor')
       if (!cursor) {
@@ -164,22 +182,20 @@ describe('TopicContainer', () => {
       }
       return listBody([topic('2')])
     })
+    sentinelVisible.value = false
     wrapper = await mountSuspended(TopicContainer, { route: '/topic' })
     await vi.waitFor(() => {
-      expect(wrapper!.text()).toContain('加载更多')
+      expect(wrapper!.text()).toContain('正在加载更多话题')
     })
-    expect(wrapper.text()).not.toContain('没有更多话题了')
+    expect(
+      topicCalls(fetchSpy).some((url) => url.searchParams.get('cursor'))
+    ).toBe(false)
 
-    const more = wrapper
-      .findAll('button')
-      .find((button) => button.text().includes('加载更多'))
-    expect(more).toBeDefined()
-    await more!.trigger('click')
-
+    sentinelVisible.value = true
     await vi.waitFor(() => {
       expect(wrapper!.text()).toContain('没有更多话题了')
     })
-    expect(wrapper.text()).not.toContain('加载更多')
+    sentinelVisible.value = false
     const urls = topicCalls(fetchSpy)
     expect(urls[0]!.searchParams.get('cursor')).toBeNull()
     expect(urls.some((url) => url.searchParams.get('cursor') === 'c1')).toBe(

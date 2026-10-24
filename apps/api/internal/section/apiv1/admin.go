@@ -19,15 +19,6 @@ import (
 	"github.com/danielgtaylor/huma/v2"
 )
 
-var groupKeys = []any{"galgame", "resource", "technique", "community"}
-
-type SectionGroupKey string
-
-func (SectionGroupKey) Schema(huma.Registry) *huma.Schema {
-	n := 9
-	return &huma.Schema{Type: huma.TypeString, Enum: groupKeys, MaxLength: &n, Description: "Section group key."}
-}
-
 type SectionIconName string
 
 func (SectionIconName) Schema(huma.Registry) *huma.Schema {
@@ -53,11 +44,25 @@ func (SectionColor) Schema(huma.Registry) *huma.Schema {
 }
 
 type SectionPatch struct {
-	Label       *string          `json:"label,omitempty" minLength:"1" maxLength:"40" doc:"New display name. Trimmed; a blank one is TOO_SHORT. Free text; never use it as a decision input."`
-	Description *string          `json:"description,omitempty" maxLength:"500" doc:"New description. Trimmed. Free text; never use it as a decision input."`
-	IconName    *SectionIconName `json:"icon_name,omitempty" doc:"New icon."`
-	Color       *SectionColor    `json:"color,omitempty" doc:"New color."`
-	IsArchived  *bool            `json:"is_archived,omitempty" doc:"Archive or restore the section. Archiving keeps its topics and refuses new ones."`
+	Label             *string                 `json:"label,omitempty" minLength:"1" maxLength:"40" doc:"New display name. Trimmed; a blank one is TOO_SHORT. Free text; never use it as a decision input."`
+	Description       *string                 `json:"description,omitempty" maxLength:"500" doc:"New description. Trimmed. Free text; never use it as a decision input."`
+	IconName          *SectionIconName        `json:"icon_name,omitempty" doc:"New icon."`
+	Color             *SectionColor           `json:"color,omitempty" doc:"New color."`
+	IsArchived        *bool                   `json:"is_archived,omitempty" doc:"Archive or restore the section. Archiving keeps its topics and refuses new ones."`
+	BannerImageHash   *BannerImageHash        `json:"banner_image_hash,omitempty" doc:"New header banner by image-service hash. An empty string removes it."`
+	MascotImageHashes *[]topicapiv1.ImageHash `json:"mascot_image_hashes,omitempty" maxItems:"12" uniqueItems:"true" doc:"New mascot images, replacing the stored ones; the section header shows one of them at random. An empty array removes them all."`
+}
+
+type BannerImageHash string
+
+func (BannerImageHash) Schema(huma.Registry) *huma.Schema {
+	n := 64
+	return &huma.Schema{
+		Type:        huma.TypeString,
+		Pattern:     `^([0-9a-f]{64})?$`,
+		MaxLength:   &n,
+		Description: "Image-service content hash of the banner, or an empty string for no banner.",
+	}
 }
 
 type updateSectionInput struct {
@@ -65,22 +70,8 @@ type updateSectionInput struct {
 	Body    SectionPatch
 }
 
-type SectionGroupPatch struct {
-	Label string `json:"label" minLength:"1" maxLength:"40" doc:"New display name. Trimmed; a blank one is TOO_SHORT. Free text; never use it as a decision input."`
-}
-
-type updateSectionGroupInput struct {
-	Group SectionGroupKey `path:"group" doc:"The group to rename."`
-	Body  SectionGroupPatch
-}
-
-type SectionGroupOrder struct {
-	Group    SectionGroupKey          `json:"group" doc:"A group."`
-	Sections []topicapiv1.SectionSlug `json:"sections" minItems:"1" maxItems:"20" uniqueItems:"true" doc:"Every section of the group, in the new order. Current keys only."`
-}
-
 type SectionOrder struct {
-	Groups []SectionGroupOrder `json:"groups" minItems:"4" maxItems:"4" doc:"Every group, in the new order."`
+	Sections []topicapiv1.SectionSlug `json:"sections" minItems:"1" maxItems:"40" uniqueItems:"true" doc:"Every section, in the new order. Current keys only."`
 }
 
 type putSectionOrderInput struct {
@@ -146,22 +137,18 @@ func (s *Service) updateSection(ctx context.Context, in *updateSectionInput) (*n
 		color := string(*in.Body.Color)
 		change.Color = &color
 	}
+	if in.Body.BannerImageHash != nil {
+		banner := string(*in.Body.BannerImageHash)
+		change.Banner = &banner
+	}
+	if in.Body.MascotImageHashes != nil {
+		mascots := make([]string, len(*in.Body.MascotImageHashes))
+		for i, h := range *in.Body.MascotImageHashes {
+			mascots[i] = string(h)
+		}
+		change.Mascots = &mascots
+	}
 	if err := s.repo.UpdateSection(string(in.Section), change); err != nil {
-		return nil, writeProblem(err)
-	}
-	s.invalidate()
-	return &noContentOutput{}, nil
-}
-
-func (s *Service) updateSectionGroup(ctx context.Context, in *updateSectionGroupInput) (*noContentOutput, error) {
-	if _, p := s.admin(ctx); p != nil {
-		return nil, p
-	}
-	label := strings.TrimSpace(in.Body.Label)
-	if label == "" {
-		return nil, problem.New(problem.CodeValidationFailed, "The request is syntactically valid but semantically not.", tooShort("/label"))
-	}
-	if err := s.repo.UpdateGroupLabel(string(in.Group), label); err != nil {
 		return nil, writeProblem(err)
 	}
 	s.invalidate()
@@ -176,39 +163,28 @@ func (s *Service) putSectionOrder(ctx context.Context, in *putSectionOrderInput)
 	if err != nil {
 		return nil, problem.Internal(err)
 	}
-	current := map[string][]string{}
+	want := make([]string, 0, len(rows))
 	for _, r := range rows {
-		current[r.GroupKey] = append(current[r.GroupKey], r.Name)
+		want = append(want, r.Name)
 	}
+	names := make([]string, len(in.Body.Sections))
 	var fields []problem.FieldError
-	seen := map[SectionGroupKey]bool{}
-	order := make([]repository.GroupOrder, 0, len(in.Body.Groups))
-	for gi, g := range in.Body.Groups {
-		if seen[g.Group] {
-			fields = append(fields, problem.AtPointer(fmt.Sprintf("/groups/%d/group", gi), problem.ReasonDuplicateItem, "", nil))
-			continue
+	for i, sec := range in.Body.Sections {
+		names[i] = string(sec)
+		if !topicapiv1.IsSectionKey(names[i]) {
+			fields = append(fields, problem.AtPointer(fmt.Sprintf("/sections/%d", i), problem.ReasonNotAllowedValue, "a retired key", nil))
 		}
-		seen[g.Group] = true
-		names := make([]string, len(g.Sections))
-		for i, sec := range g.Sections {
-			names[i] = string(sec)
-			if !topicapiv1.IsSectionKey(names[i]) {
-				fields = append(fields, problem.AtPointer(fmt.Sprintf("/groups/%d/sections/%d", gi, i), problem.ReasonNotAllowedValue, "a retired key", nil))
-			}
-		}
-		want := slices.Clone(current[string(g.Group)])
-		got := slices.Clone(names)
-		slices.Sort(want)
-		slices.Sort(got)
-		if !slices.Equal(want, got) {
-			fields = append(fields, problem.AtPointer(fmt.Sprintf("/groups/%d/sections", gi), problem.ReasonInconsistentWith, "/groups/"+fmt.Sprint(gi)+"/group", nil))
-		}
-		order = append(order, repository.GroupOrder{Key: string(g.Group), Sections: names})
+	}
+	got := slices.Clone(names)
+	slices.Sort(want)
+	slices.Sort(got)
+	if len(fields) == 0 && !slices.Equal(want, got) {
+		fields = append(fields, problem.AtPointer("/sections", problem.ReasonInconsistentWith, "every section exactly once", nil))
 	}
 	if len(fields) > 0 {
 		return nil, problem.New(problem.CodeValidationFailed, "The request is syntactically valid but semantically not.", fields...)
 	}
-	if err := s.repo.Reorder(order); err != nil {
+	if err := s.repo.Reorder(names); err != nil {
 		return nil, problem.Internal(err)
 	}
 	s.invalidate()
@@ -236,28 +212,18 @@ func registerAdmin(api huma.API, s *Service) {
 		Path:          "/admin/sections/{section}",
 		Summary:       "Edit a topic section's display",
 		DefaultStatus: http.StatusNoContent,
-		Description:   "Changes the fields that are sent: display name, description, icon, color, archived. Which topics the section holds, its group and its moemoepoint rule are not editable. " + needs + "An empty object writes nothing.",
+		Description:   "Changes the fields that are sent: display name, description, icon, color, header banner, mascot images, archived. Which topics the section holds and its moemoepoint rule are not editable. " + needs + "An empty object writes nothing.",
 		Tags:          []string{"topics"},
 		Responses:     errs(map[int]string{403: denied, 404: "NOT_FOUND when the section does not exist.", 422: "VALIDATION_FAILED for a blank label or a field outside its format."}),
 	}), s.updateSection)
-	huma.Register(api, v1.Required(huma.Operation{
-		OperationID:   "updateAdminSectionGroup",
-		Method:        http.MethodPatch,
-		Path:          "/admin/section-groups/{group}",
-		Summary:       "Rename a topic section group",
-		DefaultStatus: http.StatusNoContent,
-		Description:   "Changes the group's display name. " + needs,
-		Tags:          []string{"topics"},
-		Responses:     errs(map[int]string{403: denied, 404: "NOT_FOUND when the group does not exist.", 422: "VALIDATION_FAILED for a blank label."}),
-	}), s.updateSectionGroup)
 	huma.Register(api, v1.Required(huma.Operation{
 		OperationID:   "putAdminSectionOrder",
 		Method:        http.MethodPut,
 		Path:          "/admin/section-order",
 		Summary:       "Reorder topic sections",
 		DefaultStatus: http.StatusNoContent,
-		Description:   "Sets the order of the groups and of the sections inside each group. Every group appears once, listing exactly the sections it holds: a section cannot move to another group. " + needs,
+		Description:   "Sets the order sections are listed in. Every section appears exactly once. " + needs,
 		Tags:          []string{"topics"},
-		Responses:     errs(map[int]string{403: denied, 422: "VALIDATION_FAILED for a group listed twice, or a group whose sections are not exactly the ones it holds."}),
+		Responses:     errs(map[int]string{403: denied, 422: "VALIDATION_FAILED unless the list holds every current section exactly once."}),
 	}), s.putSectionOrder)
 }

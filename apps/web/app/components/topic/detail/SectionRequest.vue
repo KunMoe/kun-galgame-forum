@@ -7,7 +7,7 @@ const props = defineProps<{ topic: Topic }>()
 
 const api = useApiClient()
 const { id: currentUserId } = storeToRefs(usePersistUserStore())
-const { groups, sectionLabel } = useTopicSections()
+const { sections, sectionLabel } = useTopicSections()
 
 const isAuthor = computed(
   () =>
@@ -27,20 +27,14 @@ const STATE_TEXT: Record<TopicSectionRequest['state'], string> = {
   rejected: '管理员没有同意'
 }
 
-const groupOptions = computed(() =>
-  groups.value
-    .map((group) => ({
-      key: group.key,
-      label: group.label,
-      options: group.sections
-        .filter((s) => !s.is_archived && s.section !== props.topic.section)
-        .map<KunRadioOption<string>>((s) => ({
-          value: s.section,
-          label: s.label,
-          icon: s.icon_name
-        }))
+const options = computed(() =>
+  sections.value
+    .filter((s) => !s.is_archived && s.section !== props.topic.section)
+    .map<KunRadioOption<string>>((s) => ({
+      value: s.section,
+      label: s.label,
+      icon: s.icon_name
     }))
-    .filter((group) => group.options.length)
 )
 
 const load = async () => {
@@ -125,16 +119,11 @@ const submit = async () => {
               上次申请移到「{{ sectionLabel(latest.to_section) }}」:
               {{ STATE_TEXT[latest.state] }}
             </p>
-            <div
-              v-for="group in groupOptions"
-              :key="group.key"
-              class="space-y-2"
-            >
-              <p class="text-default-500 text-sm">{{ group.label }}</p>
+            <div class="space-y-2">
               <KunRadioGroup
                 v-model="target"
-                :options="group.options"
-                :aria-label="group.label"
+                :options="options"
+                aria-label="分区"
                 variant="card"
                 orientation="horizontal"
                 size="sm"

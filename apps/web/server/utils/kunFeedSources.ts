@@ -107,7 +107,7 @@ export const loadTopicFeed = async (
       : '鲲 Galgame 论坛 - 新话题',
     description: '鲲 Galgame 论坛最新发布的话题',
     link: params.section
-      ? `${baseUrl}/section/${params.section}`
+      ? `${baseUrl}/topic?section=${params.section}`
       : `${baseUrl}/topic`,
     image: siteLogo(baseUrl),
     items

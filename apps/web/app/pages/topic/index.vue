@@ -1,12 +1,12 @@
 <script setup lang="ts">
-useKunSeoMeta({
-  title: '话题列表',
-  description: `${kungal.titleShort} 话题列表, Galgame 讨论, Galgame 攻略, 长文评价, 新作资讯, 游戏运行, 开发技术, ACGN, 日常杂谈`
-})
+const route = useRoute()
+const active = computed(() =>
+  typeof route.query.section === 'string' ? route.query.section : ''
+)
 </script>
 
 <template>
-  <TopicShell active="">
-    <TopicContainer />
+  <TopicShell :active="active">
+    <TopicContainer :section-key="active" />
   </TopicShell>
 </template>

@@ -253,7 +253,6 @@ PATCH  /api/v1/admin/docs/:doc_id                     cors.New → v1Headers →
 PATCH  /api/v1/admin/friend-links/:friend_link_id     cors.New → v1Headers → fiberAdapter.Handle
 PATCH  /api/v1/admin/review-items/:review_item_id     cors.New → v1Headers → fiberAdapter.Handle
 PATCH  /api/v1/admin/role-permissions                 cors.New → v1Headers → fiberAdapter.Handle
-PATCH  /api/v1/admin/section-groups/:group            cors.New → v1Headers → fiberAdapter.Handle
 PATCH  /api/v1/admin/section-requests/:section_request_id cors.New → v1Headers → fiberAdapter.Handle
 PATCH  /api/v1/admin/sections/:section                cors.New → v1Headers → fiberAdapter.Handle
 PATCH  /api/v1/admin/settings                         cors.New → v1Headers → fiberAdapter.Handle

@@ -6,8 +6,7 @@ import {
   transformStickerPacks
 } from './imageRef'
 
-const hash =
-  '7835f792543f8564cf95e7f84d4828f2a3ef735293f0844bf8ddf8f39371171d'
+const hash = '7835f792543f8564cf95e7f84d4828f2a3ef735293f0844bf8ddf8f39371171d'
 const base = 'https://image.kungal.iloveren.link'
 
 describe('parseImageRef', () => {
@@ -43,9 +42,7 @@ describe('parseImageRef', () => {
 
 describe('imageRefCdnUrl', () => {
   it('builds a sharded main URL', () => {
-    expect(imageRefCdnUrl(base, { hash })).toBe(
-      `${base}/78/35/${hash}.webp`
-    )
+    expect(imageRefCdnUrl(base, { hash })).toBe(`${base}/78/35/${hash}.webp`)
   })
 
   it('builds a sharded variant URL', () => {
@@ -93,9 +90,10 @@ describe('transformStickerPacks', () => {
 
 describe('parseAbsoluteImageUrl', () => {
   it('accepts a known host with matching shards', () => {
-    expect(
-      parseAbsoluteImageUrl(`${base}/78/35/${hash}_320.webp`)
-    ).toEqual({ hash, variant: '320' })
+    expect(parseAbsoluteImageUrl(`${base}/78/35/${hash}_320.webp`)).toEqual({
+      hash,
+      variant: '320'
+    })
   })
 
   it('rejects wrong shards', () => {

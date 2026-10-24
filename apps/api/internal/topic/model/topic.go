@@ -61,6 +61,9 @@ type TopicSection struct {
 	CostsMoemoepoint bool   `gorm:"column:costs_moemoepoint;not null" json:"costs_moemoepoint"`
 	HiddenFromFeeds  bool   `gorm:"column:hidden_from_feeds;not null" json:"hidden_from_feeds"`
 
+	BannerImageHash   string   `gorm:"column:banner_image_hash;not null" json:"banner_image_hash"`
+	MascotImageHashes []string `gorm:"column:mascot_image_hashes;serializer:json;type:jsonb;not null" json:"mascot_image_hashes"`
+
 	CreatedAt time.Time `gorm:"column:created" json:"created"`
 	UpdatedAt time.Time `gorm:"column:updated" json:"updated"`
 }

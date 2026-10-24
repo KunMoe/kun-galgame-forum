@@ -128,7 +128,7 @@ func TestV1SectionsCountOnlyPublishedPublicTopics(t *testing.T) {
 		}
 	}
 	if anime == nil || asInt(anime["topic_count"]) != wantCount || asInt(anime["view_count"]) != wantViews ||
-		anime["category"] != "others" || anime["group"] != "community" || anime["object"] != "section" {
+		anime["category"] != "others" || anime["object"] != "section" {
 		t.Fatalf("acgn %+v, want count %d views %d", anime, wantCount, wantViews)
 	}
 	latest, _ := anime["latest_topic"].(map[string]any)

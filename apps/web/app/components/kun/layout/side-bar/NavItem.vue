@@ -57,7 +57,7 @@ const isExpanded = computed(() => props.expandedItems.includes(props.item.name))
     <KunButton
       v-else
       class-name="justify-start w-full"
-      :variant="route.fullPath === item.router ? 'flat' : 'light'"
+      :variant="route.path === item.router ? 'flat' : 'light'"
       :href="item.router"
       :target="item.external ? '_blank' : undefined"
     >
@@ -65,7 +65,7 @@ const isExpanded = computed(() => props.expandedItems.includes(props.item.name))
         :class="
           cn(
             'flex items-center justify-center gap-2 text-xl',
-            route.fullPath === item.router ? '' : 'text-foreground'
+            route.path === item.router ? '' : 'text-foreground'
           )
         "
       >
@@ -77,7 +77,11 @@ const isExpanded = computed(() => props.expandedItems.includes(props.item.name))
         v-if="item.hint"
         :class="[
           'ml-auto text-xs',
-          item.hintColor === 'danger' ? 'text-danger' : 'text-primary'
+          item.hintColor === 'danger'
+            ? 'text-danger'
+            : item.hintColor === 'secondary'
+              ? 'text-secondary'
+              : 'text-primary'
         ]"
       >
         {{ item.hint }}

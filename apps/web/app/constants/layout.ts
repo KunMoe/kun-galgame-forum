@@ -6,7 +6,7 @@ export interface KunLayoutItem {
   icon?: string
   router?: string
   hint?: string
-  hintColor?: 'primary' | 'danger'
+  hintColor?: 'primary' | 'secondary' | 'danger'
   external?: boolean
   isCollapse?: boolean
   children?: KunLayoutItem[]
@@ -158,40 +158,10 @@ export const kunLayoutItem: KunLayoutItem[] = [
   {
     name: 'topic',
     icon: 'icon-park-outline:topic',
-    label: '话题',
-    isCollapse: false,
-    children: [
-      {
-        name: 'topic',
-        icon: 'lucide:library-big',
-        router: '/topic',
-        label: '全部话题'
-      },
-      {
-        name: 'galgame',
-        icon: 'lucide:gamepad-2',
-        router: '/category/galgame',
-        label: 'Galgame'
-      },
-      {
-        name: 'resource',
-        icon: 'lucide:package-search',
-        router: '/category/resource',
-        label: '资源'
-      },
-      {
-        name: 'technique',
-        icon: 'lucide:drafting-compass',
-        router: '/category/technique',
-        label: '技术'
-      },
-      {
-        name: 'community',
-        icon: 'lucide:circle-ellipsis',
-        router: '/category/community',
-        label: '综合'
-      }
-    ]
+    label: '全部话题',
+    router: '/topic',
+    hint: '新版',
+    hintColor: 'secondary'
   },
   {
     name: 'activity',
@@ -341,6 +311,7 @@ export interface KunRailGroup {
   label: string
   icon: string
   router?: string
+  hint?: string
   sections: KunRailSection[]
 }
 
@@ -384,36 +355,11 @@ export const kunSidebarRail: KunRailGroup[] = [
   },
   {
     name: 'topic',
-    label: '话题',
+    label: '全部话题',
     icon: 'icon-park-outline:topic',
     router: '/topic',
-    sections: [
-      {
-        items: [
-          { label: '全部话题', router: '/topic', icon: 'lucide:library-big' },
-          {
-            label: 'Galgame',
-            router: '/category/galgame',
-            icon: 'lucide:gamepad-2'
-          },
-          {
-            label: '资源',
-            router: '/category/resource',
-            icon: 'lucide:package-search'
-          },
-          {
-            label: '技术',
-            router: '/category/technique',
-            icon: 'lucide:drafting-compass'
-          },
-          {
-            label: '综合',
-            router: '/category/community',
-            icon: 'lucide:circle-ellipsis'
-          }
-        ]
-      }
-    ]
+    hint: '新版',
+    sections: []
   },
   {
     name: 'galgame',
@@ -483,7 +429,7 @@ export const kunSidebarRail: KunRailGroup[] = [
   },
   {
     name: 'others',
-    label: '其他',
+    label: '其他内容',
     icon: 'lucide:layout-grid',
     router: '/doc',
     sections: [

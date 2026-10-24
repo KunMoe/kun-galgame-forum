@@ -1,6 +1,7 @@
 package repository
 
 import (
+	"encoding/json"
 	"errors"
 	"time"
 
@@ -48,7 +49,7 @@ func (r *SectionRepository) List(legacyCategory string) ([]SectionRow, error) {
 		Joins("LEFT JOIN topic_section_relation tsr ON tsr.topic_section_id = ts.id").
 		Joins("LEFT JOIN topic t ON t.id = tsr.topic_id AND t.status != 1 AND " + topicRepo.SharedListPredicate("t", false)).
 		Group("ts.id, g.id").
-		Order("g.position, g.id, ts.position, ts.id")
+		Order("ts.position, ts.id")
 	if legacyCategory != "" {
 		q = q.Where("g.legacy_category = ?", legacyCategory)
 	}
@@ -77,6 +78,8 @@ type SectionChange struct {
 	Icon        *string
 	Color       *string
 	IsArchived  *bool
+	Banner      *string
+	Mascots     *[]string
 }
 
 func (r *SectionRepository) UpdateSection(name string, c SectionChange) error {
@@ -96,11 +99,17 @@ func (r *SectionRepository) UpdateSection(name string, c SectionChange) error {
 	if c.IsArchived != nil {
 		set["is_archived"] = *c.IsArchived
 	}
+	if c.Banner != nil {
+		set["banner_image_hash"] = *c.Banner
+	}
+	if c.Mascots != nil {
+		raw, err := json.Marshal(*c.Mascots)
+		if err != nil {
+			return err
+		}
+		set["mascot_image_hashes"] = string(raw)
+	}
 	return r.update(&model.TopicSection{}, "name = ?", name, set)
-}
-
-func (r *SectionRepository) UpdateGroupLabel(key, label string) error {
-	return r.update(&model.TopicSectionGroup{}, "key = ?", key, map[string]any{"label": label})
 }
 
 func (r *SectionRepository) update(m any, where, key string, set map[string]any) error {
@@ -118,26 +127,13 @@ func (r *SectionRepository) update(m any, where, key string, set map[string]any)
 	return r.db.Model(m).Where(where, key).Updates(set).Error
 }
 
-type GroupOrder struct {
-	Key      string
-	Sections []string
-}
-
-// Reorder writes the order of the groups and of the sections inside each
-// group. It does not move a section between groups.
-func (r *SectionRepository) Reorder(order []GroupOrder) error {
+func (r *SectionRepository) Reorder(names []string) error {
 	return r.db.Transaction(func(tx *gorm.DB) error {
 		now := time.Now()
-		for gi, g := range order {
-			if err := tx.Model(&model.TopicSectionGroup{}).Where("key = ?", g.Key).
-				Updates(map[string]any{"position": gi, "updated": now}).Error; err != nil {
+		for i, name := range names {
+			if err := tx.Model(&model.TopicSection{}).Where("name = ?", name).
+				Updates(map[string]any{"position": i, "updated": now}).Error; err != nil {
 				return err
-			}
-			for si, name := range g.Sections {
-				if err := tx.Model(&model.TopicSection{}).Where("name = ?", name).
-					Updates(map[string]any{"position": si, "updated": now}).Error; err != nil {
-					return err
-				}
 			}
 		}
 		return nil
