@@ -12,19 +12,21 @@ import (
 const catalogCharacterWorksCap = 50
 
 type CatalogCharacter struct {
-	ID          int64                       `json:"id"`
-	DisplayName string                      `json:"display_name"`
-	Lang        string                      `json:"lang"`
-	Localized   map[string]catLocalizedName `json:"localized"`
-	Latin       string                      `json:"latin"`
-	Image       string                      `json:"image"`
-	Figure      string                      `json:"figure"`
-	ImageMeta   ArtMeta                     `json:"-"`
-	FigureMeta  ArtMeta                     `json:"-"`
-	Intros      []CatalogIntro              `json:"intros"`
-	Traits      []CatalogCharacterTrait     `json:"traits"`
-	Links       []CatalogLink               `json:"links"`
-	Works       []struct {
+	ID           int64                       `json:"id"`
+	DisplayName  string                      `json:"display_name"`
+	Lang         string                      `json:"lang"`
+	Localized    map[string]catLocalizedName `json:"localized"`
+	Latin        string                      `json:"latin"`
+	Image        string                      `json:"image"`
+	Figure       string                      `json:"figure"`
+	ImageSexual  *int                        `json:"image_sexual"`
+	FigureSexual *int                        `json:"figure_sexual"`
+	ImageMeta    ArtMeta                     `json:"-"`
+	FigureMeta   ArtMeta                     `json:"-"`
+	Intros       []CatalogIntro              `json:"intros"`
+	Traits       []CatalogCharacterTrait     `json:"traits"`
+	Links        []CatalogLink               `json:"links"`
+	Works        []struct {
 		Work   catWorkBrief    `json:"work"`
 		Voices []CatalogPerson `json:"voices"`
 	} `json:"works"`

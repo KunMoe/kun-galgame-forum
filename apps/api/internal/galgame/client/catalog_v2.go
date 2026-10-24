@@ -605,6 +605,9 @@ func rewriteV2Object(v map[string]any, cdnBase string) bool {
 		if img, ok := v[key].(map[string]any); ok {
 			if url := imageURL(img, cdnBase); url != "" {
 				v[key] = url
+				if sexual, ok := img["sexual"].(string); ok {
+					v[key+"_sexual"] = json.Number(strconv.Itoa(sexualLevel(sexual)))
+				}
 				changed = true
 			}
 		}

@@ -12,11 +12,13 @@ const props = defineProps<{
 const { allowsNsfw: showNsfw, isBlurred } = useContentStance()
 const enableNsfw = useEnableNsfw()
 
+// An ungraded screenshot counts as suggestive, as in moyu: reading null as 0
+// rendered it to a reader who hides adult content.
 const sexualLevel = (s: WorkScreenshot): number => {
   const sexual = s.image?.sexual
-  if (sexual === 'suggestive') return 1
+  if (sexual === 'safe') return 0
   if (sexual === 'explicit') return 2
-  return 0
+  return 1
 }
 
 // The stance is the only thing that lets a graded screenshot through. The

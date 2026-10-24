@@ -16,7 +16,7 @@ import (
 
 type getWorkInput struct {
 	WorkID      string `path:"work_id" pattern:"^[1-9][0-9]{0,18}$" maxLength:"19" doc:"Catalog work id, which is also the forum galgame page id."`
-	IncludeNSFW bool   `query:"include_nsfw" default:"false" doc:"When true, adult tags are included. Default false: adult tags are stripped."`
+	IncludeNSFW bool   `query:"include_nsfw" default:"false" doc:"When true, adult tags are included and images are not gated. Default false: adult tags are stripped, and covers, screenshots and character art not graded safe are left out."`
 }
 
 type getWorkOutput struct {
@@ -95,7 +95,7 @@ func (s *Service) assembleWork(
 		RelatedWorks:     relatedWorksOf(ctx, d, s.cdn),
 		Tags:             tagsOf(d, includeNSFW),
 		Credits:          creditsOf(d),
-		Roster:           charactersOf(ctx, d, s.cdn),
+		Roster:           charactersOf(ctx, d, s.cdn, includeNSFW),
 		ResourceTypes:    []workrepr.ResourceType{},
 		FavoriteCount:    favoriteCountOf(d),
 		Contributors:     []repr.UserRef{},
@@ -168,8 +168,8 @@ func (s *Service) assembleWork(
 		out.Contributors = append(out.Contributors, repr.NewUserRef(s.cdn, users[id]))
 	}
 
-	out.Covers = coversOf(d, s.cdn, s.coverTallies(ctx, workID))
-	out.Screenshots = screenshotsOf(d, s.cdn)
+	out.Covers = coversOf(d, s.cdn, s.coverTallies(ctx, workID), includeNSFW)
+	out.Screenshots = screenshotsOf(d, s.cdn, includeNSFW)
 
 	if user != nil {
 		viewer, p := s.workViewer(user, workID)

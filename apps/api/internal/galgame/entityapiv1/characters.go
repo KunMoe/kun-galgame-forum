@@ -38,7 +38,7 @@ type listCharactersInput struct {
 	Sort        string            `query:"sort" enum:"popularity_desc,relevance_desc,id_desc" maxLength:"15" doc:"Order. popularity: how widely the works a character appears in are collected, lead roles weighing double. relevance: the name search's ranking, and needs q. id: newest in catalog first. Omitted: relevance_desc when q is set, popularity_desc otherwise."`
 	Page        int               `query:"page" minimum:"1" default:"1" doc:"1-based page number. page × limit may not exceed 10000."`
 	Limit       int               `query:"limit" minimum:"1" maximum:"100" default:"24" doc:"Page size. 1–100, default 24. Values above 100 are rejected, not clamped."`
-	IncludeNSFW bool              `query:"include_nsfw" default:"false" doc:"When true, adult traits may be named in trait_ids. Default false."`
+	IncludeNSFW bool              `query:"include_nsfw" default:"false" doc:"When true, adult traits may be named in trait_ids and images are not gated. Default false: an image not graded safe is left out."`
 }
 
 type listCharactersOutput struct {
@@ -149,7 +149,7 @@ func (s *Service) characterSummary(row *client.CatalogCharacterRow, vocab *trait
 			}
 		}
 	}
-	if img := row.Image; img != nil {
+	if img := row.Image; img != nil && (includeNSFW || (img.Sexual != nil && *img.Sexual == "safe")) {
 		meta := &imageclient.ImageMeta{}
 		if img.Width != nil {
 			meta.Width = *img.Width
@@ -172,7 +172,7 @@ func (s *Service) characterSummary(row *client.CatalogCharacterRow, vocab *trait
 
 type characterPathInput struct {
 	CharacterID string `path:"character_id" pattern:"^[1-9][0-9]{0,18}$" maxLength:"19" doc:"Character id."`
-	IncludeNSFW bool   `query:"include_nsfw" default:"false" doc:"When true, adult traits are included. Default false."`
+	IncludeNSFW bool   `query:"include_nsfw" default:"false" doc:"When true, adult traits are included and the portrait and figure are not gated. Default false: an image not graded safe is left out."`
 }
 
 type getCharacterOutput struct {
@@ -242,8 +242,8 @@ func (s *Service) getCharacter(ctx context.Context, in *characterPathInput) (*ge
 		ID:          repr.ID(int(ch.ID)),
 		CatalogName: workrepr.Name(ch.DisplayName, ch.Latin, client.LocalizedValues(ch.Localized)),
 		Lang:        workrepr.Lang(ch.Lang),
-		Image:       workrepr.ImageFromURL(s.cdn, ch.Image, ch.ImageMeta.Width, ch.ImageMeta.Height, ch.ImageMeta.Thumbhash, nil),
-		Figure:      workrepr.ImageFromURL(s.cdn, ch.Figure, ch.FigureMeta.Width, ch.FigureMeta.Height, ch.FigureMeta.Thumbhash, nil),
+		Image:       workrepr.GatedImageFromURL(s.cdn, ch.Image, ch.ImageMeta.Width, ch.ImageMeta.Height, ch.ImageMeta.Thumbhash, ch.ImageSexual, in.IncludeNSFW),
+		Figure:      workrepr.GatedImageFromURL(s.cdn, ch.Figure, ch.FigureMeta.Width, ch.FigureMeta.Height, ch.FigureMeta.Thumbhash, ch.FigureSexual, in.IncludeNSFW),
 		Intros:      workrepr.Intros(ch.Intros),
 		Traits:      traits,
 		Links:       links,

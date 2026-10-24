@@ -43,12 +43,12 @@ describe('GalgameGallery', () => {
     usePersistSettingsStore().showKUNGalgameContentLimit = 'sfw'
   })
 
-  it('renders no graded screenshot for a reader who hides adult content', async () => {
+  it('renders only safe screenshots for a reader who hides adult content', async () => {
     const wrapper = await mountSuspended(GalgameGallery, {
       props: { screenshots }
     })
-    expect(rendered(wrapper.html())).toEqual(['safe', 'ungraded'])
-    expect(wrapper.text()).toContain('2 张成人向图片已按您的内容设置隐藏')
+    expect(rendered(wrapper.html())).toEqual(['safe'])
+    expect(wrapper.text()).toContain('3 张成人向图片已按您的内容设置隐藏')
   })
 
   // The filter once offered a checkbox per grade to exactly this reader. A
@@ -61,7 +61,7 @@ describe('GalgameGallery', () => {
     const wrapper = await mountSuspended(GalgameGallery, {
       props: { screenshots }
     })
-    expect(rendered(wrapper.html())).toEqual(['safe', 'ungraded'])
+    expect(rendered(wrapper.html())).toEqual(['safe'])
   })
 
   it('renders every screenshot once NSFW is on', async () => {
@@ -86,6 +86,6 @@ describe('GalgameGallery', () => {
     const wrapper = await mountSuspended(GalgameGallery, {
       props: { screenshots }
     })
-    expect(rendered(wrapper.html())).toEqual(['safe', 'ungraded'])
+    expect(rendered(wrapper.html())).toEqual(['safe'])
   })
 })

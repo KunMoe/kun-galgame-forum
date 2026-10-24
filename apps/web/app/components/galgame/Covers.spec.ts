@@ -54,10 +54,10 @@ describe('GalgameCovers', () => {
     usePersistSettingsStore().showKUNGalgameContentLimit = 'sfw'
   })
 
-  it('leaves explicit covers out for a reader who hides adult content', async () => {
+  it('lists only safe covers for a reader who hides adult content', async () => {
     const html = await mountOpen()
-    expect(rendered(html)).toEqual(['1', '2', '4'])
-    expect(html).toContain('1 张成人向封面已按您的内容设置隐藏')
+    expect(rendered(html)).toEqual(['1'])
+    expect(html).toContain('3 张成人向封面已按您的内容设置隐藏')
   })
 
   it('lists every cover once NSFW is on', async () => {

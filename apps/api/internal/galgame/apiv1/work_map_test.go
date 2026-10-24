@@ -98,3 +98,53 @@ func TestLinksOfCarriesIdentityAndPageID(t *testing.T) {
 		t.Errorf("related link = %+v, want no identity and a null page_id", l)
 	}
 }
+
+func TestWorkArtIsGatedForAnSFWRead(t *testing.T) {
+	safe, suggestive := 0, 1
+	var d client.CatalogWorkDetail
+	if err := json.Unmarshal([]byte(`{"id": 1,
+		"covers": [
+			{"id": 1, "url": "https://cdn.test/0000000000000000000000000000000000000000000000000000000000000000.webp", "source": "vndb", "sexual": 0},
+			{"id": 2, "url": "https://cdn.test/1111111111111111111111111111111111111111111111111111111111111111.webp", "source": "vndb", "sexual": 1},
+			{"id": 3, "url": "https://cdn.test/2222222222222222222222222222222222222222222222222222222222222222.webp", "source": "vndb"}
+		],
+		"screenshots": [
+			{"url": "https://cdn.test/3333333333333333333333333333333333333333333333333333333333333333.webp", "source": "vndb", "sexual": 0},
+			{"url": "https://cdn.test/4444444444444444444444444444444444444444444444444444444444444444.webp", "source": "vndb", "sexual": 2},
+			{"url": "https://cdn.test/5555555555555555555555555555555555555555555555555555555555555555.webp", "source": "vndb"}
+		],
+		"characters": [{"id": 9, "kind": "main", "image": "https://cdn.test/6666666666666666666666666666666666666666666666666666666666666666.webp", "figure": "https://cdn.test/aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa.webp"}]
+	}`), &d); err != nil {
+		t.Fatal(err)
+	}
+	d.Characters[0].ImageSexual, d.Characters[0].FigureSexual = &safe, &suggestive
+
+	if got := coversOf(&d, "", nil, false); len(got) != 1 || got[0].ID != "1" {
+		t.Errorf("SFW covers = %+v, want only the safe one", got)
+	}
+	if got := coversOf(&d, "", nil, true); len(got) != 3 {
+		t.Errorf("NSFW covers = %d, want 3", len(got))
+	}
+	if got := screenshotsOf(&d, "", false); len(got) != 1 || got[0].SortOrder != 0 {
+		t.Errorf("SFW screenshots = %+v, want only the safe one", got)
+	}
+	if got := screenshotsOf(&d, "", true); len(got) != 3 {
+		t.Errorf("NSFW screenshots = %d, want 3", len(got))
+	}
+
+	sfw := charactersOf(t.Context(), &d, "", false)[0]
+	if sfw.Image == nil || sfw.Figure != nil {
+		t.Errorf("SFW roster art = %+v / %+v, want the safe portrait and no suggestive figure", sfw.Image, sfw.Figure)
+	}
+	if sfw.Image != nil && (sfw.Image.Sexual == nil || *sfw.Image.Sexual != "safe") {
+		t.Errorf("portrait grade = %v, want safe carried to the repr", sfw.Image.Sexual)
+	}
+	if nsfw := charactersOf(t.Context(), &d, "", true)[0]; nsfw.Figure == nil {
+		t.Error("NSFW roster dropped the suggestive figure")
+	}
+
+	d.Characters[0].ImageSexual = nil
+	if got := charactersOf(t.Context(), &d, "", false)[0]; got.Image != nil {
+		t.Error("SFW roster kept an ungraded portrait")
+	}
+}

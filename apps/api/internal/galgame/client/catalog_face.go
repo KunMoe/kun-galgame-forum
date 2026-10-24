@@ -230,18 +230,20 @@ type catPopularity struct {
 }
 
 type catWorkCharacter struct {
-	ID          int64                       `json:"id"`
-	DisplayName string                      `json:"display_name"`
-	Localized   map[string]catLocalizedName `json:"localized"`
-	Latin       string                      `json:"latin"`
-	Kind        string                      `json:"kind"`
-	Spoiler     int                         `json:"spoiler"`
-	Image       string                      `json:"image"`
-	Figure      string                      `json:"figure"`
-	Identity    string                      `json:"identity"`
-	Voices      []CatalogPerson             `json:"voices"`
-	ImageMeta   ArtMeta                     `json:"-"`
-	FigureMeta  ArtMeta                     `json:"-"`
+	ID           int64                       `json:"id"`
+	DisplayName  string                      `json:"display_name"`
+	Localized    map[string]catLocalizedName `json:"localized"`
+	Latin        string                      `json:"latin"`
+	Kind         string                      `json:"kind"`
+	Spoiler      int                         `json:"spoiler"`
+	Image        string                      `json:"image"`
+	Figure       string                      `json:"figure"`
+	ImageSexual  *int                        `json:"image_sexual"`
+	FigureSexual *int                        `json:"figure_sexual"`
+	Identity     string                      `json:"identity"`
+	Voices       []CatalogPerson             `json:"voices"`
+	ImageMeta    ArtMeta                     `json:"-"`
+	FigureMeta   ArtMeta                     `json:"-"`
 }
 
 type catCreditGroup struct {

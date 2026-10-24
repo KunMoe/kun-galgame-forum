@@ -19332,7 +19332,7 @@ export interface operations {
                 page?: number;
                 /** @description Page size. 1–100, default 24. Values above 100 are rejected, not clamped. */
                 limit?: number;
-                /** @description When true, adult traits may be named in trait_ids. Default false. */
+                /** @description When true, adult traits may be named in trait_ids and images are not gated. Default false: an image not graded safe is left out. */
                 include_nsfw?: boolean;
             };
             header?: never;
@@ -19382,7 +19382,7 @@ export interface operations {
     getCharacter: {
         parameters: {
             query?: {
-                /** @description When true, adult traits are included. Default false. */
+                /** @description When true, adult traits are included and the portrait and figure are not gated. Default false: an image not graded safe is left out. */
                 include_nsfw?: boolean;
             };
             header?: never;
@@ -43388,7 +43388,7 @@ export interface operations {
     getWork: {
         parameters: {
             query?: {
-                /** @description When true, adult tags are included. Default false: adult tags are stripped. */
+                /** @description When true, adult tags are included and images are not gated. Default false: adult tags are stripped, and covers, screenshots and character art not graded safe are left out. */
                 include_nsfw?: boolean;
             };
             header?: never;
