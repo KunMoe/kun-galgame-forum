@@ -49,6 +49,7 @@ type listTopicsInput struct {
 	Category    string      `query:"category" enum:"galgame,technique,others" maxLength:"9" doc:"Deprecated: filter by section instead. When set, only topics whose section's group has this legacy category."`
 	IncludeNSFW bool        `query:"include_nsfw" default:"false" doc:"When true, NSFW topics are included. Default false."`
 	Section     SectionSlug `query:"section" doc:"When set, only topics filed under this section. A retired key filters by its successor. Omitted means every section."`
+	Hidden      string      `query:"hidden_sections" enum:"include,exclude" default:"include" maxLength:"7" doc:"exclude leaves out the sections listSections marks is_hidden_from_feeds (resource-seeking and tech-help), as an all-topics feed does. Default include."`
 }
 
 type listTopicsOutput struct {
@@ -70,7 +71,11 @@ func (s *Service) listTopics(ctx context.Context, in *listTopicsInput) (*listTop
 	}
 	authenticated := v1.User(ctx) != nil
 	section, _ := NormalizeSectionKey(string(in.Section))
+	hide := in.Hidden == "exclude"
 	fp := listFingerprint(spec.Token, in.Category, section, in.IncludeNSFW, authenticated)
+	if hide {
+		fp = collect.Fingerprint(fp, "hidden:exclude")
+	}
 	keys, curErr := collect.DecodeCursor(in.Cursor, spec.Token, fp)
 	if curErr != nil {
 		return nil, curErr
@@ -85,6 +90,7 @@ func (s *Service) listTopics(ctx context.Context, in *listTopicsInput) (*listTop
 		Direction:     spec.Direction,
 		Category:      in.Category,
 		Section:       section,
+		HideSections:  hide,
 		IncludeNSFW:   in.IncludeNSFW,
 		Authenticated: authenticated,
 		Pos:           pos,

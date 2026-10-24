@@ -367,3 +367,36 @@ func TestV1TopicSummaryIsWrittenAndRewrittenAfterEdits(t *testing.T) {
 		t.Fatalf("drift after rewriting the summary is %d", drift)
 	}
 }
+
+func TestV1TopicsCanLeaveOutHiddenSections(t *testing.T) {
+	f, _ := newTopicAIFix(t, false)
+	ids := map[string]string{}
+	for i, sec := range []string{"tech-help", "daily"} {
+		resp, out := f.callJSON(t, http.MethodPost, "/api/v1/topics", "/topics", "sess-alice", keyUUID(9141+i), newTopicBody("hidden "+sec, sec))
+		if resp.StatusCode != http.StatusCreated {
+			t.Fatalf("create %s: %d %v", sec, resp.StatusCode, out)
+		}
+		ids[sec] = strID(out["id"])
+	}
+	listed := func(query string) map[string]bool {
+		resp, body := f.callJSON(t, http.MethodGet, "/api/v1/topics?sort=created_desc&limit=50"+query, "/topics", "", "", nil)
+		if resp.StatusCode != http.StatusOK {
+			t.Fatalf("list %s: %d %v", query, resp.StatusCode, body)
+		}
+		seen := map[string]bool{}
+		items, _ := body["items"].([]any)
+		for _, it := range items {
+			m, _ := it.(map[string]any)
+			seen[strID(m["id"])] = true
+		}
+		return seen
+	}
+	all := listed("")
+	if !all[ids["tech-help"]] || !all[ids["daily"]] {
+		t.Fatalf("default list misses a topic: %v", all)
+	}
+	shown := listed("&hidden_sections=exclude")
+	if shown[ids["tech-help"]] || !shown[ids["daily"]] {
+		t.Fatalf("exclude: tech-help %v daily %v", shown[ids["tech-help"]], shown[ids["daily"]])
+	}
+}

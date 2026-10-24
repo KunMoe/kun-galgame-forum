@@ -89,6 +89,7 @@ const { items, hasMore, problem, status, loadingMore, loadMore, refresh } =
             limit: 50,
             sort: offeredSort.value,
             include_nsfw: includeNsfw.value,
+            hidden_sections: 'exclude',
             ...(cursor ? { cursor } : {})
           }
         },
@@ -100,8 +101,8 @@ const { items, hasMore, problem, status, loadingMore, loadMore, refresh } =
 <template>
   <div class="flex flex-col gap-6">
     <KunHeader
-      name="话题列表"
-      description="鲲 Galgame 论坛的全部话题，涵盖 Galgame 讨论、技术交流、资源求助与日常闲聊，在这里和大家一起畅所欲言。"
+      name="全部话题"
+      description="按更新时间排列的全部话题。技术求助与寻求资源不在这里, 可以进入对应分区查看"
     />
 
     <div class="flex items-center justify-between gap-3">

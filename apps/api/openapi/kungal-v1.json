@@ -6572,6 +6572,15 @@
         "type": "string",
         "x-vocabulary-closed": true
       },
+      "HiddenSectionsMode": {
+        "enum": [
+          "include",
+          "exclude"
+        ],
+        "maxLength": 7,
+        "type": "string",
+        "x-vocabulary-closed": true
+      },
       "HiddenTopicSummary": {
         "properties": {
           "author": {
@@ -59989,6 +59998,17 @@
             "schema": {
               "$ref": "#/components/schemas/SectionKey",
               "description": "When set, only topics filed under this section. A retired key filters by its successor. Omitted means every section."
+            }
+          },
+          {
+            "description": "exclude leaves out the sections listSections marks is_hidden_from_feeds (resource-seeking and tech-help), as an all-topics feed does. Default include.",
+            "explode": false,
+            "in": "query",
+            "name": "hidden_sections",
+            "schema": {
+              "$ref": "#/components/schemas/HiddenSectionsMode",
+              "default": "include",
+              "description": "exclude leaves out the sections listSections marks is_hidden_from_feeds (resource-seeking and tech-help), as an all-topics feed does. Default include."
             }
           }
         ],

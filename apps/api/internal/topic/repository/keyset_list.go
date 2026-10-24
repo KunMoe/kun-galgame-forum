@@ -46,6 +46,7 @@ type KeysetQuery struct {
 	Direction     string
 	Category      string
 	Section       string
+	HideSections  bool
 	IncludeNSFW   bool
 	Authenticated bool
 	Limit         int
@@ -100,6 +101,10 @@ func (r *TopicListRepository) FindKeyset(q KeysetQuery) ([]TopicKeysetRow, error
 	if q.Section != "" {
 		query = query.Where(`topic.id IN (SELECT tsr.topic_id FROM topic_section_relation tsr
 			JOIN topic_section ts ON ts.id = tsr.topic_section_id WHERE ts.name = ?)`, q.Section)
+	}
+	if q.HideSections {
+		query = query.Where(`NOT EXISTS (SELECT 1 FROM topic_section_relation tsr
+			JOIN topic_section ts ON ts.id = tsr.topic_section_id WHERE tsr.topic_id = topic.id AND ts.hidden_from_feeds)`)
 	}
 
 	if q.Pos != nil {

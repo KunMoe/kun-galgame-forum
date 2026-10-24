@@ -18,7 +18,7 @@ const { items, hasMore, problem, status, loadingMore, loadMore, refresh } =
         params: {
           query: {
             section: props.section.section,
-            sort: 'created_desc',
+            sort: 'bumped_desc',
             limit: 30,
             include_nsfw: includeNsfw.value,
             ...(cursor ? { cursor } : {})

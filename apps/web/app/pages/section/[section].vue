@@ -2,9 +2,8 @@
 const route = useRoute()
 const { sectionOf } = useTopicSections()
 
-const section = computed(() =>
-  sectionOf((route.params as { section: string }).section)
-)
+const key = computed(() => (route.params as { section: string }).section)
+const section = computed(() => sectionOf(key.value))
 
 useKunSeoMeta({
   title: section.value
@@ -15,6 +14,8 @@ useKunSeoMeta({
 </script>
 
 <template>
-  <SectionContainer v-if="section" :section="section" />
-  <KunNull v-else description="没有这个版块" />
+  <TopicShell :active="key">
+    <SectionContainer v-if="section" :section="section" />
+    <KunNull v-else description="没有这个版块" />
+  </TopicShell>
 </template>
