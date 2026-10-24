@@ -2,6 +2,16 @@ import { createTopicSchema } from '~/validations/topic'
 import { useTopicEditorStore } from './useTopicEditorStore'
 import { coverHashFromToken } from './applyTopicSource'
 import { useIdempotencyKey } from '~/composables/useIdempotencyKey'
+import { usePoll } from './usePoll'
+import { formToCreate, useLottery } from './useLottery'
+import {
+  clonePlain,
+  lotteryPointBudget,
+  pendingLotteryIssue,
+  pendingPollIssue,
+  pollFormToCreate
+} from './pendingMiniApps'
+import type { HeldMiniApp } from '~/store/temp/topic/miniAppHandoff'
 import {
   TOPIC_SECTION_CONSUME_MOEMOEPOINTS,
   MOEMOEPOINT_COST_FOR_CONSUME_SECTION
@@ -19,13 +29,19 @@ export const useTopicSubmitter = () => {
     coverImages,
     accessScope,
     accessRoles,
-    accessUserIds
+    accessUserIds,
+    polls,
+    lotteries
   } = useTopicEditorStore()
   const tempStore = useTempEditStore()
   const persistStore = usePersistEditTopicStore()
   const { moemoepoint } = usePersistUserStore()
   const api = useApiClient()
   const createKey = useIdempotencyKey()
+  const handoff = useTempTopicMiniAppHandoffStore()
+  const createdTopicId = ref('')
+  const { createPoll } = usePoll(createdTopicId)
+  const { createLottery } = useLottery(createdTopicId)
 
   const rules = reactive({
     isReadRule: false,
@@ -60,6 +76,45 @@ export const useTopicSubmitter = () => {
     return body
   }
 
+  const checkPendingMiniApps = () => {
+    const issue = [
+      ...polls.value.map(pendingPollIssue),
+      ...lotteries.value.map(pendingLotteryIssue)
+    ].find(Boolean)
+    if (issue) {
+      useMessage(issue, 'warn')
+      return false
+    }
+    const budget = lotteries.value.reduce(
+      (sum, lottery) => sum + lotteryPointBudget(lottery),
+      0
+    )
+    if (budget > moemoepoint) {
+      useMessage(
+        `抽奖的萌萌点奖池共需 ${budget} 萌萌点, 超过了您当前的 ${moemoepoint} 萌萌点`,
+        'warn'
+      )
+      return false
+    }
+    return true
+  }
+
+  const createMiniApps = async (topicId: string, items: HeldMiniApp[]) => {
+    createdTopicId.value = topicId
+    const failed: HeldMiniApp[] = []
+    for (const item of items) {
+      const result =
+        item.key === 'poll'
+          ? await createPoll(pollFormToCreate(item.form))
+          : await createLottery(formToCreate(item.form))
+      if (!result.ok) {
+        reportProblem(result.problem)
+        failed.push(item)
+      }
+    }
+    return failed
+  }
+
   const submit = async () => {
     if (isSubmitting.value) {
       return
@@ -77,6 +132,10 @@ export const useTopicSubmitter = () => {
     if (!result.success) {
       const error = JSON.parse(result.error.message)[0]
       useMessage(formatKunZodIssue(error), 'warn')
+      return
+    }
+
+    if (mode === 'create' && !checkPendingMiniApps()) {
       return
     }
 
@@ -127,8 +186,24 @@ export const useTopicSubmitter = () => {
         return
       }
       createKey.clear()
-      useKunLoliInfo('发布成功', 5)
+      // Reset before the mini-apps go out: closing the tab halfway must not
+      // leave the editor full, one click away from publishing a second topic.
+      const miniApps: HeldMiniApp[] = [
+        ...polls.value.map((form) => ({ key: 'poll' as const, form })),
+        ...lotteries.value.map((form) => ({ key: 'lottery' as const, form }))
+      ].map(clonePlain)
       persistStore.resetTopicData()
+      const failed = await createMiniApps(created.data.id, miniApps)
+      if (failed.length) {
+        handoff.hold(created.data.id, failed)
+        useMessage(
+          `话题已发布, 但有 ${failed.length} 个投票或抽奖没有创建成功, 可以在话题页重新创建`,
+          'warn',
+          8000
+        )
+      } else {
+        useKunLoliInfo('发布成功', 5)
+      }
       await navigateTo(`/topic/${created.data.id}`)
     } finally {
       isSubmitting.value = false

@@ -150,7 +150,11 @@ func (d *Drafts) getTopicDraft(ctx context.Context, in *topicDraftInput) (*topic
 	if prob != nil {
 		return nil, prob
 	}
-	return &topicDraftOutput{Body: mapDraft(draft)}, nil
+	body, err := mapDraft(draft)
+	if err != nil {
+		return nil, problem.Internal(err)
+	}
+	return &topicDraftOutput{Body: body}, nil
 }
 
 func (d *Drafts) createTopicDraft(ctx context.Context, in *createTopicDraftInput) (*createTopicDraftOutput, error) {
@@ -186,21 +190,32 @@ func (d *Drafts) createTopicDraft(ctx context.Context, in *createTopicDraftInput
 	for _, s := range in.Body.Sections {
 		sections = append(sections, string(s))
 	}
+	miniApps, err := encodeDraftMiniApps(in.Body.Polls, in.Body.Lotteries)
+	if err != nil {
+		return nil, problem.Internal(err)
+	}
 	draft := &model.TopicDraft{
-		UserID:      user.ID,
-		Title:       in.Body.Title,
-		Content:     content,
-		Category:    category,
-		Sections:    sections,
-		CoverImages: coversFromHashes(in.Body.CoverImageHashes),
-		IsNSFW:      in.Body.IsNSFW,
+		UserID:           user.ID,
+		Title:            in.Body.Title,
+		Content:          content,
+		Category:         category,
+		Sections:         sections,
+		CoverImages:      coversFromHashes(in.Body.CoverImageHashes),
+		IsNSFW:           in.Body.IsNSFW,
+		Polls:            miniApps.polls,
+		Lotteries:        miniApps.lotteries,
+		PrizeImageHashes: miniApps.prizeImages,
 	}
 	if err := d.drafts.Create(draft); err != nil {
 		return nil, problem.Internal(err)
 	}
+	body, err := mapDraft(draft)
+	if err != nil {
+		return nil, problem.Internal(err)
+	}
 	return &createTopicDraftOutput{
 		Location: "/api/v1/me/topic-drafts/" + strconv.Itoa(draft.ID),
-		Body:     mapDraft(draft),
+		Body:     body,
 	}, nil
 }
 
@@ -250,7 +265,7 @@ func (d *Drafts) ownDraft(ctx context.Context, idStr string) (*model.TopicDraft,
 	return draft, nil
 }
 
-func mapDraft(d *model.TopicDraft) TopicDraft {
+func mapDraft(d *model.TopicDraft) (TopicDraft, error) {
 	var category *string
 	if d.Category != "" {
 		c := d.Category
@@ -268,6 +283,10 @@ func mapDraft(d *model.TopicDraft) TopicDraft {
 		}
 		hashes = append(hashes, ImageHash(hash))
 	}
+	polls, lotteries, err := decodeDraftMiniApps(d)
+	if err != nil {
+		return TopicDraft{}, err
+	}
 	return TopicDraft{
 		Object:           "topic_draft",
 		ID:               repr.ID(d.ID),
@@ -277,7 +296,9 @@ func mapDraft(d *model.TopicDraft) TopicDraft {
 		Sections:         sections,
 		IsNSFW:           d.IsNSFW,
 		CoverImageHashes: hashes,
+		Polls:            polls,
+		Lotteries:        lotteries,
 		CreatedAt:        repr.Timestamp(d.CreatedAt),
 		UpdatedAt:        repr.Timestamp(d.UpdatedAt),
-	}
+	}, nil
 }

@@ -8,6 +8,12 @@ import {
 } from '~/composables/topic/useLottery'
 import { lotterySchema } from '~/validations/topic-lottery'
 import {
+  clonePlain,
+  pendingLotteryIssue,
+  prizeCodeCount,
+  prizePointBudget
+} from '~/composables/topic/pendingMiniApps'
+import {
   KUN_LOTTERY_DELIVERY_OPTIONS,
   KUN_LOTTERY_DRAW_MODE_OPTIONS,
   KUN_LOTTERY_ENTRY_MODE_OPTIONS,
@@ -18,13 +24,16 @@ import type { LotteryFormData, LotteryPrizeFormData } from './types'
 
 const props = defineProps<{
   modelValue: boolean
-  topicId: string
+  topicId?: string
   initialData?: Lottery
+  initialForm?: LotteryFormData
+  saveOnly?: boolean
 }>()
 
 const emits = defineEmits<{
   'update:modelValue': [value: boolean]
   refresh: []
+  save: [form: LotteryFormData]
 }>()
 
 const isModalOpen = computed({
@@ -32,8 +41,10 @@ const isModalOpen = computed({
   set: (value) => emits('update:modelValue', value)
 })
 
-const isEditing = computed(() => !!props.initialData)
-const { createLottery, updateLottery } = useLottery(() => props.topicId)
+const isEditing = computed(
+  () => !!props.initialData || (props.saveOnly && !!props.initialForm)
+)
+const { createLottery, updateLottery } = useLottery(() => props.topicId ?? '')
 const isLoading = ref(false)
 
 const emptyPrize = (): LotteryPrizeFormData => ({
@@ -50,8 +61,11 @@ const emptyPrize = (): LotteryPrizeFormData => ({
   codes: ''
 })
 
-const getInitialFormData = (): LotteryFormData =>
-  props.initialData
+const getInitialFormData = (): LotteryFormData => {
+  if (props.initialForm) {
+    return clonePlain(props.initialForm)
+  }
+  return props.initialData
     ? lotteryToForm(props.initialData)
     : {
         title: '',
@@ -66,6 +80,7 @@ const getInitialFormData = (): LotteryFormData =>
         show_entrants: true,
         prizes: [emptyPrize()]
       }
+}
 
 const formData = reactive<LotteryFormData>(getInitialFormData())
 const rewritePrizes = ref(false)
@@ -116,21 +131,11 @@ const removePrize = (index: number) => {
   formData.prizes.splice(index, 1)
 }
 
-const codeCount = (prize: LotteryPrizeFormData) =>
-  prize.codes.split('\n').filter((c) => c.trim()).length
-
 const isPointPool = (prize: LotteryPrizeFormData) =>
   prize.point_mode !== 'fixed'
 
-const prizePointTotal = (prize: LotteryPrizeFormData) => {
-  const amount = Number(prize.point_amount || 0)
-  return isPointPool(prize) ? amount : amount * Number(prize.slots || 0)
-}
-
 const pointTotal = computed(() =>
-  formData.prizes
-    .filter((prize) => prize.delivery === 'point')
-    .reduce((sum, prize) => sum + prizePointTotal(prize), 0)
+  formData.prizes.reduce((sum, prize) => sum + prizePointBudget(prize), 0)
 )
 
 const pointHint = (prize: LotteryPrizeFormData) => {
@@ -150,11 +155,15 @@ const pointHint = (prize: LotteryPrizeFormData) => {
 
 const checkPrizes = () => {
   for (const prize of formData.prizes) {
-    if (prize.delivery === 'code' && codeCount(prize) !== prize.slots) {
+    if (prize.delivery === 'code' && prizeCodeCount(prize) !== prize.slots) {
       useMessage(
         `奖项「${prize.name || '未命名'}」有 ${prize.slots} 个名额, 需要正好 ${prize.slots} 个兑换码`,
         'warn'
       )
+      return false
+    }
+    if (prize.delivery === 'point' && Number(prize.point_amount) < 1) {
+      useMessage(`奖项「${prize.name || '未命名'}」需要填写萌萌点数量`, 'warn')
       return false
     }
     if (
@@ -172,6 +181,13 @@ const checkPrizes = () => {
   return true
 }
 
+const submitText = computed(() => {
+  if (props.saveOnly) {
+    return isEditing.value ? '保存' : '添加到话题'
+  }
+  return isEditing.value ? '保存更改' : '发布抽奖'
+})
+
 const handleSubmit = async () => {
   const result = lotterySchema.safeParse(formData)
   if (!result.success) {
@@ -180,6 +196,16 @@ const handleSubmit = async () => {
     return
   }
   if (rewritePrizes.value && !checkPrizes()) {
+    return
+  }
+  if (props.saveOnly) {
+    const issue = pendingLotteryIssue(formData)
+    if (issue) {
+      useMessage(issue, 'warn')
+      return
+    }
+    emits('save', clonePlain(formData))
+    isModalOpen.value = false
     return
   }
 
@@ -391,9 +417,10 @@ const handleSubmit = async () => {
                   :rows="4"
                 />
                 <p class="text-default-500 mt-1 text-xs">
-                  已填写 {{ codeCount(prize) }} 个, 需要 {{ prize.slots }} 个。
-                  兑换码提交后即加密托管, 页面上永远不会再显示,
-                  只有中奖者本人能揭示, 且需在开奖后 7 天内领取, 逾期自动作废。
+                  已填写 {{ prizeCodeCount(prize) }} 个, 需要
+                  {{ prize.slots }} 个。 兑换码提交后即加密托管,
+                  页面上永远不会再显示, 只有中奖者本人能揭示, 且需在开奖后 7
+                  天内领取, 逾期自动作废。
                 </p>
               </div>
 
@@ -414,7 +441,8 @@ const handleSubmit = async () => {
               <p class="text-sm">
                 本次抽奖最多发放 {{ pointTotal }} 萌萌点,
                 发布时会从您的余额中扣除这部分作为奖池, 开奖时发到中奖者账户。
-                名额没有发满的部分会在开奖后退回; 取消或在开奖前删除抽奖会全额退回。
+                名额没有发满的部分会在开奖后退回;
+                取消或在开奖前删除抽奖会全额退回。
               </p>
             </KunInfo>
           </div>
@@ -424,7 +452,7 @@ const handleSubmit = async () => {
       <div class="mt-8 flex justify-end gap-3">
         <KunButton variant="light" @click="isModalOpen = false">取消</KunButton>
         <KunButton type="submit" color="primary" :loading="isLoading">
-          {{ isEditing ? '保存更改' : '发布抽奖' }}
+          {{ submitText }}
         </KunButton>
       </div>
     </form>

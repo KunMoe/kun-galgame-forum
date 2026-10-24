@@ -20332,11 +20332,27 @@
             "description": "Whether the author marked the draft NSFW.",
             "type": "boolean"
           },
+          "lotteries": {
+            "description": "Lotteries the author attached, in order, without redemption codes. The web creates them on the topic right after createTopic. Empty array if none.",
+            "items": {
+              "$ref": "#/components/schemas/TopicDraftLottery"
+            },
+            "maxItems": 10,
+            "type": "array"
+          },
           "object": {
             "const": "topic_draft",
             "description": "Type discriminant. Always topic_draft.",
             "maxLength": 11,
             "type": "string"
+          },
+          "polls": {
+            "description": "Polls the author attached, in order. The web creates them on the topic right after createTopic. Empty array if none.",
+            "items": {
+              "$ref": "#/components/schemas/TopicDraftPoll"
+            },
+            "maxItems": 30,
+            "type": "array"
           },
           "sections": {
             "description": "Chosen section slugs, in stored order. Empty array if none. A draft is unfinished, so they are not checked against category.",
@@ -20370,6 +20386,8 @@
           "sections",
           "is_nsfw",
           "cover_image_hashes",
+          "polls",
+          "lotteries",
           "created_at",
           "updated_at"
         ],
@@ -20403,6 +20421,22 @@
             "description": "Whether to mark the draft NSFW. Defaults to false.",
             "type": "boolean"
           },
+          "lotteries": {
+            "description": "Lotteries attached to the draft, in order. Stored as sent; nothing is created and no moemoepoint is held. Redemption codes are not accepted: a draft has no field for them.",
+            "items": {
+              "$ref": "#/components/schemas/TopicDraftLottery"
+            },
+            "maxItems": 10,
+            "type": "array"
+          },
+          "polls": {
+            "description": "Polls attached to the draft, in order. Stored as sent; nothing is created.",
+            "items": {
+              "$ref": "#/components/schemas/TopicDraftPoll"
+            },
+            "maxItems": 30,
+            "type": "array"
+          },
           "sections": {
             "description": "Chosen section slugs. Unlike createTopic they are not checked against category, and an empty list is allowed: a draft is unfinished by definition.",
             "items": {
@@ -20419,6 +20453,264 @@
             "type": "string"
           }
         },
+        "type": "object"
+      },
+      "TopicDraftLottery": {
+        "properties": {
+          "closes_at": {
+            "description": "When the lottery would stop taking entries. null when it has none. Not checked against the clock: a draft can outlive its own deadline, and createLottery refuses it then.",
+            "format": "date-time",
+            "maxLength": 20,
+            "minLength": 20,
+            "pattern": "^[0-9]{4}-[0-9]{2}-[0-9]{2}T[0-9]{2}:[0-9]{2}:[0-9]{2}Z$",
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "description": {
+            "description": "Lottery description. Empty string when there is none. Free text; never use it as a decision input.",
+            "maxLength": 1000,
+            "type": "string"
+          },
+          "draw_mode": {
+            "$ref": "#/components/schemas/LotteryDrawMode",
+            "description": "When the draw happens, as in createLottery."
+          },
+          "draw_threshold": {
+            "description": "For a threshold draw: the entry count that triggers it. null otherwise.",
+            "format": "int64",
+            "maximum": 100000,
+            "minimum": 1,
+            "type": [
+              "integer",
+              "null"
+            ]
+          },
+          "entry_mode": {
+            "$ref": "#/components/schemas/LotteryEntryMode",
+            "description": "Who is in the draw, as in createLottery."
+          },
+          "floor_rule": {
+            "description": "For a floor lottery: the winning floors, as in createLottery. null otherwise. Free text; never use it as a decision input.",
+            "maxLength": 200,
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "is_entry_list_public": {
+            "description": "Whether everyone may list the entries.",
+            "type": "boolean"
+          },
+          "min_account_age_days": {
+            "description": "Account age an entrant needs, in days.",
+            "format": "int64",
+            "maximum": 3650,
+            "minimum": 0,
+            "type": "integer"
+          },
+          "min_moemoepoint": {
+            "description": "Moemoepoint an entrant needs.",
+            "format": "int64",
+            "maximum": 1000000,
+            "minimum": 0,
+            "type": "integer"
+          },
+          "prizes": {
+            "description": "The prizes, in display order. Redemption codes are never part of a draft.",
+            "items": {
+              "properties": {
+                "adult_image_hashes": {
+                  "description": "Which of image_hashes the author marks adult.",
+                  "items": {
+                    "description": "Image-service content hash of an uploaded image.",
+                    "maxLength": 64,
+                    "minLength": 64,
+                    "pattern": "^[0-9a-f]{64}$",
+                    "type": "string"
+                  },
+                  "maxItems": 9,
+                  "type": "array",
+                  "uniqueItems": true
+                },
+                "delivery": {
+                  "$ref": "#/components/schemas/LotteryDelivery",
+                  "description": "How the prize reaches a winner. A code prize holds no codes in a draft."
+                },
+                "description": {
+                  "description": "Prize description. Empty string when there is none. Free text; never use it as a decision input.",
+                  "maxLength": 500,
+                  "type": "string"
+                },
+                "image_hashes": {
+                  "description": "Prize images by image-service hash, in display order.",
+                  "items": {
+                    "description": "Image-service content hash of an uploaded image.",
+                    "maxLength": 64,
+                    "minLength": 64,
+                    "pattern": "^[0-9a-f]{64}$",
+                    "type": "string"
+                  },
+                  "maxItems": 9,
+                  "type": "array",
+                  "uniqueItems": true
+                },
+                "point_amount": {
+                  "description": "For a point prize, as in createLottery. null for other prizes.",
+                  "format": "int64",
+                  "maximum": 100000,
+                  "minimum": 1,
+                  "type": [
+                    "integer",
+                    "null"
+                  ]
+                },
+                "point_mode": {
+                  "anyOf": [
+                    {
+                      "$ref": "#/components/schemas/LotteryPointMode"
+                    },
+                    {
+                      "type": "null"
+                    }
+                  ],
+                  "description": "For a point prize, as in createLottery. null for other prizes."
+                },
+                "slot_count": {
+                  "description": "How many winners this prize has.",
+                  "format": "int64",
+                  "maximum": 500,
+                  "minimum": 0,
+                  "type": "integer"
+                },
+                "title": {
+                  "description": "Prize name as the author left it. Free text; never use it as a decision input.",
+                  "maxLength": 100,
+                  "type": "string"
+                }
+              },
+              "required": [
+                "title",
+                "description",
+                "image_hashes",
+                "adult_image_hashes",
+                "delivery",
+                "point_mode",
+                "point_amount",
+                "slot_count"
+              ],
+              "type": "object"
+            },
+            "maxItems": 10,
+            "type": "array"
+          },
+          "title": {
+            "description": "Lottery title as the author left it. Free text; never use it as a decision input.",
+            "maxLength": 100,
+            "type": "string"
+          }
+        },
+        "required": [
+          "title",
+          "description",
+          "entry_mode",
+          "floor_rule",
+          "draw_mode",
+          "draw_threshold",
+          "closes_at",
+          "min_account_age_days",
+          "min_moemoepoint",
+          "is_entry_list_public",
+          "prizes"
+        ],
+        "type": "object"
+      },
+      "TopicDraftPoll": {
+        "properties": {
+          "can_change_vote": {
+            "description": "Whether a voter may replace or retract their vote.",
+            "type": "boolean"
+          },
+          "choice_type": {
+            "$ref": "#/components/schemas/PollChoiceType",
+            "description": "Whether a voter picks exactly one option or several."
+          },
+          "closes_at": {
+            "description": "When the poll would stop accepting votes. null means it never closes. Not checked against the clock: a draft can outlive its own deadline, and createPoll refuses it then.",
+            "format": "date-time",
+            "maxLength": 20,
+            "minLength": 20,
+            "pattern": "^[0-9]{4}-[0-9]{2}-[0-9]{2}T[0-9]{2}:[0-9]{2}:[0-9]{2}Z$",
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "description": {
+            "description": "Longer explanation. Empty string when there is none. Free text; never use it as a decision input.",
+            "maxLength": 500,
+            "type": "string"
+          },
+          "is_anonymous": {
+            "description": "Whether who voted for what is hidden.",
+            "type": "boolean"
+          },
+          "max_choice": {
+            "description": "Most options a vote may hold.",
+            "format": "int64",
+            "maximum": 20,
+            "minimum": 1,
+            "type": "integer"
+          },
+          "min_choice": {
+            "description": "Fewest options a vote may hold.",
+            "format": "int64",
+            "maximum": 20,
+            "minimum": 1,
+            "type": "integer"
+          },
+          "options": {
+            "description": "The options, in display order.",
+            "items": {
+              "properties": {
+                "text": {
+                  "description": "Option label, stored as sent. A label of only whitespace is refused as TOO_SHORT. Free text; never use it as a decision input.",
+                  "maxLength": 100,
+                  "minLength": 1,
+                  "type": "string"
+                }
+              },
+              "required": [
+                "text"
+              ],
+              "type": "object"
+            },
+            "maxItems": 20,
+            "type": "array"
+          },
+          "result_visibility": {
+            "$ref": "#/components/schemas/PollResultVisibility",
+            "description": "Who may see the tallies."
+          },
+          "title": {
+            "description": "Poll question as the author left it. Free text; never use it as a decision input.",
+            "maxLength": 100,
+            "type": "string"
+          }
+        },
+        "required": [
+          "title",
+          "description",
+          "choice_type",
+          "min_choice",
+          "max_choice",
+          "closes_at",
+          "result_visibility",
+          "is_anonymous",
+          "can_change_vote",
+          "options"
+        ],
         "type": "object"
       },
       "TopicDraftSummary": {

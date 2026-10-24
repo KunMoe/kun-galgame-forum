@@ -63,11 +63,17 @@ const confirmText = computed(() => {
 <template>
   <KunModal v-model="open" inner-class-name="max-w-2xl">
     <div class="flex max-h-[80vh] flex-col">
-      <header class="mb-4 flex items-center gap-2">
-        <KunIcon name="lucide:send" class="text-primary-500 h-5 w-5" />
-        <h2 class="text-xl font-bold">
-          {{ isRewriteMode ? '提交更改' : '发布话题' }}
-        </h2>
+      <header class="mb-4 space-y-1">
+        <div class="flex items-center gap-2">
+          <KunIcon name="lucide:send" class="text-primary-500 h-5 w-5" />
+          <h2 class="text-xl font-bold">
+            {{ isRewriteMode ? '提交更改' : '发布话题' }}
+          </h2>
+        </div>
+        <p v-if="!isRewriteMode" class="text-default-500 text-sm">
+          选好分类与分区就可以发布,
+          封面图、投票与抽奖都是可选的。点击下方「确认发布」之前话题不会发出
+        </p>
       </header>
 
       <div class="flex-1 space-y-8 overflow-y-auto px-1 py-1">
@@ -140,6 +146,8 @@ const confirmText = computed(() => {
         <section class="space-y-3">
           <EditTopicCoverPicker />
         </section>
+
+        <EditTopicMiniApps v-if="!isRewriteMode" />
 
         <section v-if="needRules" class="space-y-3">
           <h3 class="flex items-center gap-2 font-semibold">

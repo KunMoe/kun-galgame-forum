@@ -12984,11 +12984,15 @@ export interface components {
             id: string;
             /** @description Whether the author marked the draft NSFW. */
             is_nsfw: boolean;
+            /** @description Lotteries the author attached, in order, without redemption codes. The web creates them on the topic right after createTopic. Empty array if none. */
+            lotteries: components["schemas"]["TopicDraftLottery"][];
             /**
              * @description Type discriminant. Always topic_draft.
              * @constant
              */
             object: "topic_draft";
+            /** @description Polls the author attached, in order. The web creates them on the topic right after createTopic. Empty array if none. */
+            polls: components["schemas"]["TopicDraftPoll"][];
             /** @description Chosen section slugs, in stored order. Empty array if none. A draft is unfinished, so they are not checked against category. */
             sections: components["schemas"]["SectionKey"][];
             /** @description Draft title as stored, empty string when the author has not written one. Free text; never use it as a decision input. */
@@ -13008,10 +13012,107 @@ export interface components {
             cover_image_hashes?: string[];
             /** @description Whether to mark the draft NSFW. Defaults to false. */
             is_nsfw?: boolean;
+            /** @description Lotteries attached to the draft, in order. Stored as sent; nothing is created and no moemoepoint is held. Redemption codes are not accepted: a draft has no field for them. */
+            lotteries?: components["schemas"]["TopicDraftLottery"][];
+            /** @description Polls attached to the draft, in order. Stored as sent; nothing is created. */
+            polls?: components["schemas"]["TopicDraftPoll"][];
             /** @description Chosen section slugs. Unlike createTopic they are not checked against category, and an empty list is allowed: a draft is unfinished by definition. */
             sections?: components["schemas"]["SectionKey"][];
             /** @description Draft title. Stored as sent. Free text; never use it as a decision input. */
             title?: string;
+        };
+        TopicDraftLottery: {
+            /**
+             * Format: date-time
+             * @description When the lottery would stop taking entries. null when it has none. Not checked against the clock: a draft can outlive its own deadline, and createLottery refuses it then.
+             */
+            closes_at: string | null;
+            /** @description Lottery description. Empty string when there is none. Free text; never use it as a decision input. */
+            description: string;
+            /** @description When the draw happens, as in createLottery. */
+            draw_mode: components["schemas"]["LotteryDrawMode"];
+            /**
+             * Format: int64
+             * @description For a threshold draw: the entry count that triggers it. null otherwise.
+             */
+            draw_threshold: number | null;
+            /** @description Who is in the draw, as in createLottery. */
+            entry_mode: components["schemas"]["LotteryEntryMode"];
+            /** @description For a floor lottery: the winning floors, as in createLottery. null otherwise. Free text; never use it as a decision input. */
+            floor_rule: string | null;
+            /** @description Whether everyone may list the entries. */
+            is_entry_list_public: boolean;
+            /**
+             * Format: int64
+             * @description Account age an entrant needs, in days.
+             */
+            min_account_age_days: number;
+            /**
+             * Format: int64
+             * @description Moemoepoint an entrant needs.
+             */
+            min_moemoepoint: number;
+            /** @description The prizes, in display order. Redemption codes are never part of a draft. */
+            prizes: {
+                /** @description Which of image_hashes the author marks adult. */
+                adult_image_hashes: string[];
+                /** @description How the prize reaches a winner. A code prize holds no codes in a draft. */
+                delivery: components["schemas"]["LotteryDelivery"];
+                /** @description Prize description. Empty string when there is none. Free text; never use it as a decision input. */
+                description: string;
+                /** @description Prize images by image-service hash, in display order. */
+                image_hashes: string[];
+                /**
+                 * Format: int64
+                 * @description For a point prize, as in createLottery. null for other prizes.
+                 */
+                point_amount: number | null;
+                /** @description For a point prize, as in createLottery. null for other prizes. */
+                point_mode: components["schemas"]["LotteryPointMode"] | null;
+                /**
+                 * Format: int64
+                 * @description How many winners this prize has.
+                 */
+                slot_count: number;
+                /** @description Prize name as the author left it. Free text; never use it as a decision input. */
+                title: string;
+            }[];
+            /** @description Lottery title as the author left it. Free text; never use it as a decision input. */
+            title: string;
+        };
+        TopicDraftPoll: {
+            /** @description Whether a voter may replace or retract their vote. */
+            can_change_vote: boolean;
+            /** @description Whether a voter picks exactly one option or several. */
+            choice_type: components["schemas"]["PollChoiceType"];
+            /**
+             * Format: date-time
+             * @description When the poll would stop accepting votes. null means it never closes. Not checked against the clock: a draft can outlive its own deadline, and createPoll refuses it then.
+             */
+            closes_at: string | null;
+            /** @description Longer explanation. Empty string when there is none. Free text; never use it as a decision input. */
+            description: string;
+            /** @description Whether who voted for what is hidden. */
+            is_anonymous: boolean;
+            /**
+             * Format: int64
+             * @description Most options a vote may hold.
+             */
+            max_choice: number;
+            /**
+             * Format: int64
+             * @description Fewest options a vote may hold.
+             */
+            min_choice: number;
+            /** @description The options, in display order. */
+            options: {
+                /** @description Option label, stored as sent. A label of only whitespace is refused as TOO_SHORT. Free text; never use it as a decision input. */
+                text: string;
+            }[];
+            /** @description Who may see the tallies. */
+            result_visibility: components["schemas"]["PollResultVisibility"];
+            /** @description Poll question as the author left it. Free text; never use it as a decision input. */
+            title: string;
         };
         TopicDraftSummary: {
             /**

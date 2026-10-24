@@ -1,10 +1,16 @@
 <script setup lang="ts">
 import { ref } from 'vue'
 import type { Lottery } from '#shared/utils/api/schemas'
+import type { LotteryFormData } from './types'
 
 const props = defineProps<{
   topicId: number
   isTopicAdmin: boolean
+  createForm?: LotteryFormData
+}>()
+
+const emits = defineEmits<{
+  created: []
 }>()
 
 const isCreateOpen = defineModel<boolean>('isCreateOpen', { default: false })
@@ -13,6 +19,7 @@ const topicId = computed(() => String(props.topicId))
 const { allowsNsfw, stanceKey } = useContentStance()
 const isModalOpen = ref(false)
 const lotteryToEdit = ref<Lottery | undefined>(undefined)
+const formToCreate = ref<LotteryFormData | undefined>(undefined)
 
 const { data, refresh } = await useApi(
   () => `topic-lotteries:${topicId.value}:${stanceKey.value}`,
@@ -33,13 +40,22 @@ watch(isCreateOpen, (open) => {
     return
   }
   lotteryToEdit.value = undefined
+  formToCreate.value = props.createForm
   isModalOpen.value = true
   isCreateOpen.value = false
 })
 
 const openEditModal = (lottery: Lottery) => {
   lotteryToEdit.value = lottery
+  formToCreate.value = undefined
   isModalOpen.value = true
+}
+
+const onSaved = () => {
+  if (!lotteryToEdit.value) {
+    emits('created')
+  }
+  refresh()
 }
 </script>
 
@@ -58,7 +74,8 @@ const openEditModal = (lottery: Lottery) => {
       v-model="isModalOpen"
       :topic-id="topicId"
       :initial-data="lotteryToEdit"
-      @refresh="refresh"
+      :initial-form="formToCreate"
+      @refresh="onSaved"
     />
   </div>
 </template>
