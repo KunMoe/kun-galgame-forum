@@ -5360,7 +5360,7 @@ export interface paths {
         head?: never;
         /**
          * Move a work submission
-         * @description The submitter sends pending (from draft or declined) or draft (withdraw, from pending or live). A cookie session holding galgame.claim.review sends live or declined (from pending), hidden (from any other state) or unban (from hidden); declined needs a note. unban restores the state the claim was hidden from. The response is read back from catalog; its state is the outcome. If-Match is forwarded; absent means no version check.
+         * @description The submitter sends pending (from draft or declined) or draft (withdraw, from pending or live). A cookie session holding galgame.claim.review sends live or declined (from pending), hidden (from any other state) or unban (from hidden); declined needs a note. unban restores the state the claim was hidden from. The response is read back from catalog; its state is the outcome. If-Match is checked against the claim's current version before the move; absent means no version check.
          */
         patch: operations["updateWorkSubmission"];
         trace?: never;
@@ -15790,6 +15790,8 @@ export interface components {
              * @description How many times the caller acted on this claim.
              */
             acted_count: number;
+            /** @description The claim's version, the same value as the ETag header. Send it as If-Match to write this claim. Empty when the answer could not be read back after a write. */
+            claim_version: string;
             /** @description Age axis, the same field as Work.content_rating. Independent of is_nsfw. */
             content_rating: components["schemas"]["ContentRating"];
             /** @description Catalog display name. Free text; never use it as a decision input. */
@@ -15863,6 +15865,8 @@ export interface components {
              * @description How many times the caller acted on this claim.
              */
             acted_count: number;
+            /** @description The claim's version, the same value as the ETag header. Send it as If-Match to write this claim. Empty when the answer could not be read back after a write. */
+            claim_version: string;
             /** @description Age axis, the same field as Work.content_rating. Independent of is_nsfw. */
             content_rating: components["schemas"]["ContentRating"];
             /** @description Catalog display name. Free text; never use it as a decision input. */
@@ -15901,6 +15905,8 @@ export interface components {
             state: components["schemas"]["WorkSubmissionTargetState"];
         };
         WorkSubmissionSummary: {
+            /** @description The claim's version as of this page. Send it as If-Match to write this claim; the write is refused with PRECONDITION_FAILED once the claim has moved. A review-queue row is versioned by its state, since catalog serves it without the last event. */
+            claim_version: string;
             /** @description Catalog display name. Free text; never use it as a decision input. */
             display_name: string;
             /**
@@ -44677,7 +44683,7 @@ export interface operations {
         parameters: {
             query?: never;
             header?: {
-                /** @description The ETag of the claim this write is based on, from GET /work-submissions/{work_id} or the previous write, sent back as received: a W/ prefix added by a compressing proxy is accepted. Absent means *: no version check. */
+                /** @description The version of the claim this write is based on: the claim_version or ETag of a submission or list row, sent back as received (a W/ prefix added by a compressing proxy is accepted). Absent or * means no version check. */
                 "If-Match"?: string;
             };
             path: {
@@ -44773,7 +44779,7 @@ export interface operations {
         parameters: {
             query?: never;
             header?: {
-                /** @description The ETag of the claim this write is based on, from GET /work-submissions/{work_id} or the previous write, sent back as received: a W/ prefix added by a compressing proxy is accepted. Absent means *: no version check. */
+                /** @description The version of the claim this write is based on: the claim_version or ETag of a submission or list row, sent back as received (a W/ prefix added by a compressing proxy is accepted). Absent or * means no version check. */
                 "If-Match"?: string;
             };
             path: {

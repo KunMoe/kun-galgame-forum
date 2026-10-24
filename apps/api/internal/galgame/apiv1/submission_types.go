@@ -22,6 +22,7 @@ type WorkSubmission struct {
 	FirstActedAt  *repr.DateTime        `json:"first_acted_at" doc:"When the caller first acted on this claim. null when the caller never has, or catalog did not say."`
 	ActedCount    int                   `json:"acted_count" minimum:"0" doc:"How many times the caller acted on this claim."`
 	Viewer        *WorkSubmissionViewer `json:"viewer" doc:"The caller's capabilities on this submission."`
+	ClaimVersion  string                `json:"claim_version" maxLength:"32" pattern:"^(\"(e[0-9]{1,19}|s[a-z]{1,8})\")?$" doc:"The claim's version, the same value as the ETag header. Send it as If-Match to write this claim. Empty when the answer could not be read back after a write."`
 }
 
 type WorkSubmissionCreated struct {
@@ -41,6 +42,7 @@ type WorkSubmissionSummary struct {
 	LastEvent    *ClaimEventRef        `json:"last_event" doc:"The newest transition of this claim. null on review-queue rows, which catalog serves without it."`
 	FirstActedAt *repr.DateTime        `json:"first_acted_at" doc:"When the caller first acted on this claim. null on review-queue rows."`
 	Viewer       *WorkSubmissionViewer `json:"viewer" doc:"The caller's capabilities on this submission."`
+	ClaimVersion string                `json:"claim_version" maxLength:"32" pattern:"^(\"(e[0-9]{1,19}|s[a-z]{1,8})\")?$" doc:"The claim's version as of this page. Send it as If-Match to write this claim; the write is refused with PRECONDITION_FAILED once the claim has moved. A review-queue row is versioned by its state, since catalog serves it without the last event."`
 }
 
 type WorkSubmissionViewer struct {
@@ -105,12 +107,12 @@ type workSubmissionIDInput struct {
 
 type workSubmissionWriteInput struct {
 	WorkID  string `path:"work_id" pattern:"^[1-9][0-9]{0,18}$" maxLength:"19" doc:"Catalog work id."`
-	IfMatch string `header:"If-Match" maxLength:"130" pattern:"^(\\*|(W/)?\"[!#-~]{1,126}\")$" doc:"The ETag of the claim this write is based on, from GET /work-submissions/{work_id} or the previous write, sent back as received: a W/ prefix added by a compressing proxy is accepted. Absent means *: no version check."`
+	IfMatch string `header:"If-Match" maxLength:"130" pattern:"^(\\*|(W/)?\"[!#-~]{1,126}\")$" doc:"The version of the claim this write is based on: the claim_version or ETag of a submission or list row, sent back as received (a W/ prefix added by a compressing proxy is accepted). Absent or * means no version check."`
 }
 
 type updateWorkSubmissionInput struct {
 	WorkID  string `path:"work_id" pattern:"^[1-9][0-9]{0,18}$" maxLength:"19" doc:"Catalog work id."`
-	IfMatch string `header:"If-Match" maxLength:"130" pattern:"^(\\*|(W/)?\"[!#-~]{1,126}\")$" doc:"The ETag of the claim this write is based on, from GET /work-submissions/{work_id} or the previous write, sent back as received: a W/ prefix added by a compressing proxy is accepted. Absent means *: no version check."`
+	IfMatch string `header:"If-Match" maxLength:"130" pattern:"^(\\*|(W/)?\"[!#-~]{1,126}\")$" doc:"The version of the claim this write is based on: the claim_version or ETag of a submission or list row, sent back as received (a W/ prefix added by a compressing proxy is accepted). Absent or * means no version check."`
 	Body    workSubmissionPatch
 }
 
@@ -119,13 +121,13 @@ type createWorkSubmissionInput struct {
 }
 
 type workSubmissionOutput struct {
-	ETag string `header:"ETag" maxLength:"128" doc:"The claim's version. Send it back as If-Match to write this claim."`
+	ETag string `header:"ETag" maxLength:"128" doc:"The claim's version, the same value as the body's claim_version. Send it back as If-Match to write this claim."`
 	Body WorkSubmission
 }
 
 type createWorkSubmissionOutput struct {
 	Location string `header:"Location" format:"uri-reference" maxLength:"64" doc:"Absolute path of the new submission, /api/v1/work-submissions/{work_id}."`
-	ETag     string `header:"ETag" maxLength:"128" doc:"The claim's version. Send it back as If-Match to write this claim."`
+	ETag     string `header:"ETag" maxLength:"128" doc:"The claim's version, the same value as the body's claim_version. Send it back as If-Match to write this claim."`
 	Body     WorkSubmissionCreated
 }
 

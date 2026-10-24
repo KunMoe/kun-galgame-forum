@@ -117,7 +117,8 @@ func (s *Service) listSubmissions(ctx context.Context, in *listWorkSubmissionsIn
 			Object: "work_submission", ID: repr.ID(id), WorkID: repr.ID(id),
 			DisplayName: it.DisplayName, State: it.ClaimState, WorkSummary: sum,
 			LastEvent: claimEventRef(it, refs), FirstActedAt: optionalTime(it),
-			Viewer: submissionViewer(c.user, it.ClaimState, owned[id]),
+			Viewer:       submissionViewer(c.user, it.ClaimState, owned[id]),
+			ClaimVersion: submissionVersion(it),
 		})
 	}
 	var total *int
@@ -163,7 +164,8 @@ func buildWorkSubmission(user *middleware.UserInfo, it catalogclient.UserClaimIt
 		IsNSFW: sc.axes.isNSFW, ContentRating: sc.axes.rating,
 		Submitter: userRefPtr(refs, sc.creator), LastEvent: claimEventRef(it, refs),
 		FirstActedAt: optionalTime(it), ActedCount: max(it.ActedCount, 0),
-		Viewer: submissionViewer(user, it.ClaimState, owner),
+		Viewer:       submissionViewer(user, it.ClaimState, owner),
+		ClaimVersion: submissionVersion(it),
 	}
 }
 

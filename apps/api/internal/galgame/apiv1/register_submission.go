@@ -55,7 +55,7 @@ func (s *Service) registerSubmissions(api huma.API) {
 		Description: "The submitter sends pending (from draft or declined) or draft (withdraw, from pending or live). " +
 			"A cookie session holding galgame.claim.review sends live or declined (from pending), hidden (from any other state) or unban (from hidden); declined needs a note. " +
 			"unban restores the state the claim was hidden from. The response is read back from catalog; its state is the outcome. " +
-			"If-Match is forwarded; absent means no version check.",
+			"If-Match is checked against the claim's current version before the move; absent means no version check.",
 		Tags:        []string{"work-submissions"},
 		Middlewares: huma.Middlewares{withAccessToken},
 		Responses: problemResponses(map[int]string{

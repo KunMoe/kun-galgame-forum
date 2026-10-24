@@ -72,8 +72,8 @@ func TestV1WorkSubmissionCreate(t *testing.T) {
 	if loc := resp.Header.Get("Location"); loc != "/api/v1/work-submissions/"+id {
 		t.Errorf("Location %q", loc)
 	}
-	if etag := resp.Header.Get("ETag"); etag != `"c`+id+`.1"` {
-		t.Errorf("201 ETag %q, want the claim's own version, not the mint record's", etag)
+	if etag := resp.Header.Get("ETag"); etag != got["claim_version"] || !strings.HasPrefix(etag, `"e`) {
+		t.Errorf("201 ETag %q, version %v: want the read-back claim's version, not the mint record's", etag, got["claim_version"])
 	}
 	if got["display_name"] != "新作品" {
 		t.Errorf("display_name %v: the 201 is read back, not the partial mint record", got["display_name"])
@@ -345,8 +345,8 @@ func TestV1WorkSubmissionGet(t *testing.T) {
 	if resp.StatusCode != http.StatusOK || got["state"] != "draft" {
 		t.Fatalf("own draft %d %+v", resp.StatusCode, got)
 	}
-	if etag := resp.Header.Get("ETag"); etag != `"c948000001.1"` {
-		t.Errorf("ETag %q, want the upstream validator", etag)
+	if etag := resp.Header.Get("ETag"); etag != got["claim_version"] || !strings.HasPrefix(etag, `"e`) {
+		t.Errorf("ETag %q, version %v: want the claim's last event", etag, got["claim_version"])
 	}
 	if v := g7aObj(got, "viewer"); v["can_delete"] != true || v["can_submit"] != true || v["can_withdraw"] != false {
 		t.Errorf("viewer %+v", v)
@@ -428,12 +428,13 @@ func TestV1WorkSubmissionBearerHoldsNoReviewPower(t *testing.T) {
 
 func TestV1WorkSubmissionSubmitterMoves(t *testing.T) {
 	f := newG7aFix(t)
+	upstream := g7aETag(f.user.claims[g7aDraft])
 	resp, got := f.call(t, http.MethodPatch, g7aSub(g7aDraft), g7aSpecOne, "sess-alice", "", map[string]any{"state": "pending"})
-	if resp.StatusCode != http.StatusOK || got["state"] != "pending" || resp.Header.Get("ETag") != `"c948000001.2"` {
+	if resp.StatusCode != http.StatusOK || got["state"] != "pending" || resp.Header.Get("ETag") != got["claim_version"] {
 		t.Fatalf("submit draft %d %+v %q", resp.StatusCode, got, resp.Header.Get("ETag"))
 	}
-	if p := f.user.patches[0]; p.state != "pending" || p.ifMatch != "*" {
-		t.Errorf("patch %+v: no If-Match sent means *", p)
+	if p := f.user.patches[0]; p.state != "pending" || p.ifMatch != upstream {
+		t.Errorf("patch %+v: no If-Match sent still forwards the pre-read's ETag", p)
 	}
 	resp, got = f.call(t, http.MethodPatch, g7aSub(g7aDeclined), g7aSpecOne, "sess-alice", "", map[string]any{"state": "pending"})
 	if resp.StatusCode != http.StatusOK || got["state"] != "pending" {
@@ -465,40 +466,58 @@ func TestV1WorkSubmissionSubmitterMoves(t *testing.T) {
 
 func TestV1WorkSubmissionIfMatch(t *testing.T) {
 	f := newG7aFix(t)
-	stale := http.Header{"If-Match": {`"c948000001.0"`}}
-	resp, got := f.callWith(t, http.MethodPatch, g7aSub(g7aDraft), g7aSpecOne, "sess-alice", stale, map[string]any{"state": "pending"})
+	resp, got := f.call(t, http.MethodGet, g7aSub(g7aDraft), g7aSpecOne, "sess-alice", "", nil)
+	loaded := resp.Header.Get("ETag")
+	if loaded == "" || loaded != got["claim_version"] {
+		t.Fatalf("ETag %q, version %v: the header and the body carry one version", loaded, got["claim_version"])
+	}
+	for _, to := range []string{"pending", "draft"} {
+		if resp, got = f.call(t, http.MethodPatch, g7aSub(g7aDraft), g7aSpecOne, "sess-alice", "", map[string]any{"state": to}); resp.StatusCode != http.StatusOK {
+			t.Fatalf("move to %s %d %+v", to, resp.StatusCode, got)
+		}
+	}
+	patches := len(f.user.patches)
+	resp, got = f.callWith(t, http.MethodPatch, g7aSub(g7aDraft), g7aSpecOne, "sess-alice", http.Header{"If-Match": {loaded}}, map[string]any{"state": "pending"})
 	wantCode(t, resp, got, http.StatusPreconditionFailed, problem.CodePreconditionFailed)
-	if f.user.patches[0].ifMatch != `"c948000001.0"` || g7aState(t, f, g7aDraft) != "draft" {
-		t.Errorf("patch %+v", f.user.patches)
+	if len(f.user.patches) != patches || g7aState(t, f, g7aDraft) != "draft" {
+		t.Errorf("a version from before a draft -> pending -> draft round trip reached catalog: %+v", f.user.patches[patches:])
 	}
 
 	resp, _ = f.call(t, http.MethodGet, g7aSub(g7aDraft), g7aSpecOne, "sess-alice", "", nil)
-	current := http.Header{"If-Match": {resp.Header.Get("ETag")}}
-	resp, got = f.callWith(t, http.MethodPatch, g7aSub(g7aDraft), g7aSpecOne, "sess-alice", current, map[string]any{"state": "pending"})
-	if resp.StatusCode != http.StatusOK || f.user.patches[1].ifMatch != `"c948000001.1"` {
-		t.Fatalf("current validator %d %+v %+v", resp.StatusCode, got, f.user.patches)
+	upstream := g7aETag(f.user.claims[g7aDraft])
+	resp, got = f.callWith(t, http.MethodPatch, g7aSub(g7aDraft), g7aSpecOne, "sess-alice", http.Header{"If-Match": {resp.Header.Get("ETag")}}, map[string]any{"state": "pending"})
+	if resp.StatusCode != http.StatusOK || f.user.patches[patches].ifMatch != upstream {
+		t.Fatalf("current version %d %+v %+v: want catalog's ETag of the pre-read forwarded", resp.StatusCode, got, f.user.patches[patches:])
 	}
 
-	resp, _ = f.call(t, http.MethodGet, g7aSub(g7aBobPending), g7aSpecOne, "sess-staff", "", nil)
-	weak := http.Header{"If-Match": {"W/" + resp.Header.Get("ETag")}}
-	resp, got = f.callWith(t, http.MethodPatch, g7aSub(g7aBobPending), g7aSpecOne, "sess-staff", weak, map[string]any{"state": "live"})
+	_, queue := f.call(t, http.MethodGet, "/api/v1/work-submissions", g7aSpecColl, "sess-staff", "", nil)
+	var row string
+	for _, it := range queue["items"].([]any) {
+		if m := it.(map[string]any); m["id"] == idStr(g7aBobPending) {
+			row, _ = m["claim_version"].(string)
+		}
+	}
+	if row != `"spending"` {
+		t.Fatalf("queue row version %q, want the state: catalog serves queue rows without the last event", row)
+	}
+	resp, got = f.callWith(t, http.MethodPatch, g7aSub(g7aBobPending), g7aSpecOne, "sess-staff", http.Header{"If-Match": {"W/" + row}}, map[string]any{"state": "live"})
 	if resp.StatusCode != http.StatusOK || g7aState(t, f, g7aBobPending) != "live" {
-		t.Fatalf("a validator weakened by a compressing proxy %d %+v", resp.StatusCode, got)
+		t.Fatalf("a queue row's version weakened by a compressing proxy %d %+v", resp.StatusCode, got)
 	}
-
-	resp, got = f.callWith(t, http.MethodPatch, g7aSub(g7aBobPending), g7aSpecOne, "sess-staff", http.Header{"If-Match": {`"stale"`}}, map[string]any{"state": "hidden"})
+	resp, got = f.callWith(t, http.MethodPatch, g7aSub(g7aBobPending), g7aSpecOne, "sess-staff", http.Header{"If-Match": {row}}, map[string]any{"state": "hidden"})
 	wantCode(t, resp, got, http.StatusPreconditionFailed, problem.CodePreconditionFailed)
 	resp, got = f.callWith(t, http.MethodDelete, g7aSub(g7aDraftRes), g7aSpecOne, "sess-alice", http.Header{"If-Match": {`"stale"`}}, nil)
 	wantCode(t, resp, got, http.StatusPreconditionFailed, problem.CodePreconditionFailed)
-	if g7aState(t, f, g7aBobPending) != "pending" || g7aState(t, f, g7aDraftRes) != "draft" {
+	if g7aState(t, f, g7aBobPending) != "live" || g7aState(t, f, g7aDraftRes) != "draft" {
 		t.Error("a stale write landed")
 	}
 }
 
 func TestV1WorkSubmissionReview(t *testing.T) {
 	f := newG7aFix(t)
+	upstream := g7aETag(f.user.claims[g7aBobPending])
 	resp, got := f.call(t, http.MethodPatch, g7aSub(g7aBobPending), g7aSpecOne, "sess-staff", "", map[string]any{"state": "live"})
-	if resp.StatusCode != http.StatusOK || got["state"] != "live" || f.user.decisions[0].state != "approve" || f.user.decisions[0].ifMatch != "*" {
+	if resp.StatusCode != http.StatusOK || got["state"] != "live" || f.user.decisions[0].state != "approve" || f.user.decisions[0].ifMatch != upstream {
 		t.Fatalf("approve %d %+v %+v", resp.StatusCode, got, f.user.decisions)
 	}
 
@@ -563,11 +582,12 @@ func TestV1WorkSubmissionReviewReadsTheOutcomeBack(t *testing.T) {
 
 func TestV1WorkSubmissionDelete(t *testing.T) {
 	f := newG7aFix(t)
+	upstream := g7aETag(f.user.claims[g7aDraft])
 	resp, got := f.call(t, http.MethodDelete, g7aSub(g7aDraft), g7aSpecOne, "sess-alice", "", nil)
 	if resp.StatusCode != http.StatusNoContent {
 		t.Fatalf("delete %d %+v", resp.StatusCode, got)
 	}
-	if f.user.deletes[0].ifMatch != "*" || g7aState(t, f, g7aDraft) != "" {
+	if f.user.deletes[0].ifMatch != upstream || g7aState(t, f, g7aDraft) != "" {
 		t.Errorf("deletes %+v", f.user.deletes)
 	}
 	var n int64
@@ -906,7 +926,7 @@ func TestV1WorkSubmissionWritesSurviveAFailedReadBack(t *testing.T) {
 	if sub := g7aObj(got, "submitter"); sub == nil || sub["name"] != nil {
 		t.Errorf("submitter %+v, want a deleted-user ref when the lookup fails after the write", sub)
 	}
-	if len(f.user.decisions) != 1 || resp.Header.Get("ETag") != "" {
+	if len(f.user.decisions) != 1 || resp.Header.Get("ETag") != "" || got["claim_version"] != "" {
 		t.Errorf("decisions %d, ETag %q", len(f.user.decisions), resp.Header.Get("ETag"))
 	}
 	reset()
@@ -918,7 +938,7 @@ func TestV1WorkSubmissionWritesSurviveAFailedReadBack(t *testing.T) {
 	reset()
 
 	resp, got = f.call(t, http.MethodPatch, g7aSub(g7aDraft), g7aSpecOne, "sess-alice", "", map[string]any{"state": "pending"})
-	if resp.StatusCode != http.StatusOK || got["state"] != "pending" || resp.Header.Get("ETag") != `"c948000001.2"` {
+	if resp.StatusCode != http.StatusOK || got["state"] != "pending" || resp.Header.Get("ETag") == "" || resp.Header.Get("ETag") != got["claim_version"] {
 		t.Fatalf("submit %d %+v %q: answered from the PATCH record and its version", resp.StatusCode, got, resp.Header.Get("ETag"))
 	}
 	reset()

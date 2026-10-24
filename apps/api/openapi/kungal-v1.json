@@ -27420,6 +27420,12 @@
             "minimum": 0,
             "type": "integer"
           },
+          "claim_version": {
+            "description": "The claim's version, the same value as the ETag header. Send it as If-Match to write this claim. Empty when the answer could not be read back after a write.",
+            "maxLength": 32,
+            "pattern": "^(\"(e[0-9]{1,19}|s[a-z]{1,8})\")?$",
+            "type": "string"
+          },
           "content_rating": {
             "$ref": "#/components/schemas/ContentRating",
             "description": "Age axis, the same field as Work.content_rating. Independent of is_nsfw."
@@ -27514,7 +27520,8 @@
           "last_event",
           "first_acted_at",
           "acted_count",
-          "viewer"
+          "viewer",
+          "claim_version"
         ],
         "type": "object"
       },
@@ -27641,6 +27648,12 @@
             "minimum": 0,
             "type": "integer"
           },
+          "claim_version": {
+            "description": "The claim's version, the same value as the ETag header. Send it as If-Match to write this claim. Empty when the answer could not be read back after a write.",
+            "maxLength": 32,
+            "pattern": "^(\"(e[0-9]{1,19}|s[a-z]{1,8})\")?$",
+            "type": "string"
+          },
           "content_rating": {
             "$ref": "#/components/schemas/ContentRating",
             "description": "Age axis, the same field as Work.content_rating. Independent of is_nsfw."
@@ -27740,7 +27753,8 @@
           "last_event",
           "first_acted_at",
           "acted_count",
-          "viewer"
+          "viewer",
+          "claim_version"
         ],
         "type": "object"
       },
@@ -27766,6 +27780,12 @@
       },
       "WorkSubmissionSummary": {
         "properties": {
+          "claim_version": {
+            "description": "The claim's version as of this page. Send it as If-Match to write this claim; the write is refused with PRECONDITION_FAILED once the claim has moved. A review-queue row is versioned by its state, since catalog serves it without the last event.",
+            "maxLength": 32,
+            "pattern": "^(\"(e[0-9]{1,19}|s[a-z]{1,8})\")?$",
+            "type": "string"
+          },
           "display_name": {
             "description": "Catalog display name. Free text; never use it as a decision input.",
             "maxLength": 512,
@@ -27842,7 +27862,8 @@
           "work_summary",
           "last_event",
           "first_acted_at",
-          "viewer"
+          "viewer",
+          "claim_version"
         ],
         "type": "object"
       },
@@ -69813,7 +69834,7 @@
             "headers": {
               "ETag": {
                 "schema": {
-                  "description": "The claim's version. Send it back as If-Match to write this claim.",
+                  "description": "The claim's version, the same value as the body's claim_version. Send it back as If-Match to write this claim.",
                   "maxLength": 128,
                   "type": "string"
                 }
@@ -69951,11 +69972,11 @@
             }
           },
           {
-            "description": "The ETag of the claim this write is based on, from GET /work-submissions/{work_id} or the previous write, sent back as received: a W/ prefix added by a compressing proxy is accepted. Absent means *: no version check.",
+            "description": "The version of the claim this write is based on: the claim_version or ETag of a submission or list row, sent back as received (a W/ prefix added by a compressing proxy is accepted). Absent or * means no version check.",
             "in": "header",
             "name": "If-Match",
             "schema": {
-              "description": "The ETag of the claim this write is based on, from GET /work-submissions/{work_id} or the previous write, sent back as received: a W/ prefix added by a compressing proxy is accepted. Absent means *: no version check.",
+              "description": "The version of the claim this write is based on: the claim_version or ETag of a submission or list row, sent back as received (a W/ prefix added by a compressing proxy is accepted). Absent or * means no version check.",
               "maxLength": 130,
               "pattern": "^(\\*|(W/)?\"[!#-~]{1,126}\")$",
               "type": "string"
@@ -70090,7 +70111,7 @@
             "headers": {
               "ETag": {
                 "schema": {
-                  "description": "The claim's version. Send it back as If-Match to write this claim.",
+                  "description": "The claim's version, the same value as the body's claim_version. Send it back as If-Match to write this claim.",
                   "maxLength": 128,
                   "type": "string"
                 }
@@ -70172,7 +70193,7 @@
         ]
       },
       "patch": {
-        "description": "The submitter sends pending (from draft or declined) or draft (withdraw, from pending or live). A cookie session holding galgame.claim.review sends live or declined (from pending), hidden (from any other state) or unban (from hidden); declined needs a note. unban restores the state the claim was hidden from. The response is read back from catalog; its state is the outcome. If-Match is forwarded; absent means no version check.",
+        "description": "The submitter sends pending (from draft or declined) or draft (withdraw, from pending or live). A cookie session holding galgame.claim.review sends live or declined (from pending), hidden (from any other state) or unban (from hidden); declined needs a note. unban restores the state the claim was hidden from. The response is read back from catalog; its state is the outcome. If-Match is checked against the claim's current version before the move; absent means no version check.",
         "operationId": "updateWorkSubmission",
         "parameters": [
           {
@@ -70188,11 +70209,11 @@
             }
           },
           {
-            "description": "The ETag of the claim this write is based on, from GET /work-submissions/{work_id} or the previous write, sent back as received: a W/ prefix added by a compressing proxy is accepted. Absent means *: no version check.",
+            "description": "The version of the claim this write is based on: the claim_version or ETag of a submission or list row, sent back as received (a W/ prefix added by a compressing proxy is accepted). Absent or * means no version check.",
             "in": "header",
             "name": "If-Match",
             "schema": {
-              "description": "The ETag of the claim this write is based on, from GET /work-submissions/{work_id} or the previous write, sent back as received: a W/ prefix added by a compressing proxy is accepted. Absent means *: no version check.",
+              "description": "The version of the claim this write is based on: the claim_version or ETag of a submission or list row, sent back as received (a W/ prefix added by a compressing proxy is accepted). Absent or * means no version check.",
               "maxLength": 130,
               "pattern": "^(\\*|(W/)?\"[!#-~]{1,126}\")$",
               "type": "string"
@@ -70222,7 +70243,7 @@
             "headers": {
               "ETag": {
                 "schema": {
-                  "description": "The claim's version. Send it back as If-Match to write this claim.",
+                  "description": "The claim's version, the same value as the body's claim_version. Send it back as If-Match to write this claim.",
                   "maxLength": 128,
                   "type": "string"
                 }

@@ -95,10 +95,13 @@ const applyVerdict = async (
   note: string
 ) => {
   isActing.value = { ...isActing.value, [row.id]: true }
-  const result = await move(row.id, state, note)
+  const result = await move(row.id, state, { version: row.claim_version, note })
   isActing.value = { ...isActing.value, [row.id]: false }
   if (!result.ok) {
     reportProblem(result.problem)
+    if (result.problem.status === 412) {
+      refresh()
+    }
     return
   }
   useMessage('已处理', 'success')

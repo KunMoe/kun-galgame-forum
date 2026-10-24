@@ -21,6 +21,9 @@ const act = async (
   busy.value = { ...busy.value, [item.id]: false }
   if (!result.ok) {
     reportProblem(result.problem)
+    if (result.problem.status === 412) {
+      refresh()
+    }
     return
   }
   useMessage(done, 'success')
@@ -33,14 +36,18 @@ const handleWithdraw = async (item: WorkSubmissionSummary) => {
     '撤回后该条目会退回草稿状态, 不再公开展示。您填写的内容不会丢失, 随时可以重新提交。'
   )
   if (ok) {
-    await act(item, () => move(item.id, 'draft'), '已撤回')
+    await act(
+      item,
+      () => move(item.id, 'draft', { version: item.claim_version }),
+      '已撤回'
+    )
   }
 }
 
 const handleSubmit = (item: WorkSubmissionSummary) =>
   act(
     item,
-    () => move(item.id, 'pending'),
+    () => move(item.id, 'pending', { version: item.claim_version }),
     item.state === CLAIM_STATE_DECLINED ? '已重新提交审核' : '已提交审核'
   )
 
@@ -50,7 +57,7 @@ const handleDelete = async (item: WorkSubmissionSummary) => {
     '草稿会被彻底移除, 无法恢复。已经发布过资源的条目不会被删除。'
   )
   if (ok) {
-    await act(item, () => remove(item.id), '已删除')
+    await act(item, () => remove(item.id, item.claim_version), '已删除')
   }
 }
 

@@ -102,7 +102,7 @@ func (s *Service) createWorkSubmission(ctx context.Context, in *createWorkSubmis
 	held := catalogclient.UserClaimItem{WorkID: res.WorkID, DisplayName: mint.display, ClaimState: res.ClaimState}
 	body, etag := s.settle(ctx, c, func() (*catalogclient.UserClaimItem, string, error) {
 		return c.cat.GetMyClaim(ctx, c.token, res.WorkID)
-	}, held, "", true, sc)
+	}, held, false, true, sc)
 	return &createWorkSubmissionOutput{
 		Location: "/api/v1/work-submissions/" + string(body.ID),
 		ETag:     etag,
@@ -154,7 +154,7 @@ func (s *Service) getWorkSubmission(ctx context.Context, in *workSubmissionIDInp
 	if !ok {
 		return nil, notFound()
 	}
-	item, etag, owner, err := s.readSubmission(ctx, c, int64(workID))
+	item, _, owner, err := s.readSubmission(ctx, c, int64(workID))
 	if err != nil {
 		return nil, err
 	}
@@ -166,7 +166,7 @@ func (s *Service) getWorkSubmission(ctx context.Context, in *workSubmissionIDInp
 	if p != nil {
 		return nil, p
 	}
-	return &workSubmissionOutput{ETag: etag, Body: body}, nil
+	return &workSubmissionOutput{ETag: body.ClaimVersion, Body: body}, nil
 }
 
 func (s *Service) readSubmission(ctx context.Context, c *submissionCall, workID int64) (*catalogclient.UserClaimItem, string, bool, error) {
@@ -206,12 +206,12 @@ func (s *Service) settle(
 	c *submissionCall,
 	reread func() (*catalogclient.UserClaimItem, string, error),
 	held catalogclient.UserClaimItem,
-	heldETag string,
+	vouched bool,
 	owner bool,
 	sc submissionContext,
 ) (WorkSubmission, string) {
-	item, etag := held, heldETag
-	got, gotETag, err := reread()
+	item := held
+	got, _, err := reread()
 	switch {
 	case err != nil:
 		slog.Warn("galgame submissions: write landed, read-back failed; answering from the write",
@@ -220,7 +220,7 @@ func (s *Service) settle(
 		slog.Warn("galgame submissions: write landed, read-back state not in the vocabulary; answering from the write",
 			"work_id", held.WorkID, "value", got.ClaimState)
 	default:
-		item, etag = *got, gotETag
+		item, vouched = *got, true
 	}
 	refs, p := s.lookupUserRefs(ctx, []int{int(item.LastActorUID), sc.creator})
 	if p != nil {
@@ -228,7 +228,11 @@ func (s *Service) settle(
 			"work_id", held.WorkID, "err", p)
 		refs = map[int]repr.UserRef{}
 	}
-	return buildWorkSubmission(c.user, item, owner, sc, refs), etag
+	body := buildWorkSubmission(c.user, item, owner, sc, refs)
+	if !vouched {
+		body.ClaimVersion = ""
+	}
+	return body, body.ClaimVersion
 }
 
 var reviewerTargets = map[string]bool{"live": true, "declined": true, "hidden": true, "unban": true}
@@ -245,9 +249,13 @@ func (s *Service) updateWorkSubmission(ctx context.Context, in *updateWorkSubmis
 	id := int64(workID)
 	target := in.Body.State
 	if !reviewerTargets[target] {
-		cur, _, err := c.cat.GetMyClaim(ctx, c.token, id)
+		cur, curETag, err := c.cat.GetMyClaim(ctx, c.token, id)
 		if err != nil {
 			return nil, mapUserPlane(err, false)
+		}
+		ifMatch, p := claimPrecondition(in.IfMatch, *cur, curETag)
+		if p != nil {
+			return nil, p
 		}
 		upstream, allowed := submitterMove(cur.ClaimState, target)
 		if upstream == "" {
@@ -257,13 +265,13 @@ func (s *Service) updateWorkSubmission(ctx context.Context, in *updateWorkSubmis
 		if err != nil {
 			return nil, err
 		}
-		item, etag, err := c.cat.PatchMyClaim(ctx, c.token, id, upstream, ifMatchOrAny(in.IfMatch))
+		item, etag, err := c.cat.PatchMyClaim(ctx, c.token, id, upstream, ifMatch)
 		if err != nil {
 			return nil, mapUserPlane(err, true)
 		}
 		body, etag := s.settle(ctx, c, func() (*catalogclient.UserClaimItem, string, error) {
 			return c.cat.GetMyClaim(ctx, c.token, id)
-		}, *item, etag, true, sc)
+		}, *item, etag != "", true, sc)
 		return &workSubmissionOutput{ETag: etag, Body: body}, nil
 	}
 
@@ -274,9 +282,13 @@ func (s *Service) updateWorkSubmission(ctx context.Context, in *updateWorkSubmis
 	if target == "declined" && note == "" {
 		return nil, noteRequired()
 	}
-	cur, _, err := c.cat.GetModerationClaim(ctx, c.token, id)
+	cur, curETag, err := c.cat.GetModerationClaim(ctx, c.token, id)
 	if err != nil {
 		return nil, mapUserPlane(err, false)
+	}
+	ifMatch, p := claimPrecondition(in.IfMatch, *cur, curETag)
+	if p != nil {
+		return nil, p
 	}
 	decision, allowed := reviewerDecision(cur.ClaimState, target)
 	if decision == "" {
@@ -286,7 +298,7 @@ func (s *Service) updateWorkSubmission(ctx context.Context, in *updateWorkSubmis
 	if err != nil {
 		return nil, err
 	}
-	d, err := c.cat.DecideClaim(ctx, c.token, id, decision, note, ifMatchOrAny(in.IfMatch))
+	d, err := c.cat.DecideClaim(ctx, c.token, id, decision, note, ifMatch)
 	if err != nil {
 		return nil, mapUserPlane(err, true)
 	}
@@ -299,7 +311,7 @@ func (s *Service) updateWorkSubmission(ctx context.Context, in *updateWorkSubmis
 	}
 	body, etag := s.settle(ctx, c, func() (*catalogclient.UserClaimItem, string, error) {
 		return c.cat.GetModerationClaim(ctx, c.token, id)
-	}, held, "", sc.creator == c.user.ID, sc)
+	}, held, false, sc.creator == c.user.ID, sc)
 	return &workSubmissionOutput{ETag: etag, Body: body}, nil
 }
 
@@ -356,9 +368,13 @@ func (s *Service) deleteWorkSubmission(ctx context.Context, in *workSubmissionWr
 	if !ok {
 		return nil, notFound()
 	}
-	cur, _, err := c.cat.GetMyClaim(ctx, c.token, int64(workID))
+	cur, curETag, err := c.cat.GetMyClaim(ctx, c.token, int64(workID))
 	if err != nil {
 		return nil, mapUserPlane(err, false)
+	}
+	ifMatch, p := claimPrecondition(in.IfMatch, *cur, curETag)
+	if p != nil {
+		return nil, p
 	}
 	if cur.ClaimState != "draft" {
 		return nil, problem.New(problem.CodeInvalidStateTransition,
@@ -367,7 +383,7 @@ func (s *Service) deleteWorkSubmission(ctx context.Context, in *workSubmissionWr
 	// Owner-only and draft-only are catalog's checks and stay catalog's: the
 	// local delete below cascades, so it runs only after the authority agreed
 	// this is a disposable draft.
-	if err := c.cat.DeleteMyClaim(ctx, c.token, int64(workID), ifMatchOrAny(in.IfMatch)); err != nil {
+	if err := c.cat.DeleteMyClaim(ctx, c.token, int64(workID), ifMatch); err != nil {
 		return nil, mapUserPlane(err, true)
 	}
 	// The draft is gone once catalog agreed, so a failed local cleanup is
