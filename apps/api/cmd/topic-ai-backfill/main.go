@@ -96,6 +96,8 @@ func main() {
 	}
 }
 
+const maxConsecutiveFailures = 20
+
 type backfill struct {
 	db      *gorm.DB
 	client  *aiclient.Client
@@ -144,18 +146,16 @@ func choicesFor(all []choiceRow, legacy string) []ai.SectionChoice {
 	return out
 }
 
-// each runs fn over rows with b.workers model calls at a time and stops
-// handing out work after the first error it sees.
-func (b *backfill) each(rows []topicRow, fn func(topicRow) error) (done int64, err error) {
+// each runs fn over rows with b.workers model calls at a time. A topic that
+// fails is logged and left for the next run; the run stops only after
+// maxConsecutiveFailures in a row, which means the endpoint itself is down.
+func (b *backfill) each(rows []topicRow, fn func(topicRow) error) (done, failed int64, err error) {
 	var wg sync.WaitGroup
-	var mu sync.Mutex
-	var count atomic.Int64
+	var doneN, failedN, streak atomic.Int64
 	sem := make(chan struct{}, max(b.workers, 1))
 	for _, r := range rows {
-		mu.Lock()
-		stop := err != nil
-		mu.Unlock()
-		if stop {
+		if streak.Load() >= maxConsecutiveFailures {
+			err = fmt.Errorf("%d topics in a row failed; stopping", maxConsecutiveFailures)
 			break
 		}
 		wg.Add(1)
@@ -164,20 +164,19 @@ func (b *backfill) each(rows []topicRow, fn func(topicRow) error) (done int64, e
 			defer wg.Done()
 			defer func() { <-sem }()
 			if e := fn(r); e != nil {
-				mu.Lock()
-				if err == nil {
-					err = fmt.Errorf("topic %d: %w", r.ID, e)
-				}
-				mu.Unlock()
+				failedN.Add(1)
+				streak.Add(1)
+				slog.Warn("跳过", "topic_id", r.ID, "error", e)
 				return
 			}
-			if c := count.Add(1); c%50 == 0 {
-				slog.Info("进度", "done", c, "of", len(rows))
+			streak.Store(0)
+			if c := doneN.Add(1); c%50 == 0 {
+				slog.Info("进度", "done", c, "failed", failedN.Load(), "of", len(rows))
 			}
 		}(r)
 	}
 	wg.Wait()
-	return count.Load(), err
+	return doneN.Load(), failedN.Load(), err
 }
 
 func (b *backfill) sample(ctx context.Context, n int, out string) error {
@@ -195,7 +194,7 @@ func (b *backfill) sample(ctx context.Context, n int, out string) error {
 	for i, t := range topics {
 		index[t.ID] = i
 	}
-	_, _ = b.each(topics, func(t topicRow) error {
+	_, _, _ = b.each(topics, func(t topicRow) error {
 		cctx, cancel := context.WithTimeout(ctx, 2*time.Minute)
 		defer cancel()
 		i := index[t.ID]
@@ -245,7 +244,7 @@ func (b *backfill) classify(ctx context.Context, limit int) error {
 		return err
 	}
 	slog.Info("待分类", "topics", len(topics))
-	done, err := b.each(topics, func(t topicRow) error {
+	done, failed, err := b.each(topics, func(t topicRow) error {
 		cctx, cancel := context.WithTimeout(ctx, 2*time.Minute)
 		defer cancel()
 		v, err := ai.Classify(cctx, b.client, b.model, choicesFor(choices, t.Legacy), t.Title, t.Content)
@@ -254,7 +253,7 @@ func (b *backfill) classify(ctx context.Context, limit int) error {
 		}
 		return b.apply(t.ID, v.Section, v.Reason, b.model)
 	})
-	slog.Info("分类完成", "done", done, "of", len(topics))
+	slog.Info("分类完成", "done", done, "failed", failed, "of", len(topics))
 	return err
 }
 
@@ -307,7 +306,7 @@ func (b *backfill) summarize(ctx context.Context, limit, minRunes int) error {
 		}
 	}
 	slog.Info("待摘要", "topics", len(topics), "min_runes", minRunes)
-	done, err := b.each(topics, func(t topicRow) error {
+	done, failed, err := b.each(topics, func(t topicRow) error {
 		cctx, cancel := context.WithTimeout(ctx, 3*time.Minute)
 		defer cancel()
 		summary, err := ai.Summarize(cctx, b.client, b.model, t.Title, t.Content)
@@ -317,7 +316,7 @@ func (b *backfill) summarize(ctx context.Context, limit, minRunes int) error {
 		return b.db.Exec(`UPDATE topic SET ai_summary = ?, ai_summary_model = ?, ai_summary_at = now(), ai_summary_drift = 0
 			WHERE id = ?`, summary, b.model, t.ID).Error
 	})
-	slog.Info("摘要完成", "done", done, "of", len(topics))
+	slog.Info("摘要完成", "done", done, "failed", failed, "of", len(topics))
 	return err
 }
 
