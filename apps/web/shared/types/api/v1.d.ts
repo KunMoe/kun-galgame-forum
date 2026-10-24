@@ -8008,6 +8008,8 @@ export interface components {
         };
         /** @enum {string} */
         HiddenBy: "author" | "moderator" | "trust";
+        /** @enum {string} */
+        HiddenSectionsMode: "include" | "exclude";
         HiddenTopicSummary: {
             /** @description The topic's author. Banned authors are listed too: this is a staff table. */
             author: components["schemas"]["UserRef"];
@@ -38072,6 +38074,8 @@ export interface operations {
                 include_nsfw?: boolean;
                 /** @description When set, only topics filed under this section. A retired key filters by its successor. Omitted means every section. */
                 section?: components["schemas"]["SectionKey"];
+                /** @description exclude leaves out the sections listSections marks is_hidden_from_feeds (resource-seeking and tech-help), as an all-topics feed does. Default include. */
+                hidden_sections?: components["schemas"]["HiddenSectionsMode"];
             };
             header?: never;
             path?: never;
