@@ -43,7 +43,7 @@ onMounted(() => {
 
 <template>
   <div
-    class="grid grid-cols-1 items-start gap-4 sm:grid-cols-[7rem_minmax(0,1fr)] lg:grid-cols-[7rem_minmax(0,1fr)_18rem] xl:grid-cols-[7rem_minmax(0,1fr)_20rem]"
+    class="grid grid-cols-1 items-start gap-4 sm:grid-cols-[7rem_minmax(0,1fr)] lg:grid-cols-[7rem_minmax(0,1fr)_20rem]"
   >
     <!-- 铁律 #11: keep this template's SINGLE real root element. A sibling
          or a leading comment at the template root is itself a root node,

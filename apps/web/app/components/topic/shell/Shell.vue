@@ -6,7 +6,7 @@ defineProps<{
 
 <template>
   <div
-    class="grid grid-cols-1 items-start gap-6 lg:grid-cols-[13rem_minmax(0,1fr)] xl:grid-cols-[13rem_minmax(0,1fr)_18rem]"
+    class="grid grid-cols-1 items-start gap-6 lg:grid-cols-[13rem_minmax(0,1fr)] xl:grid-cols-[13rem_minmax(0,1fr)_20rem]"
   >
     <!-- Columns are placed explicitly: the centre column's list takes a
          top-level await, and an auto-placed aside slid into its track while
