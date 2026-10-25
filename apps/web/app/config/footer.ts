@@ -5,12 +5,12 @@ export interface KunFooterLink {
 
 export const KUN_FOOTER_COLUMNS: KunFooterLink[][] = [
   [
-    { label: '补丁站', link: 'https://www.moyu.moe/' },
-    { label: '表情包', link: 'https://sticker.kungal.com/' },
-    { label: '导航站', link: 'https://nav.kungal.org/' }
+    { label: '鲲 Galgame 补丁', link: 'https://www.moyu.moe/' },
+    { label: '鲲 Galgame 表情包', link: 'https://sticker.kungal.com/' },
+    { label: '鲲 Galgame 导航', link: 'https://nav.kungal.org/' }
   ],
   [
-    { label: '账号中心', link: 'https://account.nextmoe.com/' },
+    { label: 'NextMoe 账号', link: 'https://account.nextmoe.com/' },
     { label: '开发者平台', link: 'https://developer.nextmoe.dev/' },
     { label: '编辑者中心', link: 'https://editor.nextmoe.com/' }
   ],

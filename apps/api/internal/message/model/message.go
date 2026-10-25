@@ -44,6 +44,7 @@ const (
 	KindRating        = "rating"
 	KindQuiz          = "quiz"
 	KindQuizAnswer    = "quiz_answer"
+	KindWalkthrough   = "walkthrough"
 	KindToolset       = "toolset"
 	KindWebsite       = "website"
 	KindLottery       = "lottery"

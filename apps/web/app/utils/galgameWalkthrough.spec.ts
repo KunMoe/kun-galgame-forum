@@ -163,12 +163,26 @@ describe('buildGraphModel', () => {
 
 describe('walkthroughText', () => {
   const zh = { 'zh-Hans': { value: '是', is_machine: true } }
-  it('shows the original first and the translation under it by default', () => {
+  it('shows the translation first and the original in parentheses', () => {
     expect(walkthroughText('はい', zh, 'both')).toEqual({
-      main: 'はい',
-      sub: '是'
+      main: '是',
+      sub: 'はい',
+      lang: 'zh-Hans'
     })
-    expect(walkthroughText('はい', zh, 'zh')).toEqual({ main: '是', sub: '' })
-    expect(walkthroughText('はい', {}, 'zh')).toEqual({ main: 'はい', sub: '' })
+    expect(walkthroughText('はい', zh, 'zh')).toEqual({
+      main: '是',
+      sub: '',
+      lang: 'zh-Hans'
+    })
+    expect(walkthroughText('はい', zh, 'ja')).toEqual({
+      main: 'はい',
+      sub: '',
+      lang: 'ja'
+    })
+    expect(walkthroughText('はい', {}, 'zh')).toEqual({
+      main: 'はい',
+      sub: '',
+      lang: 'ja'
+    })
   })
 })

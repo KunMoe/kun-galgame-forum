@@ -24,6 +24,8 @@ const MODERATOR_PERMISSIONS = [
   'comment.resource.delete',
   'comment.quiz.edit',
   'comment.quiz.delete',
+  'comment.walkthrough.edit',
+  'comment.walkthrough.delete',
   'poll.create_any',
   'poll.edit_any',
   'poll.delete_any',

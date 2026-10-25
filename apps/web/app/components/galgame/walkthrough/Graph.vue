@@ -31,7 +31,7 @@ const content = computed(() => ({
 }))
 const focus = computed(() => {
   const start = props.layout.nodes.find((n) => n.kind === 'entry')
-  return start ? { x: start.x + 420, y: start.y } : null
+  return start ? { x: start.x, y: start.y + 280 } : null
 })
 const isWide = useMediaQuery('(min-width: 640px)')
 const freeTouchPan = computed(() => !!props.isFullscreen || isWide.value)
@@ -102,7 +102,7 @@ const uid = useId()
         'border-default-200 bg-default-50 relative overflow-hidden rounded-xl border select-none',
         isFullscreen
           ? 'h-full touch-none'
-          : 'h-[28rem] touch-pan-y sm:h-[36rem]',
+          : 'h-[36rem] touch-pan-y sm:h-[44rem]',
         isPanning ? 'cursor-grabbing' : 'cursor-grab'
       )
     "
@@ -195,7 +195,7 @@ const uid = useId()
             v-if="edge.steps.length && onRoute(edge)"
             :x="edge.labelX"
             :y="edge.labelY"
-            text-anchor="middle"
+            text-anchor="start"
             stroke-width="4"
             paint-order="stroke"
             class="fill-default-500 stroke-default-50 pointer-events-none text-[10px]"

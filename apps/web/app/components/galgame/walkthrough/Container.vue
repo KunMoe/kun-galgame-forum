@@ -3,7 +3,6 @@ import type { KunTabItem } from '@kungal/ui-vue'
 import type { Walkthrough, Work } from '#shared/utils/api/schemas'
 import {
   KUN_GALGAME_WALKTHROUGH_NEUTRAL_TONE,
-  KUN_GALGAME_WALKTHROUGH_SOURCE,
   KUN_GALGAME_WALKTHROUGH_TEXT_MODES,
   KUN_GALGAME_WALKTHROUGH_TONES,
   type KunWalkthroughTextMode
@@ -17,7 +16,6 @@ const props = defineProps<{
 const route = useRoute()
 const writeQuery = useQueryWriter()
 const nameOf = useCatalogName()
-const workName = useWorkName()
 
 const chart = computed(() => props.walkthrough.chart!)
 const characters = computed(() => props.walkthrough.chart_characters)
@@ -36,7 +34,9 @@ const textModes: KunTabItem[] = KUN_GALGAME_WALKTHROUGH_TEXT_MODES.map((m) => ({
 }))
 
 const routes = computed(() => buildRoutes(chart.value, characters.value))
-const tones = computed(() => characterTones(characters.value))
+const portraits = computed(() =>
+  walkthroughPortraits(characters.value, props.work.roster)
+)
 const initialRoute = () => {
   const q = route.query.character
   return typeof q === 'string' && routes.value.some((r) => r.key === q)
@@ -84,78 +84,79 @@ const toneClass = (tone: number | null) =>
         tone % KUN_GALGAME_WALKTHROUGH_TONES.length
       ]!
 
-const source = computed(
-  () =>
-    KUN_GALGAME_WALKTHROUGH_SOURCE[props.walkthrough.source_site] ?? {
-      name: props.walkthrough.source_site,
-      home: props.walkthrough.source_page_url
-    }
-)
+const routeName = (key: string, fallback: string) => {
+  const ref = characters.value.find((c) => c.key === key)?.catalog_character
+  return ref ? nameOf(ref.catalog_name).name : fallback
+}
 
-const characterName = (c: (typeof characters.value)[number]) =>
-  c.catalog_character
-    ? nameOf(c.catalog_character.catalog_name).name
-    : c.source_name
+const endingCount = (segments: (typeof routes.value)[number]['segments']) =>
+  segments.filter((s) => s.to_node.node_type === 'ending').length
 </script>
 
 <template>
-  <div class="space-y-4">
-    <KunCard
-      :is-hoverable="false"
-      :is-transparent="false"
-      content-class="space-y-3"
-    >
-      <KunHeader
-        :name="`${workName(work)} 攻略`"
-        :description="`${walkthrough.ending_count} 个结局 · ${walkthrough.save_count} 个存档点 · ${characters.length} 名角色`"
-      >
-        <template #headerEndContent>
-          <KunButton :href="`/galgame/${work.id}`" variant="light" size="sm">
-            <KunIcon name="lucide:arrow-left" />
-            返回游戏页面
-          </KunButton>
-        </template>
-      </KunHeader>
-
-      <div class="flex flex-wrap gap-2">
-        <KunButton
-          v-for="c in characters"
-          :key="c.key"
-          size="sm"
-          :variant="selectedRoute === c.key ? 'flat' : 'bordered'"
-          :color="selectedRoute === c.key ? 'primary' : 'default'"
-          @click="selectedRoute = c.key"
-        >
-          <span
-            :class="
-              cn('size-2 rounded-full', toneClass(tones.get(c.key) ?? null).dot)
-            "
-          />
-          {{ characterName(c) }}
-        </KunButton>
+  <div class="space-y-6">
+    <section class="space-y-3" aria-label="角色路线">
+      <div class="flex items-baseline justify-between gap-3">
+        <h2 class="text-foreground text-lg font-semibold">角色路线</h2>
+        <span class="text-default-500 text-xs">选择角色查看这条路线的选项</span>
       </div>
-
-      <KunInfo color="default" title="关于这份攻略">
-        <p class="text-default-600 text-sm">
-          选项流程整理自
-          <KunLink size="sm" :to="walkthrough.source_page_url" target="_blank">
-            {{ source.name }}
-          </KunLink>
-          <template v-if="walkthrough.source_author">
-            (作者 {{ walkthrough.source_author }})</template
+      <div
+        class="scrollbar-hide -mx-1 flex gap-3 overflow-x-auto px-1 pt-1 pb-2 sm:flex-wrap sm:overflow-visible"
+      >
+        <button
+          v-for="r in routes"
+          :key="r.key"
+          type="button"
+          :aria-pressed="selectedRoute === r.key"
+          class="group w-24 shrink-0 space-y-1.5 text-left focus:outline-none sm:w-28"
+          @click="selectedRoute = r.key"
+        >
+          <div
+            :class="
+              cn(
+                'rounded-xl ring-2 ring-offset-2 ring-offset-transparent transition-shadow',
+                selectedRoute === r.key
+                  ? 'ring-primary-500'
+                  : 'group-hover:ring-default-300 group-focus-visible:ring-default-300 ring-transparent'
+              )
+            "
           >
-          <template v-if="walkthrough.source_updated_date"
-            >, 原页面更新于 {{ walkthrough.source_updated_date }}</template
-          >
-          。只保留了选项与存档结构, 原文说明请查看原页面。选项的中文为机器翻译,
-          游戏内显示的是日文原文; 没有可靠译名的人名保持原文。
-        </p>
-      </KunInfo>
-    </KunCard>
+            <GalgameWalkthroughPortrait
+              :image="portraits.get(r.key)"
+              :name="routeName(r.key, r.name)"
+              :icon="
+                r.key === COMMON_ROUTE_KEY ? 'lucide:git-merge' : undefined
+              "
+              size="bust"
+            />
+          </div>
+          <div class="flex items-center gap-1.5">
+            <span
+              :class="cn('size-2 shrink-0 rounded-full', toneClass(r.tone).dot)"
+            />
+            <span
+              :class="
+                cn(
+                  'truncate text-sm',
+                  selectedRoute === r.key
+                    ? 'text-primary-600 font-semibold'
+                    : 'text-foreground'
+                )
+              "
+            >
+              {{ routeName(r.key, r.name) }}
+            </span>
+          </div>
+          <p class="text-default-500 text-xs">
+            {{ endingCount(r.segments) }} 个结局 · {{ r.segments.length }} 段
+          </p>
+        </button>
+      </div>
+    </section>
 
     <div class="flex flex-wrap items-center justify-between gap-3">
       <KunTab v-model="view" :items="views" variant="solid" size="sm" />
-      <div class="flex items-center gap-3">
+      <div class="flex flex-wrap items-center gap-3">
         <KunSwitch
           v-if="view === 'graph'"
           v-model="highlightRoute"
@@ -176,12 +177,13 @@ const characterName = (c: (typeof characters.value)[number]) =>
           v-model:selected-route="selectedRoute"
           :chart="chart"
           :characters="characters"
+          :portraits="portraits"
         />
       </KunTabPanel>
       <KunTabPanel
         value="graph"
         mount="lazy"
-        class-name="grid gap-3 lg:grid-cols-[minmax(0,1fr)_18rem]"
+        class-name="grid gap-4 lg:grid-cols-[minmax(0,1fr)_18rem]"
       >
         <ClientOnly>
           <GalgameWalkthroughGraph
@@ -192,7 +194,7 @@ const characterName = (c: (typeof characters.value)[number]) =>
           />
           <template #fallback>
             <div
-              class="border-default-200 bg-default-50 h-[28rem] rounded-xl border sm:h-[36rem]"
+              class="border-default-200 bg-default-50 h-[36rem] rounded-xl border sm:h-[44rem]"
             />
           </template>
         </ClientOnly>

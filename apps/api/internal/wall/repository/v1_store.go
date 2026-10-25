@@ -48,6 +48,17 @@ var onHiddenWorkSQL = map[string]string{
 		WHERE t.id IN ? AND NOT g.catalog_rendered`,
 	"galgame_quiz": `SELECT DISTINCT t.quiz_id FROM galgame_quiz_galgame t JOIN galgame g ON g.id = t.work_id
 		WHERE t.quiz_id IN ? AND NOT g.catalog_rendered`,
+	"galgame_walkthrough": `SELECT DISTINCT t.id FROM (
+			SELECT substring(fa.link FROM '^/galgame-walkthrough/([0-9]{1,18})$')::bigint AS id, fa.work_id
+			FROM feed_activity fa WHERE fa.type = 'GALGAME_WALKTHROUGH_COMMENT_CREATION'
+		) t JOIN galgame g ON g.id = t.work_id
+		WHERE t.id IN ? AND NOT g.catalog_rendered`,
+}
+
+func (s *Store) WorkHidden(workID int) (bool, error) {
+	var hidden bool
+	err := s.db.Raw(`SELECT EXISTS (SELECT 1 FROM galgame WHERE id = ? AND NOT catalog_rendered)`, workID).Scan(&hidden).Error
+	return hidden, err
 }
 
 func (s *Store) OnHiddenWorks(subjectType string, ids []int) (map[int]bool, error) {

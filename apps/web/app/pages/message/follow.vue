@@ -16,6 +16,7 @@ const WALL_PAGE: Record<
   galgame_rating: { label: '游戏评分', path: '/galgame-rating/' },
   galgame_resource: { label: '下载资源', path: '/galgame/resource/' },
   galgame_quiz: { label: '游戏答题', path: '/galgame-quiz/' },
+  galgame_walkthrough: { label: '游戏攻略', path: '/galgame-walkthrough/' },
   toolset: { label: 'Gal 工具', path: '/toolset/' },
   website: { label: '网站', path: '/website/' }
 }

@@ -38,6 +38,9 @@ var resourcePrefixes = map[string]struct {
 	"toolset":  {"/toolset/", "Gal 工具"},
 	"resource": {"/galgame/resource/", "下载资源"},
 	"quiz":     {"/galgame-quiz/", "游戏答题"},
+	// /galgame-walkthrough/:id redirects to /galgame/:work/walkthrough/:id; the
+	// anchor carries no work id.
+	"walkthrough": {"/galgame-walkthrough/", "游戏攻略"},
 }
 
 // Resolver turns anchors back into links. A website wall is the one that needs
@@ -106,7 +109,7 @@ func (r *Resolver) OnHiddenWorks(refs []Ref) (map[Ref]bool, error) {
 		source string
 		id     int
 	}
-	ids := map[string][]int{"game": nil, "resource": nil, "rating": nil, "quiz": nil}
+	ids := map[string][]int{"game": nil, "resource": nil, "rating": nil, "quiz": nil, "walkthrough": nil}
 	byKey := map[key][]Ref{}
 	for _, ref := range refs {
 		var k key
@@ -145,8 +148,14 @@ func (r *Resolver) OnHiddenWorks(refs []Ref) (map[Ref]bool, error) {
 		WHERE t.id IN @rating AND NOT g.catalog_rendered
 		UNION ALL
 		SELECT DISTINCT 'quiz', t.quiz_id FROM galgame_quiz_galgame t JOIN galgame g ON g.id = t.work_id
-		WHERE t.quiz_id IN @quiz AND NOT g.catalog_rendered`,
-		map[string]any{"game": ids["game"], "resource": ids["resource"], "rating": ids["rating"], "quiz": ids["quiz"]},
+		WHERE t.quiz_id IN @quiz AND NOT g.catalog_rendered
+		UNION ALL
+		SELECT DISTINCT 'walkthrough', t.id FROM (
+			SELECT substring(fa.link FROM '^/galgame-walkthrough/([0-9]{1,18})$')::bigint AS id, fa.work_id
+			FROM feed_activity fa WHERE fa.type = 'GALGAME_WALKTHROUGH_COMMENT_CREATION'
+		) t JOIN galgame g ON g.id = t.work_id
+		WHERE t.id IN @walkthrough AND NOT g.catalog_rendered`,
+		map[string]any{"game": ids["game"], "resource": ids["resource"], "rating": ids["rating"], "quiz": ids["quiz"], "walkthrough": ids["walkthrough"]},
 	).Scan(&rows).Error
 	if err != nil {
 		return nil, err

@@ -113,6 +113,10 @@ func (p *Presenter) pageLocalPresentations(after *presentationKey, limit int) ([
 			UNION
 			SELECT 2::smallint, 'quiz:' || id::text FROM galgame_quiz
 			UNION
+			SELECT 2::smallint, 'walkthrough:' || substring(link FROM '^/galgame-walkthrough/([0-9]{1,18})$')
+				FROM feed_activity WHERE type = 'GALGAME_WALKTHROUGH_COMMENT_CREATION'
+					AND link ~ '^/galgame-walkthrough/[0-9]{1,18}$'
+			UNION
 			SELECT 2::smallint, 'toolset:' || id::text FROM galgame_toolset
 			UNION
 			SELECT 2::smallint, 'website:' || id::text FROM galgame_website

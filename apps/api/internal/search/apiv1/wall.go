@@ -21,11 +21,12 @@ import (
 const wallCursorSort = "wall_comments"
 
 var wallResourceTypes = map[string]wallapiv1.SubjectType{
-	"rating":   "galgame_rating",
-	"resource": "galgame_resource",
-	"quiz":     "galgame_quiz",
-	"toolset":  "toolset",
-	"website":  "website",
+	"rating":      "galgame_rating",
+	"resource":    "galgame_resource",
+	"quiz":        "galgame_quiz",
+	"walkthrough": "galgame_walkthrough",
+	"toolset":     "toolset",
+	"website":     "website",
 }
 
 type wallOutput struct {

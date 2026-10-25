@@ -43,31 +43,33 @@ type siteRow struct {
 }
 
 type presentationState struct {
-	published map[int]bool
-	resources map[int]resRow
-	ratings   map[int]ratingRow
-	quizzes   map[int64]quizRow
-	quizWorks map[int64][]int
-	toolsets  map[int]toolRow
-	websites  map[int]siteRow
-	users     map[int]userclient.User
-	catalog   map[int]client.CatalogWorkListItem
+	published    map[int]bool
+	resources    map[int]resRow
+	ratings      map[int]ratingRow
+	quizzes      map[int64]quizRow
+	quizWorks    map[int64][]int
+	walkthroughs map[int64]int
+	toolsets     map[int]toolRow
+	websites     map[int]siteRow
+	users        map[int]userclient.User
+	catalog      map[int]client.CatalogWorkListItem
 }
 
 func (p *Presenter) loadPresentationState(ctx context.Context, keys []presentationKey) (*presentationState, error) {
 	st := &presentationState{
-		published: map[int]bool{},
-		resources: map[int]resRow{},
-		ratings:   map[int]ratingRow{},
-		quizzes:   map[int64]quizRow{},
-		quizWorks: map[int64][]int{},
-		toolsets:  map[int]toolRow{},
-		websites:  map[int]siteRow{},
-		users:     map[int]userclient.User{},
-		catalog:   map[int]client.CatalogWorkListItem{},
+		published:    map[int]bool{},
+		resources:    map[int]resRow{},
+		ratings:      map[int]ratingRow{},
+		quizzes:      map[int64]quizRow{},
+		quizWorks:    map[int64][]int{},
+		walkthroughs: map[int64]int{},
+		toolsets:     map[int]toolRow{},
+		websites:     map[int]siteRow{},
+		users:        map[int]userclient.User{},
+		catalog:      map[int]client.CatalogWorkListItem{},
 	}
 	var workIDs, resIDs, ratingIDs, toolIDs, siteIDs, userIDs []int
-	var quizIDs []int64
+	var quizIDs, walkthroughIDs []int64
 	for _, k := range keys {
 		switch {
 		case k.Kind == anchorKindGame:
@@ -85,6 +87,10 @@ func (p *Presenter) loadPresentationState(ctx context.Context, keys []presentati
 		case k.Kind == anchorKindResource && strings.HasPrefix(k.ID, prefixQuiz):
 			if id, ok := parseStrictInt64(strings.TrimPrefix(k.ID, prefixQuiz)); ok {
 				quizIDs = append(quizIDs, id)
+			}
+		case k.Kind == anchorKindResource && strings.HasPrefix(k.ID, prefixWalkthrough):
+			if id, ok := parseStrictInt64(strings.TrimPrefix(k.ID, prefixWalkthrough)); ok {
+				walkthroughIDs = append(walkthroughIDs, id)
 			}
 		case k.Kind == anchorKindResource && strings.HasPrefix(k.ID, prefixToolset):
 			if id, ok := parseStrictInt(strings.TrimPrefix(k.ID, prefixToolset)); ok {
@@ -131,6 +137,20 @@ func (p *Presenter) loadPresentationState(ctx context.Context, keys []presentati
 	}
 	for _, r := range links {
 		st.quizWorks[r.QuizID] = append(st.quizWorks[r.QuizID], r.WorkID)
+		workIDs = append(workIDs, r.WorkID)
+	}
+	var walkthroughWorks []struct {
+		ID     int64 `gorm:"column:id"`
+		WorkID int   `gorm:"column:work_id"`
+	}
+	if err := scanIntMap(p.db, `SELECT DISTINCT ON (t.id) t.id, t.work_id FROM (
+			SELECT substring(link FROM '^/galgame-walkthrough/([0-9]{1,18})$')::bigint AS id, work_id, created
+			FROM feed_activity WHERE type = 'GALGAME_WALKTHROUGH_COMMENT_CREATION' AND work_id > 0
+		) t WHERE t.id IN ? ORDER BY t.id, t.created DESC`, walkthroughIDs, &walkthroughWorks); err != nil {
+		return nil, err
+	}
+	for _, r := range walkthroughWorks {
+		st.walkthroughs[r.ID] = r.WorkID
 		workIDs = append(workIDs, r.WorkID)
 	}
 	var tools []toolRow

@@ -18,24 +18,17 @@ const shown = computed(() =>
 </script>
 
 <template>
-  <span class="inline-flex min-w-0 flex-col">
-    <span
-      :class="
-        cn(
-          'text-foreground break-words',
-          size === 'sm' ? 'text-sm' : 'text-base'
-        )
-      "
-      :lang="mode === 'zh' && !shown.sub ? 'zh-Hans' : 'ja'"
+  <span
+    :class="
+      cn(
+        'text-foreground min-w-0 break-words',
+        size === 'sm' ? 'text-sm' : 'text-base'
+      )
+    "
+  >
+    <span :lang="shown.lang">{{ shown.main }}</span>
+    <span v-if="shown.sub" class="text-default-500" lang="ja">
+      ({{ shown.sub }})</span
     >
-      {{ shown.main }}
-    </span>
-    <span
-      v-if="shown.sub"
-      class="text-default-500 text-xs break-words"
-      lang="zh-Hans"
-    >
-      {{ shown.sub }}
-    </span>
   </span>
 </template>

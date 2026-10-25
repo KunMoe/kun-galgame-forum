@@ -29,7 +29,7 @@ const label = computed(
     walkthroughText(
       props.node.label,
       props.node.localized,
-      mode.value === 'zh' ? 'zh' : 'ja'
+      mode.value === 'ja' ? 'ja' : 'zh'
     ).main
 )
 

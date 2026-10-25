@@ -5,7 +5,6 @@ definePageMeta({ key: (route) => route.path })
 
 const route = useRoute()
 const { allowsNsfw, stanceKey } = useContentStance()
-const workName = useWorkName()
 
 const params = route.params as { id: string; wid: string }
 const workId = String(params.id)
@@ -54,25 +53,21 @@ const isShowWalkthrough = computed(
   () => !walkthrough.value?.is_nsfw || allowsNsfw.value || revealed.value
 )
 
-if (work.value && !work.value.is_nsfw && work.value.is_published) {
-  const name = workName(work.value)
-  useKunSeoMeta({
-    title: `${name} 攻略`,
-    description: `《${name}》的选项攻略流程: 按角色整理的选项、存档点与 ${walkthrough.value?.ending_count ?? 0} 个结局。`
-  })
+if (walkthrough.value && work.value) {
+  useGalgameWalkthroughSeo(walkthrough.value, work.value)
 } else {
-  useKunDisableSeo(work.value ? `${workName(work.value)} 攻略` : '攻略')
+  useKunDisableSeo('攻略')
 }
 </script>
 
 <template>
-  <div class="container mx-auto my-4 max-w-6xl px-3">
+  <div>
     <template v-if="walkthrough && work">
-      <GalgameWalkthroughContainer
-        v-if="isShowWalkthrough"
-        :walkthrough="walkthrough"
-        :work="work"
-      />
+      <div v-if="isShowWalkthrough" class="space-y-10">
+        <GalgameWalkthroughHero :walkthrough="walkthrough" :work="work" />
+        <GalgameWalkthroughContainer :walkthrough="walkthrough" :work="work" />
+        <GalgameWalkthroughComment :walkthrough-id="Number(walkthrough.id)" />
+      </div>
       <KunNsfwGate v-else noun="攻略" @reveal="revealed = true" />
     </template>
     <KunNull v-else description="攻略暂时无法加载, 请稍后再试" />
