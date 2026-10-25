@@ -10,19 +10,20 @@ import (
 )
 
 type CatalogWalkthrough struct {
-	ID              string                     `json:"id"`
-	WorkID          string                     `json:"work_id"`
-	Source          string                     `json:"source"`
-	SourceURL       string                     `json:"source_url"`
-	SourceAuthor    *string                    `json:"source_author"`
-	SourceUpdatedOn *string                    `json:"source_updated_on"`
-	Lang            string                     `json:"lang"`
-	Characters      []CatalogWalkthroughPerson `json:"characters"`
-	EndingCount     int                        `json:"ending_count"`
-	SaveCount       int                        `json:"save_count"`
-	SegmentCount    int                        `json:"segment_count"`
-	UpdatedAt       string                     `json:"updated_at"`
-	Chart           *CatalogWalkthroughChart   `json:"chart"`
+	ID               string                     `json:"id"`
+	WorkID           string                     `json:"work_id"`
+	WorkContentLimit string                     `json:"work_content_limit"`
+	Source           string                     `json:"source"`
+	SourceURL        string                     `json:"source_url"`
+	SourceAuthor     *string                    `json:"source_author"`
+	SourceUpdatedOn  *string                    `json:"source_updated_on"`
+	Lang             string                     `json:"lang"`
+	Characters       []CatalogWalkthroughPerson `json:"characters"`
+	EndingCount      int                        `json:"ending_count"`
+	SaveCount        int                        `json:"save_count"`
+	SegmentCount     int                        `json:"segment_count"`
+	UpdatedAt        string                     `json:"updated_at"`
+	Chart            *CatalogWalkthroughChart   `json:"chart"`
 }
 
 type CatalogWalkthroughPerson struct {
@@ -97,12 +98,8 @@ func (c *GalgameClient) CatalogWalkthroughs(ctx context.Context, q url.Values) (
 	return &page, nil
 }
 
-func (c *GalgameClient) CatalogWalkthrough(ctx context.Context, id string, nsfw bool) (*CatalogWalkthrough, bool, *errors.AppError) {
-	q := url.Values{}
-	if nsfw {
-		q.Set("nsfw", "true")
-	}
-	status, body, appErr := c.getV2(ctx, "/v2/catalog/walkthroughs/"+id, q)
+func (c *GalgameClient) CatalogWalkthrough(ctx context.Context, id string) (*CatalogWalkthrough, bool, *errors.AppError) {
+	status, body, appErr := c.getV2(ctx, "/v2/catalog/walkthroughs/"+id, openPopulation(url.Values{}))
 	if appErr != nil {
 		return nil, false, appErr
 	}

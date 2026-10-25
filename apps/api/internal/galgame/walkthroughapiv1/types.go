@@ -19,6 +19,7 @@ type Walkthrough struct {
 	Object            string                 `json:"object" enum:"walkthrough" maxLength:"11" doc:"Type discriminant. Always walkthrough."`
 	ID                repr.DecimalID         `json:"id" doc:"Walkthrough id."`
 	WorkID            repr.DecimalID         `json:"work_id" doc:"The work this walkthrough plays through."`
+	IsNSFW            bool                   `json:"is_nsfw" doc:"Whether the work is shown as adult content, the same field as Work.is_nsfw. A client that hides adult content gates the walkthrough on it."`
 	SourceSite        string                 `json:"source_site" enum:"seiya,sagaoz_foolmaker" maxLength:"32" doc:"The walkthrough site the choice graph was derived from."`
 	SourcePageURL     string                 `json:"source_page_url" format:"uri" maxLength:"2048" doc:"The original walkthrough page. Only its choice graph is carried here; link to it for attribution."`
 	SourceAuthor      *string                `json:"source_author" maxLength:"256" doc:"Author the source page credits. null if none. Free text; never use it as a decision input."`

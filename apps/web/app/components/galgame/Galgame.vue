@@ -53,14 +53,13 @@ const { data: moyuPatches, status: moyuPatchStatus } = useApi<ListMoyuPatch>(
     }),
   { lazy: true, server: false }
 )
-const { allowsNsfw, stanceKey } = useContentStance()
 const { data: walkthroughs, status: walkthroughStatus } =
   useApi<ListWalkthrough>(
-    () => `galgame-walkthroughs:${props.galgame.id}:${stanceKey.value}`,
+    () => `galgame-walkthroughs:${props.galgame.id}`,
     (api, { signal }) =>
       api.GET('/walkthroughs', {
         params: {
-          query: { work_id: props.galgame.id, include_nsfw: allowsNsfw.value }
+          query: { work_id: props.galgame.id, include_nsfw: true }
         },
         signal
       }),

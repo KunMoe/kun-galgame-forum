@@ -23958,6 +23958,10 @@
             "pattern": "^[0-9]+$",
             "type": "string"
           },
+          "is_nsfw": {
+            "description": "Whether the work is shown as adult content, the same field as Work.is_nsfw. A client that hides adult content gates the walkthrough on it.",
+            "type": "boolean"
+          },
           "object": {
             "const": "walkthrough",
             "description": "Type discriminant. Always walkthrough.",
@@ -24031,6 +24035,7 @@
           "object",
           "id",
           "work_id",
+          "is_nsfw",
           "source_site",
           "source_page_url",
           "source_author",
@@ -68003,7 +68008,7 @@
     },
     "/walkthroughs": {
       "get": {
-        "description": "Walkthrough summaries without the chart, by ascending id. work_id narrows to one work, character_id to the walkthroughs whose chart routes to that character. Walkthroughs of adult works only with include_nsfw=true. A cursor collection.",
+        "description": "Walkthrough summaries without the chart, by ascending id. work_id narrows to one work, character_id to the walkthroughs whose chart routes to that character. Walkthroughs of works shown as adult content (is_nsfw) only with include_nsfw=true; an r18 game that is not shown as adult content is listed either way. A cursor collection.",
         "operationId": "listWalkthroughs",
         "parameters": [
           {
@@ -68057,13 +68062,13 @@
             }
           },
           {
-            "description": "When true, walkthroughs of adult works are included.",
+            "description": "When true, walkthroughs of works shown as adult content (is_nsfw) are included.",
             "explode": false,
             "in": "query",
             "name": "include_nsfw",
             "schema": {
               "default": false,
-              "description": "When true, walkthroughs of adult works are included.",
+              "description": "When true, walkthroughs of works shown as adult content (is_nsfw) are included.",
               "type": "boolean"
             }
           }
@@ -68118,7 +68123,7 @@
     },
     "/walkthroughs/{walkthrough_id}": {
       "get": {
-        "description": "A walkthrough's choice graph: entries, saves and endings as nodes, segments of choices as edges, and the characters each route and ending belongs to. Text is in the walkthrough's lang; zh-Hans machine translations sit in localized. A walkthrough of an adult work is NOT_FOUND unless include_nsfw=true.",
+        "description": "A walkthrough's choice graph: entries, saves and endings as nodes, segments of choices as edges, and the characters each route and ending belongs to. Text is in the walkthrough's lang; zh-Hans machine translations sit in localized. Served whatever the work's rating; is_nsfw tells a client that hides adult content to gate it.",
         "operationId": "getWalkthrough",
         "parameters": [
           {
@@ -68131,17 +68136,6 @@
               "maxLength": 19,
               "pattern": "^[1-9][0-9]{0,18}$",
               "type": "string"
-            }
-          },
-          {
-            "description": "When true, a walkthrough of an adult work is readable; otherwise it is NOT_FOUND.",
-            "explode": false,
-            "in": "query",
-            "name": "include_nsfw",
-            "schema": {
-              "default": false,
-              "description": "When true, a walkthrough of an adult work is readable; otherwise it is NOT_FOUND.",
-              "type": "boolean"
             }
           }
         ],

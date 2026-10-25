@@ -12,7 +12,7 @@ import (
 	"kun-galgame-api/pkg/problem"
 )
 
-const catalogDetail = `{"object":"walkthrough","id":"7","work_id":"53","source":"seiya","source_url":"https://seiya-saiga.com/game/x.html",
+const catalogDetail = `{"object":"walkthrough","id":"7","work_id":"53","work_content_limit":"sfw","source":"seiya","source_url":"https://seiya-saiga.com/game/x.html",
  "source_author":null,"source_updated_on":"2023-12-07","lang":"ja",
  "characters":[{"key":"c1","name":"寧々","character_id":"2813","display_name":"綾地寧々","localized":{"zh-Hans":{"value":"绫地宁宁","is_machine":false}}},
                {"key":"c2","name":"モブ","character_id":null,"display_name":null,"localized":{}}],
@@ -34,8 +34,8 @@ func decode(err error) *legacyErrors.AppError {
 
 type fakeCatalog struct {
 	lastQuery url.Values
-	lastNSFW  bool
 	found     bool
+	limit     string
 }
 
 func (f *fakeCatalog) CatalogWalkthroughs(_ context.Context, q url.Values) (*client.CatalogWalkthroughPage, *legacyErrors.AppError) {
@@ -44,25 +44,30 @@ func (f *fakeCatalog) CatalogWalkthroughs(_ context.Context, q url.Values) (*cli
 	return &page, decode(json.Unmarshal([]byte(`{"object":"list","items":[`+catalogDetail+`]}`), &page))
 }
 
-func (f *fakeCatalog) CatalogWalkthrough(_ context.Context, _ string, nsfw bool) (*client.CatalogWalkthrough, bool, *legacyErrors.AppError) {
-	f.lastNSFW = nsfw
+func (f *fakeCatalog) CatalogWalkthrough(_ context.Context, _ string) (*client.CatalogWalkthrough, bool, *legacyErrors.AppError) {
 	if !f.found {
 		return nil, false, nil
 	}
 	var w client.CatalogWalkthrough
-	return &w, true, decode(json.Unmarshal([]byte(catalogDetail), &w))
+	if err := json.Unmarshal([]byte(catalogDetail), &w); err != nil {
+		return nil, false, decode(err)
+	}
+	if f.limit != "" {
+		w.WorkContentLimit = f.limit
+	}
+	return &w, true, nil
 }
 
 func TestGetWalkthroughMapsCharactersAndChart(t *testing.T) {
 	cat := &fakeCatalog{found: true}
-	out, err := New(cat).getWalkthrough(context.Background(), &detailInput{WalkthroughID: "7", IncludeNSFW: true})
+	out, err := New(cat).getWalkthrough(context.Background(), &detailInput{WalkthroughID: "7"})
 	if err != nil {
 		t.Fatal(err)
 	}
-	if !cat.lastNSFW {
-		t.Error("include_nsfw=true must reach catalog as nsfw=true")
-	}
 	w := out.Body
+	if w.IsNSFW {
+		t.Error("work_content_limit=sfw is not is_nsfw")
+	}
 	if len(w.ChartCharacters) != 2 || w.ChartCharacters[0].CatalogCharacter == nil {
 		t.Fatalf("characters = %+v", w.ChartCharacters)
 	}
@@ -97,10 +102,32 @@ func TestListWalkthroughsDropsTheChartAndForwardsFilters(t *testing.T) {
 	if cat.lastQuery.Get("work_id") != "53" || cat.lastQuery.Get("character_id") != "2813" {
 		t.Errorf("query = %v", cat.lastQuery)
 	}
-	if cat.lastQuery.Has("nsfw") {
-		t.Error("nsfw is sent only for include_nsfw=true")
+	if cat.lastQuery.Get("nsfw") != "true" || cat.lastQuery.Get("content_limit") != "sfw" {
+		t.Errorf("an SFW list must open the age gate and filter on content_limit, query = %v", cat.lastQuery)
 	}
 	if len(out.Body.Items) != 1 || out.Body.Items[0].Chart != nil {
 		t.Errorf("items = %+v", out.Body.Items)
+	}
+}
+
+func TestListWalkthroughsWithNSFWAppliesNoDisplayGate(t *testing.T) {
+	cat := &fakeCatalog{}
+	if _, err := New(cat).listWalkthroughs(context.Background(), &listInput{Limit: 20, IncludeNSFW: true}); err != nil {
+		t.Fatal(err)
+	}
+	if cat.lastQuery.Get("nsfw") != "true" || cat.lastQuery.Has("content_limit") {
+		t.Errorf("query = %v", cat.lastQuery)
+	}
+}
+
+func TestGetWalkthroughIsNSFWFailsClosed(t *testing.T) {
+	for _, limit := range []string{"nsfw", "bogus"} {
+		out, err := New(&fakeCatalog{found: true, limit: limit}).getWalkthrough(context.Background(), &detailInput{WalkthroughID: "7"})
+		if err != nil {
+			t.Fatal(err)
+		}
+		if !out.Body.IsNSFW {
+			t.Errorf("work_content_limit=%q must be is_nsfw", limit)
+		}
 	}
 }

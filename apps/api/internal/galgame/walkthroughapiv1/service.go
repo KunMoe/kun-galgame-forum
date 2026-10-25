@@ -17,7 +17,7 @@ var errUnconfigured = errors.New("walkthrough faces are not configured")
 
 type Catalog interface {
 	CatalogWalkthroughs(ctx context.Context, q url.Values) (*client.CatalogWalkthroughPage, *legacyErrors.AppError)
-	CatalogWalkthrough(ctx context.Context, id string, nsfw bool) (*client.CatalogWalkthrough, bool, *legacyErrors.AppError)
+	CatalogWalkthrough(ctx context.Context, id string) (*client.CatalogWalkthrough, bool, *legacyErrors.AppError)
 }
 
 type Service struct {
@@ -33,7 +33,7 @@ type listInput struct {
 	CharacterID string `query:"character_id" pattern:"^[1-9][0-9]{0,18}$" maxLength:"19" doc:"Only walkthroughs whose chart routes to this character."`
 	Cursor      string `query:"cursor" pattern:"^cur_[A-Za-z0-9_-]+$" maxLength:"512" doc:"Opaque cursor from a previous page."`
 	Limit       int    `query:"limit" default:"20" minimum:"1" maximum:"100" doc:"Page size."`
-	IncludeNSFW bool   `query:"include_nsfw" default:"false" doc:"When true, walkthroughs of adult works are included."`
+	IncludeNSFW bool   `query:"include_nsfw" default:"false" doc:"When true, walkthroughs of works shown as adult content (is_nsfw) are included."`
 }
 
 type listOutput struct {
@@ -44,14 +44,17 @@ func (s *Service) listWalkthroughs(ctx context.Context, in *listInput) (*listOut
 	if s == nil || s.catalog == nil {
 		return nil, problem.Internal(errUnconfigured)
 	}
-	q := url.Values{"limit": {strconv.Itoa(in.Limit)}}
+	// nsfw= is catalog's age gate (content_rating), not kungal's SFW gate
+	// (content_limit). Leaving it off for SFW readers hid every r18 work's
+	// walkthroughs: 31 were left in the whole catalog (2026-10-25).
+	q := client.OpenPopulation(url.Values{"limit": {strconv.Itoa(in.Limit)}})
+	if !in.IncludeNSFW {
+		q.Set("content_limit", "sfw")
+	}
 	for k, v := range map[string]string{"work_id": in.WorkID, "character_id": in.CharacterID, "cursor": in.Cursor} {
 		if v != "" {
 			q.Set(k, v)
 		}
-	}
-	if in.IncludeNSFW {
-		q.Set("nsfw", "true")
 	}
 	page, appErr := s.catalog.CatalogWalkthroughs(ctx, q)
 	if appErr != nil {
@@ -67,7 +70,6 @@ func (s *Service) listWalkthroughs(ctx context.Context, in *listInput) (*listOut
 
 type detailInput struct {
 	WalkthroughID string `path:"walkthrough_id" pattern:"^[1-9][0-9]{0,18}$" maxLength:"19" doc:"Walkthrough id."`
-	IncludeNSFW   bool   `query:"include_nsfw" default:"false" doc:"When true, a walkthrough of an adult work is readable; otherwise it is NOT_FOUND."`
 }
 
 type detailOutput struct {
@@ -78,7 +80,7 @@ func (s *Service) getWalkthrough(ctx context.Context, in *detailInput) (*detailO
 	if s == nil || s.catalog == nil {
 		return nil, problem.Internal(errUnconfigured)
 	}
-	w, found, appErr := s.catalog.CatalogWalkthrough(ctx, in.WalkthroughID, in.IncludeNSFW)
+	w, found, appErr := s.catalog.CatalogWalkthrough(ctx, in.WalkthroughID)
 	if appErr != nil {
 		return nil, problem.Unavailable(appErr)
 	}
@@ -114,7 +116,7 @@ func keyPtr(k *string) *ChartKey {
 
 func walkthroughFrom(w client.CatalogWalkthrough) Walkthrough {
 	out := Walkthrough{
-		Object: "walkthrough", ID: repr.DecimalID(w.ID), WorkID: repr.DecimalID(w.WorkID),
+		Object: "walkthrough", ID: repr.DecimalID(w.ID), WorkID: repr.DecimalID(w.WorkID), IsNSFW: w.WorkContentLimit != "sfw",
 		SourceSite: w.Source, SourcePageURL: w.SourceURL, SourceAuthor: w.SourceAuthor,
 		TextLang: w.Lang, EndingCount: w.EndingCount, SaveCount: w.SaveCount, SegmentCount: w.SegmentCount,
 		ChartCharacters: make([]WalkthroughCharacter, 0, len(w.Characters)),
