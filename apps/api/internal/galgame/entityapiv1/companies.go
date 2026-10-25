@@ -31,6 +31,22 @@ var companyRelations = map[string]bool{
 	"succeeded_by": true, "formerly": true, "spawned": true, "origin": true,
 }
 
+func CompanySummaryFromTaxonomy(cdn string, o *client.CatalogTaxonomyItem) (CompanySummary, bool) {
+	if o == nil || !companyKinds[o.Kind] {
+		return CompanySummary{}, false
+	}
+	name := workrepr.Name(o.DisplayName, o.Latin, client.LocalizedValues(o.Localized))
+	return CompanySummary{
+		Object:           "company",
+		ID:               repr.ID(int(o.ID)),
+		CatalogName:      name,
+		CompanyKind:      o.Kind,
+		Logo:             workrepr.ImageFromHash(cdn, o.LogoHash),
+		Aliases:          aliases(o.Aliases.Values(name.DisplayName)),
+		CatalogWorkCount: max(o.WorkCount, 0),
+	}, true
+}
+
 func (s *Service) companyIndex(ctx context.Context) ([]CompanySummary, error) {
 	return s.companies.get(ctx, companyIndexTTL, s.buildCompanyIndex)
 }
@@ -49,20 +65,12 @@ func (s *Service) buildCompanyIndex(ctx context.Context) ([]CompanySummary, erro
 		}
 		for i := range res.Items {
 			o := &res.Items[i]
-			if !companyKinds[o.Kind] {
+			sum, ok := CompanySummaryFromTaxonomy(s.cdn, o)
+			if !ok {
 				slog.Warn("company index: unknown company_kind, row dropped", "company_id", o.ID, "company_kind", o.Kind)
 				continue
 			}
-			name := workrepr.Name(o.DisplayName, o.Latin, client.LocalizedValues(o.Localized))
-			rows = append(rows, CompanySummary{
-				Object:           "company",
-				ID:               repr.ID(int(o.ID)),
-				CatalogName:      name,
-				CompanyKind:      o.Kind,
-				Logo:             workrepr.ImageFromHash(s.cdn, o.LogoHash),
-				Aliases:          aliases(o.Aliases.Values(name.DisplayName)),
-				CatalogWorkCount: max(o.WorkCount, 0),
-			})
+			rows = append(rows, sum)
 		}
 		if res.NextCursor == nil || *res.NextCursor == "" {
 			break
@@ -241,6 +249,11 @@ func (s *Service) getCompany(ctx context.Context, in *companyPathInput) (*getCom
 	if o.Lang != "" {
 		lang = &o.Lang
 	}
+	var followers *int
+	if o.FollowerCount != nil {
+		n := *o.FollowerCount
+		followers = &n
+	}
 	return &getCompanyOutput{Body: Company{
 		Object:           "company",
 		ID:               repr.ID(int(o.ID)),
@@ -252,6 +265,7 @@ func (s *Service) getCompany(ctx context.Context, in *companyPathInput) (*getCom
 		Lang:             lang,
 		Links:            links,
 		Intros:           workrepr.Intros(o.Intros),
+		FollowerCount:    followers,
 	}}, nil
 }
 

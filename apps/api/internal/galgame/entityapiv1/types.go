@@ -80,6 +80,7 @@ type Company struct {
 	Lang             *string                 `json:"lang" maxLength:"35" pattern:"^[A-Za-z]{1,8}(-[A-Za-z0-9]{1,8})*$" doc:"The company's own language as a BCP-47 tag. null when unrecorded."`
 	Links            []workrepr.CatalogLink  `json:"links" doc:"Official site, social accounts and database pages, in catalog's order. Empty array, never null."`
 	Intros           []workrepr.CatalogIntro `json:"intros" doc:"Descriptions in every language catalog has, unordered. Empty array, never null."`
+	FollowerCount    *int                    `json:"follower_count" minimum:"0" doc:"Accounts following this company, as catalog reports on the company detail. null when catalog did not send a count."`
 }
 
 type CompanyWork struct {

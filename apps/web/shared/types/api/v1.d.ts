@@ -1924,6 +1924,54 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/me/followed-companies": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * List the caller's followed companies
+         * @description A page-number collection of the companies the caller follows, newest follow first. A company catalog no longer renders is dropped from this page's items and from total.
+         */
+        get: operations["listMyFollowedCompanies"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/me/followed-companies/{company_id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Whether the caller follows a company
+         * @description Reads the caller's follow of this company. A company the caller does not follow is 200 with is_following false, not 404.
+         */
+        get: operations["getMyCompanyFollow"];
+        /**
+         * Follow a company
+         * @description Follows the company. Repeating the follow changes nothing. The response is is_following true.
+         */
+        put: operations["putMyCompanyFollow"];
+        post?: never;
+        /**
+         * Unfollow a company
+         * @description Withdraws the caller's follow of this company. Repeating the unfollow is 200 with is_following false.
+         */
+        delete: operations["deleteMyCompanyFollow"];
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/me/following-activities": {
         parameters: {
             query?: never;
@@ -2400,6 +2448,86 @@ export interface paths {
          * @description Answers, for each quiz id named in quiz_ids, whether the caller favorited it. It is a batch read and is not paginated: quiz_ids is required, holds 1 to 100 ids. An id that does not exist, is deleted, whose author is not renderable, or that links a work catalog does not render is missing.
          */
         get: operations["listMyQuizStates"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/me/release-calendar": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * List the caller's releases in a month
+         * @description Releases in a month from companies the caller follows. The walk follows catalog's cursor, at most 2,000 works. is_truncated is true when the cap is hit. An id catalog does not render is dropped with a warning. Every original language is included, and works credited only to doujin circles are included.
+         */
+        get: operations["listMyReleaseCalendarMonth"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/me/release-calendar/pending": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * List the caller's pending releases in a year
+         * @description Works of companies the caller follows whose release date is known only to year precision. The walk follows catalog's cursor, at most 2,000 works. Every original language is included, and works credited only to doujin circles are included.
+         */
+        get: operations["listMyReleaseCalendarPending"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/me/release-calendar/tba": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * List the caller's works with an unknown release date
+         * @description Works of companies the caller follows that catalog files as status unknown. The walk follows catalog's cursor, at most 2,000 works. Every original language is included, and works credited only to doujin circles are included.
+         */
+        get: operations["listMyReleaseCalendarTBA"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/me/release-calendar/upcoming": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * List the caller's upcoming releases by month
+         * @description Walks from the current Asia/Tokyo month to catalog's max_month, at most 24 months, limited to works of companies the caller follows. A failed month is SERVICE_UNAVAILABLE for the whole response. Empty months are omitted. Every original language is included, and works credited only to doujin circles are included.
+         */
+        get: operations["listMyReleaseCalendarUpcoming"];
         put?: never;
         post?: never;
         delete?: never;
@@ -6824,6 +6952,11 @@ export interface components {
             company_kind: components["schemas"]["CompanyKind"];
             /** @description The entity's own name. Never empty. Free text; never use it as a decision input. */
             display_name: string;
+            /**
+             * Format: int64
+             * @description Accounts following this company, as catalog reports on the company detail. null when catalog did not send a count.
+             */
+            follower_count: number | null;
             /** @description Company id: the catalog company id, which is also the id in the web's /galgame/official/{id}. */
             id: string;
             /** @description Descriptions in every language catalog has, unordered. Empty array, never null. */
@@ -6845,6 +6978,19 @@ export interface components {
              * @constant
              */
             object: "company";
+        };
+        CompanyFollowState: {
+            /** @description Company id: the catalog company id, which is also the id in the web's /galgame/official/{id}. */
+            company_id: string;
+            /** @description Company id, the same value as company_id. */
+            id: string;
+            /** @description Whether the caller follows this company. */
+            is_following: boolean;
+            /**
+             * @description Type discriminant. Always company_follow_state.
+             * @constant
+             */
+            object: "company_follow_state";
         };
         CompanyGraph: {
             /** @description The company the graph was drawn around. */
@@ -7567,6 +7713,38 @@ export interface components {
         FlagReason: "spam" | "abuse" | "off_topic" | "other" | "nsfw_mislabel";
         /** @enum {string} */
         FollowNotifyLevel: "all" | "feed";
+        FollowedCompany: {
+            /** @description The followed company. */
+            company: components["schemas"]["CompanySummary"];
+            /**
+             * Format: date-time
+             * @description When the caller followed this company. null when catalog did not send a time.
+             */
+            followed_at: string | null;
+            /**
+             * @description Type discriminant. Always followed_company.
+             * @constant
+             */
+            object: "followed_company";
+        };
+        FollowedCompanyList: {
+            /** @description Whether the upstream sweep stopped at the 10×100 cap. */
+            is_truncated: boolean;
+            /** @description Members of this page, newest follow first. Empty array, never null. */
+            items: components["schemas"]["FollowedCompany"][];
+            /**
+             * @description Type discriminant. Always list.
+             * @constant
+             */
+            object: "list";
+            /**
+             * Format: int64
+             * @description Follows in the swept list, minus companies on this page that catalog no longer renders.
+             */
+            total: number;
+            /** @description eq when total is exact, gte when it stopped at the depth limit and there are at least that many. */
+            total_relation: components["schemas"]["TotalRelation"];
+        };
         FollowedWall: {
             /**
              * @description Type discriminant. Always followed_wall.
@@ -26485,6 +26663,316 @@ export interface operations {
             };
         };
     };
+    listMyFollowedCompanies: {
+        parameters: {
+            query?: {
+                /** @description 1-based page number. page × limit may not exceed 10000. */
+                page?: number;
+                /** @description Page size. 1–100, default 24. Values above 100 are rejected, not clamped. */
+                limit?: number;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["FollowedCompanyList"];
+                };
+            };
+            /** @description LIMIT_TOO_LARGE or INVALID_PARAMETER when page × limit is too deep. */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description MISSING_CREDENTIAL when the request has no credentials; INVALID_CREDENTIAL when the session has no OAuth access token or catalog rejects it. */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description SCOPE_REQUIRED; ACCOUNT_BANNED. */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Internal Server Error */
+            500: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description SERVICE_UNAVAILABLE when the catalog cannot be reached. */
+            503: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+        };
+    };
+    getMyCompanyFollow: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description Company id. */
+                company_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["CompanyFollowState"];
+                };
+            };
+            /** @description Bad Request */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description MISSING_CREDENTIAL when the request has no credentials; INVALID_CREDENTIAL when the session has no OAuth access token or catalog rejects it. */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description SCOPE_REQUIRED; ACCOUNT_BANNED. */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Not Found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Internal Server Error */
+            500: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description SERVICE_UNAVAILABLE when the catalog cannot be reached. */
+            503: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+        };
+    };
+    putMyCompanyFollow: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description Company id. */
+                company_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["CompanyFollowState"];
+                };
+            };
+            /** @description Bad Request */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description MISSING_CREDENTIAL when the request has no credentials; INVALID_CREDENTIAL when the session has no OAuth access token or catalog rejects it. */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description SCOPE_REQUIRED; ACCOUNT_BANNED. */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description NOT_FOUND when catalog does not know the company, including an id that was merged away. */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description VALIDATION_FAILED when the account already follows as many companies as catalog allows. */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Internal Server Error */
+            500: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description SERVICE_UNAVAILABLE when the catalog cannot be reached. */
+            503: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+        };
+    };
+    deleteMyCompanyFollow: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description Company id. */
+                company_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["CompanyFollowState"];
+                };
+            };
+            /** @description Bad Request */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description MISSING_CREDENTIAL when the request has no credentials; INVALID_CREDENTIAL when the session has no OAuth access token or catalog rejects it. */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description SCOPE_REQUIRED; ACCOUNT_BANNED. */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Not Found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Internal Server Error */
+            500: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description SERVICE_UNAVAILABLE when the catalog cannot be reached. */
+            503: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+        };
+    };
     listFollowingActivities: {
         parameters: {
             query?: {
@@ -29232,6 +29720,298 @@ export interface operations {
                 };
             };
             /** @description Service Unavailable */
+            503: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+        };
+    };
+    listMyReleaseCalendarMonth: {
+        parameters: {
+            query?: {
+                /** @description Calendar month as YYYY-MM. Omitted means the current month in Asia/Tokyo. */
+                month?: string;
+                /** @description When true, adult works are included. Default false. */
+                include_nsfw?: boolean;
+                /** @description Catalog tag ids. Drops every work carrying any of them, from any source and at any spoiler level. Comma-separated. Omitted means no exclusion. */
+                exclude_tag_ids?: string[];
+                /** @description Catalog tag ids. Like exclude_tag_ids, and each also drops the works carrying any tag below it in the tag hierarchy. Comma-separated. Omitted means no exclusion. */
+                exclude_tag_trees?: string[];
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ReleaseCalendarMonth"];
+                };
+            };
+            /** @description INVALID_PARAMETER when month is malformed. */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description MISSING_CREDENTIAL when the request has no credentials; INVALID_CREDENTIAL when the session has no OAuth access token or catalog rejects it. */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description SCOPE_REQUIRED when the token lacks a scope catalog demands; ACCOUNT_BANNED. */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Internal Server Error */
+            500: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description SERVICE_UNAVAILABLE when the catalog cannot be reached, including a failure mid-walk. */
+            503: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+        };
+    };
+    listMyReleaseCalendarPending: {
+        parameters: {
+            query?: {
+                /** @description Calendar year. 0 or omitted means the current year in Asia/Tokyo. */
+                year?: number;
+                /** @description When true, adult works are included. Default false. */
+                include_nsfw?: boolean;
+                /** @description Catalog tag ids. Drops every work carrying any of them, from any source and at any spoiler level. Comma-separated. Omitted means no exclusion. */
+                exclude_tag_ids?: string[];
+                /** @description Catalog tag ids. Like exclude_tag_ids, and each also drops the works carrying any tag below it in the tag hierarchy. Comma-separated. Omitted means no exclusion. */
+                exclude_tag_trees?: string[];
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ReleaseCalendarPending"];
+                };
+            };
+            /** @description INVALID_PARAMETER when year is malformed. */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description MISSING_CREDENTIAL when the request has no credentials; INVALID_CREDENTIAL when the session has no OAuth access token or catalog rejects it. */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description SCOPE_REQUIRED when the token lacks a scope catalog demands; ACCOUNT_BANNED. */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Internal Server Error */
+            500: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description SERVICE_UNAVAILABLE when the catalog cannot be reached, including a failure mid-walk. */
+            503: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+        };
+    };
+    listMyReleaseCalendarTBA: {
+        parameters: {
+            query?: {
+                /** @description When true, adult works are included. Default false. */
+                include_nsfw?: boolean;
+                /** @description Catalog tag ids. Drops every work carrying any of them, from any source and at any spoiler level. Comma-separated. Omitted means no exclusion. */
+                exclude_tag_ids?: string[];
+                /** @description Catalog tag ids. Like exclude_tag_ids, and each also drops the works carrying any tag below it in the tag hierarchy. Comma-separated. Omitted means no exclusion. */
+                exclude_tag_trees?: string[];
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ReleaseCalendarTBA"];
+                };
+            };
+            /** @description INVALID_PARAMETER when include_nsfw is not a boolean. */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description MISSING_CREDENTIAL when the request has no credentials; INVALID_CREDENTIAL when the session has no OAuth access token or catalog rejects it. */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description SCOPE_REQUIRED when the token lacks a scope catalog demands; ACCOUNT_BANNED. */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Internal Server Error */
+            500: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description SERVICE_UNAVAILABLE when the catalog cannot be reached, including a failure mid-walk. */
+            503: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+        };
+    };
+    listMyReleaseCalendarUpcoming: {
+        parameters: {
+            query?: {
+                /** @description When true, adult works are included. Default false. */
+                include_nsfw?: boolean;
+                /** @description Catalog tag ids. Drops every work carrying any of them, from any source and at any spoiler level. Comma-separated. Omitted means no exclusion. */
+                exclude_tag_ids?: string[];
+                /** @description Catalog tag ids. Like exclude_tag_ids, and each also drops the works carrying any tag below it in the tag hierarchy. Comma-separated. Omitted means no exclusion. */
+                exclude_tag_trees?: string[];
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ReleaseCalendarUpcoming"];
+                };
+            };
+            /** @description INVALID_PARAMETER when include_nsfw is not a boolean. */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description MISSING_CREDENTIAL when the request has no credentials; INVALID_CREDENTIAL when the session has no OAuth access token or catalog rejects it. */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description SCOPE_REQUIRED when the token lacks a scope catalog demands; ACCOUNT_BANNED. */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Internal Server Error */
+            500: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description SERVICE_UNAVAILABLE when any month's catalog walk fails. */
             503: {
                 headers: {
                     [name: string]: unknown;

@@ -177,6 +177,7 @@ type fakeCatalog struct {
 	calBucket    []string
 	excluded     []int
 	exclusions   []client.TagExclusion
+	taxonomyQ    []url.Values
 }
 
 func (f *fakeCatalog) ExcludedWorkIDs(_ context.Context, e client.TagExclusion) ([]int, *legacyErrors.AppError) {
@@ -277,9 +278,30 @@ func (f *fakeCatalog) CatalogTaxonomyList(_ context.Context, entity string, q ur
 	if e := f.err(); e != nil {
 		return nil, e
 	}
+	f.mu.Lock()
+	copied := url.Values{}
+	for k, vs := range q {
+		copied[k] = append([]string(nil), vs...)
+	}
+	f.taxonomyQ = append(f.taxonomyQ, copied)
+	src := append([]client.CatalogTaxonomyItem(nil), f.taxonomy[entity]...)
+	f.mu.Unlock()
+	want := map[int64]bool{}
+	if raw := q.Get("ids"); raw != "" {
+		for _, part := range strings.Split(raw, ",") {
+			id, err := strconv.ParseInt(strings.TrimSpace(part), 10, 64)
+			if err != nil {
+				continue
+			}
+			want[id] = true
+		}
+	}
 	items := []client.CatalogTaxonomyItem{}
-	for _, it := range f.taxonomy[entity] {
+	for _, it := range src {
 		if q.Get("has_works") == "1" && it.WorkCount == 0 {
+			continue
+		}
+		if len(want) > 0 && !want[it.ID] {
 			continue
 		}
 		items = append(items, it)

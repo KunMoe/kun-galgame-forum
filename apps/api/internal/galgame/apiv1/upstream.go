@@ -17,6 +17,10 @@ func mapUserPlane(err error, own bool) error {
 	return mapUserPlaneAt(err, own, nil)
 }
 
+func MapUserPlane(err error) error {
+	return mapUserPlane(err, false)
+}
+
 type pointerOf func(upstream string) (v1 string, ok bool)
 
 func mapUserPlaneAt(err error, own bool, pointer pointerOf) error {

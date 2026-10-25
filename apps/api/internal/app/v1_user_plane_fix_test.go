@@ -91,6 +91,10 @@ type g6User struct {
 	private        map[int64]bool
 	privacyAt      *time.Time
 	recordCalls    []g6RecordCall
+	companyFollows []catalogclient.CompanyFollowRecord
+	followState    map[string]map[int64]string
+	followNotFound int64
+	followCapped   int64
 }
 
 func newG6Fix(t *testing.T) *g6Fix {
@@ -839,6 +843,62 @@ func (u *g6User) ModerateDeleteFolder(_ context.Context, token string, folderID 
 	delete(u.folders, folderID)
 	delete(u.items, folderID)
 	return nil
+}
+
+func (u *g6User) MyCompanyFollow(_ context.Context, token string, companyID int64) (bool, error) {
+	if err := u.gate(token); err != nil {
+		return false, err
+	}
+	u.mu.Lock()
+	defer u.mu.Unlock()
+	_, ok := u.followState[token][companyID]
+	return ok, nil
+}
+
+func (u *g6User) FollowCompany(_ context.Context, token string, companyID int64) error {
+	if err := u.gate(token); err != nil {
+		return err
+	}
+	u.mu.Lock()
+	defer u.mu.Unlock()
+	if companyID == u.followNotFound {
+		return catalogclient.ErrNotFound
+	}
+	if companyID == u.followCapped {
+		return &catalogclient.UserAPIError{
+			Status: http.StatusUnprocessableEntity, ProblemCode: "VALIDATION_FAILED",
+			Message: "at most 1000 follows",
+		}
+	}
+	if u.followState == nil {
+		u.followState = map[string]map[int64]string{}
+	}
+	if u.followState[token] == nil {
+		u.followState[token] = map[int64]string{}
+	}
+	if _, ok := u.followState[token][companyID]; !ok {
+		u.followState[token][companyID] = "2026-09-01T00:00:00Z"
+	}
+	return nil
+}
+
+func (u *g6User) UnfollowCompany(_ context.Context, token string, companyID int64) error {
+	if err := u.gate(token); err != nil {
+		return err
+	}
+	u.mu.Lock()
+	defer u.mu.Unlock()
+	delete(u.followState[token], companyID)
+	return nil
+}
+
+func (u *g6User) ListMyCompanyFollows(_ context.Context, token, _ string, _ int) ([]catalogclient.CompanyFollowRecord, string, error) {
+	if err := u.gate(token); err != nil {
+		return nil, "", err
+	}
+	u.mu.Lock()
+	defer u.mu.Unlock()
+	return append([]catalogclient.CompanyFollowRecord(nil), u.companyFollows...), "", nil
 }
 
 func (u *g6User) folderCount() int {

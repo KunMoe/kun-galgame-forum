@@ -16,6 +16,7 @@ DELETE /api/v1/galgame-resources/:resource_id/like    cors.New → v1Headers →
 DELETE /api/v1/lotteries/:lottery_id                  cors.New → v1Headers → fiberAdapter.Handle
 DELETE /api/v1/lotteries/:lottery_id/entries/me       cors.New → v1Headers → fiberAdapter.Handle
 DELETE /api/v1/me/blocked-tags/:tag_id                cors.New → v1Headers → fiberAdapter.Handle
+DELETE /api/v1/me/followed-companies/:company_id      cors.New → v1Headers → fiberAdapter.Handle
 DELETE /api/v1/me/following/:user_id                  cors.New → v1Headers → fiberAdapter.Handle
 DELETE /api/v1/me/notification-preferences/muted-types/:muted_type cors.New → v1Headers → fiberAdapter.Handle
 DELETE /api/v1/me/notifications/:notification_id      cors.New → v1Headers → fiberAdapter.Handle
@@ -118,6 +119,8 @@ GET    /api/v1/me/conversations/:user_id/messages     cors.New → v1Headers →
 GET    /api/v1/me/conversations/:user_id/messages/:message_id cors.New → v1Headers → fiberAdapter.Handle
 GET    /api/v1/me/cover-votes                         cors.New → v1Headers → fiberAdapter.Handle
 GET    /api/v1/me/creator-status                      cors.New → v1Headers → fiberAdapter.Handle
+GET    /api/v1/me/followed-companies                  cors.New → v1Headers → fiberAdapter.Handle
+GET    /api/v1/me/followed-companies/:company_id      cors.New → v1Headers → fiberAdapter.Handle
 GET    /api/v1/me/following-activities                cors.New → v1Headers → fiberAdapter.Handle
 GET    /api/v1/me/following-activities/summary        cors.New → v1Headers → fiberAdapter.Handle
 GET    /api/v1/me/following/:user_id                  cors.New → v1Headers → fiberAdapter.Handle
@@ -134,6 +137,10 @@ GET    /api/v1/me/preferences                         cors.New → v1Headers →
 GET    /api/v1/me/privacy-settings                    cors.New → v1Headers → fiberAdapter.Handle
 GET    /api/v1/me/profile-settings                    cors.New → v1Headers → fiberAdapter.Handle
 GET    /api/v1/me/quiz-states                         cors.New → v1Headers → fiberAdapter.Handle
+GET    /api/v1/me/release-calendar                    cors.New → v1Headers → fiberAdapter.Handle
+GET    /api/v1/me/release-calendar/pending            cors.New → v1Headers → fiberAdapter.Handle
+GET    /api/v1/me/release-calendar/tba                cors.New → v1Headers → fiberAdapter.Handle
+GET    /api/v1/me/release-calendar/upcoming           cors.New → v1Headers → fiberAdapter.Handle
 GET    /api/v1/me/shop                                cors.New → v1Headers → fiberAdapter.Handle
 GET    /api/v1/me/topic-drafts                        cors.New → v1Headers → fiberAdapter.Handle
 GET    /api/v1/me/topic-drafts/:draft_id              cors.New → v1Headers → fiberAdapter.Handle
@@ -344,6 +351,7 @@ PUT    /api/v1/me/activity-settings                   cors.New → v1Headers →
 PUT    /api/v1/me/avatar                              cors.New → v1Headers → fiberAdapter.Handle
 PUT    /api/v1/me/blocked-tags/:tag_id                cors.New → v1Headers → fiberAdapter.Handle
 PUT    /api/v1/me/conversations/:user_id/read-marker  cors.New → v1Headers → fiberAdapter.Handle
+PUT    /api/v1/me/followed-companies/:company_id      cors.New → v1Headers → fiberAdapter.Handle
 PUT    /api/v1/me/following-activities/read-marker    cors.New → v1Headers → fiberAdapter.Handle
 PUT    /api/v1/me/following/:user_id                  cors.New → v1Headers → fiberAdapter.Handle
 PUT    /api/v1/me/notification-preferences            cors.New → v1Headers → fiberAdapter.Handle
