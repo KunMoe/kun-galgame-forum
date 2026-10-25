@@ -4909,6 +4909,46 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/walkthroughs": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * List walkthroughs
+         * @description Walkthrough summaries without the chart, by ascending id. work_id narrows to one work, character_id to the walkthroughs whose chart routes to that character. Walkthroughs of adult works only with include_nsfw=true. A cursor collection.
+         */
+        get: operations["listWalkthroughs"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/walkthroughs/{walkthrough_id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Get a walkthrough
+         * @description A walkthrough's choice graph: entries, saves and endings as nodes, segments of choices as edges, and the characters each route and ending belongs to. Text is in the walkthrough's lang; zh-Hans machine translations sit in localized. A walkthrough of an adult work is NOT_FOUND unless include_nsfw=true.
+         */
+        get: operations["getWalkthrough"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/wall-comments": {
         parameters: {
             query?: never;
@@ -8569,6 +8609,17 @@ export interface components {
         ListUserRankingEntry: {
             /** @description Members of this page. Empty array, never null. */
             items: components["schemas"]["UserRankingEntry"][];
+            /** @description Opaque keyset cursor. Omitted on the last page. */
+            next_cursor?: string;
+            /**
+             * @description Type discriminant. Always list.
+             * @constant
+             */
+            object: "list";
+        };
+        ListWalkthrough: {
+            /** @description Members of this page. Empty array, never null. */
+            items: components["schemas"]["Walkthrough"][];
             /** @description Opaque keyset cursor. Omitted on the last page. */
             next_cursor?: string;
             /**
@@ -14457,6 +14508,184 @@ export interface components {
              */
             url: string;
         };
+        Walkthrough: {
+            /** @description The choice graph. Present on GET /walkthroughs/{walkthrough_id} only. */
+            chart?: components["schemas"]["WalkthroughChart"];
+            /** @description Characters the chart routes to, in chart order. Empty array, never null. */
+            chart_characters: components["schemas"]["WalkthroughCharacter"][];
+            /**
+             * Format: int64
+             * @description Endings in the chart.
+             */
+            ending_count: number;
+            /** @description Walkthrough id. */
+            id: string;
+            /**
+             * @description Type discriminant. Always walkthrough.
+             * @constant
+             */
+            object: "walkthrough";
+            /**
+             * Format: int64
+             * @description Save points in the chart.
+             */
+            save_count: number;
+            /**
+             * Format: int64
+             * @description Segments in the chart.
+             */
+            segment_count: number;
+            /** @description Author the source page credits. null if none. Free text; never use it as a decision input. */
+            source_author: string | null;
+            /**
+             * Format: uri
+             * @description The original walkthrough page. Only its choice graph is carried here; link to it for attribution.
+             */
+            source_page_url: string;
+            /** @description The walkthrough site the choice graph was derived from. */
+            source_site: components["schemas"]["WalkthroughSource"];
+            /**
+             * Format: date
+             * @description Date the source page says it was last updated. null if unstated.
+             */
+            source_updated_date: string | null;
+            /** @description BCP-47 language of the chart's text fields. Translations sit in localized maps beside them. */
+            text_lang: string;
+            /**
+             * Format: date-time
+             * @description Last time this walkthrough changed.
+             */
+            updated_at: string;
+            /** @description The work this walkthrough plays through. */
+            work_id: string;
+        };
+        WalkthroughAlternative: {
+            /** @description Machine translations of text by BCP-47 tag. Empty object when none. */
+            localized: {
+                [key: string]: components["schemas"]["LocalizedName"];
+            };
+            /** @description The alternative choice as the source writes it. Free text; never use it as a decision input. */
+            text: string;
+        };
+        WalkthroughCharacter: {
+            /** @description The catalog character this name is pinned to. null if the pin is gone. */
+            catalog_character: components["schemas"]["WalkthroughCharacterRef"] | null;
+            /** @description Chart-local key that sections and endings refer to. */
+            key: string;
+            /** @description The name as the source page writes it. Free text; never use it as a decision input. */
+            source_name: string;
+        };
+        WalkthroughCharacterRef: {
+            /** @description The character's catalog name. */
+            catalog_name: components["schemas"]["CatalogName"];
+            /** @description Character id. */
+            id: string;
+            /**
+             * @description Type discriminant. Always character.
+             * @constant
+             */
+            object: "character";
+        };
+        WalkthroughChart: {
+            /** @description Endings, one per occurrence in the source. Empty array, never null. */
+            chart_endings: components["schemas"]["WalkthroughEnding"][];
+            /** @description Runs of steps from one node to the next, in source order. Empty array, never null. */
+            chart_segments: components["schemas"]["WalkthroughSegment"][];
+            /** @description Places a playthrough starts from. Empty array, never null. */
+            entry_points: components["schemas"]["WalkthroughEntry"][];
+            /** @description Headings of the source page that group segments, usually one per route. Empty array, never null. */
+            route_sections: components["schemas"]["WalkthroughSection"][];
+            /** @description Save points the chart creates and resumes from. Empty array, never null. */
+            save_points: components["schemas"]["WalkthroughSave"][];
+        };
+        WalkthroughEnding: {
+            /** @description chart_characters[].key whose route this ending concludes. Empty array, never null. */
+            character_keys: string[];
+            /** @description The ending's name as the source writes it. Free text; never use it as a decision input. */
+            ending_name: string;
+            /** @description heroine concludes one character's route, harem several; after is an after-story. */
+            ending_type: components["schemas"]["WalkthroughEndingType"];
+            /** @description Chart-local key ending nodes refer to. */
+            key: string;
+            /** @description Machine translations of ending_name by BCP-47 tag. Empty object when none. */
+            localized: {
+                [key: string]: components["schemas"]["LocalizedName"];
+            };
+        };
+        /** @enum {string} */
+        WalkthroughEndingType: "heroine" | "harem" | "true" | "normal" | "bad" | "after" | "other";
+        WalkthroughEntry: {
+            /** @description Chart-local key nodes refer to. */
+            key: string;
+            /** @description The entry as the source names it, such as START or RESTART. Free text; never use it as a decision input. */
+            label: string;
+            /** @description chart_endings[].key whose completion unlocks this entry. null if open from the start. */
+            unlocked_by_ending_key: string | null;
+        };
+        WalkthroughNode: {
+            /** @description entry_points, save_points or chart_endings key for those node types. null for collect and open. */
+            node_key: string | null;
+            /** @description collect is a stop after collecting CG or scenes; open is a segment that simply stops. */
+            node_type: components["schemas"]["WalkthroughNodeType"];
+        };
+        /** @enum {string} */
+        WalkthroughNodeType: "entry" | "save" | "ending" | "collect" | "open";
+        WalkthroughSave: {
+            /** @description Chart-local key save steps and nodes refer to. */
+            key: string;
+            /** @description The save point as the source labels it. Free text; never use it as a decision input. */
+            label: string;
+        };
+        WalkthroughSection: {
+            /** @description chart_characters[].key this heading is about. Empty array, never null. */
+            character_keys: string[];
+            /** @description Chart-local key segments refer to. */
+            key: string;
+            /** @description Machine translations of title by BCP-47 tag. Empty object when none. */
+            localized: {
+                [key: string]: components["schemas"]["LocalizedName"];
+            };
+            /** @description The heading as the source writes it. Free text; never use it as a decision input. */
+            title: string;
+        };
+        WalkthroughSegment: {
+            /** @description Precondition the source states. null if none. Free text; never use it as a decision input. */
+            condition: string | null;
+            /** @description Machine translations of condition by BCP-47 tag. Empty object when none. */
+            condition_localized: {
+                [key: string]: components["schemas"]["LocalizedName"];
+            };
+            /** @description Where the segment starts. */
+            from_node: components["schemas"]["WalkthroughNode"];
+            /** @description Chart-local segment key. */
+            key: string;
+            /** @description route_sections[].key this segment is listed under. null if none. */
+            section_key: string | null;
+            /** @description Steps in play order. Empty array, never null. */
+            steps: components["schemas"]["WalkthroughStep"][];
+            /** @description Where the segment ends. */
+            to_node: components["schemas"]["WalkthroughNode"];
+        };
+        /** @enum {string} */
+        WalkthroughSource: "seiya" | "sagaoz_foolmaker";
+        WalkthroughStep: {
+            /** @description Other choices kept for collecting CG differences. Empty array, never null. */
+            alternatives: components["schemas"]["WalkthroughAlternative"][];
+            /** @description The source marks this step as needed for an achievement only. */
+            is_achievement_only: boolean;
+            /** @description Machine translations of step_text by BCP-47 tag. Empty object when none. */
+            localized: {
+                [key: string]: components["schemas"]["LocalizedName"];
+            };
+            /** @description save_points[].key this save step creates. null for other steps. */
+            save_key: string | null;
+            /** @description The choice or action as the source writes it. null for a save step. Free text; never use it as a decision input. */
+            step_text: string | null;
+            /** @description choice picks step_text; action is a non-choice step; save creates save_key here. */
+            step_type: components["schemas"]["WalkthroughStepType"];
+        };
+        /** @enum {string} */
+        WalkthroughStepType: "choice" | "action" | "save";
         WallComment: {
             /** @description The user the comment is addressed to: the parent comment's author for a reply, the rating's author for a top-level comment on a rating wall, null otherwise. */
             addressee: components["schemas"]["UserRef"] | null;
@@ -42273,6 +42502,126 @@ export interface operations {
                 };
             };
             /** @description SERVICE_UNAVAILABLE when the account service or catalog cannot be reached. */
+            503: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+        };
+    };
+    listWalkthroughs: {
+        parameters: {
+            query?: {
+                /** @description Only walkthroughs of this work. */
+                work_id?: string;
+                /** @description Only walkthroughs whose chart routes to this character. */
+                character_id?: string;
+                /** @description Opaque cursor from a previous page. */
+                cursor?: string;
+                /** @description Page size. */
+                limit?: number;
+                /** @description When true, walkthroughs of adult works are included. */
+                include_nsfw?: boolean;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ListWalkthrough"];
+                };
+            };
+            /** @description INVALID_PARAMETER when an id or the cursor is malformed. */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Internal Server Error */
+            500: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description SERVICE_UNAVAILABLE when catalog cannot be reached. */
+            503: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+        };
+    };
+    getWalkthrough: {
+        parameters: {
+            query?: {
+                /** @description When true, a walkthrough of an adult work is readable; otherwise it is NOT_FOUND. */
+                include_nsfw?: boolean;
+            };
+            header?: never;
+            path: {
+                /** @description Walkthrough id. */
+                walkthrough_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Walkthrough"];
+                };
+            };
+            /** @description Bad Request */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description NOT_FOUND when no such walkthrough is visible. */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Internal Server Error */
+            500: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description SERVICE_UNAVAILABLE when catalog cannot be reached. */
             503: {
                 headers: {
                     [name: string]: unknown;

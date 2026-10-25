@@ -60,6 +60,7 @@
     "@codemirror/language-data": "^6.5.2",
     "@codemirror/state": "^6.5.2",
     "@codemirror/view": "^6.39.4",
+    "@dagrejs/dagre": "^3.1.1",
     "@iconify-json/ant-design": "^1.2.5",
     "@iconify-json/carbon": "^1.2.15",
     "@iconify-json/cuida": "^1.2.5",

@@ -8123,6 +8123,34 @@
         ],
         "type": "object"
       },
+      "ListWalkthrough": {
+        "properties": {
+          "items": {
+            "description": "Members of this page. Empty array, never null.",
+            "items": {
+              "$ref": "#/components/schemas/Walkthrough"
+            },
+            "type": "array"
+          },
+          "next_cursor": {
+            "description": "Opaque keyset cursor. Omitted on the last page.",
+            "maxLength": 512,
+            "pattern": "^cur_[A-Za-z0-9_-]+$",
+            "type": "string"
+          },
+          "object": {
+            "const": "list",
+            "description": "Type discriminant. Always list.",
+            "maxLength": 4,
+            "type": "string"
+          }
+        },
+        "required": [
+          "object",
+          "items"
+        ],
+        "type": "object"
+      },
       "ListWallComment": {
         "properties": {
           "items": {
@@ -23788,6 +23816,566 @@
           "url"
         ],
         "type": "object"
+      },
+      "Walkthrough": {
+        "properties": {
+          "chart": {
+            "$ref": "#/components/schemas/WalkthroughChart",
+            "description": "The choice graph. Present on GET /walkthroughs/{walkthrough_id} only."
+          },
+          "chart_characters": {
+            "description": "Characters the chart routes to, in chart order. Empty array, never null.",
+            "items": {
+              "$ref": "#/components/schemas/WalkthroughCharacter"
+            },
+            "type": "array"
+          },
+          "ending_count": {
+            "description": "Endings in the chart.",
+            "format": "int64",
+            "minimum": 0,
+            "type": "integer"
+          },
+          "id": {
+            "description": "Walkthrough id.",
+            "maxLength": 20,
+            "minLength": 1,
+            "pattern": "^[0-9]+$",
+            "type": "string"
+          },
+          "object": {
+            "const": "walkthrough",
+            "description": "Type discriminant. Always walkthrough.",
+            "maxLength": 11,
+            "type": "string"
+          },
+          "save_count": {
+            "description": "Save points in the chart.",
+            "format": "int64",
+            "minimum": 0,
+            "type": "integer"
+          },
+          "segment_count": {
+            "description": "Segments in the chart.",
+            "format": "int64",
+            "minimum": 0,
+            "type": "integer"
+          },
+          "source_author": {
+            "description": "Author the source page credits. null if none. Free text; never use it as a decision input.",
+            "maxLength": 256,
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "source_page_url": {
+            "description": "The original walkthrough page. Only its choice graph is carried here; link to it for attribution.",
+            "format": "uri",
+            "maxLength": 2048,
+            "type": "string"
+          },
+          "source_site": {
+            "$ref": "#/components/schemas/WalkthroughSource",
+            "description": "The walkthrough site the choice graph was derived from."
+          },
+          "source_updated_date": {
+            "description": "Date the source page says it was last updated. null if unstated.",
+            "format": "date",
+            "maxLength": 10,
+            "minLength": 10,
+            "pattern": "^[0-9]{4}-[0-9]{2}-[0-9]{2}$",
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "text_lang": {
+            "description": "BCP-47 language of the chart's text fields. Translations sit in localized maps beside them.",
+            "maxLength": 32,
+            "pattern": "^[a-z]{2,3}(-[A-Za-z0-9]+)*$",
+            "type": "string"
+          },
+          "updated_at": {
+            "description": "Last time this walkthrough changed.",
+            "format": "date-time",
+            "maxLength": 20,
+            "minLength": 20,
+            "pattern": "^[0-9]{4}-[0-9]{2}-[0-9]{2}T[0-9]{2}:[0-9]{2}:[0-9]{2}Z$",
+            "type": "string"
+          },
+          "work_id": {
+            "description": "The work this walkthrough plays through.",
+            "maxLength": 20,
+            "minLength": 1,
+            "pattern": "^[0-9]+$",
+            "type": "string"
+          }
+        },
+        "required": [
+          "object",
+          "id",
+          "work_id",
+          "source_site",
+          "source_page_url",
+          "source_author",
+          "source_updated_date",
+          "text_lang",
+          "chart_characters",
+          "ending_count",
+          "save_count",
+          "segment_count",
+          "updated_at"
+        ],
+        "type": "object"
+      },
+      "WalkthroughAlternative": {
+        "properties": {
+          "localized": {
+            "additionalProperties": {
+              "$ref": "#/components/schemas/LocalizedName"
+            },
+            "description": "Machine translations of text by BCP-47 tag. Empty object when none.",
+            "type": "object"
+          },
+          "text": {
+            "description": "The alternative choice as the source writes it. Free text; never use it as a decision input.",
+            "maxLength": 1024,
+            "type": "string"
+          }
+        },
+        "required": [
+          "text",
+          "localized"
+        ],
+        "type": "object"
+      },
+      "WalkthroughCharacter": {
+        "properties": {
+          "catalog_character": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/WalkthroughCharacterRef"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "The catalog character this name is pinned to. null if the pin is gone."
+          },
+          "key": {
+            "description": "Chart-local key that sections and endings refer to.",
+            "maxLength": 32,
+            "minLength": 1,
+            "pattern": "^[A-Za-z0-9_]+$",
+            "type": "string"
+          },
+          "source_name": {
+            "description": "The name as the source page writes it. Free text; never use it as a decision input.",
+            "maxLength": 512,
+            "type": "string"
+          }
+        },
+        "required": [
+          "key",
+          "source_name",
+          "catalog_character"
+        ],
+        "type": "object"
+      },
+      "WalkthroughCharacterRef": {
+        "properties": {
+          "catalog_name": {
+            "$ref": "#/components/schemas/CatalogName",
+            "description": "The character's catalog name."
+          },
+          "id": {
+            "description": "Character id.",
+            "maxLength": 20,
+            "minLength": 1,
+            "pattern": "^[0-9]+$",
+            "type": "string"
+          },
+          "object": {
+            "const": "character",
+            "description": "Type discriminant. Always character.",
+            "maxLength": 9,
+            "type": "string"
+          }
+        },
+        "required": [
+          "object",
+          "id",
+          "catalog_name"
+        ],
+        "type": "object"
+      },
+      "WalkthroughChart": {
+        "properties": {
+          "chart_endings": {
+            "description": "Endings, one per occurrence in the source. Empty array, never null.",
+            "items": {
+              "$ref": "#/components/schemas/WalkthroughEnding"
+            },
+            "type": "array"
+          },
+          "chart_segments": {
+            "description": "Runs of steps from one node to the next, in source order. Empty array, never null.",
+            "items": {
+              "$ref": "#/components/schemas/WalkthroughSegment"
+            },
+            "type": "array"
+          },
+          "entry_points": {
+            "description": "Places a playthrough starts from. Empty array, never null.",
+            "items": {
+              "$ref": "#/components/schemas/WalkthroughEntry"
+            },
+            "type": "array"
+          },
+          "route_sections": {
+            "description": "Headings of the source page that group segments, usually one per route. Empty array, never null.",
+            "items": {
+              "$ref": "#/components/schemas/WalkthroughSection"
+            },
+            "type": "array"
+          },
+          "save_points": {
+            "description": "Save points the chart creates and resumes from. Empty array, never null.",
+            "items": {
+              "$ref": "#/components/schemas/WalkthroughSave"
+            },
+            "type": "array"
+          }
+        },
+        "required": [
+          "route_sections",
+          "entry_points",
+          "save_points",
+          "chart_endings",
+          "chart_segments"
+        ],
+        "type": "object"
+      },
+      "WalkthroughEnding": {
+        "properties": {
+          "character_keys": {
+            "description": "chart_characters[].key whose route this ending concludes. Empty array, never null.",
+            "items": {
+              "maxLength": 32,
+              "minLength": 1,
+              "pattern": "^[A-Za-z0-9_]+$",
+              "type": "string"
+            },
+            "type": "array"
+          },
+          "ending_name": {
+            "description": "The ending's name as the source writes it. Free text; never use it as a decision input.",
+            "maxLength": 512,
+            "type": "string"
+          },
+          "ending_type": {
+            "$ref": "#/components/schemas/WalkthroughEndingType",
+            "description": "heroine concludes one character's route, harem several; after is an after-story."
+          },
+          "key": {
+            "description": "Chart-local key ending nodes refer to.",
+            "maxLength": 32,
+            "minLength": 1,
+            "pattern": "^[A-Za-z0-9_]+$",
+            "type": "string"
+          },
+          "localized": {
+            "additionalProperties": {
+              "$ref": "#/components/schemas/LocalizedName"
+            },
+            "description": "Machine translations of ending_name by BCP-47 tag. Empty object when none.",
+            "type": "object"
+          }
+        },
+        "required": [
+          "key",
+          "ending_name",
+          "localized",
+          "ending_type",
+          "character_keys"
+        ],
+        "type": "object"
+      },
+      "WalkthroughEndingType": {
+        "enum": [
+          "heroine",
+          "harem",
+          "true",
+          "normal",
+          "bad",
+          "after",
+          "other"
+        ],
+        "maxLength": 7,
+        "type": "string",
+        "x-vocabulary-closed": true
+      },
+      "WalkthroughEntry": {
+        "properties": {
+          "key": {
+            "description": "Chart-local key nodes refer to.",
+            "maxLength": 32,
+            "minLength": 1,
+            "pattern": "^[A-Za-z0-9_]+$",
+            "type": "string"
+          },
+          "label": {
+            "description": "The entry as the source names it, such as START or RESTART. Free text; never use it as a decision input.",
+            "maxLength": 256,
+            "type": "string"
+          },
+          "unlocked_by_ending_key": {
+            "description": "chart_endings[].key whose completion unlocks this entry. null if open from the start.",
+            "maxLength": 32,
+            "minLength": 1,
+            "pattern": "^[A-Za-z0-9_]+$",
+            "type": [
+              "string",
+              "null"
+            ]
+          }
+        },
+        "required": [
+          "key",
+          "label",
+          "unlocked_by_ending_key"
+        ],
+        "type": "object"
+      },
+      "WalkthroughNode": {
+        "properties": {
+          "node_key": {
+            "description": "entry_points, save_points or chart_endings key for those node types. null for collect and open.",
+            "maxLength": 32,
+            "minLength": 1,
+            "pattern": "^[A-Za-z0-9_]+$",
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "node_type": {
+            "$ref": "#/components/schemas/WalkthroughNodeType",
+            "description": "collect is a stop after collecting CG or scenes; open is a segment that simply stops."
+          }
+        },
+        "required": [
+          "node_type",
+          "node_key"
+        ],
+        "type": "object"
+      },
+      "WalkthroughNodeType": {
+        "enum": [
+          "entry",
+          "save",
+          "ending",
+          "collect",
+          "open"
+        ],
+        "maxLength": 7,
+        "type": "string",
+        "x-vocabulary-closed": true
+      },
+      "WalkthroughSave": {
+        "properties": {
+          "key": {
+            "description": "Chart-local key save steps and nodes refer to.",
+            "maxLength": 32,
+            "minLength": 1,
+            "pattern": "^[A-Za-z0-9_]+$",
+            "type": "string"
+          },
+          "label": {
+            "description": "The save point as the source labels it. Free text; never use it as a decision input.",
+            "maxLength": 256,
+            "type": "string"
+          }
+        },
+        "required": [
+          "key",
+          "label"
+        ],
+        "type": "object"
+      },
+      "WalkthroughSection": {
+        "properties": {
+          "character_keys": {
+            "description": "chart_characters[].key this heading is about. Empty array, never null.",
+            "items": {
+              "maxLength": 32,
+              "minLength": 1,
+              "pattern": "^[A-Za-z0-9_]+$",
+              "type": "string"
+            },
+            "type": "array"
+          },
+          "key": {
+            "description": "Chart-local key segments refer to.",
+            "maxLength": 32,
+            "minLength": 1,
+            "pattern": "^[A-Za-z0-9_]+$",
+            "type": "string"
+          },
+          "localized": {
+            "additionalProperties": {
+              "$ref": "#/components/schemas/LocalizedName"
+            },
+            "description": "Machine translations of title by BCP-47 tag. Empty object when none.",
+            "type": "object"
+          },
+          "title": {
+            "description": "The heading as the source writes it. Free text; never use it as a decision input.",
+            "maxLength": 512,
+            "type": "string"
+          }
+        },
+        "required": [
+          "key",
+          "title",
+          "localized",
+          "character_keys"
+        ],
+        "type": "object"
+      },
+      "WalkthroughSegment": {
+        "properties": {
+          "condition": {
+            "description": "Precondition the source states. null if none. Free text; never use it as a decision input.",
+            "maxLength": 1024,
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "condition_localized": {
+            "additionalProperties": {
+              "$ref": "#/components/schemas/LocalizedName"
+            },
+            "description": "Machine translations of condition by BCP-47 tag. Empty object when none.",
+            "type": "object"
+          },
+          "from_node": {
+            "$ref": "#/components/schemas/WalkthroughNode",
+            "description": "Where the segment starts."
+          },
+          "key": {
+            "description": "Chart-local segment key.",
+            "maxLength": 32,
+            "minLength": 1,
+            "pattern": "^[A-Za-z0-9_]+$",
+            "type": "string"
+          },
+          "section_key": {
+            "description": "route_sections[].key this segment is listed under. null if none.",
+            "maxLength": 32,
+            "minLength": 1,
+            "pattern": "^[A-Za-z0-9_]+$",
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "steps": {
+            "description": "Steps in play order. Empty array, never null.",
+            "items": {
+              "$ref": "#/components/schemas/WalkthroughStep"
+            },
+            "type": "array"
+          },
+          "to_node": {
+            "$ref": "#/components/schemas/WalkthroughNode",
+            "description": "Where the segment ends."
+          }
+        },
+        "required": [
+          "key",
+          "section_key",
+          "from_node",
+          "condition",
+          "condition_localized",
+          "steps",
+          "to_node"
+        ],
+        "type": "object"
+      },
+      "WalkthroughSource": {
+        "enum": [
+          "seiya",
+          "sagaoz_foolmaker"
+        ],
+        "maxLength": 16,
+        "type": "string",
+        "x-vocabulary-closed": true
+      },
+      "WalkthroughStep": {
+        "properties": {
+          "alternatives": {
+            "description": "Other choices kept for collecting CG differences. Empty array, never null.",
+            "items": {
+              "$ref": "#/components/schemas/WalkthroughAlternative"
+            },
+            "type": "array"
+          },
+          "is_achievement_only": {
+            "description": "The source marks this step as needed for an achievement only.",
+            "type": "boolean"
+          },
+          "localized": {
+            "additionalProperties": {
+              "$ref": "#/components/schemas/LocalizedName"
+            },
+            "description": "Machine translations of step_text by BCP-47 tag. Empty object when none.",
+            "type": "object"
+          },
+          "save_key": {
+            "description": "save_points[].key this save step creates. null for other steps.",
+            "maxLength": 32,
+            "minLength": 1,
+            "pattern": "^[A-Za-z0-9_]+$",
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "step_text": {
+            "description": "The choice or action as the source writes it. null for a save step. Free text; never use it as a decision input.",
+            "maxLength": 1024,
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "step_type": {
+            "$ref": "#/components/schemas/WalkthroughStepType",
+            "description": "choice picks step_text; action is a non-choice step; save creates save_key here."
+          }
+        },
+        "required": [
+          "step_type",
+          "step_text",
+          "localized",
+          "alternatives",
+          "is_achievement_only",
+          "save_key"
+        ],
+        "type": "object"
+      },
+      "WalkthroughStepType": {
+        "enum": [
+          "choice",
+          "action",
+          "save"
+        ],
+        "maxLength": 6,
+        "type": "string",
+        "x-vocabulary-closed": true
       },
       "WallComment": {
         "properties": {
@@ -66314,6 +66902,208 @@
         "summary": "List a user's works",
         "tags": [
           "users"
+        ]
+      }
+    },
+    "/walkthroughs": {
+      "get": {
+        "description": "Walkthrough summaries without the chart, by ascending id. work_id narrows to one work, character_id to the walkthroughs whose chart routes to that character. Walkthroughs of adult works only with include_nsfw=true. A cursor collection.",
+        "operationId": "listWalkthroughs",
+        "parameters": [
+          {
+            "description": "Only walkthroughs of this work.",
+            "explode": false,
+            "in": "query",
+            "name": "work_id",
+            "schema": {
+              "description": "Only walkthroughs of this work.",
+              "maxLength": 19,
+              "pattern": "^[1-9][0-9]{0,18}$",
+              "type": "string"
+            }
+          },
+          {
+            "description": "Only walkthroughs whose chart routes to this character.",
+            "explode": false,
+            "in": "query",
+            "name": "character_id",
+            "schema": {
+              "description": "Only walkthroughs whose chart routes to this character.",
+              "maxLength": 19,
+              "pattern": "^[1-9][0-9]{0,18}$",
+              "type": "string"
+            }
+          },
+          {
+            "description": "Opaque cursor from a previous page.",
+            "explode": false,
+            "in": "query",
+            "name": "cursor",
+            "schema": {
+              "description": "Opaque cursor from a previous page.",
+              "maxLength": 512,
+              "pattern": "^cur_[A-Za-z0-9_-]+$",
+              "type": "string"
+            }
+          },
+          {
+            "description": "Page size.",
+            "explode": false,
+            "in": "query",
+            "name": "limit",
+            "schema": {
+              "default": 20,
+              "description": "Page size.",
+              "format": "int64",
+              "maximum": 100,
+              "minimum": 1,
+              "type": "integer"
+            }
+          },
+          {
+            "description": "When true, walkthroughs of adult works are included.",
+            "explode": false,
+            "in": "query",
+            "name": "include_nsfw",
+            "schema": {
+              "default": false,
+              "description": "When true, walkthroughs of adult works are included.",
+              "type": "boolean"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ListWalkthrough"
+                }
+              }
+            },
+            "description": "OK"
+          },
+          "400": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            },
+            "description": "INVALID_PARAMETER when an id or the cursor is malformed."
+          },
+          "500": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            },
+            "description": "Internal Server Error"
+          },
+          "503": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            },
+            "description": "SERVICE_UNAVAILABLE when catalog cannot be reached."
+          }
+        },
+        "summary": "List walkthroughs",
+        "tags": [
+          "galgame-walkthroughs"
+        ]
+      }
+    },
+    "/walkthroughs/{walkthrough_id}": {
+      "get": {
+        "description": "A walkthrough's choice graph: entries, saves and endings as nodes, segments of choices as edges, and the characters each route and ending belongs to. Text is in the walkthrough's lang; zh-Hans machine translations sit in localized. A walkthrough of an adult work is NOT_FOUND unless include_nsfw=true.",
+        "operationId": "getWalkthrough",
+        "parameters": [
+          {
+            "description": "Walkthrough id.",
+            "in": "path",
+            "name": "walkthrough_id",
+            "required": true,
+            "schema": {
+              "description": "Walkthrough id.",
+              "maxLength": 19,
+              "pattern": "^[1-9][0-9]{0,18}$",
+              "type": "string"
+            }
+          },
+          {
+            "description": "When true, a walkthrough of an adult work is readable; otherwise it is NOT_FOUND.",
+            "explode": false,
+            "in": "query",
+            "name": "include_nsfw",
+            "schema": {
+              "default": false,
+              "description": "When true, a walkthrough of an adult work is readable; otherwise it is NOT_FOUND.",
+              "type": "boolean"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Walkthrough"
+                }
+              }
+            },
+            "description": "OK"
+          },
+          "400": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            },
+            "description": "Bad Request"
+          },
+          "404": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            },
+            "description": "NOT_FOUND when no such walkthrough is visible."
+          },
+          "500": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            },
+            "description": "Internal Server Error"
+          },
+          "503": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            },
+            "description": "SERVICE_UNAVAILABLE when catalog cannot be reached."
+          }
+        },
+        "summary": "Get a walkthrough",
+        "tags": [
+          "galgame-walkthroughs"
         ]
       }
     },
