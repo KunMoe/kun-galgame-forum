@@ -1,7 +1,12 @@
 <script setup lang="ts">
 import type { KunTabItem } from '@kungal/ui-vue'
 import { useElementSize, useWindowSize } from '@vueuse/core'
-import type { ListMoyuPatch, RatingPage, Work } from '#shared/utils/api/schemas'
+import type {
+  ListMoyuPatch,
+  ListWalkthrough,
+  RatingPage,
+  Work
+} from '#shared/utils/api/schemas'
 import { ratingSummaryToPageCard } from '~/utils/galgame/ratingCard'
 import { toKunUser } from '~/utils/userRef'
 
@@ -17,7 +22,7 @@ provide<Ref<boolean>>('galgameResourcePublishBanned', resourcePublishBanned)
 const route = useRoute()
 const patchQuery = useQueryWriter()
 const nameOf = useCatalogName()
-const DEEP_LINK_TABS = ['intro', 'resource', 'comment', 'quiz']
+const DEEP_LINK_TABS = ['intro', 'walkthrough', 'resource', 'comment', 'quiz']
 const initialTab = () => {
   if (route.query.comment) {
     return 'comment'
@@ -48,6 +53,21 @@ const { data: moyuPatches, status: moyuPatchStatus } = useApi<ListMoyuPatch>(
     }),
   { lazy: true, server: false }
 )
+const { allowsNsfw, stanceKey } = useContentStance()
+const { data: walkthroughs, status: walkthroughStatus } =
+  useApi<ListWalkthrough>(
+    () => `galgame-walkthroughs:${props.galgame.id}:${stanceKey.value}`,
+    (api, { signal }) =>
+      api.GET('/walkthroughs', {
+        params: {
+          query: { work_id: props.galgame.id, include_nsfw: allowsNsfw.value }
+        },
+        signal
+      }),
+    { lazy: true, server: false }
+  )
+const hasWalkthrough = computed(() => !!walkthroughs.value?.items.length)
+
 const hasPatchResource = computed(
   () => !!moyuPatches.value?.items.some((patch) => patch.resources.length)
 )
@@ -80,6 +100,9 @@ const onPanelLoading = (tab: string, loading: boolean) => {
 
 const contentTabs = computed<KunTabItem[]>(() => [
   { value: 'intro', textValue: '游戏介绍', icon: 'lucide:book-open' },
+  ...(hasWalkthrough.value
+    ? [{ value: 'walkthrough', textValue: '攻略', icon: 'lucide:route' }]
+    : []),
   { value: 'resource', textValue: '本体资源下载', icon: 'lucide:download' },
   ...(hasPatchResource.value
     ? [{ value: 'patch', textValue: '补丁资源下载', icon: 'lucide:puzzle' }]
@@ -208,6 +231,17 @@ const hasContributorCard = computed(
               />
 
               <GalgameRelatedPanel :works="galgame.related_works" />
+            </KunTabPanel>
+
+            <KunTabPanel
+              value="walkthrough"
+              mount="lazy"
+              :loading="walkthroughStatus === 'pending'"
+            >
+              <GalgameWalkthroughPanel
+                :work-id="galgame.id"
+                :walkthroughs="walkthroughs?.items ?? []"
+              />
             </KunTabPanel>
 
             <KunTabPanel

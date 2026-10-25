@@ -21,6 +21,7 @@ import (
 	galgameRepo "kun-galgame-api/internal/galgame/repository"
 	resourceapiv1 "kun-galgame-api/internal/galgame/resourceapiv1"
 	galgameService "kun-galgame-api/internal/galgame/service"
+	walkthroughapiv1 "kun-galgame-api/internal/galgame/walkthroughapiv1"
 	"kun-galgame-api/internal/galgame/workrepr"
 	imageapiv1 "kun-galgame-api/internal/image/apiv1"
 	"kun-galgame-api/internal/infrastructure/cache"
@@ -80,39 +81,40 @@ import (
 )
 
 type App struct {
-	Fiber              *fiber.App
-	DB                 *gorm.DB
-	Redis              *redis.Client
-	Config             *config.Config
-	OAuthClient        *oauth.Client
-	UserState          *repository.StateRepository
-	TopicAward         topicapiv1.AwardFunc
-	TrustCheck         *gate.CheckService
-	TrustScan          *gate.ScanService
-	Notifier           msgService.Notifier
-	Messages           *msgService.MessageService
-	UserClient         *userclient.Client
-	UserService        *service.UserService
-	CreatorService     *galgameService.CreatorService
-	Authn              *middleware.Authenticator
-	ImageMeta          func(hashes []string) map[string]imageclient.ImageMeta
-	GalgameV1          *galgameapiv1.Service
-	GalgameEntityV1    *galgameentityv1.Service
-	GalgameCalendarV1  *calendarapiv1.Service
-	GalgameRatingV1    *ratingapiv1.Service
-	QuizCatalog        quizapiv1.Catalog
-	ResourceCatalog    resourceapiv1.Catalog
-	ResourceClaim      resourceapiv1.ClaimFunc
-	ResourceChecker    resourceapiv1.ShareChecker
-	StoreLinks         *storelink.Resolver
-	WallV1             *wallapiv1.Service
-	Community          *communityclient.Client
-	ContributedWorkIDs func(context.Context, int64) ([]int, error)
-	OverviewV1         *overviewapiv1.Service
-	RankingV1          *rankingapiv1.Service
-	SearchV1           *searchapiv1.Service
-	ActivityV1         *activityapiv1.Service
-	TrustV1            *trustapiv1.Service
+	Fiber                *fiber.App
+	DB                   *gorm.DB
+	Redis                *redis.Client
+	Config               *config.Config
+	OAuthClient          *oauth.Client
+	UserState            *repository.StateRepository
+	TopicAward           topicapiv1.AwardFunc
+	TrustCheck           *gate.CheckService
+	TrustScan            *gate.ScanService
+	Notifier             msgService.Notifier
+	Messages             *msgService.MessageService
+	UserClient           *userclient.Client
+	UserService          *service.UserService
+	CreatorService       *galgameService.CreatorService
+	Authn                *middleware.Authenticator
+	ImageMeta            func(hashes []string) map[string]imageclient.ImageMeta
+	GalgameV1            *galgameapiv1.Service
+	GalgameEntityV1      *galgameentityv1.Service
+	GalgameCalendarV1    *calendarapiv1.Service
+	GalgameWalkthroughV1 *walkthroughapiv1.Service
+	GalgameRatingV1      *ratingapiv1.Service
+	QuizCatalog          quizapiv1.Catalog
+	ResourceCatalog      resourceapiv1.Catalog
+	ResourceClaim        resourceapiv1.ClaimFunc
+	ResourceChecker      resourceapiv1.ShareChecker
+	StoreLinks           *storelink.Resolver
+	WallV1               *wallapiv1.Service
+	Community            *communityclient.Client
+	ContributedWorkIDs   func(context.Context, int64) ([]int, error)
+	OverviewV1           *overviewapiv1.Service
+	RankingV1            *rankingapiv1.Service
+	SearchV1             *searchapiv1.Service
+	ActivityV1           *activityapiv1.Service
+	TrustV1              *trustapiv1.Service
 
 	OAuthHandler           *handler.OAuthHandler
 	LotteryService         *topicService.LotteryService
@@ -498,24 +500,25 @@ func New(cfg *config.Config) *App {
 
 	app := &App{
 		DB: db, Redis: rdb, Config: cfg, OAuthClient: oauthClient,
-		Settings:          settings,
-		TopicAI:           topicAI,
-		UserState:         userStateRepo,
-		TrustCheck:        trustCheck,
-		TrustScan:         trustScan,
-		Notifier:          notifier,
-		Messages:          messageSvc,
-		UserClient:        uc,
-		UserService:       userService,
-		CreatorService:    creatorSvc,
-		Authn:             authn,
-		ImageMeta:         imageMetaResolve(imageMeta),
-		GalgameV1:         galgameV1,
-		GalgameEntityV1:   galgameentityv1.New(gc, db, cfg.NextMoeAPI.ImageCDNBase),
-		GalgameCalendarV1: calendarapiv1.New(gc, db, cfg.NextMoeAPI.ImageCDNBase),
-		GalgameRatingV1:   newRatingV1(db, gc, uc, trustCheck, trustScan, galgamePlaytimeSvc, catalogCli, ratingMirror, galgameV1.ForgetMyPlaytimes, cfg.NextMoeAPI.ImageCDNBase),
-		QuizCatalog:       gc,
-		ResourceCatalog:   gc,
+		Settings:             settings,
+		TopicAI:              topicAI,
+		UserState:            userStateRepo,
+		TrustCheck:           trustCheck,
+		TrustScan:            trustScan,
+		Notifier:             notifier,
+		Messages:             messageSvc,
+		UserClient:           uc,
+		UserService:          userService,
+		CreatorService:       creatorSvc,
+		Authn:                authn,
+		ImageMeta:            imageMetaResolve(imageMeta),
+		GalgameV1:            galgameV1,
+		GalgameEntityV1:      galgameentityv1.New(gc, db, cfg.NextMoeAPI.ImageCDNBase),
+		GalgameCalendarV1:    calendarapiv1.New(gc, db, cfg.NextMoeAPI.ImageCDNBase),
+		GalgameWalkthroughV1: walkthroughapiv1.New(gc),
+		GalgameRatingV1:      newRatingV1(db, gc, uc, trustCheck, trustScan, galgamePlaytimeSvc, catalogCli, ratingMirror, galgameV1.ForgetMyPlaytimes, cfg.NextMoeAPI.ImageCDNBase),
+		QuizCatalog:          gc,
+		ResourceCatalog:      gc,
 		ResourceClaim: func(ctx context.Context, token string, workID int64) *errors.AppError {
 			if catalogCli == nil || !catalogCli.Configured() {
 				return nil

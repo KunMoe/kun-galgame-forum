@@ -295,12 +295,14 @@ if (view) {
         </section>
 
         <p class="text-default-500 text-sm">
-          资料来自 鲲 Galgame 论坛的角色图谱。默认仅显示 SFW 的 Galgame, 查看 NSFW
-          Galgame 请在设置面板打开 NSFW 开关。如果有数据错误请
+          资料来自 鲲 Galgame 论坛的角色图谱。默认仅显示 SFW 的 Galgame, 查看
+          NSFW Galgame 请在设置面板打开 NSFW 开关。如果有数据错误请
           <KunLink to="/doc/contact"> 联系我们 </KunLink>。
         </p>
       </div>
     </div>
+
+    <GalgameCharacterWalkthroughs :character-id="String(characterId)" />
 
     <section class="space-y-3">
       <h2 class="text-foreground text-lg font-semibold">登场作品</h2>

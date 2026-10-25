@@ -15,6 +15,7 @@ import (
 	"kun-galgame-api/internal/galgame/foldapiv1"
 	ratingapiv1 "kun-galgame-api/internal/galgame/ratingapiv1"
 	resourceapiv1 "kun-galgame-api/internal/galgame/resourceapiv1"
+	walkthroughapiv1 "kun-galgame-api/internal/galgame/walkthroughapiv1"
 	imageapiv1 "kun-galgame-api/internal/image/apiv1"
 	messageapiv1 "kun-galgame-api/internal/message/apiv1"
 	"kun-galgame-api/internal/middleware"
@@ -72,6 +73,7 @@ func (a *App) setupRoutes() {
 		resourceapiv1.Register(a.newGalgameResourceV1()),
 		galgameentityv1.Register(a.GalgameEntityV1),
 		calendarapiv1.Register(a.GalgameCalendarV1),
+		walkthroughapiv1.Register(a.GalgameWalkthroughV1),
 		ratingapiv1.Register(a.GalgameRatingV1),
 		wallapiv1.Register(a.WallV1),
 		userapiv1.Register(a.newUserV1()),
