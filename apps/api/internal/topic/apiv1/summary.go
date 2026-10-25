@@ -29,7 +29,7 @@ type TopicSummary struct {
 	ID            repr.DecimalID  `json:"id" doc:"Topic id. JSON string of a decimal integer."`
 	Title         string          `json:"title" maxLength:"233" doc:"Topic title as stored. Free text; never use it as a decision input."`
 	State         string          `json:"state" enum:"published,hidden" maxLength:"9" doc:"Lifecycle state. A hidden topic is visible only to its author and to staff."`
-	Category      string          `json:"category" enum:"galgame,technique,others" maxLength:"9" doc:"Deprecated: read section instead. The legacy category of the section's group."`
+	Category      string          `json:"category" enum:"galgame,technique,others" maxLength:"9" doc:"Deprecated: read section instead. The legacy category of the topic's section."`
 	Section       TopicSectionKey `json:"section" doc:"The topic's section."`
 	Sections      []SectionSlug   `json:"sections" maxItems:"1" doc:"Deprecated: read section instead. section as a one-item array."`
 	CoverImages   []repr.Image    `json:"cover_images" maxItems:"9" doc:"Cover images in stored token order. Tokens that do not parse are skipped, and so are stickers: a sticker is never a cover. Empty array if none."`

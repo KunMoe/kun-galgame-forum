@@ -15769,6 +15769,40 @@
         ],
         "type": "object"
       },
+      "RetiredSectionKey": {
+        "enum": [
+          "g-article",
+          "g-chatting",
+          "g-news",
+          "g-other",
+          "g-releases",
+          "g-seeking",
+          "g-walkthrough",
+          "o-anime",
+          "o-comics",
+          "o-daily",
+          "o-essay",
+          "o-forum",
+          "o-music",
+          "o-novel",
+          "o-other",
+          "o-patch",
+          "t-adobe",
+          "t-ai",
+          "t-algorithm",
+          "t-android",
+          "t-crack",
+          "t-help",
+          "t-languages",
+          "t-linux",
+          "t-other",
+          "t-practical",
+          "t-web"
+        ],
+        "maxLength": 13,
+        "type": "string",
+        "x-vocabulary-closed": true
+      },
       "ReviewAction": {
         "enum": [
           "none",
@@ -16574,7 +16608,7 @@
           },
           "category": {
             "$ref": "#/components/schemas/TopicCategory",
-            "description": "Deprecated: read group instead. The legacy category topics in this section still carry."
+            "description": "Deprecated: sections are no longer grouped. The legacy category topics in this section still carry."
           },
           "color": {
             "$ref": "#/components/schemas/SectionColor",
@@ -16636,9 +16670,18 @@
             "maxLength": 7,
             "type": "string"
           },
+          "retired_sections": {
+            "description": "Retired keys that now resolve to this section, for old links and App builds. Empty array if none.",
+            "items": {
+              "$ref": "#/components/schemas/RetiredSectionKey",
+              "description": "A section key retired on 2026-10-24. Old links and App builds may still carry it."
+            },
+            "maxItems": 27,
+            "type": "array"
+          },
           "section": {
             "$ref": "#/components/schemas/TopicSectionKey",
-            "description": "The section, as filed on a topic's section and as the /section/{section} page segment."
+            "description": "The section, as filed on a topic's section and as the /topic?section={section} query."
           },
           "topic_count": {
             "description": "Published topics filed under the section that anyone may open, NSFW ones included. A size statistic, not the total of any list.",
@@ -16660,6 +16703,7 @@
           "description",
           "icon_name",
           "color",
+          "retired_sections",
           "category",
           "banner",
           "mascots",
@@ -20196,7 +20240,7 @@
           },
           "category": {
             "$ref": "#/components/schemas/TopicCategory",
-            "description": "Deprecated: read section instead. The legacy category of the section's group."
+            "description": "Deprecated: read section instead. The legacy category of the topic's section."
           },
           "comment_count": {
             "description": "Comment count.",
@@ -21574,7 +21618,7 @@
           },
           "category": {
             "$ref": "#/components/schemas/TopicCategory",
-            "description": "Deprecated: read section instead. The legacy category of the section's group."
+            "description": "Deprecated: read section instead. The legacy category of the topic's section."
           },
           "content_markdown": {
             "description": "Topic body as the stored Markdown source. Free text; never use it as a decision input.",
@@ -21759,7 +21803,7 @@
           },
           "category": {
             "$ref": "#/components/schemas/TopicCategory",
-            "description": "Deprecated: read section instead. The legacy category of the section's group."
+            "description": "Deprecated: read section instead. The legacy category of the topic's section."
           },
           "comment_count": {
             "description": "Comment count.",
@@ -59817,13 +59861,13 @@
             }
           },
           {
-            "description": "Deprecated: filter by section instead. When set, only topics whose section's group has this legacy category.",
+            "description": "Deprecated: filter by section instead. When set, only topics whose section has this legacy category.",
             "explode": false,
             "in": "query",
             "name": "category",
             "schema": {
               "$ref": "#/components/schemas/TopicCategory",
-              "description": "Deprecated: filter by section instead. When set, only topics whose section's group has this legacy category."
+              "description": "Deprecated: filter by section instead. When set, only topics whose section has this legacy category."
             }
           },
           {

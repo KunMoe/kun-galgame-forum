@@ -35,21 +35,22 @@ type SectionLatestTopic struct {
 }
 
 type Section struct {
-	Object              string                     `json:"object" enum:"section" maxLength:"7" doc:"Type discriminant. Always section."`
-	Section             topicapiv1.TopicSectionKey `json:"section" doc:"The section, as filed on a topic's section and as the /section/{section} page segment."`
-	Label               string                     `json:"label" maxLength:"40" doc:"Display name, edited by admins. Free text; never use it as a decision input."`
-	Description         string                     `json:"description" maxLength:"500" doc:"What belongs in the section, edited by admins. Free text; never use it as a decision input."`
-	IconName            SectionIconName            `json:"icon_name" doc:"Icon to show beside the label."`
-	Color               SectionColor               `json:"color" doc:"Color to show the section's badge in."`
-	Category            string                     `json:"category" enum:"galgame,technique,others" maxLength:"9" doc:"Deprecated: read group instead. The legacy category topics in this section still carry."`
-	Banner              *repr.Image                `json:"banner" doc:"Header banner. null when the section has none."`
-	Mascots             []repr.Image               `json:"mascots" maxItems:"12" doc:"Mascot images; the section header shows one at random. Empty array if none."`
-	IsArchived          bool                       `json:"is_archived" doc:"An archived section keeps its topics and takes no new ones."`
-	MoemoepointOnCreate int                        `json:"moemoepoint_on_create" minimum:"-10" maximum:"3" doc:"What publishing a topic here does to the author's moemoepoint: negative is a cost the balance must cover, positive a reward."`
-	HiddenFromFeeds     bool                       `json:"is_hidden_from_feeds" doc:"Whether its topics are left out of the home activity feed's normal tab."`
-	TopicCount          int64                      `json:"topic_count" minimum:"0" doc:"Published topics filed under the section that anyone may open, NSFW ones included. A size statistic, not the total of any list."`
-	ViewCount           int64                      `json:"view_count" minimum:"0" doc:"Views summed over the same topics as topic_count."`
-	LatestTopic         *SectionLatestTopic        `json:"latest_topic" doc:"The newest of those topics whose author is still shown. null when there is none."`
+	Object              string                         `json:"object" enum:"section" maxLength:"7" doc:"Type discriminant. Always section."`
+	Section             topicapiv1.TopicSectionKey     `json:"section" doc:"The section, as filed on a topic's section and as the /topic?section={section} query."`
+	Label               string                         `json:"label" maxLength:"40" doc:"Display name, edited by admins. Free text; never use it as a decision input."`
+	Description         string                         `json:"description" maxLength:"500" doc:"What belongs in the section, edited by admins. Free text; never use it as a decision input."`
+	IconName            SectionIconName                `json:"icon_name" doc:"Icon to show beside the label."`
+	Color               SectionColor                   `json:"color" doc:"Color to show the section's badge in."`
+	RetiredSections     []topicapiv1.RetiredSectionKey `json:"retired_sections" maxItems:"27" doc:"Retired keys that now resolve to this section, for old links and App builds. Empty array if none."`
+	Category            string                         `json:"category" enum:"galgame,technique,others" maxLength:"9" doc:"Deprecated: sections are no longer grouped. The legacy category topics in this section still carry."`
+	Banner              *repr.Image                    `json:"banner" doc:"Header banner. null when the section has none."`
+	Mascots             []repr.Image                   `json:"mascots" maxItems:"12" doc:"Mascot images; the section header shows one at random. Empty array if none."`
+	IsArchived          bool                           `json:"is_archived" doc:"An archived section keeps its topics and takes no new ones."`
+	MoemoepointOnCreate int                            `json:"moemoepoint_on_create" minimum:"-10" maximum:"3" doc:"What publishing a topic here does to the author's moemoepoint: negative is a cost the balance must cover, positive a reward."`
+	HiddenFromFeeds     bool                           `json:"is_hidden_from_feeds" doc:"Whether its topics are left out of the home activity feed's normal tab."`
+	TopicCount          int64                          `json:"topic_count" minimum:"0" doc:"Published topics filed under the section that anyone may open, NSFW ones included. A size statistic, not the total of any list."`
+	ViewCount           int64                          `json:"view_count" minimum:"0" doc:"Views summed over the same topics as topic_count."`
+	LatestTopic         *SectionLatestTopic            `json:"latest_topic" doc:"The newest of those topics whose author is still shown. null when there is none."`
 }
 
 type listSectionsInput struct {
@@ -177,6 +178,7 @@ func (s *Service) allSections(ctx context.Context) ([]Section, *problem.Problem)
 			Description:         row.Description,
 			IconName:            SectionIconName(row.Icon),
 			Color:               SectionColor(row.Color),
+			RetiredSections:     topicapiv1.RetiredSectionKeys(row.Name),
 			Category:            row.LegacyCategory,
 			IsArchived:          row.IsArchived,
 			MoemoepointOnCreate: moemoepointOnCreate(row.CostsMoemoepoint),

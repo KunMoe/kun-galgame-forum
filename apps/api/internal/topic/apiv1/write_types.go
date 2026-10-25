@@ -67,7 +67,7 @@ type TopicSource struct {
 	TopicID         repr.DecimalID  `json:"topic_id" doc:"Id of the topic."`
 	Title           string          `json:"title" maxLength:"233" doc:"Topic title as stored. Free text; never use it as a decision input."`
 	ContentMarkdown string          `json:"content_markdown" maxLength:"100007" doc:"Topic body as the stored Markdown source. Free text; never use it as a decision input."`
-	Category        string          `json:"category" enum:"galgame,technique,others" maxLength:"9" doc:"Deprecated: read section instead. The legacy category of the section's group."`
+	Category        string          `json:"category" enum:"galgame,technique,others" maxLength:"9" doc:"Deprecated: read section instead. The legacy category of the topic's section."`
 	Section         TopicSectionKey `json:"section" doc:"The topic's section."`
 	Sections        []SectionSlug   `json:"sections" maxItems:"1" doc:"Deprecated: read section instead. section as a one-item array."`
 	IsNSFW          bool            `json:"is_nsfw" doc:"Whether the topic is NSFW."`

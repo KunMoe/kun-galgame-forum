@@ -11481,6 +11481,8 @@ export interface components {
             can_edit: boolean;
         };
         /** @enum {string} */
+        RetiredSectionKey: "g-article" | "g-chatting" | "g-news" | "g-other" | "g-releases" | "g-seeking" | "g-walkthrough" | "o-anime" | "o-comics" | "o-daily" | "o-essay" | "o-forum" | "o-music" | "o-novel" | "o-other" | "o-patch" | "t-adobe" | "t-ai" | "t-algorithm" | "t-android" | "t-crack" | "t-help" | "t-languages" | "t-linux" | "t-other" | "t-practical" | "t-web";
+        /** @enum {string} */
         ReviewAction: "none" | "hide" | "remove" | "warn_user" | "restrict" | "escalate_idp";
         ReviewAuthor: {
             /** @description Whether the account service reports the account as usable: neither banned nor deregistered. */
@@ -11754,7 +11756,7 @@ export interface components {
         Section: {
             /** @description Header banner. null when the section has none. */
             banner: components["schemas"]["Image"] | null;
-            /** @description Deprecated: read group instead. The legacy category topics in this section still carry. */
+            /** @description Deprecated: sections are no longer grouped. The legacy category topics in this section still carry. */
             category: components["schemas"]["TopicCategory"];
             /** @description Color to show the section's badge in. */
             color: components["schemas"]["SectionColor"];
@@ -11782,7 +11784,9 @@ export interface components {
              * @constant
              */
             object: "section";
-            /** @description The section, as filed on a topic's section and as the /section/{section} page segment. */
+            /** @description Retired keys that now resolve to this section, for old links and App builds. Empty array if none. */
+            retired_sections: components["schemas"]["RetiredSectionKey"][];
+            /** @description The section, as filed on a topic's section and as the /topic?section={section} query. */
             section: components["schemas"]["TopicSectionKey"];
             /**
              * Format: int64
@@ -13100,7 +13104,7 @@ export interface components {
              * @description Bump time. A reply, a comment, an upvote, a new best answer, an edit of the title or body, and creating a poll or a lottery set it to now, but only for topics created within the last 3 months. Casting a vote and entering a lottery do not. It is not a last-activity time.
              */
             bumped_at: string;
-            /** @description Deprecated: read section instead. The legacy category of the section's group. */
+            /** @description Deprecated: read section instead. The legacy category of the topic's section. */
             category: components["schemas"]["TopicCategory"];
             /**
              * Format: int64
@@ -13571,7 +13575,7 @@ export interface components {
             access_grants: components["schemas"]["AccessGrants"];
             /** @description Who may read the topic: everyone, signed-in users, holders of granted roles, or granted users. The author and staff always may. */
             access_scope: components["schemas"]["AccessScope"];
-            /** @description Deprecated: read section instead. The legacy category of the section's group. */
+            /** @description Deprecated: read section instead. The legacy category of the topic's section. */
             category: components["schemas"]["TopicCategory"];
             /** @description Topic body as the stored Markdown source. Free text; never use it as a decision input. */
             content_markdown: string;
@@ -13638,7 +13642,7 @@ export interface components {
              * @description Bump time. A reply, a comment, an upvote, a new best answer, an edit of the title or body, and creating a poll or a lottery set it to now, but only for topics created within the last 3 months. Casting a vote and entering a lottery do not. It is not a last-activity time.
              */
             bumped_at: string;
-            /** @description Deprecated: read section instead. The legacy category of the section's group. */
+            /** @description Deprecated: read section instead. The legacy category of the topic's section. */
             category: components["schemas"]["TopicCategory"];
             /**
              * Format: int64
@@ -37934,7 +37938,7 @@ export interface operations {
                 limit?: number;
                 /** @description Sort order; ties break on id in the same direction. Default bumped_desc. bumped: bumped_at. created: created_at. views: view_count. views_1d: views today. views_7d and views_30d: views in the last 7 or 30 days, recomputed daily. likes: like_count. favorites: times favorited. upvotes: times upvoted. */
                 sort?: components["schemas"]["TopicSort"];
-                /** @description Deprecated: filter by section instead. When set, only topics whose section's group has this legacy category. */
+                /** @description Deprecated: filter by section instead. When set, only topics whose section has this legacy category. */
                 category?: components["schemas"]["TopicCategory"];
                 /** @description When true, NSFW topics are included. Default false. */
                 include_nsfw?: boolean;

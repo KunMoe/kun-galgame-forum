@@ -46,7 +46,7 @@ func New(
 type listTopicsInput struct {
 	collect.Page
 	Sort        SortToken   `query:"sort" default:"bumped_desc"`
-	Category    string      `query:"category" enum:"galgame,technique,others" maxLength:"9" doc:"Deprecated: filter by section instead. When set, only topics whose section's group has this legacy category."`
+	Category    string      `query:"category" enum:"galgame,technique,others" maxLength:"9" doc:"Deprecated: filter by section instead. When set, only topics whose section has this legacy category."`
 	IncludeNSFW bool        `query:"include_nsfw" default:"false" doc:"When true, NSFW topics are included. Default false."`
 	Section     SectionSlug `query:"section" doc:"When set, only topics filed under this section. A retired key filters by its successor. Omitted means every section."`
 	Hidden      string      `query:"hidden_sections" enum:"include,exclude" default:"include" maxLength:"7" doc:"exclude leaves out the sections listSections marks is_hidden_from_feeds (resource-seeking and tech-help), as an all-topics feed does. Default include."`

@@ -18,11 +18,17 @@ export const useTopicSections = () => {
     asyncData.data.value?.ok ? asyncData.data.value.data.items : []
   )
   const byKey = computed(
-    () => new Map(sections.value.map((section) => [section.section, section]))
+    () =>
+      new Map<string, Section>(
+        sections.value.flatMap((section) => [
+          [section.section, section],
+          ...section.retired_sections.map((old) => [old, section] as const)
+        ])
+      )
   )
 
   const sectionOf = (key?: string | null) =>
-    key ? byKey.value.get(key as Section['section']) : undefined
+    key ? byKey.value.get(key) : undefined
   const sectionLabel = (key?: string | null) => sectionOf(key)?.label ?? ''
 
   return Object.assign(asyncData.then(() => undefined), {

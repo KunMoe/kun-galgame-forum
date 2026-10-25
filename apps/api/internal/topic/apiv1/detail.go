@@ -23,7 +23,7 @@ type Topic struct {
 	State             string                  `json:"state" enum:"published,hidden" maxLength:"9" doc:"Lifecycle state. A hidden topic is visible only to its author and to staff."`
 	HiddenBy          *string                 `json:"hidden_by" enum:"author,moderator,trust" maxLength:"9" doc:"Who hid the topic: its author, a moderator, or the trust-and-safety service. null when state is published."`
 	AccessScope       string                  `json:"access_scope" enum:"public,login,role,users" maxLength:"6" doc:"Who may read the topic: everyone, signed-in users, holders of granted roles, or granted users. The author and staff always may."`
-	Category          string                  `json:"category" enum:"galgame,technique,others" maxLength:"9" doc:"Deprecated: read section instead. The legacy category of the section's group."`
+	Category          string                  `json:"category" enum:"galgame,technique,others" maxLength:"9" doc:"Deprecated: read section instead. The legacy category of the topic's section."`
 	Section           TopicSectionKey         `json:"section" doc:"The topic's section."`
 	Sections          []SectionSlug           `json:"sections" maxItems:"1" doc:"Deprecated: read section instead. section as a one-item array."`
 	AISummary         *string                 `json:"ai_summary" maxLength:"200" doc:"Summary the model wrote for a long body, shown as AI generated. null when the topic has none. Free text; never use it as a decision input."`

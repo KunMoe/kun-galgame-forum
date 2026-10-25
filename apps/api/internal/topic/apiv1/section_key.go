@@ -55,7 +55,30 @@ func enumSchema(values []string, description string) *huma.Schema {
 type TopicSectionKey string
 
 func (TopicSectionKey) Schema(huma.Registry) *huma.Schema {
-	return enumSchema(sectionKeys, "Topic section key. Hyphenated URL segment of /section/{key}. listSections gives each one's label, group and rules.")
+	return enumSchema(sectionKeys, "Topic section key, as in /topic?section={key}. listSections gives each one's label and rules.")
+}
+
+// RetiredSectionKeys lists the retired keys that now mean key, sorted.
+func RetiredSectionKeys(key string) []RetiredSectionKey {
+	out := []RetiredSectionKey{}
+	for old, successor := range legacySectionKeys {
+		if successor == key {
+			out = append(out, RetiredSectionKey(old))
+		}
+	}
+	slices.Sort(out)
+	return out
+}
+
+type RetiredSectionKey string
+
+func (RetiredSectionKey) Schema(huma.Registry) *huma.Schema {
+	values := make([]string, 0, len(legacySectionKeys))
+	for old := range legacySectionKeys {
+		values = append(values, old)
+	}
+	slices.Sort(values)
+	return enumSchema(values, "A section key retired on 2026-10-24. Old links and App builds may still carry it.")
 }
 
 type SectionSlug string

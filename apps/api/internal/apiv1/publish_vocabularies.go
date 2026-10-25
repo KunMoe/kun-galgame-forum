@@ -81,6 +81,7 @@ var vocabularies = []vocabulary{
 	{"ReviewItemState", []string{"pending", "claimed", "actioned", "dismissed"}},
 	{"ReviewItemTargetState", []string{"claimed", "actioned", "dismissed"}},
 	{"ReviewSubjectState", []string{"visible", "hidden", "deleted", "gone"}},
+	{"RetiredSectionKey", []string{"g-article", "g-chatting", "g-news", "g-other", "g-releases", "g-seeking", "g-walkthrough", "o-anime", "o-comics", "o-daily", "o-essay", "o-forum", "o-music", "o-novel", "o-other", "o-patch", "t-adobe", "t-ai", "t-algorithm", "t-android", "t-crack", "t-help", "t-languages", "t-linux", "t-other", "t-practical", "t-web"}},
 	{"SectionRequestDecision", []string{"approved", "rejected"}},
 	{"SectionRequestState", []string{"pending", "approved", "rejected"}},
 	{"HiddenSectionsMode", []string{"include", "exclude"}},
