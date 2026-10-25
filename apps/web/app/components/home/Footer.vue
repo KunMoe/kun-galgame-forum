@@ -5,7 +5,7 @@ import { KUN_FOOTER_COLUMNS, KUN_FOOTER_ORG } from '~/config/footer'
 <template>
   <footer class="text-default-500 space-y-2.5 text-center text-xs">
     <nav
-      class="grid grid-cols-3 gap-x-1"
+      class="grid grid-cols-[repeat(3,auto)] justify-between gap-x-2"
       aria-label="鲲 Galgame 与 NextMoe 站点"
     >
       <div
