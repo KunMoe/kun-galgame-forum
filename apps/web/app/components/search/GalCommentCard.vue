@@ -12,6 +12,7 @@ const WALL_LABEL: Record<WallCommentSearchHit['subject_type'], string> = {
   galgame_rating: '游戏评分',
   galgame_resource: '下载资源',
   galgame_quiz: '游戏答题',
+  galgame_walkthrough: '游戏攻略',
   toolset: 'Gal 工具',
   website: '网站'
 }

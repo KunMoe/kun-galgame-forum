@@ -58,12 +58,13 @@ var neverPushed = map[string]struct{}{
 // Wall comments live in community, which projects them into the feed itself
 // since wave 13 D5; the drainer tombstones what the forum pushed of them.
 var withdrawn = map[string]struct{}{
-	"GALGAME_COMMENT_CREATION":          {},
-	"GALGAME_RESOURCE_COMMENT_CREATION": {},
-	"GALGAME_RATING_COMMENT_CREATION":   {},
-	"GALGAME_QUIZ_COMMENT_CREATION":     {},
-	"GALGAME_WEBSITE_COMMENT_CREATION":  {},
-	"TOOLSET_COMMENT_CREATION":          {},
+	"GALGAME_COMMENT_CREATION":             {},
+	"GALGAME_RESOURCE_COMMENT_CREATION":    {},
+	"GALGAME_RATING_COMMENT_CREATION":      {},
+	"GALGAME_QUIZ_COMMENT_CREATION":        {},
+	"GALGAME_WALKTHROUGH_COMMENT_CREATION": {},
+	"GALGAME_WEBSITE_COMMENT_CREATION":     {},
+	"TOOLSET_COMMENT_CREATION":             {},
 }
 
 func IsPushed(feedType string) bool {

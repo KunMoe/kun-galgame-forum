@@ -744,6 +744,7 @@
           "galgame_rating_comment_creation",
           "galgame_quiz_creation",
           "galgame_quiz_comment_creation",
+          "galgame_walkthrough_comment_creation",
           "galgame_website_creation",
           "galgame_website_comment_creation",
           "toolset_creation",
@@ -752,7 +753,7 @@
           "todo_creation",
           "update_log_creation"
         ],
-        "maxLength": 33,
+        "maxLength": 36,
         "type": "string",
         "x-vocabulary-closed": true
       },
@@ -24887,10 +24888,11 @@
           "galgame_rating",
           "galgame_resource",
           "galgame_quiz",
+          "galgame_walkthrough",
           "toolset",
           "website"
         ],
-        "maxLength": 16,
+        "maxLength": 19,
         "type": "string",
         "x-vocabulary-closed": true
       },

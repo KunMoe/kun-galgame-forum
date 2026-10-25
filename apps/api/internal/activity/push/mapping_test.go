@@ -20,8 +20,8 @@ var occurred = time.Date(2026, 9, 26, 4, 30, 0, 123456000, time.UTC)
 
 func TestFeedTypePartition(t *testing.T) {
 	pairs := activityapiv1.FeedTypePairs()
-	if len(pairs) != 22 {
-		t.Fatalf("feedTypes = %d, want 22", len(pairs))
+	if len(pairs) != 23 {
+		t.Fatalf("feedTypes = %d, want 23", len(pairs))
 	}
 	var in, gone, out []string
 	seen := map[string]bool{}
@@ -40,8 +40,8 @@ func TestFeedTypePartition(t *testing.T) {
 	if len(in) != 13 {
 		t.Errorf("pushed from feedTypes = %d %v, want 13", len(in), in)
 	}
-	if len(gone) != 6 || len(withdrawn) != 6 {
-		t.Errorf("withdrawn from feedTypes = %d %v, want the 6 wall comment types", len(gone), gone)
+	if len(gone) != 7 || len(withdrawn) != 7 {
+		t.Errorf("withdrawn from feedTypes = %d %v, want the 7 wall comment types", len(gone), gone)
 	}
 	if len(out) != 3 {
 		t.Errorf("never-pushed from feedTypes = %d %v, want 3", len(out), out)

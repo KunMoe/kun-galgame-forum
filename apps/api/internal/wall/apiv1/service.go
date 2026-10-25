@@ -21,18 +21,21 @@ type GalgameResolver func(ctx context.Context, workID int) (bool, error)
 
 type GalgamesResolver func(ctx context.Context, workIDs []int) (map[int]bool, error)
 
+type WalkthroughResolver func(ctx context.Context, id int) (workID int, isNSFW, found bool, err error)
+
 type Service struct {
-	store     *repository.Store
-	community *communityclient.Client
-	users     *userclient.Client
-	convert   *content.Converter
-	galgame   GalgameResolver
-	galgames  GalgamesResolver
-	award     AwardFunc
-	cdn       string
-	readSync  ReadSyncFunc
-	works     WorkRefsFunc
-	websites  WebsitesFunc
+	store       *repository.Store
+	community   *communityclient.Client
+	users       *userclient.Client
+	convert     *content.Converter
+	galgame     GalgameResolver
+	galgames    GalgamesResolver
+	walkthrough WalkthroughResolver
+	award       AwardFunc
+	cdn         string
+	readSync    ReadSyncFunc
+	works       WorkRefsFunc
+	websites    WebsitesFunc
 }
 
 func New(
@@ -53,6 +56,11 @@ func New(
 
 var errUnconfigured = errors.New("apiv1 walls: service is not configured")
 
+func (s *Service) WithWalkthroughs(resolve WalkthroughResolver) *Service {
+	s.walkthrough = resolve
+	return s
+}
+
 func (s *Service) ready() bool {
 	return s != nil && s.store != nil && s.community != nil && s.users != nil && s.convert != nil && s.galgame != nil
 }
@@ -61,6 +69,7 @@ type subject struct {
 	spec        subjectSpec
 	id          int
 	ownerID     int
+	workID      int
 	websiteSlug string
 	isNSFW      bool
 }
@@ -112,6 +121,26 @@ func (s *Service) resolveSubject(ctx context.Context, spec subjectSpec, id int, 
 		}
 		sub.websiteSlug = w.URL
 		sub.isNSFW = w.AgeLimit != "all"
+		return sub, nil
+	case "galgame_walkthrough":
+		if s.walkthrough == nil {
+			return nil, problem.Internal(errUnconfigured)
+		}
+		workID, isNSFW, found, werr := s.walkthrough(ctx, id)
+		if werr != nil {
+			return nil, problem.Unavailable(werr)
+		}
+		if !found {
+			return nil, notFound()
+		}
+		hidden, herr := s.store.WorkHidden(workID)
+		if herr != nil {
+			return nil, problem.Internal(herr)
+		}
+		if hidden {
+			return nil, notFound()
+		}
+		sub.workID, sub.isNSFW = workID, isNSFW
 		return sub, nil
 	case "galgame_rating":
 		sub.ownerID, err = s.store.RatingAuthor(id)

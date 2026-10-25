@@ -13,10 +13,10 @@ import (
 
 type SubjectType string
 
-var subjectTypes = []any{"galgame", "galgame_rating", "galgame_resource", "galgame_quiz", "toolset", "website"}
+var subjectTypes = []any{"galgame", "galgame_rating", "galgame_resource", "galgame_quiz", "galgame_walkthrough", "toolset", "website"}
 
 func (SubjectType) Schema(huma.Registry) *huma.Schema {
-	n := 16
+	n := 19
 	return &huma.Schema{
 		Type:        huma.TypeString,
 		Enum:        subjectTypes,
@@ -69,6 +69,12 @@ var subjects = map[SubjectType]subjectSpec{
 		maxLength: 1007, feedType: "GALGAME_QUIZ_COMMENT_CREATION", counterTable: "galgame_quiz",
 		hasOwner: true, linkPrefix: "/galgame-quiz/", legacyKey: "quiz",
 		rootKind: msgModel.KindQuiz,
+	},
+	"galgame_walkthrough": {
+		typ: "galgame_walkthrough", anchorKind: communityclient.AnchorSiteResource, anchorPrefix: "walkthrough:",
+		editPerm: perm.CommentWalkthroughEdit, deletePerm: perm.CommentWalkthroughDelete,
+		maxLength: 1007, feedType: "GALGAME_WALKTHROUGH_COMMENT_CREATION",
+		linkPrefix: "/galgame-walkthrough/", rootKind: msgModel.KindWalkthrough,
 	},
 	"toolset": {
 		typ: "toolset", anchorKind: communityclient.AnchorSiteResource, anchorPrefix: "toolset:",

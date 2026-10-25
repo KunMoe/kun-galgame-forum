@@ -49,6 +49,8 @@ export const KUN_PERMISSION_META: Record<ForumPermission, KunPermissionMeta> = {
   'comment.resource.delete': { label: '删除资源评论', group: '评论' },
   'comment.quiz.edit': { label: '编辑题目评论', group: '评论' },
   'comment.quiz.delete': { label: '删除题目评论', group: '评论' },
+  'comment.walkthrough.edit': { label: '编辑攻略评论', group: '评论' },
+  'comment.walkthrough.delete': { label: '删除攻略评论', group: '评论' },
   'poll.create_any': { label: '为任意话题创建投票', group: '投票' },
   'poll.edit_any': { label: '编辑任意投票', group: '投票' },
   'poll.delete_any': { label: '删除任意投票', group: '投票' },

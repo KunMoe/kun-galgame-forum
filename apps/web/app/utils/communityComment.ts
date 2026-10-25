@@ -7,6 +7,7 @@ export type CommunityCommentTarget =
   | { kind: 'toolset'; toolsetId: number }
   | { kind: 'resource'; resourceId: number }
   | { kind: 'quiz'; quizId: number }
+  | { kind: 'walkthrough'; walkthroughId: number }
 
 export interface CommunityCommentSurface {
   subjectType: WallSubjectType
@@ -76,6 +77,15 @@ export const communityCommentSurface = (
         maxLength: 1007,
         anchorPrefix: 'quiz-comment',
         composerPlaceholder: '聊聊这道题目吧～请不要直接剧透答案',
+        showsReplyTarget: true
+      }
+    case 'walkthrough':
+      return {
+        subjectType: 'galgame_walkthrough',
+        subjectId: String(target.walkthroughId),
+        maxLength: 1007,
+        anchorPrefix: 'walkthrough-comment',
+        composerPlaceholder: '这份攻略有遗漏或走不通的地方? 欢迎在这里补充～',
         showsReplyTarget: true
       }
   }

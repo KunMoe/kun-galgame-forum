@@ -15,20 +15,22 @@ const (
 	ReplyDeleteAny Permission = "reply.delete_any"
 	ReplyPin       Permission = "reply.pin"
 
-	CommentTopicEdit      Permission = "comment.topic.edit"
-	CommentTopicDelete    Permission = "comment.topic.delete"
-	CommentGalgameEdit    Permission = "comment.galgame.edit"
-	CommentGalgameDelete  Permission = "comment.galgame.delete"
-	CommentRatingEdit     Permission = "comment.rating.edit"
-	CommentRatingDelete   Permission = "comment.rating.delete"
-	CommentWebsiteEdit    Permission = "comment.website.edit"
-	CommentWebsiteDelete  Permission = "comment.website.delete"
-	CommentToolsetEdit    Permission = "comment.toolset.edit"
-	CommentToolsetDelete  Permission = "comment.toolset.delete"
-	CommentResourceEdit   Permission = "comment.resource.edit"
-	CommentResourceDelete Permission = "comment.resource.delete"
-	CommentQuizEdit       Permission = "comment.quiz.edit"
-	CommentQuizDelete     Permission = "comment.quiz.delete"
+	CommentTopicEdit         Permission = "comment.topic.edit"
+	CommentTopicDelete       Permission = "comment.topic.delete"
+	CommentGalgameEdit       Permission = "comment.galgame.edit"
+	CommentGalgameDelete     Permission = "comment.galgame.delete"
+	CommentRatingEdit        Permission = "comment.rating.edit"
+	CommentRatingDelete      Permission = "comment.rating.delete"
+	CommentWebsiteEdit       Permission = "comment.website.edit"
+	CommentWebsiteDelete     Permission = "comment.website.delete"
+	CommentToolsetEdit       Permission = "comment.toolset.edit"
+	CommentToolsetDelete     Permission = "comment.toolset.delete"
+	CommentResourceEdit      Permission = "comment.resource.edit"
+	CommentResourceDelete    Permission = "comment.resource.delete"
+	CommentQuizEdit          Permission = "comment.quiz.edit"
+	CommentQuizDelete        Permission = "comment.quiz.delete"
+	CommentWalkthroughEdit   Permission = "comment.walkthrough.edit"
+	CommentWalkthroughDelete Permission = "comment.walkthrough.delete"
 
 	PollCreateAny      Permission = "poll.create_any"
 	PollEditAny        Permission = "poll.edit_any"
@@ -106,6 +108,8 @@ var moderatorPerms = []Permission{
 	CommentResourceDelete,
 	CommentQuizEdit,
 	CommentQuizDelete,
+	CommentWalkthroughEdit,
+	CommentWalkthroughDelete,
 	PollCreateAny,
 	PollEditAny,
 	PollDeleteAny,

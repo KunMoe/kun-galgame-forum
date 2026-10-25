@@ -30,6 +30,7 @@ var feedTypes = []struct{ kind, feed string }{
 	{"galgame_rating_comment_creation", "GALGAME_RATING_COMMENT_CREATION"},
 	{"galgame_quiz_creation", "GALGAME_QUIZ_CREATION"},
 	{"galgame_quiz_comment_creation", "GALGAME_QUIZ_COMMENT_CREATION"},
+	{"galgame_walkthrough_comment_creation", "GALGAME_WALKTHROUGH_COMMENT_CREATION"},
 	{"galgame_website_creation", "GALGAME_WEBSITE_CREATION"},
 	{"galgame_website_comment_creation", "GALGAME_WEBSITE_COMMENT_CREATION"},
 	{"toolset_creation", "TOOLSET_CREATION"},

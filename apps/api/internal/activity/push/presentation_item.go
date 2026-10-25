@@ -16,18 +16,20 @@ const (
 	anchorKindGame     int16 = 1
 	anchorKindResource int16 = 2
 
-	prefixResource = "resource:"
-	prefixRating   = "rating:"
-	prefixQuiz     = "quiz:"
-	prefixToolset  = "toolset:"
-	prefixWebsite  = "website:"
+	prefixResource    = "resource:"
+	prefixRating      = "rating:"
+	prefixQuiz        = "quiz:"
+	prefixWalkthrough = "walkthrough:"
+	prefixToolset     = "toolset:"
+	prefixWebsite     = "website:"
 
-	titleGalgame  = "Galgame"
-	titleResource = "Galgame 资源"
-	titleRating   = "评分"
-	titleQuiz     = "Galgame 题目"
-	titleToolset  = "工具集"
-	titleWebsite  = "网站"
+	titleGalgame     = "Galgame"
+	titleResource    = "Galgame 资源"
+	titleRating      = "评分"
+	titleQuiz        = "Galgame 题目"
+	titleWalkthrough = "Galgame 攻略"
+	titleToolset     = "工具集"
+	titleWebsite     = "网站"
 )
 
 func presentationTombstone(k presentationKey, rev int64) communityclient.AnchorPresentationItem {
@@ -111,6 +113,21 @@ func (p *Presenter) livePresentation(ctx context.Context, k presentationKey, st 
 		return p.workTiedItem(k, "/galgame-rating/"+strconv.Itoa(id), workName(ref.CatalogName), titleRating, ref, rev), true
 	case k.Kind == anchorKindResource && strings.HasPrefix(k.ID, prefixQuiz):
 		return p.liveQuiz(ctx, k, st, rev)
+	case k.Kind == anchorKindResource && strings.HasPrefix(k.ID, prefixWalkthrough):
+		id, ok := parseStrictInt64(strings.TrimPrefix(k.ID, prefixWalkthrough))
+		if !ok {
+			return communityclient.AnchorPresentationItem{}, false
+		}
+		workID, ok := st.walkthroughs[id]
+		if !ok {
+			return communityclient.AnchorPresentationItem{}, false
+		}
+		ref, ok := p.workRef(ctx, st, workID)
+		if !ok {
+			return communityclient.AnchorPresentationItem{}, false
+		}
+		path := "/galgame/" + strconv.Itoa(workID) + "/walkthrough/" + strconv.FormatInt(id, 10)
+		return p.workTiedItem(k, path, workName(ref.CatalogName)+" 攻略", titleWalkthrough, ref, rev), true
 	case k.Kind == anchorKindResource && strings.HasPrefix(k.ID, prefixToolset):
 		id, ok := parseStrictInt(strings.TrimPrefix(k.ID, prefixToolset))
 		if !ok {

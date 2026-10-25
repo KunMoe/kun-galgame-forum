@@ -5976,7 +5976,7 @@ export interface components {
         /** @enum {string} */
         ActivityTopicSection: "normal" | "help" | "all";
         /** @enum {string} */
-        ActivityType: "topic_creation" | "topic_reply_creation" | "topic_comment_creation" | "topic_upvote" | "best_answer_set" | "galgame_creation" | "galgame_edit" | "galgame_pr_creation" | "galgame_resource_creation" | "galgame_resource_comment_creation" | "galgame_comment_creation" | "galgame_rating_creation" | "galgame_rating_comment_creation" | "galgame_quiz_creation" | "galgame_quiz_comment_creation" | "galgame_website_creation" | "galgame_website_comment_creation" | "toolset_creation" | "toolset_resource_creation" | "toolset_comment_creation" | "todo_creation" | "update_log_creation";
+        ActivityType: "topic_creation" | "topic_reply_creation" | "topic_comment_creation" | "topic_upvote" | "best_answer_set" | "galgame_creation" | "galgame_edit" | "galgame_pr_creation" | "galgame_resource_creation" | "galgame_resource_comment_creation" | "galgame_comment_creation" | "galgame_rating_creation" | "galgame_rating_comment_creation" | "galgame_quiz_creation" | "galgame_quiz_comment_creation" | "galgame_walkthrough_comment_creation" | "galgame_website_creation" | "galgame_website_comment_creation" | "toolset_creation" | "toolset_resource_creation" | "toolset_comment_creation" | "todo_creation" | "update_log_creation";
         ActivityUpdateLog: {
             /** @description Site version the change shipped in. Free text; never use it as a decision input. */
             release_version: string;
@@ -14997,7 +14997,7 @@ export interface components {
             subject_type: components["schemas"]["WallSubjectType"];
         };
         /** @enum {string} */
-        WallSubjectType: "galgame" | "galgame_rating" | "galgame_resource" | "galgame_quiz" | "toolset" | "website";
+        WallSubjectType: "galgame" | "galgame_rating" | "galgame_resource" | "galgame_quiz" | "galgame_walkthrough" | "toolset" | "website";
         Website: {
             /**
              * Format: int64

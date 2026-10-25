@@ -22,7 +22,8 @@ export const KUN_ACTIVITY_TYPE_TYPE: Record<ActivityType, string> = {
   toolset_resource_creation: '工具资源',
   toolset_comment_creation: '工具评论',
   galgame_resource_comment_creation: 'Galgame 资源评论',
-  galgame_quiz_comment_creation: 'Galgame 题目讨论'
+  galgame_quiz_comment_creation: 'Galgame 题目讨论',
+  galgame_walkthrough_comment_creation: 'Galgame 攻略评论'
 }
 
 export const KUN_ACTIVITY_GROUPS: { label: string; types: ActivityType[] }[] = [
@@ -36,6 +37,7 @@ export const KUN_ACTIVITY_GROUPS: { label: string; types: ActivityType[] }[] = [
       'galgame_resource_comment_creation',
       'galgame_quiz_creation',
       'galgame_quiz_comment_creation',
+      'galgame_walkthrough_comment_creation',
       'galgame_rating_creation',
       'galgame_rating_comment_creation',
       'galgame_comment_creation',
@@ -78,6 +80,7 @@ export const KUN_ACTIVITY_ICON_MAP: Record<ActivityType, string> = {
   galgame_quiz_creation: 'lucide:brain',
   galgame_resource_comment_creation: 'lucide:message-square-text',
   galgame_quiz_comment_creation: 'lucide:message-square-text',
+  galgame_walkthrough_comment_creation: 'lucide:message-square-text',
   galgame_edit: 'lucide:file-pen-line',
   galgame_pr_creation: 'lucide:git-pull-request',
   toolset_creation: 'lucide:wrench',

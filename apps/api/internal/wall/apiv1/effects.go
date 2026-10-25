@@ -62,7 +62,7 @@ func (s *Service) afterCreate(ctx context.Context, sub *subject, authorID int, b
 	if err != nil {
 		created = time.Now()
 	}
-	workID := 0
+	workID := sub.workID
 	if sub.spec.typ == "galgame" {
 		workID = sub.id
 	}

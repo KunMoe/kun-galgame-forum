@@ -81,11 +81,12 @@ func MapNotification(n communityclient.NotificationView, post *communityclient.P
 }
 
 var resourceAnchorKinds = map[string]string{
-	"rating":   model.KindRating,
-	"toolset":  model.KindToolset,
-	"resource": model.KindResource,
-	"quiz":     model.KindQuiz,
-	"website":  model.KindWebsite,
+	"rating":      model.KindRating,
+	"toolset":     model.KindToolset,
+	"resource":    model.KindResource,
+	"quiz":        model.KindQuiz,
+	"walkthrough": model.KindWalkthrough,
+	"website":     model.KindWebsite,
 }
 
 func postRef(n communityclient.NotificationView) model.Ref {

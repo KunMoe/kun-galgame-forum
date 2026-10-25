@@ -2,6 +2,7 @@ package app
 
 import (
 	"context"
+	"strconv"
 
 	"kun-galgame-api/internal/apiv1"
 	"kun-galgame-api/internal/apiv1/content"
@@ -60,7 +61,22 @@ func newWallV1(
 		}
 		return out, nil
 	}
+	walkthrough := func(ctx context.Context, id int) (int, bool, bool, error) {
+		w, found, appErr := galgame.CatalogWalkthrough(ctx, strconv.Itoa(id))
+		if appErr != nil {
+			return 0, false, false, appErr
+		}
+		if !found {
+			return 0, false, false, nil
+		}
+		workID, err := strconv.Atoi(w.WorkID)
+		if err != nil {
+			return 0, false, false, err
+		}
+		return workID, w.WorkContentLimit != "sfw", true, nil
+	}
 	return wallapiv1.New(wallRepo.NewStore(db), community, users, convert, resolve, exist, moemoepoint.Award, cdn).
+		WithWalkthroughs(walkthrough).
 		WithFollowing(msgRepo.NewMessageRepository(db).MarkCommunityThreadRead, works,
 			websiteapiv1.New(websiteRepo.NewStore(db), users, images, cdn).SummariesByIDs)
 }
