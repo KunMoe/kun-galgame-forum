@@ -1,8 +1,10 @@
 import type {
+  Image,
   WalkthroughChart,
   WalkthroughCharacter,
   WalkthroughNode,
-  WalkthroughSegment
+  WalkthroughSegment,
+  WorkCharacter
 } from '#shared/utils/api/schemas'
 import type {
   GalgameWalkthroughGraphNode,
@@ -22,9 +24,27 @@ export const walkthroughText = (
 ) => {
   const zh = localized?.['zh-Hans']?.value
   if (mode === 'ja' || !zh || zh === original) {
-    return { main: original, sub: '' }
+    return { main: original, sub: '', lang: 'ja' }
   }
-  return mode === 'zh' ? { main: zh, sub: '' } : { main: original, sub: zh }
+  return { main: zh, sub: mode === 'both' ? original : '', lang: 'zh-Hans' }
+}
+
+export const walkthroughPortraits = (
+  characters: WalkthroughCharacter[],
+  roster: WorkCharacter[]
+) => {
+  const byId = new Map(roster.map((c) => [c.id, c]))
+  const out = new Map<string, Image>()
+  for (const c of characters) {
+    const member = c.catalog_character
+      ? byId.get(c.catalog_character.id)
+      : undefined
+    const image = member?.image
+    if (image) {
+      out.set(c.key, image)
+    }
+  }
+  return out
 }
 
 export const characterTones = (characters: WalkthroughCharacter[]) =>

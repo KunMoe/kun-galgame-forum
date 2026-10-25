@@ -15,8 +15,8 @@ const smoothPath = (points: Point[]) => {
   for (let i = 0; i < rest.length; i++) {
     const p = rest[i]!
     const prev = i === 0 ? first : rest[i - 1]!
-    const midX = (prev.x + p.x) / 2
-    d += ` C ${midX} ${prev.y}, ${midX} ${p.y}, ${p.x} ${p.y}`
+    const midY = (prev.y + p.y) / 2
+    d += ` C ${prev.x} ${midY}, ${p.x} ${midY}, ${p.x} ${p.y}`
   }
   return d
 }
@@ -26,8 +26,8 @@ export const layoutWalkthroughGraph = (
 ): GalgameWalkthroughGraphLayout => {
   const g = new dagre.graphlib.Graph({ multigraph: true })
   g.setGraph({
-    rankdir: 'LR',
-    nodesep: 18,
+    rankdir: 'TB',
+    nodesep: 24,
     ranksep: 56,
     edgesep: 8,
     marginx: MARGIN,
@@ -58,8 +58,8 @@ export const layoutWalkthroughGraph = (
       ...e,
       path: smoothPath(points),
       head: { x: last.x, y: last.y, angle },
-      labelX: mid.x,
-      labelY: mid.y - 8
+      labelX: mid.x + 8,
+      labelY: mid.y + 3
     }
   })
   const graph = g.graph()

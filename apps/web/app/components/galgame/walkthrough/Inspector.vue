@@ -46,11 +46,7 @@ const arriving = computed(() =>
 </script>
 
 <template>
-  <KunCard
-    :is-hoverable="false"
-    :is-transparent="false"
-    content-class="space-y-3"
-  >
+  <div class="lg:border-default-200 space-y-3 lg:border-l lg:pl-4">
     <template v-if="edge">
       <p class="text-default-500 text-xs">
         {{ nodeById(edge.from)?.label }} → {{ nodeById(edge.to)?.label }}
@@ -113,5 +109,5 @@ const arriving = computed(() =>
     <p v-else class="text-default-500 text-sm">
       点击一条连线, 查看这一段要选的选项; 点击存档或结局, 查看它连接的路线。
     </p>
-  </KunCard>
+  </div>
 </template>

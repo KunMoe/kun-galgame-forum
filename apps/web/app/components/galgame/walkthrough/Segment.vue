@@ -39,6 +39,11 @@ const ending = computed(() =>
     : undefined
 )
 
+const segmentTone = computed(() => {
+  const key = segmentCharacterKey(props.chart, props.segment)
+  return toneOf(key ? props.tones.get(key) : null)
+})
+
 const endingTone = computed(() =>
   toneOf(
     ending.value?.character_keys[0]
@@ -60,12 +65,9 @@ const numbered = computed(() => {
 </script>
 
 <template>
-  <KunCard
+  <section
     :id="`wt-seg-${segment.key}`"
-    :is-hoverable="false"
-    :is-transparent="false"
-    class-name="scroll-mt-24"
-    content-class="space-y-3"
+    :class="cn('scroll-mt-24 space-y-3 border-l-2 pl-4', segmentTone.border)"
   >
     <div class="flex flex-wrap items-center gap-2">
       <template v-if="from.node_type === 'save' && from.node_key">
@@ -169,7 +171,7 @@ const numbered = computed(() => {
       </li>
     </ol>
 
-    <div class="border-default-200 border-t pt-3">
+    <div>
       <div
         v-if="ending"
         :class="
@@ -197,5 +199,5 @@ const numbered = computed(() => {
       </span>
       <span v-else class="text-default-400 text-sm">本段到此为止</span>
     </div>
-  </KunCard>
+  </section>
 </template>

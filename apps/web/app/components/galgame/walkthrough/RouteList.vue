@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import type {
+  Image,
   WalkthroughCharacter,
   WalkthroughChart
 } from '#shared/utils/api/schemas'
@@ -11,6 +12,7 @@ import {
 const props = defineProps<{
   chart: WalkthroughChart
   characters: WalkthroughCharacter[]
+  portraits: Map<string, Image>
 }>()
 
 const selectedRoute = defineModel<string | null>('selectedRoute', {
@@ -42,11 +44,6 @@ const toneClass = (tone: number | null) =>
         tone % KUN_GALGAME_WALKTHROUGH_TONES.length
       ]!
 
-const endingCount = (key: string) =>
-  routes.value
-    .find((r) => r.key === key)
-    ?.segments.filter((s) => s.to_node.node_type === 'ending').length ?? 0
-
 const highlightedSave = ref<string | null>(null)
 let clearHighlight: ReturnType<typeof setTimeout> | undefined
 
@@ -67,9 +64,9 @@ const jump = async (saveKey: string) => {
 </script>
 
 <template>
-  <div class="grid gap-4 lg:grid-cols-[15rem_minmax(0,1fr)]">
+  <div class="grid gap-6 lg:grid-cols-[13rem_minmax(0,1fr)]">
     <nav
-      class="flex gap-2 overflow-x-auto pb-1 lg:sticky lg:top-24 lg:flex-col lg:self-start lg:overflow-visible"
+      class="hidden flex-col gap-1 lg:sticky lg:top-24 lg:flex lg:self-start"
       aria-label="攻略角色"
     >
       <KunButton
@@ -77,23 +74,31 @@ const jump = async (saveKey: string) => {
         :key="route.key"
         :variant="current?.key === route.key ? 'flat' : 'light'"
         :color="current?.key === route.key ? 'primary' : 'default'"
-        class-name="shrink-0 justify-start"
+        class-name="justify-start"
         @click="selectedRoute = route.key"
       >
-        <span
-          :class="
-            cn('size-2.5 shrink-0 rounded-full', toneClass(route.tone).dot)
+        <GalgameWalkthroughPortrait
+          :image="portraits.get(route.key)"
+          :name="displayName(route.key, route.name)"
+          :icon="
+            route.key === COMMON_ROUTE_KEY ? 'lucide:git-merge' : undefined
           "
+          size="avatar"
         />
         <span class="truncate">{{ displayName(route.key, route.name) }}</span>
-        <span class="text-default-400 ml-auto pl-2 text-xs">
-          {{ endingCount(route.key) }} 结局
-        </span>
+        <span
+          :class="
+            cn(
+              'ml-auto size-2 shrink-0 rounded-full',
+              toneClass(route.tone).dot
+            )
+          "
+        />
       </KunButton>
     </nav>
 
-    <div v-if="current" class="min-w-0 space-y-3">
-      <GalgameWalkthroughSegmentCard
+    <div v-if="current" class="min-w-0 space-y-8">
+      <GalgameWalkthroughSegment
         v-for="segment in current.segments"
         :key="segment.key"
         :segment="segment"

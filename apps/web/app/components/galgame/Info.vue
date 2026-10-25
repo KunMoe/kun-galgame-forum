@@ -9,6 +9,7 @@ import type {
   Work,
   WorkCompany
 } from '#shared/utils/api/schemas'
+import { workReleaseText } from '~/utils/galgame/releaseDate'
 
 const { workHistoryUrl } = useNextmoeEditor()
 
@@ -26,22 +27,6 @@ const galgame = inject<Work>('galgame')
 const nameOf = useCatalogName()
 
 const getLanguageName = getGalgameOriginalLanguageName
-
-const releaseText = (
-  date?: string | null,
-  precision?: 'day' | 'month' | 'year' | null
-) => {
-  if (!date) {
-    return '未定 (TBA)'
-  }
-  if (precision === 'year') {
-    return date.slice(0, 4)
-  }
-  if (precision === 'month') {
-    return date.slice(0, 7)
-  }
-  return getReleaseDateText(date, false)
-}
 </script>
 
 <template>
@@ -116,7 +101,7 @@ const releaseText = (
       <div class="flex items-center justify-between">
         <dt class="text-default-500 text-sm font-medium">发售日期</dt>
         <dd class="text-default-700 text-sm">
-          {{ releaseText(releaseDate, releaseDatePrecision) }}
+          {{ workReleaseText(releaseDate, releaseDatePrecision) }}
         </dd>
       </div>
 
