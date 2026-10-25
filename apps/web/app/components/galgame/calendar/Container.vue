@@ -9,11 +9,12 @@ import type {
 } from '#shared/utils/api/schemas'
 import { workSummaryToCard } from '~/utils/galgame/workCard'
 
-const { view, month, year, doujin } = useQueryState({
+const { view, month, year, doujin, followed } = useQueryState({
   view: queryString('month'),
   month: queryString(),
   year: queryString(),
-  doujin: queryString()
+  doujin: queryString(),
+  followed: queryString()
 })
 const includeDoujin = computed({
   get: () => doujin.value === '1',
@@ -21,6 +22,16 @@ const includeDoujin = computed({
     doujin.value = v ? '1' : ''
   }
 })
+const includeFollowed = computed({
+  get: () => followed.value === '1',
+  set: (v: boolean) => {
+    followed.value = v ? '1' : ''
+  }
+})
+const { id: currentUserId } = storeToRefs(usePersistUserStore())
+const followedOnly = computed(
+  () => !!currentUserId.value && includeFollowed.value
+)
 const { allowsNsfw, stanceKey } = useContentStance()
 const { excludeQuery } = useTagBlocks()
 const blockKey = computed(() => JSON.stringify(excludeQuery.value))
@@ -50,9 +61,21 @@ const {
   problem: monthProblem
 } = await useApi<ReleaseCalendarMonth>(
   () =>
-    `release-calendar:${month.value}:${stanceKey.value}:${includeDoujin.value}:${blockKey.value}`,
-  (api, { signal }) =>
-    api.GET('/release-calendar', {
+    `release-calendar:${month.value}:${stanceKey.value}:${includeDoujin.value}:${followedOnly.value}:${blockKey.value}`,
+  (api, { signal }) => {
+    if (followedOnly.value) {
+      return api.GET('/me/release-calendar', {
+        params: {
+          query: {
+            ...(month.value ? { month: month.value } : {}),
+            include_nsfw: allowsNsfw.value,
+            ...excludeQuery.value
+          }
+        },
+        signal
+      })
+    }
+    return api.GET('/release-calendar', {
       params: {
         query: {
           ...(month.value ? { month: month.value } : {}),
@@ -62,7 +85,8 @@ const {
         }
       },
       signal
-    }),
+    })
+  },
   { immediate: isMonthView.value, server: isMonthView.value }
 )
 
@@ -73,9 +97,17 @@ const {
   problem: upcomingProblem
 } = await useApi<ReleaseCalendarUpcoming>(
   () =>
-    `release-calendar-upcoming:${stanceKey.value}:${includeDoujin.value}:${blockKey.value}`,
-  (api, { signal }) =>
-    api.GET('/release-calendar/upcoming', {
+    `release-calendar-upcoming:${stanceKey.value}:${includeDoujin.value}:${followedOnly.value}:${blockKey.value}`,
+  (api, { signal }) => {
+    if (followedOnly.value) {
+      return api.GET('/me/release-calendar/upcoming', {
+        params: {
+          query: { include_nsfw: allowsNsfw.value, ...excludeQuery.value }
+        },
+        signal
+      })
+    }
+    return api.GET('/release-calendar/upcoming', {
       params: {
         query: {
           include_nsfw: allowsNsfw.value,
@@ -84,7 +116,8 @@ const {
         }
       },
       signal
-    }),
+    })
+  },
   { immediate: view.value === 'upcoming', server: view.value === 'upcoming' }
 )
 
@@ -95,9 +128,21 @@ const {
   problem: pendingProblem
 } = await useApi<ReleaseCalendarPending>(
   () =>
-    `release-calendar-pending:${year.value}:${stanceKey.value}:${includeDoujin.value}:${blockKey.value}`,
-  (api, { signal }) =>
-    api.GET('/release-calendar/pending', {
+    `release-calendar-pending:${year.value}:${stanceKey.value}:${includeDoujin.value}:${followedOnly.value}:${blockKey.value}`,
+  (api, { signal }) => {
+    if (followedOnly.value) {
+      return api.GET('/me/release-calendar/pending', {
+        params: {
+          query: {
+            ...(year.value ? { year: Number(year.value) } : {}),
+            include_nsfw: allowsNsfw.value,
+            ...excludeQuery.value
+          }
+        },
+        signal
+      })
+    }
+    return api.GET('/release-calendar/pending', {
       params: {
         query: {
           ...(year.value ? { year: Number(year.value) } : {}),
@@ -107,7 +152,8 @@ const {
         }
       },
       signal
-    }),
+    })
+  },
   { immediate: view.value === 'pending', server: view.value === 'pending' }
 )
 
@@ -118,9 +164,17 @@ const {
   problem: tbaProblem
 } = await useApi<ReleaseCalendarTBA>(
   () =>
-    `release-calendar-tba:${stanceKey.value}:${includeDoujin.value}:${blockKey.value}`,
-  (api, { signal }) =>
-    api.GET('/release-calendar/tba', {
+    `release-calendar-tba:${stanceKey.value}:${includeDoujin.value}:${followedOnly.value}:${blockKey.value}`,
+  (api, { signal }) => {
+    if (followedOnly.value) {
+      return api.GET('/me/release-calendar/tba', {
+        params: {
+          query: { include_nsfw: allowsNsfw.value, ...excludeQuery.value }
+        },
+        signal
+      })
+    }
+    return api.GET('/release-calendar/tba', {
       params: {
         query: {
           include_nsfw: allowsNsfw.value,
@@ -129,7 +183,8 @@ const {
         }
       },
       signal
-    }),
+    })
+  },
   { immediate: view.value === 'tba', server: view.value === 'tba' }
 )
 
@@ -201,9 +256,16 @@ const goNextYear = () => {
     <KunTab :items="tabs" v-model="view" variant="bordered" />
 
     <KunSwitch
+      v-if="!followedOnly"
       v-model="includeDoujin"
       label="包含同人作品"
       description="默认只显示原语言为日语的商业作品, 开启后加入同人社团的作品"
+    />
+
+    <KunSwitch
+      v-if="currentUserId"
+      v-model="includeFollowed"
+      label="只看我关注的厂商"
     />
 
     <template v-if="view === 'upcoming'">
@@ -240,6 +302,15 @@ const goNextYear = () => {
               </p>
               <GalgameCard :galgames="cardsOf(grp.items)" />
             </section>
+          </div>
+          <div
+            v-else-if="followedOnly"
+            class="flex flex-col items-center gap-3"
+          >
+            <KunNull description="还没有关注的厂商有作品在这里" />
+            <KunLink to="/galgame/official" size="sm" underline="hover">
+              去厂商页关注
+            </KunLink>
           </div>
           <KunNull v-else description="暂无已定档的未发售作品" />
         </template>
@@ -279,6 +350,15 @@ const goNextYear = () => {
             v-if="pendingData.items.length"
             :galgames="cardsOf(pendingData.items)"
           />
+          <div
+            v-else-if="followedOnly"
+            class="flex flex-col items-center gap-3"
+          >
+            <KunNull description="还没有关注的厂商有作品在这里" />
+            <KunLink to="/galgame/official" size="sm" underline="hover">
+              去厂商页关注
+            </KunLink>
+          </div>
           <KunNull v-else description="该年暂无仅知年份的待定作品" />
         </template>
       </KunLoading>
@@ -308,6 +388,15 @@ const goNextYear = () => {
             v-if="tbaData.items.length"
             :galgames="cardsOf(tbaData.items)"
           />
+          <div
+            v-else-if="followedOnly"
+            class="flex flex-col items-center gap-3"
+          >
+            <KunNull description="还没有关注的厂商有作品在这里" />
+            <KunLink to="/galgame/official" size="sm" underline="hover">
+              去厂商页关注
+            </KunLink>
+          </div>
           <KunNull v-else description="暂无发售日期未定的作品" />
         </template>
       </KunLoading>
@@ -315,13 +404,62 @@ const goNextYear = () => {
 
     <template v-else>
       <KunLoading :loading="monthStatus === 'pending'">
-        <GalgameCalendarMonth
-          v-if="monthData"
-          :data="monthData"
-          @prev="goPrevMonth"
-          @next="goNextMonth"
-          @today="goToday"
-        />
+        <template v-if="monthData">
+          <GalgameCalendarMonth
+            v-if="monthData.items.length || !followedOnly"
+            :data="monthData"
+            @prev="goPrevMonth"
+            @next="goNextMonth"
+            @today="goToday"
+          />
+          <div v-else class="flex flex-col gap-3">
+            <div
+              class="border-default-200 flex items-center justify-between gap-2 rounded-xl border px-2 py-1.5"
+            >
+              <KunButton
+                variant="light"
+                :is-icon-only="true"
+                :disabled="!monthData.has_prev"
+                @click="goPrevMonth"
+              >
+                <KunIcon name="lucide:chevron-left" class="size-5" />
+              </KunButton>
+              <div class="flex flex-col items-center">
+                <span class="font-bold">
+                  {{ ymLabel(monthData.calendar_month) }}
+                </span>
+                <span class="text-default-400 text-xs">
+                  共 {{ monthData.item_count }} 部
+                </span>
+              </div>
+              <KunButton
+                variant="light"
+                :is-icon-only="true"
+                :disabled="!monthData.has_next"
+                @click="goNextMonth"
+              >
+                <KunIcon name="lucide:chevron-right" class="size-5" />
+              </KunButton>
+            </div>
+            <div
+              v-if="
+                monthData.calendar_month !== monthData.today_date.slice(0, 7)
+              "
+              class="flex justify-center"
+            >
+              <KunButton variant="light" size="sm" @click="goToday">
+                <KunIcon name="lucide:undo-2" class="size-4" />
+                回到本月
+              </KunButton>
+            </div>
+            <div class="flex flex-col items-center gap-3">
+              <KunNull description="还没有关注的厂商有作品在这里" />
+              <KunLink to="/galgame/official" size="sm" underline="hover">
+                去厂商页关注
+              </KunLink>
+            </div>
+          </div>
+        </template>
       </KunLoading>
     </template>
   </div>

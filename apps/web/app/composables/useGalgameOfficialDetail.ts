@@ -69,7 +69,8 @@ export const useGalgameOfficialDetail = async (subPath = '') => {
       lang: c.lang ?? '',
       description: intro?.value ?? '',
       description_machine: intro?.is_machine ?? false,
-      alias: c.aliases
+      alias: c.aliases,
+      follower_count: c.follower_count
     }
   })
 

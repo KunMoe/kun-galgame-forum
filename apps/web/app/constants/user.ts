@@ -242,6 +242,11 @@ export const userGalgameGroupOptions = (isOwner: boolean) => {
   // The tab reads /me/playtimes, which only ever answers the caller.
   if (isOwner) {
     options.push({ value: 'playtime', label: '时长', icon: 'lucide:clock' })
+    options.push({
+      value: 'followed-companies',
+      label: '关注的厂商',
+      icon: 'lucide:building-2'
+    })
   }
   return options
 }
@@ -249,9 +254,15 @@ export const userGalgameGroupOptions = (isOwner: boolean) => {
 export const userSegmentGroup = (segment: string): string => {
   if (['topic', 'reply', 'comment'].includes(segment)) return 'topic'
   if (
-    ['galgame', 'rating', 'quiz', 'resource', 'toolset', 'playtime'].includes(
-      segment
-    )
+    [
+      'galgame',
+      'rating',
+      'quiz',
+      'resource',
+      'toolset',
+      'playtime',
+      'followed-companies'
+    ].includes(segment)
   )
     return 'galgame'
   return segment
@@ -270,7 +281,8 @@ export const userSegmentHref = (userId: number, segment: string): string => {
     resource: `${base}/resource/valid`,
     toolset: `${base}/toolset`,
     playtime: `${base}/playtime`,
-    library: `${base}/library`
+    library: `${base}/library`,
+    'followed-companies': `${base}/followed-companies`
   }
   return map[segment] ?? `${base}/${segment}`
 }

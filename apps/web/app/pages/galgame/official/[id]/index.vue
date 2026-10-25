@@ -72,6 +72,11 @@ if (official) {
 
       <template #endContent>
         <div class="space-y-3">
+          <GalgameOfficialFollowButton
+            :company-id="data.id"
+            :follower-count="data.follower_count"
+          />
+
           <div class="flex flex-wrap items-center gap-2">
             <KunChip color="primary">{{ categoryText(data.category) }}</KunChip>
             <KunChip v-if="data.lang" color="secondary">
