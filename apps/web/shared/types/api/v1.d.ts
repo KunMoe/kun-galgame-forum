@@ -5046,7 +5046,7 @@ export interface paths {
         };
         /**
          * List walkthroughs
-         * @description Walkthrough summaries without the chart, by ascending id. work_id narrows to one work, character_id to the walkthroughs whose chart routes to that character. Walkthroughs of adult works only with include_nsfw=true. A cursor collection.
+         * @description Walkthrough summaries without the chart, by ascending id. work_id narrows to one work, character_id to the walkthroughs whose chart routes to that character. Walkthroughs of works shown as adult content (is_nsfw) only with include_nsfw=true; an r18 game that is not shown as adult content is listed either way. A cursor collection.
          */
         get: operations["listWalkthroughs"];
         put?: never;
@@ -5066,7 +5066,7 @@ export interface paths {
         };
         /**
          * Get a walkthrough
-         * @description A walkthrough's choice graph: entries, saves and endings as nodes, segments of choices as edges, and the characters each route and ending belongs to. Text is in the walkthrough's lang; zh-Hans machine translations sit in localized. A walkthrough of an adult work is NOT_FOUND unless include_nsfw=true.
+         * @description A walkthrough's choice graph: entries, saves and endings as nodes, segments of choices as edges, and the characters each route and ending belongs to. Text is in the walkthrough's lang; zh-Hans machine translations sit in localized. Served whatever the work's rating; is_nsfw tells a client that hides adult content to gate it.
          */
         get: operations["getWalkthrough"];
         put?: never;
@@ -14698,6 +14698,8 @@ export interface components {
             ending_count: number;
             /** @description Walkthrough id. */
             id: string;
+            /** @description Whether the work is shown as adult content, the same field as Work.is_nsfw. A client that hides adult content gates the walkthrough on it. */
+            is_nsfw: boolean;
             /**
              * @description Type discriminant. Always walkthrough.
              * @constant
@@ -43309,7 +43311,7 @@ export interface operations {
                 cursor?: string;
                 /** @description Page size. */
                 limit?: number;
-                /** @description When true, walkthroughs of adult works are included. */
+                /** @description When true, walkthroughs of works shown as adult content (is_nsfw) are included. */
                 include_nsfw?: boolean;
             };
             header?: never;
@@ -43358,10 +43360,7 @@ export interface operations {
     };
     getWalkthrough: {
         parameters: {
-            query?: {
-                /** @description When true, a walkthrough of an adult work is readable; otherwise it is NOT_FOUND. */
-                include_nsfw?: boolean;
-            };
+            query?: never;
             header?: never;
             path: {
                 /** @description Walkthrough id. */

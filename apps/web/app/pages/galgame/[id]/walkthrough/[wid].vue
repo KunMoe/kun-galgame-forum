@@ -12,13 +12,10 @@ const workId = String(params.id)
 const walkthroughId = String(params.wid)
 
 const { data: walkthrough, problem } = await useApi<Walkthrough>(
-  () => `walkthrough:${walkthroughId}:${stanceKey.value}`,
+  () => `walkthrough:${walkthroughId}`,
   (api, { signal }) =>
     api.GET('/walkthroughs/{walkthrough_id}', {
-      params: {
-        path: { walkthrough_id: walkthroughId },
-        query: { include_nsfw: allowsNsfw.value }
-      },
+      params: { path: { walkthrough_id: walkthroughId } },
       signal
     })
 )
@@ -52,6 +49,11 @@ const { data: work } = await useApi<Work>(
     })
 )
 
+const revealed = ref(false)
+const isShowWalkthrough = computed(
+  () => !walkthrough.value?.is_nsfw || allowsNsfw.value || revealed.value
+)
+
 if (work.value && !work.value.is_nsfw && work.value.is_published) {
   const name = workName(work.value)
   useKunSeoMeta({
@@ -65,11 +67,14 @@ if (work.value && !work.value.is_nsfw && work.value.is_published) {
 
 <template>
   <div class="container mx-auto my-4 max-w-6xl px-3">
-    <GalgameWalkthroughContainer
-      v-if="walkthrough && work"
-      :walkthrough="walkthrough"
-      :work="work"
-    />
+    <template v-if="walkthrough && work">
+      <GalgameWalkthroughContainer
+        v-if="isShowWalkthrough"
+        :walkthrough="walkthrough"
+        :work="work"
+      />
+      <KunNsfwGate v-else noun="攻略" @reveal="revealed = true" />
+    </template>
     <KunNull v-else description="攻略暂时无法加载, 请稍后再试" />
   </div>
 </template>
