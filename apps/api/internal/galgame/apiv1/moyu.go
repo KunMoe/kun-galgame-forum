@@ -17,6 +17,7 @@ import (
 	"kun-galgame-api/internal/trust/gate"
 	"kun-galgame-api/pkg/catalogclient"
 	legacyErrors "kun-galgame-api/pkg/errors"
+	"kun-galgame-api/pkg/letmoeclient"
 	"kun-galgame-api/pkg/moyuclient"
 	"kun-galgame-api/pkg/problem"
 	"kun-galgame-api/pkg/userclient"
@@ -104,6 +105,7 @@ type pendingAward struct {
 type Service struct {
 	works           workCatalog
 	moyu            *moyuclient.Client
+	letmoe          *letmoeclient.Client
 	users           userLookup
 	rdb             *redis.Client
 	cdn             string

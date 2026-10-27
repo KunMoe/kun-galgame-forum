@@ -102,6 +102,7 @@ GET    /api/v1/galgame-resource-relocations/:resource_id cors.New → v1Headers 
 GET    /api/v1/galgame-resources                      cors.New → v1Headers → fiberAdapter.Handle
 GET    /api/v1/galgame-resources/:resource_id         cors.New → v1Headers → fiberAdapter.Handle
 GET    /api/v1/galgame-resources/:resource_id/source  cors.New → v1Headers → fiberAdapter.Handle
+GET    /api/v1/letmoe-resources/:resource_id          cors.New → v1Headers → fiberAdapter.Handle
 GET    /api/v1/library-works                          cors.New → v1Headers → fiberAdapter.Handle
 GET    /api/v1/lotteries/:lottery_id                  cors.New → v1Headers → fiberAdapter.Handle
 GET    /api/v1/lotteries/:lottery_id/entries          cors.New → v1Headers → fiberAdapter.Handle
@@ -253,6 +254,7 @@ GET    /api/v1/work-suggestions                       cors.New → v1Headers →
 GET    /api/v1/works                                  cors.New → v1Headers → fiberAdapter.Handle
 GET    /api/v1/works/:work_id                         cors.New → v1Headers → fiberAdapter.Handle
 GET    /api/v1/works/:work_id/covers/:cover_id        cors.New → v1Headers → fiberAdapter.Handle
+GET    /api/v1/works/:work_id/letmoe-resources        cors.New → v1Headers → fiberAdapter.Handle
 GET    /api/v1/works/:work_id/moyu-patches            cors.New → v1Headers → fiberAdapter.Handle
 GET    /api/v1/works/:work_id/record                  cors.New → v1Headers → fiberAdapter.Handle
 GET    /api/v1/works/:work_id/resources               cors.New → v1Headers → fiberAdapter.Handle
@@ -306,6 +308,7 @@ POST   /api/v1/collections                            cors.New → v1Headers →
 POST   /api/v1/galgame-resources/:resource_id/downloads cors.New → v1Headers → fiberAdapter.Handle
 POST   /api/v1/galgame-resources/:resource_id/expiry-reports cors.New → v1Headers → fiberAdapter.Handle
 POST   /api/v1/images                                 cors.New → v1Headers → fiberAdapter.Handle
+POST   /api/v1/letmoe-resources/:resource_id/downloads cors.New → v1Headers → fiberAdapter.Handle
 POST   /api/v1/lotteries/:lottery_id/code-reveals     cors.New → v1Headers → fiberAdapter.Handle
 POST   /api/v1/me/check-ins                           cors.New → v1Headers → fiberAdapter.Handle
 POST   /api/v1/me/conversations/:user_id/messages     cors.New → v1Headers → fiberAdapter.Handle
