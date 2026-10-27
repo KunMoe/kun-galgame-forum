@@ -14890,6 +14890,10 @@ export interface components {
              * @description Endings in the chart.
              */
             ending_count: number;
+            /** @description The release this walkthrough follows, such as an official or fan translation whose choice texts differ from the original. null when it follows no particular release. */
+            followed_release: components["schemas"]["WalkthroughRelease"] | null;
+            /** @description The game shows route or choice hints itself. A reader may prefer them, so a client says so before showing the routes. */
+            has_in_game_route_hints: boolean;
             /** @description Walkthrough id. */
             id: string;
             /** @description Whether the work is shown as adult content, the same field as Work.is_nsfw. A client that hides adult content gates the walkthrough on it. */
@@ -14913,17 +14917,17 @@ export interface components {
             source_author: string | null;
             /**
              * Format: uri
-             * @description The original walkthrough page. Only its choice graph is carried here; link to it for attribution.
+             * @description The original walkthrough page. Only its choice graph is carried here; link to it for attribution. null for a nextmoe walkthrough, which has no page to link to.
              */
-            source_page_url: string;
-            /** @description The walkthrough site the choice graph was derived from. */
+            source_page_url: string | null;
+            /** @description Where the choice graph came from: a walkthrough site it was derived from, or nextmoe for one written in the NextMoe editor center. */
             source_site: components["schemas"]["WalkthroughSource"];
             /**
              * Format: date
              * @description Date the source page says it was last updated. null if unstated.
              */
             source_updated_date: string | null;
-            /** @description BCP-47 language of the chart's text fields. Translations sit in localized maps beside them. */
+            /** @description BCP-47 language of the chart's text fields: ja for an imported chart, ja or zh-Hans for a nextmoe one. Translations sit in localized maps beside them. */
             text_lang: string;
             /**
              * Format: date-time
@@ -14934,7 +14938,7 @@ export interface components {
             work_id: string;
         };
         WalkthroughAlternative: {
-            /** @description Machine translations of text by BCP-47 tag. Empty object when none. */
+            /** @description Translations of text by BCP-47 tag. Empty object when none. */
             localized: {
                 [key: string]: components["schemas"]["LocalizedName"];
             };
@@ -14981,7 +14985,7 @@ export interface components {
             ending_type: components["schemas"]["WalkthroughEndingType"];
             /** @description Chart-local key ending nodes refer to. */
             key: string;
-            /** @description Machine translations of ending_name by BCP-47 tag. Empty object when none. */
+            /** @description Translations of ending_name by BCP-47 tag. Empty object when none. */
             localized: {
                 [key: string]: components["schemas"]["LocalizedName"];
             };
@@ -15004,6 +15008,25 @@ export interface components {
         };
         /** @enum {string} */
         WalkthroughNodeType: "entry" | "save" | "ending" | "collect" | "open";
+        WalkthroughRelease: {
+            /** @description Companies and groups credited on the release, such as a patch's translation group. Empty array, never null. */
+            company_names: string[];
+            /** @description Catalog release id, a release of the walkthrough's work. */
+            id: string;
+            /** @description The release's main language as a BCP-47 tag. null when unrecorded. */
+            lang: string | null;
+            /**
+             * @description Type discriminant. Always release.
+             * @constant
+             */
+            object: "release";
+            /** @description patch includes fan translation patches. */
+            release_kind: components["schemas"]["WalkthroughReleaseKind"];
+            /** @description The release's title. null if it has none. Free text; never use it as a decision input. */
+            release_title: string | null;
+        };
+        /** @enum {string} */
+        WalkthroughReleaseKind: "default" | "digital" | "physical" | "trial" | "patch";
         WalkthroughSave: {
             /** @description Chart-local key save steps and nodes refer to. */
             key: string;
@@ -15015,7 +15038,7 @@ export interface components {
             character_keys: string[];
             /** @description Chart-local key segments refer to. */
             key: string;
-            /** @description Machine translations of title by BCP-47 tag. Empty object when none. */
+            /** @description Translations of title by BCP-47 tag. Empty object when none. */
             localized: {
                 [key: string]: components["schemas"]["LocalizedName"];
             };
@@ -15025,7 +15048,7 @@ export interface components {
         WalkthroughSegment: {
             /** @description Precondition the source states. null if none. Free text; never use it as a decision input. */
             condition: string | null;
-            /** @description Machine translations of condition by BCP-47 tag. Empty object when none. */
+            /** @description Translations of condition by BCP-47 tag. Empty object when none. */
             condition_localized: {
                 [key: string]: components["schemas"]["LocalizedName"];
             };
@@ -15041,13 +15064,13 @@ export interface components {
             to_node: components["schemas"]["WalkthroughNode"];
         };
         /** @enum {string} */
-        WalkthroughSource: "seiya" | "sagaoz_foolmaker";
+        WalkthroughSource: "seiya" | "sagaoz_foolmaker" | "nextmoe";
         WalkthroughStep: {
             /** @description Other choices kept for collecting CG differences. Empty array, never null. */
             alternatives: components["schemas"]["WalkthroughAlternative"][];
             /** @description The source marks this step as needed for an achievement only. */
             is_achievement_only: boolean;
-            /** @description Machine translations of step_text by BCP-47 tag. Empty object when none. */
+            /** @description Translations of step_text by BCP-47 tag. Empty object when none. */
             localized: {
                 [key: string]: components["schemas"]["LocalizedName"];
             };

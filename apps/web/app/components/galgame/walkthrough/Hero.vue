@@ -1,6 +1,9 @@
 <script setup lang="ts">
 import type { Walkthrough, Work } from '#shared/utils/api/schemas'
-import { KUN_GALGAME_WALKTHROUGH_SOURCE } from '~/constants/galgameWalkthrough'
+import {
+  KUN_GALGAME_WALKTHROUGH_RELEASE_KIND,
+  KUN_GALGAME_WALKTHROUGH_SOURCE
+} from '~/constants/galgameWalkthrough'
 import { workReleaseText } from '~/utils/galgame/releaseDate'
 
 const props = defineProps<{
@@ -19,11 +22,30 @@ const original = computed(() => {
 
 const source = computed(
   () =>
-    KUN_GALGAME_WALKTHROUGH_SOURCE[props.walkthrough.source_site] ?? {
-      name: props.walkthrough.source_site,
-      home: props.walkthrough.source_page_url
-    }
+    KUN_GALGAME_WALKTHROUGH_SOURCE[props.walkthrough.source_site] ??
+    props.walkthrough.source_site
 )
+const translationNote = computed(() => {
+  if (props.walkthrough.text_lang !== 'ja') {
+    return ''
+  }
+  return props.walkthrough.chart &&
+    hasMachineTranslation(props.walkthrough.chart)
+    ? '选项的中文为机器翻译, 游戏内显示的是日文原文; 没有可靠译名的人名保持原文。'
+    : '游戏内显示的是日文原文。'
+})
+
+const release = computed(() => {
+  const r = props.walkthrough.followed_release
+  if (!r) {
+    return ''
+  }
+  const name =
+    r.release_title ??
+    KUN_GALGAME_WALKTHROUGH_RELEASE_KIND[r.release_kind] ??
+    r.release_kind
+  return [name, r.company_names.join('、')].filter(Boolean).join(' · ')
+})
 
 const stats = computed(() => [
   {
@@ -84,6 +106,10 @@ const stats = computed(() => [
               </KunLink>
             </dd>
           </div>
+          <div v-if="release" class="flex min-w-0 gap-2">
+            <dt class="text-default-500 shrink-0">适用于</dt>
+            <dd class="text-default-700 min-w-0 break-words">{{ release }}</dd>
+          </div>
           <div class="flex gap-2">
             <dt class="text-default-500 shrink-0">发售日期</dt>
             <dd class="text-default-700">
@@ -111,6 +137,7 @@ const stats = computed(() => [
             返回游戏页面
           </KunButton>
           <KunButton
+            v-if="walkthrough.source_page_url"
             :href="walkthrough.source_page_url"
             target="_blank"
             variant="light"
@@ -123,18 +150,27 @@ const stats = computed(() => [
       </div>
     </div>
 
-    <p class="text-default-500 text-xs leading-relaxed">
+    <p
+      v-if="walkthrough.source_page_url"
+      class="text-default-500 text-xs leading-relaxed"
+    >
       选项流程整理自
       <KunLink size="sm" :to="walkthrough.source_page_url" target="_blank">
-        {{ source.name }}
+        {{ source }}
       </KunLink>
       <template v-if="walkthrough.source_author">
         (作者 {{ walkthrough.source_author }})</template
       >
       <template v-if="walkthrough.source_updated_date"
         >, 原页面更新于 {{ walkthrough.source_updated_date }}</template
-      >。只保留了选项与存档结构, 原文说明请查看原页面。选项的中文为机器翻译,
-      游戏内显示的是日文原文; 没有可靠译名的人名保持原文。
+      >。只保留了选项与存档结构, 原文说明请查看原页面。{{ translationNote }}
+    </p>
+    <p v-else class="text-default-500 text-xs leading-relaxed">
+      本攻略由编辑者在 {{ source }} 编辑中心撰写<template
+        v-if="walkthrough.source_author"
+      >
+        (作者 {{ walkthrough.source_author }})</template
+      >。{{ translationNote }}
     </p>
   </header>
 </template>

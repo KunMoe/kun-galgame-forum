@@ -11,9 +11,10 @@ const mode = inject<Ref<KunWalkthroughTextMode>>(
   'walkthroughTextMode',
   ref('both')
 )
+const textLang = inject<Ref<string>>('walkthroughTextLang', ref('ja'))
 
 const shown = computed(() =>
-  walkthroughText(props.text, props.localized, mode.value)
+  walkthroughText(props.text, props.localized, mode.value, textLang.value)
 )
 </script>
 
@@ -27,7 +28,7 @@ const shown = computed(() =>
     "
   >
     <span :lang="shown.lang">{{ shown.main }}</span>
-    <span v-if="shown.sub" class="text-default-500" lang="ja">
+    <span v-if="shown.sub" class="text-default-500" :lang="textLang">
       ({{ shown.sub }})</span
     >
   </span>

@@ -7,6 +7,7 @@ import {
   buildGraphModel,
   buildRoutes,
   COMMON_ROUTE_KEY,
+  hasMachineTranslation,
   saveCreators,
   walkthroughText
 } from './galgameWalkthrough'
@@ -184,5 +185,29 @@ describe('walkthroughText', () => {
       sub: '',
       lang: 'ja'
     })
+  })
+
+  it('shows a Chinese chart as written in every mode', () => {
+    for (const mode of ['both', 'ja', 'zh'] as const) {
+      expect(walkthroughText('选是', {}, mode, 'zh-Hans')).toEqual({
+        main: '选是',
+        sub: '',
+        lang: 'zh-Hans'
+      })
+    }
+  })
+})
+
+describe('hasMachineTranslation', () => {
+  it('finds a machine translation anywhere in the chart', () => {
+    expect(hasMachineTranslation(chart)).toBe(false)
+    const human = { 'zh-Hans': { value: '宁宁END', is_machine: false } }
+    const machine = { 'zh-Hans': { value: '宁宁END', is_machine: true } }
+    const withEnding = (localized: typeof human) => ({
+      ...chart,
+      chart_endings: [{ ...chart.chart_endings[0]!, localized }]
+    })
+    expect(hasMachineTranslation(withEnding(human))).toBe(false)
+    expect(hasMachineTranslation(withEnding(machine))).toBe(true)
   })
 })

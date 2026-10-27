@@ -28,9 +28,7 @@ const characterName = (c: Walkthrough['chart_characters'][number]) =>
         <span
           class="text-foreground group-hover:text-primary font-medium transition-colors"
         >
-          {{
-            KUN_GALGAME_WALKTHROUGH_SOURCE[w.source_site]?.name ?? w.source_site
-          }}
+          {{ KUN_GALGAME_WALKTHROUGH_SOURCE[w.source_site] ?? w.source_site }}
           的攻略流程
         </span>
         <span class="text-default-500 flex items-center gap-1 text-xs">

@@ -117,12 +117,22 @@ func keyPtr(k *string) *ChartKey {
 func walkthroughFrom(w client.CatalogWalkthrough) Walkthrough {
 	out := Walkthrough{
 		Object: "walkthrough", ID: repr.DecimalID(w.ID), WorkID: repr.DecimalID(w.WorkID), IsNSFW: w.WorkContentLimit != "sfw",
-		SourceSite: w.Source, SourcePageURL: w.SourceURL, SourceAuthor: w.SourceAuthor,
+		HasInGameRouteHints: w.WorkRouteHints,
+		SourceSite:          w.Source, SourcePageURL: w.SourceURL, SourceAuthor: w.SourceAuthor,
 		TextLang: w.Lang, EndingCount: w.EndingCount, SaveCount: w.SaveCount, SegmentCount: w.SegmentCount,
 		ChartCharacters: make([]WalkthroughCharacter, 0, len(w.Characters)),
 	}
 	if t, err := time.Parse(time.RFC3339, w.UpdatedAt); err == nil {
 		out.UpdatedAt = repr.Timestamp(t)
+	}
+	if r := w.Release; r != nil {
+		out.FollowedRelease = &WalkthroughRelease{
+			Object: "release", ID: repr.DecimalID(r.ID), ReleaseTitle: r.Title, ReleaseKind: r.ReleaseKind, Lang: r.Lang,
+			CompanyNames: make([]CompanyName, 0, len(r.Companies)),
+		}
+		for _, c := range r.Companies {
+			out.FollowedRelease.CompanyNames = append(out.FollowedRelease.CompanyNames, CompanyName(c))
+		}
 	}
 	if w.SourceUpdatedOn != nil {
 		d := repr.CalendarDate(*w.SourceUpdatedOn)
