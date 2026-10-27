@@ -44,6 +44,10 @@ const isNoteLong = computed(
 )
 
 const isDownloadOpen = ref(false)
+const isCounted = ref(false)
+const downloadCount = computed(
+  () => props.resource.download_count + Number(isCounted.value)
+)
 </script>
 
 <template>
@@ -172,7 +176,7 @@ const isDownloadOpen = ref(false)
         <KunTooltip text="LetMoe 上的下载数">
           <div class="text-default-500 flex items-center gap-1 px-2 text-sm">
             <KunIcon name="lucide:download" />
-            <span>{{ resource.download_count }}</span>
+            <span>{{ downloadCount }}</span>
           </div>
         </KunTooltip>
 
@@ -205,6 +209,8 @@ const isDownloadOpen = ref(false)
       v-model="isDownloadOpen"
       :resource="resource"
       :mode="mode"
+      :download-count="downloadCount"
+      @counted="isCounted = true"
     />
   </KunCard>
 </template>
