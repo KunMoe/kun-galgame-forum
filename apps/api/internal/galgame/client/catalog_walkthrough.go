@@ -13,8 +13,10 @@ type CatalogWalkthrough struct {
 	ID               string                     `json:"id"`
 	WorkID           string                     `json:"work_id"`
 	WorkContentLimit string                     `json:"work_content_limit"`
+	WorkRouteHints   bool                       `json:"work_route_hints"`
+	Release          *CatalogWalkthroughRelease `json:"release"`
 	Source           string                     `json:"source"`
-	SourceURL        string                     `json:"source_url"`
+	SourceURL        *string                    `json:"source_url"`
 	SourceAuthor     *string                    `json:"source_author"`
 	SourceUpdatedOn  *string                    `json:"source_updated_on"`
 	Lang             string                     `json:"lang"`
@@ -24,6 +26,14 @@ type CatalogWalkthrough struct {
 	SegmentCount     int                        `json:"segment_count"`
 	UpdatedAt        string                     `json:"updated_at"`
 	Chart            *CatalogWalkthroughChart   `json:"chart"`
+}
+
+type CatalogWalkthroughRelease struct {
+	ID          string   `json:"id"`
+	Title       *string  `json:"title"`
+	ReleaseKind string   `json:"release_kind"`
+	Lang        *string  `json:"lang"`
+	Companies   []string `json:"companies"`
 }
 
 type CatalogWalkthroughPerson struct {

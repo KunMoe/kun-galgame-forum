@@ -49,6 +49,7 @@ const { data: work } = await useApi<Work>(
 )
 
 const revealed = ref(false)
+const isRouteHintsDismissed = ref(false)
 const isShowWalkthrough = computed(
   () => !walkthrough.value?.is_nsfw || allowsNsfw.value || revealed.value
 )
@@ -65,7 +66,15 @@ if (walkthrough.value && work.value) {
     <template v-if="walkthrough && work">
       <div v-if="isShowWalkthrough" class="space-y-10">
         <GalgameWalkthroughHero :walkthrough="walkthrough" :work="work" />
-        <GalgameWalkthroughContainer :walkthrough="walkthrough" :work="work" />
+        <GalgameWalkthroughContainer
+          v-if="!walkthrough.has_in_game_route_hints || isRouteHintsDismissed"
+          :walkthrough="walkthrough"
+          :work="work"
+        />
+        <GalgameWalkthroughRouteHintNotice
+          v-else
+          @reveal="isRouteHintsDismissed = true"
+        />
         <GalgameWalkthroughComment :walkthrough-id="Number(walkthrough.id)" />
       </div>
       <KunNsfwGate v-else noun="攻略" @reveal="revealed = true" />

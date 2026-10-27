@@ -24354,6 +24354,21 @@
             "minimum": 0,
             "type": "integer"
           },
+          "followed_release": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/WalkthroughRelease"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "The release this walkthrough follows, such as an official or fan translation whose choice texts differ from the original. null when it follows no particular release."
+          },
+          "has_in_game_route_hints": {
+            "description": "The game shows route or choice hints itself. A reader may prefer them, so a client says so before showing the routes.",
+            "type": "boolean"
+          },
           "id": {
             "description": "Walkthrough id.",
             "maxLength": 20,
@@ -24392,14 +24407,17 @@
             ]
           },
           "source_page_url": {
-            "description": "The original walkthrough page. Only its choice graph is carried here; link to it for attribution.",
+            "description": "The original walkthrough page. Only its choice graph is carried here; link to it for attribution. null for a nextmoe walkthrough, which has no page to link to.",
             "format": "uri",
             "maxLength": 2048,
-            "type": "string"
+            "type": [
+              "string",
+              "null"
+            ]
           },
           "source_site": {
             "$ref": "#/components/schemas/WalkthroughSource",
-            "description": "The walkthrough site the choice graph was derived from."
+            "description": "Where the choice graph came from: a walkthrough site it was derived from, or nextmoe for one written in the NextMoe editor center."
           },
           "source_updated_date": {
             "description": "Date the source page says it was last updated. null if unstated.",
@@ -24413,7 +24431,7 @@
             ]
           },
           "text_lang": {
-            "description": "BCP-47 language of the chart's text fields. Translations sit in localized maps beside them.",
+            "description": "BCP-47 language of the chart's text fields: ja for an imported chart, ja or zh-Hans for a nextmoe one. Translations sit in localized maps beside them.",
             "maxLength": 32,
             "pattern": "^[a-z]{2,3}(-[A-Za-z0-9]+)*$",
             "type": "string"
@@ -24439,6 +24457,8 @@
           "id",
           "work_id",
           "is_nsfw",
+          "has_in_game_route_hints",
+          "followed_release",
           "source_site",
           "source_page_url",
           "source_author",
@@ -24458,7 +24478,7 @@
             "additionalProperties": {
               "$ref": "#/components/schemas/LocalizedName"
             },
-            "description": "Machine translations of text by BCP-47 tag. Empty object when none.",
+            "description": "Translations of text by BCP-47 tag. Empty object when none.",
             "type": "object"
           },
           "text": {
@@ -24612,7 +24632,7 @@
             "additionalProperties": {
               "$ref": "#/components/schemas/LocalizedName"
             },
-            "description": "Machine translations of ending_name by BCP-47 tag. Empty object when none.",
+            "description": "Translations of ending_name by BCP-47 tag. Empty object when none.",
             "type": "object"
           }
         },
@@ -24706,6 +24726,74 @@
         "type": "string",
         "x-vocabulary-closed": true
       },
+      "WalkthroughRelease": {
+        "properties": {
+          "company_names": {
+            "description": "Companies and groups credited on the release, such as a patch's translation group. Empty array, never null.",
+            "items": {
+              "description": "A company or group's display name as catalog records it. Free text; never use it as a decision input.",
+              "maxLength": 256,
+              "type": "string"
+            },
+            "type": "array"
+          },
+          "id": {
+            "description": "Catalog release id, a release of the walkthrough's work.",
+            "maxLength": 20,
+            "minLength": 1,
+            "pattern": "^[0-9]+$",
+            "type": "string"
+          },
+          "lang": {
+            "description": "The release's main language as a BCP-47 tag. null when unrecorded.",
+            "maxLength": 35,
+            "pattern": "^[A-Za-z]{1,8}(-[A-Za-z0-9]{1,8})*$",
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "object": {
+            "const": "release",
+            "description": "Type discriminant. Always release.",
+            "maxLength": 7,
+            "type": "string"
+          },
+          "release_kind": {
+            "$ref": "#/components/schemas/WalkthroughReleaseKind",
+            "description": "patch includes fan translation patches."
+          },
+          "release_title": {
+            "description": "The release's title. null if it has none. Free text; never use it as a decision input.",
+            "maxLength": 512,
+            "type": [
+              "string",
+              "null"
+            ]
+          }
+        },
+        "required": [
+          "object",
+          "id",
+          "release_title",
+          "release_kind",
+          "lang",
+          "company_names"
+        ],
+        "type": "object"
+      },
+      "WalkthroughReleaseKind": {
+        "enum": [
+          "default",
+          "digital",
+          "physical",
+          "trial",
+          "patch"
+        ],
+        "maxLength": 8,
+        "type": "string",
+        "x-vocabulary-closed": true
+      },
       "WalkthroughSave": {
         "properties": {
           "key": {
@@ -24750,7 +24838,7 @@
             "additionalProperties": {
               "$ref": "#/components/schemas/LocalizedName"
             },
-            "description": "Machine translations of title by BCP-47 tag. Empty object when none.",
+            "description": "Translations of title by BCP-47 tag. Empty object when none.",
             "type": "object"
           },
           "title": {
@@ -24781,7 +24869,7 @@
             "additionalProperties": {
               "$ref": "#/components/schemas/LocalizedName"
             },
-            "description": "Machine translations of condition by BCP-47 tag. Empty object when none.",
+            "description": "Translations of condition by BCP-47 tag. Empty object when none.",
             "type": "object"
           },
           "from_node": {
@@ -24831,7 +24919,8 @@
       "WalkthroughSource": {
         "enum": [
           "seiya",
-          "sagaoz_foolmaker"
+          "sagaoz_foolmaker",
+          "nextmoe"
         ],
         "maxLength": 16,
         "type": "string",
@@ -24854,7 +24943,7 @@
             "additionalProperties": {
               "$ref": "#/components/schemas/LocalizedName"
             },
-            "description": "Machine translations of step_text by BCP-47 tag. Empty object when none.",
+            "description": "Translations of step_text by BCP-47 tag. Empty object when none.",
             "type": "object"
           },
           "save_key": {

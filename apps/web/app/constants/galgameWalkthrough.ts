@@ -1,9 +1,15 @@
-export const KUN_GALGAME_WALKTHROUGH_SOURCE: Record<
-  string,
-  { name: string; home: string }
-> = {
-  seiya: { name: '誠也の部屋', home: 'https://seiya-saiga.com/' },
-  sagaoz_foolmaker: { name: '愚者の館', home: 'https://sagaoz.net/foolmaker/' }
+export const KUN_GALGAME_WALKTHROUGH_SOURCE: Record<string, string> = {
+  seiya: '誠也の部屋',
+  sagaoz_foolmaker: '愚者の館',
+  nextmoe: 'NextMoe'
+}
+
+export const KUN_GALGAME_WALKTHROUGH_RELEASE_KIND: Record<string, string> = {
+  default: '通常版',
+  digital: '下载版',
+  physical: '实体版',
+  trial: '体验版',
+  patch: '补丁'
 }
 
 export const KUN_GALGAME_WALKTHROUGH_ENDING_TYPE: Record<string, string> = {

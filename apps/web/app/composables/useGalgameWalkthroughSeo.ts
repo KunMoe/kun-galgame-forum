@@ -24,7 +24,7 @@ export const useGalgameWalkthroughSeo = (
       : c.source_name
   )
   const source =
-    KUN_GALGAME_WALKTHROUGH_SOURCE[walkthrough.source_site]?.name ??
+    KUN_GALGAME_WALKTHROUGH_SOURCE[walkthrough.source_site] ??
     walkthrough.source_site
   const developer = work.maker ? nameOf(work.maker).name : ''
   const pageUrl = `${kungal.domain.main}${route.path}`
@@ -37,7 +37,7 @@ export const useGalgameWalkthroughSeo = (
       `${shownNames ? `按${shownNames}${characterNames.length > 4 ? ' 等' : ''} ${characterNames.length} 名角色整理路线, ` : ''}` +
       `共 ${walkthrough.ending_count} 个结局、${walkthrough.save_count} 个存档点, ` +
       `逐条标出每条路线要选的选项、存档时机与到达的结局, 并可用流程图查看分支。` +
-      `选项流程整理自${source}${developer ? `, 游戏由 ${developer} 制作` : ''}。`,
+      `${walkthrough.source_page_url ? `选项流程整理自${source}` : `由 ${source} 编辑者撰写`}${developer ? `, 游戏由 ${developer} 制作` : ''}。`,
     160
   )
   const title = `${name} 攻略 | 全 ${walkthrough.ending_count} 结局路线选项与存档点`
@@ -62,7 +62,9 @@ export const useGalgameWalkthroughSeo = (
     inLanguage: 'zh-Hans',
     ...(image ? { image } : {}),
     dateModified: walkthrough.updated_at,
-    isBasedOn: walkthrough.source_page_url,
+    ...(walkthrough.source_page_url
+      ? { isBasedOn: walkthrough.source_page_url }
+      : {}),
     about: {
       '@type': 'VideoGame',
       name,

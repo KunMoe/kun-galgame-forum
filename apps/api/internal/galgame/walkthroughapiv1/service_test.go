@@ -5,6 +5,7 @@ import (
 	"encoding/json"
 	"errors"
 	"net/url"
+	"strings"
 	"testing"
 
 	"kun-galgame-api/internal/galgame/client"
@@ -129,5 +130,43 @@ func TestGetWalkthroughIsNSFWFailsClosed(t *testing.T) {
 		if !out.Body.IsNSFW {
 			t.Errorf("work_content_limit=%q must be is_nsfw", limit)
 		}
+	}
+}
+
+func TestGetWalkthroughNativeHasNoSourcePage(t *testing.T) {
+	native := strings.Replace(catalogDetail, `"source":"seiya","source_url":"https://seiya-saiga.com/game/x.html"`, `"source":"nextmoe","source_url":null`, 1)
+	native = strings.Replace(native, `"lang":"ja"`, `"lang":"zh-Hans"`, 1)
+	var w client.CatalogWalkthrough
+	if err := json.Unmarshal([]byte(native), &w); err != nil {
+		t.Fatal(err)
+	}
+	out := walkthroughFrom(w)
+	if out.SourceSite != "nextmoe" || out.SourcePageURL != nil || out.TextLang != "zh-Hans" {
+		t.Errorf("native walkthrough = site %q, url %v, lang %q", out.SourceSite, out.SourcePageURL, out.TextLang)
+	}
+}
+
+func TestGetWalkthroughCarriesRouteHintsAndRelease(t *testing.T) {
+	withRelease := strings.Replace(catalogDetail, `"work_content_limit":"sfw",`, `"work_content_limit":"sfw","work_route_hints":true,
+ "release":{"id":"901","title":null,"release_kind":"patch","lang":"zh-Hans","companies":["某汉化组"]},`, 1)
+	var w client.CatalogWalkthrough
+	if err := json.Unmarshal([]byte(withRelease), &w); err != nil {
+		t.Fatal(err)
+	}
+	out := walkthroughFrom(w)
+	if !out.HasInGameRouteHints {
+		t.Error("work_route_hints=true must be has_in_game_route_hints")
+	}
+	r := out.FollowedRelease
+	if r == nil || r.ID != "901" || r.ReleaseKind != "patch" || r.ReleaseTitle != nil || len(r.CompanyNames) != 1 || r.CompanyNames[0] != CompanyName("某汉化组") {
+		t.Fatalf("release = %+v", r)
+	}
+
+	var plain client.CatalogWalkthrough
+	if err := json.Unmarshal([]byte(catalogDetail), &plain); err != nil {
+		t.Fatal(err)
+	}
+	if out := walkthroughFrom(plain); out.HasInGameRouteHints || out.FollowedRelease != nil {
+		t.Errorf("a walkthrough without the fields = hints %v, release %+v", out.HasInGameRouteHints, out.FollowedRelease)
 	}
 }

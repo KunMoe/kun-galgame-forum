@@ -22,6 +22,8 @@ const characters = computed(() => props.walkthrough.chart_characters)
 
 const textMode = ref<KunWalkthroughTextMode>('both')
 provide('walkthroughTextMode', textMode)
+const textLang = computed(() => props.walkthrough.text_lang)
+provide('walkthroughTextLang', textLang)
 
 const view = ref(route.query.view === 'graph' ? 'graph' : 'list')
 const views: KunTabItem[] = [
@@ -163,6 +165,7 @@ const endingCount = (segments: (typeof routes.value)[number]['segments']) =>
           label="只看所选角色"
         />
         <KunTab
+          v-if="textLang !== 'zh-Hans'"
           v-model="textMode"
           :items="textModes"
           variant="light"

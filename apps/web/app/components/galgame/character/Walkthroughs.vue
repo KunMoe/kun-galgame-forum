@@ -49,7 +49,7 @@ const items = computed(() =>
         查看这名角色的攻略路线
         <span class="text-xs opacity-70">
           ({{
-            KUN_GALGAME_WALKTHROUGH_SOURCE[walkthrough.source_site]?.name ??
+            KUN_GALGAME_WALKTHROUGH_SOURCE[walkthrough.source_site] ??
             walkthrough.source_site
           }})
         </span>
