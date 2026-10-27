@@ -4,7 +4,11 @@ import {
   bucketizeResourceProvider,
   type GalgameResourceProviderBucketKey
 } from '~/constants/galgameResource'
-import type { GalgameResource, Work } from '#shared/utils/api/schemas'
+import type {
+  GalgameResource,
+  ListLetmoeResource,
+  Work
+} from '#shared/utils/api/schemas'
 import { problemMessage } from '#shared/utils/api/message'
 import { kunFeedUrl } from '#shared/utils/feedUrl'
 
@@ -30,6 +34,15 @@ const isHostedElsewhere = computed(
 const letmoeHref = computed(() => `https://www.letmoe.com/game/${workId.value}`)
 
 const isShowPublish = ref(false)
+const emptyDescription = computed(() => {
+  if (isHostedElsewhere.value) {
+    return '本站不收录这部作品的资源, 请前往 LetMoe·一起萌 查看和发布'
+  }
+  if (resourcePublishBanned.value) {
+    return '本游戏已禁止发布下载资源'
+  }
+  return '这个 Galgame 还没有资源链接, 快添加一个吧!'
+})
 const { id } = usePersistUserStore()
 
 const emit = defineEmits<{
@@ -118,6 +131,60 @@ useHead({
   )
 })
 
+const { data: letmoe, status: letmoeStatus } = useApi<ListLetmoeResource>(
+  () => `work-letmoe-resources:${workId.value}`,
+  (api, { signal }) =>
+    api.GET('/works/{work_id}/letmoe-resources', {
+      params: { path: { work_id: workId.value } },
+      signal
+    }),
+  { lazy: true }
+)
+const letmoeDirect = computed(
+  () => letmoe.value?.items.filter((r) => r.has_direct_download) ?? []
+)
+const letmoeNetdisk = computed(
+  () =>
+    letmoe.value?.items.filter((r) =>
+      r.providers.some((p) => p !== 'direct')
+    ) ?? []
+)
+const isLoading = computed(
+  () => status.value === 'pending' || letmoeStatus.value === 'pending'
+)
+const hasAnyResource = computed(
+  () =>
+    !!data.value?.length ||
+    !!letmoeDirect.value.length ||
+    !!letmoeNetdisk.value.length
+)
+const netdiskCount = computed(
+  () => letmoeNetdisk.value.length + (data.value?.length ?? 0)
+)
+
+type DownloadKind = 'direct' | 'netdisk'
+const pickedKind = ref<DownloadKind | null>(null)
+const hasDirect = computed(() => letmoeDirect.value.length > 0)
+const activeKind = computed<DownloadKind>({
+  get: () => (hasDirect.value ? (pickedKind.value ?? 'direct') : 'netdisk'),
+  set: (kind) => {
+    pickedKind.value = kind
+  }
+})
+const kindTabs = computed(() => [
+  {
+    value: 'direct',
+    textValue: `直链下载 (${letmoeDirect.value.length})`,
+    icon: 'lucide:zap'
+  },
+  {
+    value: 'netdisk',
+    textValue: `网盘下载 (${netdiskCount.value})`,
+    icon: 'lucide:cloud',
+    disabled: !netdiskCount.value
+  }
+])
+
 const groupedResources = computed(() => {
   const grouped: Record<GalgameResourceProviderBucketKey, GalgameResource[]> = {
     baidu: [],
@@ -137,26 +204,35 @@ const groupedResources = computed(() => {
   })
 })
 
-const providerTabs = computed(() =>
-  groupedResources.value.map((g) => ({
+const providerTabs = computed(() => [
+  ...(letmoeNetdisk.value.length
+    ? [
+        {
+          value: 'letmoe',
+          textValue: `letmoe (${letmoeNetdisk.value.length})`,
+          icon: 'lucide:heart-handshake'
+        }
+      ]
+    : []),
+  ...groupedResources.value.map((g) => ({
     value: g.key,
     textValue: `${g.label} (${g.items.length})`,
     icon: g.icon
   }))
-)
+])
 
-const activeProvider = ref<GalgameResourceProviderBucketKey | ''>('')
-watchEffect(() => {
-  const first = groupedResources.value[0]?.key
-  if (!first) {
-    activeProvider.value = ''
-    return
-  }
-  const stillExists = groupedResources.value.some(
-    (g) => g.key === activeProvider.value
-  )
-  if (!stillExists) {
-    activeProvider.value = first
+type ProviderTab = GalgameResourceProviderBucketKey | 'letmoe'
+const pickedProvider = ref<ProviderTab | null>(null)
+const activeProvider = computed<ProviderTab | ''>({
+  get: () => {
+    const tabs = providerTabs.value
+    if (tabs.some((t) => t.value === pickedProvider.value)) {
+      return pickedProvider.value!
+    }
+    return (tabs[0]?.value ?? '') as ProviderTab | ''
+  },
+  set: (key) => {
+    pickedProvider.value = key || null
   }
 })
 
@@ -168,21 +244,43 @@ const activeBucket = computed(() =>
 <template>
   <div class="space-y-3">
     <KunInfo
+      v-if="isHostedElsewhere"
+      color="warning"
+      variant="bordered"
+      title="这部作品的资源请到 LetMoe·一起萌 发布"
+    >
+      <div class="space-y-3">
+        <p class="text-sm">
+          鲲 Galgame 论坛只收录原语言为日语或中文的 Galgame 的下载资源,
+          这部作品不能在本站发布资源。它的资源, 以及 SLG / RPG 等同人游戏、3D
+          游戏, 请前往
+          <GalgameResourceLetmoeLink :to="letmoeHref" />
+          发布和下载, 那里与本站是同一个账号、同一个作品编号。
+        </p>
+        <KunButton
+          :href="letmoeHref"
+          target="_blank"
+          rel="noopener noreferrer"
+          color="warning"
+          variant="solid"
+        >
+          <KunIcon name="lucide:upload" />
+          前往 LetMoe 发布资源
+        </KunButton>
+      </div>
+    </KunInfo>
+    <KunInfo v-else color="warning" title="鲲 Galgame 论坛只提供 Galgame">
+      <p class="text-sm">
+        如果要获取或发布 SLG / RPG 等同人游戏、3D 游戏, 请前往
+        <GalgameResourceLetmoeLink />
+      </p>
+    </KunInfo>
+    <KunInfo
       v-if="resourcePublishBanned"
       color="danger"
       title="本游戏已禁止发布下载资源"
       description="部分游戏可能因为版权方通知，或者其余第三方原因导致不可用，已禁止在本游戏下发布任何下载资源。"
     />
-    <KunInfo
-      v-if="isHostedElsewhere"
-      color="info"
-      title="这部作品的资源在一起萌 (LetMoe)"
-      description="本站只收录原语言为日语或中文的作品的下载资源。这部作品的资源请到一起萌查看和发布，那里是同一个作品编号。"
-    >
-      <KunLink :to="letmoeHref" target="_blank" size="sm">
-        前往一起萌的这部作品
-      </KunLink>
-    </KunInfo>
     <KunHeader name="Galgame 资源链接" scale="h2">
       <template #headerEndContent>
         <div class="ml-auto flex items-center gap-1">
@@ -195,12 +293,21 @@ const activeBucket = computed(() =>
             批量更改已失效资源链接
           </KunButton>
           <KunButton
-            v-if="!resourcePublishBanned && !isHostedElsewhere"
+            v-if="isHostedElsewhere"
+            :href="letmoeHref"
+            target="_blank"
+            rel="noopener noreferrer"
+            color="warning"
+          >
+            <KunIcon name="lucide:external-link" />
+            前往 LetMoe 发布资源
+          </KunButton>
+          <KunButton
+            v-else-if="!resourcePublishBanned"
             @click="isShowPublish = !isShowPublish"
           >
             添加资源
           </KunButton>
-          <KunCopy v-if="data?.length" :text="rssHref" name="RSS 订阅" />
         </div>
       </template>
 
@@ -238,8 +345,8 @@ const activeBucket = computed(() =>
     <KunNull v-if="problem" :description="problemMessage(problem)" />
 
     <KunNull
-      v-else-if="status !== 'pending' && !data?.length"
-      description="这个 Galgame 还没有资源链接, 快添加一个吧!"
+      v-else-if="!isLoading && !hasAnyResource"
+      :description="emptyDescription"
     />
 
     <GalgameResourceLinkEditModal
@@ -248,26 +355,56 @@ const activeBucket = computed(() =>
       :refresh="refresh"
     />
 
-    <template v-if="status !== 'pending' && data?.length">
+    <template v-if="!isLoading && hasAnyResource">
       <KunTab
-        v-if="providerTabs.length > 1"
-        v-model="activeProvider"
-        :items="providerTabs"
-        variant="light"
+        v-if="hasDirect"
+        v-model="activeKind"
+        :items="kindTabs"
+        variant="solid"
         color="primary"
         size="md"
-        scrollable
       />
-      <div v-if="activeBucket" class="space-y-3">
-        <GalgameResourceLink
-          v-for="resource in activeBucket.items"
+
+      <div v-if="activeKind === 'direct'" class="space-y-3">
+        <GalgameResourceLetmoeSourceNotice kind="direct" />
+        <GalgameResourceLetmoeCard
+          v-for="resource in letmoeDirect"
           :key="resource.id"
           :resource="resource"
-          :refresh="refresh"
+          mode="direct"
         />
       </div>
+
+      <template v-else>
+        <KunTab
+          v-if="providerTabs.length > 1"
+          v-model="activeProvider"
+          :items="providerTabs"
+          variant="light"
+          color="primary"
+          size="md"
+          scrollable
+        />
+        <div v-if="activeProvider === 'letmoe'" class="space-y-3">
+          <GalgameResourceLetmoeSourceNotice kind="netdisk" />
+          <GalgameResourceLetmoeCard
+            v-for="resource in letmoeNetdisk"
+            :key="resource.id"
+            :resource="resource"
+            mode="netdisk"
+          />
+        </div>
+        <div v-else-if="activeBucket" class="space-y-3">
+          <GalgameResourceLink
+            v-for="resource in activeBucket.items"
+            :key="resource.id"
+            :resource="resource"
+            :refresh="refresh"
+          />
+        </div>
+      </template>
     </template>
 
-    <KunLoading v-if="status === 'pending'" />
+    <KunLoading v-if="isLoading" />
   </div>
 </template>

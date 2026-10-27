@@ -244,6 +244,8 @@ var publicWrites = map[string]string{
 		"anonymous readers have always been given; it moves only that resource's download counter",
 	"POST /api/v1/galgame-resources/:resource_id/downloads": "issues a galgame resource's links and codes, which " +
 		"anonymous readers have always been given; it moves only that resource's download counter",
+	"POST /api/v1/letmoe-resources/:resource_id/downloads": "relays a www.letmoe.com resource's links, which " +
+		"letmoe gives anonymous readers too; it moves only that resource's download counter on letmoe",
 }
 
 // A Deps.Mount route is no huma operation and so has no tier to check here.

@@ -7006,6 +7006,366 @@
         ],
         "type": "object"
       },
+      "LetmoeComposite": {
+        "properties": {
+          "bytes": {
+            "description": "The merged file's size in bytes.",
+            "format": "int64",
+            "minimum": 0,
+            "type": "integer"
+          },
+          "filename": {
+            "description": "The downloaded file's name. Free text; never use it as a decision input.",
+            "maxLength": 500,
+            "type": "string"
+          },
+          "id": {
+            "description": "The merged download's id on www.letmoe.com.",
+            "maxLength": 20,
+            "minLength": 1,
+            "pattern": "^[0-9]+$",
+            "type": "string"
+          },
+          "moyu_resource_id": {
+            "description": "The patch resource's id on www.moyu.moe.",
+            "maxLength": 20,
+            "minLength": 1,
+            "pattern": "^[0-9]+$",
+            "type": "string"
+          },
+          "object": {
+            "const": "letmoe_composite",
+            "description": "Type discriminant. Always letmoe_composite.",
+            "maxLength": 16,
+            "type": "string"
+          },
+          "patch_languages": {
+            "description": "The patch's languages in www.moyu.moe's vocabulary, such as zh-Hans or zh-Hant. Empty array, never null.",
+            "items": {
+              "description": "A token of www.moyu.moe's own vocabulary, such as machine_polishing or zh-Hans. That site may add tokens; show an unknown one as it is.",
+              "maxLength": 32,
+              "pattern": "^[A-Za-z0-9_-]+$",
+              "type": "string",
+              "x-vocabulary": "moyu_patch_vocabulary",
+              "x-vocabulary-closed": false
+            },
+            "type": "array"
+          },
+          "patch_name": {
+            "description": "The www.moyu.moe patch it carries. Free text; never use it as a decision input.",
+            "maxLength": 300,
+            "type": "string"
+          },
+          "patch_publisher": {
+            "description": "The patch author's display name. Free text; never use it as a decision input.",
+            "maxLength": 200,
+            "type": "string"
+          },
+          "patch_types": {
+            "description": "The patch's kinds in www.moyu.moe's vocabulary, such as manual, machine or fix. Empty array, never null.",
+            "items": {
+              "description": "A token of www.moyu.moe's own vocabulary, such as machine_polishing or zh-Hans. That site may add tokens; show an unknown one as it is.",
+              "maxLength": 32,
+              "pattern": "^[A-Za-z0-9_-]+$",
+              "type": "string",
+              "x-vocabulary": "moyu_patch_vocabulary",
+              "x-vocabulary-closed": false
+            },
+            "type": "array"
+          },
+          "url": {
+            "description": "A direct link to the game and the patch spliced into one download.",
+            "format": "uri",
+            "maxLength": 2048,
+            "type": "string"
+          }
+        },
+        "required": [
+          "object",
+          "id",
+          "url",
+          "filename",
+          "bytes",
+          "patch_name",
+          "patch_publisher",
+          "patch_types",
+          "patch_languages",
+          "moyu_resource_id"
+        ],
+        "type": "object"
+      },
+      "LetmoeMirror": {
+        "properties": {
+          "archive_password": {
+            "description": "Archive password. Empty string when none. Free text; never use it as a decision input.",
+            "maxLength": 1007,
+            "type": "string"
+          },
+          "extraction_code": {
+            "description": "Netdisk share code. Empty string when none. Free text; never use it as a decision input.",
+            "maxLength": 1007,
+            "type": "string"
+          },
+          "id": {
+            "description": "The mirror's id on www.letmoe.com.",
+            "maxLength": 20,
+            "minLength": 1,
+            "pattern": "^[0-9]+$",
+            "type": "string"
+          },
+          "is_hosted": {
+            "description": "true for letmoe's own file, whose url downloads it directly; false for a link its publisher hosts elsewhere.",
+            "type": "boolean"
+          },
+          "is_primary": {
+            "description": "The publisher's primary mirror. It comes first.",
+            "type": "boolean"
+          },
+          "note": {
+            "description": "Its publisher's note on this mirror. null when none. Free text; never use it as a decision input.",
+            "maxLength": 2000,
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "object": {
+            "const": "letmoe_mirror",
+            "description": "Type discriminant. Always letmoe_mirror.",
+            "maxLength": 13,
+            "type": "string"
+          },
+          "provider": {
+            "description": "Netdisk of an external_link mirror, such as baidu or quark. null on a hosted mirror.",
+            "maxLength": 32,
+            "pattern": "^[A-Za-z0-9_-]+$",
+            "type": [
+              "string",
+              "null"
+            ],
+            "x-vocabulary": "letmoe_resource_vocabulary",
+            "x-vocabulary-closed": false
+          },
+          "url": {
+            "description": "The link. A hosted url stops working when the file is replaced or taken down; do not store it.",
+            "format": "uri",
+            "maxLength": 2048,
+            "type": "string"
+          }
+        },
+        "required": [
+          "object",
+          "id",
+          "is_hosted",
+          "provider",
+          "url",
+          "extraction_code",
+          "archive_password",
+          "note",
+          "is_primary"
+        ],
+        "type": "object"
+      },
+      "LetmoeResource": {
+        "properties": {
+          "composite_count": {
+            "description": "Merged downloads (this resource plus a www.moyu.moe patch) offered alongside.",
+            "format": "int64",
+            "minimum": 0,
+            "type": "integer"
+          },
+          "content_warning": {
+            "description": "A warning its publisher attached. null when none. Free text; never use it as a decision input.",
+            "maxLength": 2000,
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "download_count": {
+            "description": "Downloads counted on www.letmoe.com.",
+            "format": "int64",
+            "minimum": 0,
+            "type": "integer"
+          },
+          "has_direct_download": {
+            "description": "A mirror or a merged download downloads without a netdisk.",
+            "type": "boolean"
+          },
+          "id": {
+            "description": "The resource's id on www.letmoe.com. Not a forum resource id.",
+            "maxLength": 20,
+            "minLength": 1,
+            "pattern": "^[0-9]+$",
+            "type": "string"
+          },
+          "languages": {
+            "description": "Languages, such as zh-cn or ja-jp. Empty array, never null.",
+            "items": {
+              "description": "A token of www.letmoe.com's own vocabulary, such as game, zh-cn, win or baidu. That site may add tokens; show an unknown one as it is.",
+              "maxLength": 32,
+              "pattern": "^[A-Za-z0-9_-]+$",
+              "type": "string",
+              "x-vocabulary": "letmoe_resource_vocabulary",
+              "x-vocabulary-closed": false
+            },
+            "type": "array"
+          },
+          "letmoe_type": {
+            "description": "Resource kind in www.letmoe.com's vocabulary, such as game, translation or asmr. A superset of this forum's resource_type.",
+            "maxLength": 32,
+            "pattern": "^[A-Za-z0-9_-]+$",
+            "type": "string",
+            "x-vocabulary": "letmoe_resource_vocabulary",
+            "x-vocabulary-closed": false
+          },
+          "note_markdown": {
+            "description": "Its publisher's description as Markdown source written on www.letmoe.com. Not a forum body, so it is not a content document. null when there is none. Free text; never use it as a decision input.",
+            "maxLength": 20000,
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "object": {
+            "const": "letmoe_resource",
+            "description": "Type discriminant. Always letmoe_resource.",
+            "maxLength": 15,
+            "type": "string"
+          },
+          "platforms": {
+            "description": "Catalog platform keys, such as win or and. Empty array, never null.",
+            "items": {
+              "description": "A token of www.letmoe.com's own vocabulary, such as game, zh-cn, win or baidu. That site may add tokens; show an unknown one as it is.",
+              "maxLength": 32,
+              "pattern": "^[A-Za-z0-9_-]+$",
+              "type": "string",
+              "x-vocabulary": "letmoe_resource_vocabulary",
+              "x-vocabulary-closed": false
+            },
+            "type": "array"
+          },
+          "providers": {
+            "description": "Where its mirrors live; direct is letmoe's own hosted file. Empty array, never null.",
+            "items": {
+              "description": "A token of www.letmoe.com's own vocabulary, such as game, zh-cn, win or baidu. That site may add tokens; show an unknown one as it is.",
+              "maxLength": 32,
+              "pattern": "^[A-Za-z0-9_-]+$",
+              "type": "string",
+              "x-vocabulary": "letmoe_resource_vocabulary",
+              "x-vocabulary-closed": false
+            },
+            "type": "array"
+          },
+          "publisher": {
+            "$ref": "#/components/schemas/UserRef",
+            "description": "Who published it. The account is the same one on this forum."
+          },
+          "runtimes": {
+            "description": "What it runs on, such as native-win or kirikiroid2. Empty array, never null.",
+            "items": {
+              "description": "A token of www.letmoe.com's own vocabulary, such as game, zh-cn, win or baidu. That site may add tokens; show an unknown one as it is.",
+              "maxLength": 32,
+              "pattern": "^[A-Za-z0-9_-]+$",
+              "type": "string",
+              "x-vocabulary": "letmoe_resource_vocabulary",
+              "x-vocabulary-closed": false
+            },
+            "type": "array"
+          },
+          "size": {
+            "description": "Size as its publisher gave it, such as 1.2 GB. Empty when unknown. Free text; never use it as a decision input.",
+            "maxLength": 64,
+            "type": "string"
+          },
+          "title": {
+            "description": "The title letmoe shows, never empty. Free text; never use it as a decision input.",
+            "maxLength": 500,
+            "type": "string"
+          },
+          "updated_at": {
+            "description": "When the resource last changed.",
+            "format": "date-time",
+            "maxLength": 20,
+            "minLength": 20,
+            "pattern": "^[0-9]{4}-[0-9]{2}-[0-9]{2}T[0-9]{2}:[0-9]{2}:[0-9]{2}Z$",
+            "type": "string"
+          },
+          "version_text": {
+            "description": "The version its publisher labelled it with. null when none. Free text; never use it as a decision input.",
+            "maxLength": 200,
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "web_url": {
+            "description": "The resource on www.letmoe.com.",
+            "format": "uri",
+            "maxLength": 512,
+            "type": "string"
+          }
+        },
+        "required": [
+          "object",
+          "id",
+          "title",
+          "letmoe_type",
+          "version_text",
+          "languages",
+          "platforms",
+          "runtimes",
+          "size",
+          "note_markdown",
+          "content_warning",
+          "providers",
+          "has_direct_download",
+          "composite_count",
+          "download_count",
+          "web_url",
+          "updated_at",
+          "publisher"
+        ],
+        "type": "object"
+      },
+      "LetmoeResourceDownload": {
+        "properties": {
+          "composites": {
+            "description": "Merged downloads. Empty array, never null.",
+            "items": {
+              "$ref": "#/components/schemas/LetmoeComposite"
+            },
+            "type": "array"
+          },
+          "mirrors": {
+            "description": "Download options, the primary mirror first. Empty array, never null.",
+            "items": {
+              "$ref": "#/components/schemas/LetmoeMirror"
+            },
+            "type": "array"
+          },
+          "object": {
+            "const": "letmoe_resource_download",
+            "description": "Type discriminant. Always letmoe_resource_download.",
+            "maxLength": 24,
+            "type": "string"
+          },
+          "resource_id": {
+            "description": "The resource's id on www.letmoe.com.",
+            "maxLength": 20,
+            "minLength": 1,
+            "pattern": "^[0-9]+$",
+            "type": "string"
+          }
+        },
+        "required": [
+          "object",
+          "resource_id",
+          "mirrors",
+          "composites"
+        ],
+        "type": "object"
+      },
       "LibraryWorkSort": {
         "enum": [
           "popularity_desc",
@@ -7354,6 +7714,34 @@
           "object",
           "is_checked",
           "children"
+        ],
+        "type": "object"
+      },
+      "ListLetmoeResource": {
+        "properties": {
+          "items": {
+            "description": "Members of this page. Empty array, never null.",
+            "items": {
+              "$ref": "#/components/schemas/LetmoeResource"
+            },
+            "type": "array"
+          },
+          "next_cursor": {
+            "description": "Opaque keyset cursor. Omitted on the last page.",
+            "maxLength": 512,
+            "pattern": "^cur_[A-Za-z0-9_-]+$",
+            "type": "string"
+          },
+          "object": {
+            "const": "list",
+            "description": "Type discriminant. Always list.",
+            "maxLength": 4,
+            "type": "string"
+          }
+        },
+        "required": [
+          "object",
+          "items"
         ],
         "type": "object"
       },
@@ -39393,6 +39781,158 @@
         "summary": "Upload an image",
         "tags": [
           "images"
+        ]
+      }
+    },
+    "/letmoe-resources/{resource_id}": {
+      "get": {
+        "description": "One published www.letmoe.com resource, without its download links. Not cached here.",
+        "operationId": "getLetmoeResource",
+        "parameters": [
+          {
+            "description": "The resource's id on www.letmoe.com.",
+            "in": "path",
+            "name": "resource_id",
+            "required": true,
+            "schema": {
+              "description": "The resource's id on www.letmoe.com.",
+              "maxLength": 19,
+              "pattern": "^[1-9][0-9]{0,18}$",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/LetmoeResource"
+                }
+              }
+            },
+            "description": "OK"
+          },
+          "400": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            },
+            "description": "Bad Request"
+          },
+          "404": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            },
+            "description": "NOT_FOUND when letmoe has no visible resource with this id."
+          },
+          "500": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            },
+            "description": "Internal Server Error"
+          },
+          "503": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            },
+            "description": "SERVICE_UNAVAILABLE: www.letmoe.com or the account service cannot be reached."
+          }
+        },
+        "summary": "Get one letmoe resource",
+        "tags": [
+          "works"
+        ]
+      }
+    },
+    "/letmoe-resources/{resource_id}/downloads": {
+      "post": {
+        "description": "Returns a www.letmoe.com resource's download options: hosted files as direct links, off-site links with their share code and archive password, and merged downloads. Counts one download on letmoe, so call it when a reader asks to download. Never cached. Anonymous callers may use it.",
+        "operationId": "createLetmoeResourceDownload",
+        "parameters": [
+          {
+            "description": "The resource's id on www.letmoe.com.",
+            "in": "path",
+            "name": "resource_id",
+            "required": true,
+            "schema": {
+              "description": "The resource's id on www.letmoe.com.",
+              "maxLength": 19,
+              "pattern": "^[1-9][0-9]{0,18}$",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/LetmoeResourceDownload"
+                }
+              }
+            },
+            "description": "OK"
+          },
+          "400": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            },
+            "description": "Bad Request"
+          },
+          "404": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            },
+            "description": "NOT_FOUND when letmoe has no visible resource with this id."
+          },
+          "500": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            },
+            "description": "Internal Server Error"
+          },
+          "503": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            },
+            "description": "SERVICE_UNAVAILABLE: www.letmoe.com cannot be reached, or this forum's key lacks the letmoe:files scope."
+          }
+        },
+        "summary": "Issue download links for a letmoe resource",
+        "tags": [
+          "works"
         ]
       }
     },
@@ -72442,6 +72982,82 @@
           }
         ],
         "summary": "Vote for a work cover",
+        "tags": [
+          "works"
+        ]
+      }
+    },
+    "/works/{work_id}/letmoe-resources": {
+      "get": {
+        "description": "Lists the published download resources www.letmoe.com holds for the work, most recently changed first. The whole set in one response; it is never paged. An empty list means letmoe has nothing for the work. No download link, share code or password is carried; POST /letmoe-resources/{resource_id}/downloads issues them. An answer may be up to 30 minutes old. NOT_FOUND when the work does not exist.",
+        "operationId": "listWorkLetmoeResources",
+        "parameters": [
+          {
+            "description": "Catalog work id, which is also the forum galgame page id.",
+            "in": "path",
+            "name": "work_id",
+            "required": true,
+            "schema": {
+              "description": "Catalog work id, which is also the forum galgame page id.",
+              "maxLength": 19,
+              "pattern": "^[1-9][0-9]{0,18}$",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ListLetmoeResource"
+                }
+              }
+            },
+            "description": "OK"
+          },
+          "400": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            },
+            "description": "Bad Request"
+          },
+          "404": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            },
+            "description": "Not Found"
+          },
+          "500": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            },
+            "description": "Internal Server Error"
+          },
+          "503": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            },
+            "description": "SERVICE_UNAVAILABLE: www.letmoe.com, the catalog or the account service cannot be reached."
+          }
+        },
+        "summary": "List a work's resources on letmoe",
         "tags": [
           "works"
         ]

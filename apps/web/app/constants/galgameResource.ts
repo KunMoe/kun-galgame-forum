@@ -154,3 +154,38 @@ export const bucketizeResourceProvider = (
   }
   return 'other'
 }
+
+export const LETMOE_PROVIDER_LABEL_MAP: Record<string, string> = {
+  direct: '一起萌直链',
+  baidu: '百度网盘',
+  quark: '夸克网盘',
+  uc: 'UC网盘',
+  pan123: '123云盘',
+  xunlei: '迅雷云盘',
+  caiyun: '移动云盘',
+  aliyun: '阿里云盘',
+  lanzou: '蓝奏云盘',
+  tianyi: '天翼云盘',
+  weiyun: '微云',
+  pikpak: 'PikPak',
+  onedrive: 'OneDrive',
+  googledrive: 'Google Drive',
+  mega: 'MEGA',
+  telegram: 'Telegram',
+  other: '其他下载'
+}
+
+export const LETMOE_TYPE_LABEL_MAP: Record<string, string> = {
+  translation: '翻译',
+  save: '存档',
+  theme_song: '主题曲',
+  drama: '广播剧',
+  asmr: 'ASMR',
+  comic: '漫画',
+  novel: '小说',
+  manual: '说明书',
+  append: '追加内容',
+  asset: '素材'
+}
+
+export const letmoeFeedbackUrl = (webUrl: string) => `${webUrl}?tab=board`

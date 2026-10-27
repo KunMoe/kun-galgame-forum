@@ -63,6 +63,7 @@ import (
 	"kun-galgame-api/pkg/dlsite"
 	"kun-galgame-api/pkg/errors"
 	"kun-galgame-api/pkg/imageclient"
+	"kun-galgame-api/pkg/letmoeclient"
 	"kun-galgame-api/pkg/linkcheck"
 	"kun-galgame-api/pkg/moyuclient"
 	"kun-galgame-api/pkg/newsclient"
@@ -174,6 +175,16 @@ func New(cfg *config.Config) *App {
 		slog.Info("moyu patch face client configured", "base_url", cfg.MoyuAPI.BaseURL)
 	} else {
 		slog.Warn("moyu patch face client NOT configured; the galgame patch tab stays hidden — set KUN_NEXTMOE_API_KEY or KUN_MOYU_API_KEY")
+	}
+
+	letmoeCli := letmoeclient.New(letmoeclient.Config{
+		BaseURL: cfg.LetmoeAPI.BaseURL,
+		APIKey:  cfg.LetmoeAPI.APIKey,
+	})
+	if letmoeCli.Configured() {
+		slog.Info("letmoe face client configured", "base_url", cfg.LetmoeAPI.BaseURL)
+	} else {
+		slog.Warn("letmoe face client NOT configured; the galgame resource tab shows no letmoe downloads — set KUN_NEXTMOE_API_KEY or KUN_LETMOE_API_KEY")
 	}
 
 	stickerCli := stickerclient.New(stickerclient.Config{
@@ -433,7 +444,7 @@ func New(cfg *config.Config) *App {
 		WithCurrentRating(catalogCli.CurrentRating)
 	heldRatingSweep := galgameService.NewHeldRatingSweep(uc, galgameRepo.NewRatingStore(db)).
 		WithRestoredWorks(workFate, catalogCli.CurrentRating)
-	galgameV1 := galgameapiv1.New(gc, moyuCli, uc, rdb, cfg.NextMoeAPI.ImageCDNBase).WithWork(db, catalogCli, storeLinks, moemoepoint.Award).WithUserPlane(trustCheck, trustScan, galgameCollectionRepo)
+	galgameV1 := galgameapiv1.New(gc, moyuCli, uc, rdb, cfg.NextMoeAPI.ImageCDNBase).WithWork(db, catalogCli, storeLinks, moemoepoint.Award).WithUserPlane(trustCheck, trustScan, galgameCollectionRepo).WithLetmoe(letmoeCli)
 
 	adminOverviewRepo := adminRepo.NewOverviewRepository(db)
 	adminPurgeRepo := adminRepo.NewPurgeRepository(db)

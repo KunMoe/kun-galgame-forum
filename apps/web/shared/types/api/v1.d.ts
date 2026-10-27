@@ -1428,6 +1428,46 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/letmoe-resources/{resource_id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Get one letmoe resource
+         * @description One published www.letmoe.com resource, without its download links. Not cached here.
+         */
+        get: operations["getLetmoeResource"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/letmoe-resources/{resource_id}/downloads": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Issue download links for a letmoe resource
+         * @description Returns a www.letmoe.com resource's download options: hosted files as direct links, off-site links with their share code and archive password, and merged downloads. Counts one download on letmoe, so call it when a reader asks to download. Never cached. Anonymous callers may use it.
+         */
+        post: operations["createLetmoeResourceDownload"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/library-works": {
         parameters: {
             query?: never;
@@ -5617,6 +5657,26 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/works/{work_id}/letmoe-resources": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * List a work's resources on letmoe
+         * @description Lists the published download resources www.letmoe.com holds for the work, most recently changed first. The whole set in one response; it is never paged. An empty list means letmoe has nothing for the work. No download link, share code or password is carried; POST /letmoe-resources/{resource_id}/downloads issues them. An answer may be up to 30 minutes old. NOT_FOUND when the work does not exist.
+         */
+        get: operations["listWorkLetmoeResources"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/works/{work_id}/like": {
         parameters: {
             query?: never;
@@ -8310,6 +8370,129 @@ export interface components {
              */
             object: "inline_spoiler";
         };
+        LetmoeComposite: {
+            /**
+             * Format: int64
+             * @description The merged file's size in bytes.
+             */
+            bytes: number;
+            /** @description The downloaded file's name. Free text; never use it as a decision input. */
+            filename: string;
+            /** @description The merged download's id on www.letmoe.com. */
+            id: string;
+            /** @description The patch resource's id on www.moyu.moe. */
+            moyu_resource_id: string;
+            /**
+             * @description Type discriminant. Always letmoe_composite.
+             * @constant
+             */
+            object: "letmoe_composite";
+            /** @description The patch's languages in www.moyu.moe's vocabulary, such as zh-Hans or zh-Hant. Empty array, never null. */
+            patch_languages: string[];
+            /** @description The www.moyu.moe patch it carries. Free text; never use it as a decision input. */
+            patch_name: string;
+            /** @description The patch author's display name. Free text; never use it as a decision input. */
+            patch_publisher: string;
+            /** @description The patch's kinds in www.moyu.moe's vocabulary, such as manual, machine or fix. Empty array, never null. */
+            patch_types: string[];
+            /**
+             * Format: uri
+             * @description A direct link to the game and the patch spliced into one download.
+             */
+            url: string;
+        };
+        LetmoeMirror: {
+            /** @description Archive password. Empty string when none. Free text; never use it as a decision input. */
+            archive_password: string;
+            /** @description Netdisk share code. Empty string when none. Free text; never use it as a decision input. */
+            extraction_code: string;
+            /** @description The mirror's id on www.letmoe.com. */
+            id: string;
+            /** @description true for letmoe's own file, whose url downloads it directly; false for a link its publisher hosts elsewhere. */
+            is_hosted: boolean;
+            /** @description The publisher's primary mirror. It comes first. */
+            is_primary: boolean;
+            /** @description Its publisher's note on this mirror. null when none. Free text; never use it as a decision input. */
+            note: string | null;
+            /**
+             * @description Type discriminant. Always letmoe_mirror.
+             * @constant
+             */
+            object: "letmoe_mirror";
+            /** @description Netdisk of an external_link mirror, such as baidu or quark. null on a hosted mirror. */
+            provider: string | null;
+            /**
+             * Format: uri
+             * @description The link. A hosted url stops working when the file is replaced or taken down; do not store it.
+             */
+            url: string;
+        };
+        LetmoeResource: {
+            /**
+             * Format: int64
+             * @description Merged downloads (this resource plus a www.moyu.moe patch) offered alongside.
+             */
+            composite_count: number;
+            /** @description A warning its publisher attached. null when none. Free text; never use it as a decision input. */
+            content_warning: string | null;
+            /**
+             * Format: int64
+             * @description Downloads counted on www.letmoe.com.
+             */
+            download_count: number;
+            /** @description A mirror or a merged download downloads without a netdisk. */
+            has_direct_download: boolean;
+            /** @description The resource's id on www.letmoe.com. Not a forum resource id. */
+            id: string;
+            /** @description Languages, such as zh-cn or ja-jp. Empty array, never null. */
+            languages: string[];
+            /** @description Resource kind in www.letmoe.com's vocabulary, such as game, translation or asmr. A superset of this forum's resource_type. */
+            letmoe_type: string;
+            /** @description Its publisher's description as Markdown source written on www.letmoe.com. Not a forum body, so it is not a content document. null when there is none. Free text; never use it as a decision input. */
+            note_markdown: string | null;
+            /**
+             * @description Type discriminant. Always letmoe_resource.
+             * @constant
+             */
+            object: "letmoe_resource";
+            /** @description Catalog platform keys, such as win or and. Empty array, never null. */
+            platforms: string[];
+            /** @description Where its mirrors live; direct is letmoe's own hosted file. Empty array, never null. */
+            providers: string[];
+            /** @description Who published it. The account is the same one on this forum. */
+            publisher: components["schemas"]["UserRef"];
+            /** @description What it runs on, such as native-win or kirikiroid2. Empty array, never null. */
+            runtimes: string[];
+            /** @description Size as its publisher gave it, such as 1.2 GB. Empty when unknown. Free text; never use it as a decision input. */
+            size: string;
+            /** @description The title letmoe shows, never empty. Free text; never use it as a decision input. */
+            title: string;
+            /**
+             * Format: date-time
+             * @description When the resource last changed.
+             */
+            updated_at: string;
+            /** @description The version its publisher labelled it with. null when none. Free text; never use it as a decision input. */
+            version_text: string | null;
+            /**
+             * Format: uri
+             * @description The resource on www.letmoe.com.
+             */
+            web_url: string;
+        };
+        LetmoeResourceDownload: {
+            /** @description Merged downloads. Empty array, never null. */
+            composites: components["schemas"]["LetmoeComposite"][];
+            /** @description Download options, the primary mirror first. Empty array, never null. */
+            mirrors: components["schemas"]["LetmoeMirror"][];
+            /**
+             * @description Type discriminant. Always letmoe_resource_download.
+             * @constant
+             */
+            object: "letmoe_resource_download";
+            /** @description The resource's id on www.letmoe.com. */
+            resource_id: string;
+        };
         /** @enum {string} */
         LibraryWorkSort: "popularity_desc" | "released_desc" | "released_asc" | "updated_desc" | "relevance_desc";
         LinkNode: {
@@ -8446,6 +8629,17 @@ export interface components {
              * @constant
              */
             object: "list_item";
+        };
+        ListLetmoeResource: {
+            /** @description Members of this page. Empty array, never null. */
+            items: components["schemas"]["LetmoeResource"][];
+            /** @description Opaque keyset cursor. Omitted on the last page. */
+            next_cursor?: string;
+            /**
+             * @description Type discriminant. Always list.
+             * @constant
+             */
+            object: "list";
         };
         ListLottery: {
             /** @description Members of this page. Empty array, never null. */
@@ -23967,6 +24161,124 @@ export interface operations {
                 };
             };
             /** @description SERVICE_UNAVAILABLE when the image host is not configured or cannot be reached. */
+            503: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+        };
+    };
+    getLetmoeResource: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description The resource's id on www.letmoe.com. */
+                resource_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["LetmoeResource"];
+                };
+            };
+            /** @description Bad Request */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description NOT_FOUND when letmoe has no visible resource with this id. */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Internal Server Error */
+            500: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description SERVICE_UNAVAILABLE: www.letmoe.com or the account service cannot be reached. */
+            503: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+        };
+    };
+    createLetmoeResourceDownload: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description The resource's id on www.letmoe.com. */
+                resource_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["LetmoeResourceDownload"];
+                };
+            };
+            /** @description Bad Request */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description NOT_FOUND when letmoe has no visible resource with this id. */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Internal Server Error */
+            500: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description SERVICE_UNAVAILABLE: www.letmoe.com cannot be reached, or this forum's key lacks the letmoe:files scope. */
             503: {
                 headers: {
                     [name: string]: unknown;
@@ -46223,6 +46535,65 @@ export interface operations {
                 };
             };
             /** @description SERVICE_UNAVAILABLE when the catalog or the vote store cannot be reached. */
+            503: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+        };
+    };
+    listWorkLetmoeResources: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description Catalog work id, which is also the forum galgame page id. */
+                work_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ListLetmoeResource"];
+                };
+            };
+            /** @description Bad Request */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Not Found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Internal Server Error */
+            500: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description SERVICE_UNAVAILABLE: www.letmoe.com, the catalog or the account service cannot be reached. */
             503: {
                 headers: {
                     [name: string]: unknown;

@@ -20,6 +20,7 @@ type Config struct {
 	NextMoeAPI     NextMoeAPIConfig
 	NewsAPI        NewsAPIConfig
 	MoyuAPI        MoyuAPIConfig
+	LetmoeAPI      LetmoeAPIConfig
 	StickerAPI     StickerAPIConfig
 	ImageClient    ImageClientConfig
 	ArtifactClient ArtifactClientConfig
@@ -156,6 +157,16 @@ type NewsAPIConfig struct {
 // gateway's rate tier belongs to the OAuth client, and the forum's is internal
 // (unlimited), so sharing it costs nothing.
 type MoyuAPIConfig struct {
+	BaseURL string
+	APIKey  string
+}
+
+// LetmoeAPIConfig reaches the /v2/letmoe face on the same gateway as moyu, so
+// its base must not default to KUN_NEXTMOE_API_BASE either. The metadata routes
+// admit any valid key; /file, which answers the download links, needs the
+// operator-granted scope letmoe:files on the key and answers SCOPE_REQUIRED
+// without it.
+type LetmoeAPIConfig struct {
 	BaseURL string
 	APIKey  string
 }
@@ -319,6 +330,10 @@ func Load() (*Config, error) {
 		MoyuAPI: MoyuAPIConfig{
 			BaseURL: envOrDefault("KUN_MOYU_API_BASE", "https://api.nextmoe.dev"),
 			APIKey:  envOrDefault("KUN_MOYU_API_KEY", nextMoeKey),
+		},
+		LetmoeAPI: LetmoeAPIConfig{
+			BaseURL: envOrDefault("KUN_LETMOE_API_BASE", "https://api.nextmoe.dev"),
+			APIKey:  envOrDefault("KUN_LETMOE_API_KEY", nextMoeKey),
 		},
 		StickerAPI: StickerAPIConfig{
 			BaseURL: envOrDefault("KUN_STICKER_API_BASE", "https://api.nextmoe.dev"),

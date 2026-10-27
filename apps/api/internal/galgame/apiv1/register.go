@@ -162,5 +162,47 @@ func Register(svc *Service) func(huma.API) {
 				},
 			},
 		}), svc.listGalgameMoyuPatches)
+
+		huma.Register(api, v1.Public(huma.Operation{
+			OperationID: "listWorkLetmoeResources",
+			Method:      http.MethodGet,
+			Path:        "/works/{work_id}/letmoe-resources",
+			Summary:     "List a work's resources on letmoe",
+			Description: "Lists the published download resources www.letmoe.com holds for the work, most recently changed first. " +
+				"The whole set in one response; it is never paged. An empty list means letmoe has nothing for the work. " +
+				"No download link, share code or password is carried; POST /letmoe-resources/{resource_id}/downloads issues them. " +
+				"An answer may be up to 30 minutes old. NOT_FOUND when the work does not exist.",
+			Tags: []string{"works"},
+			Responses: problemResponses(map[int]string{
+				503: "SERVICE_UNAVAILABLE: www.letmoe.com, the catalog or the account service cannot be reached.",
+			}),
+		}), svc.listWorkLetmoeResources)
+
+		huma.Register(api, v1.Public(huma.Operation{
+			OperationID: "getLetmoeResource",
+			Method:      http.MethodGet,
+			Path:        "/letmoe-resources/{resource_id}",
+			Summary:     "Get one letmoe resource",
+			Description: "One published www.letmoe.com resource, without its download links. Not cached here.",
+			Tags:        []string{"works"},
+			Responses: problemResponses(map[int]string{
+				404: "NOT_FOUND when letmoe has no visible resource with this id.",
+				503: "SERVICE_UNAVAILABLE: www.letmoe.com or the account service cannot be reached.",
+			}),
+		}), svc.getLetmoeResource)
+
+		huma.Register(api, v1.Public(huma.Operation{
+			OperationID: "createLetmoeResourceDownload",
+			Method:      http.MethodPost,
+			Path:        "/letmoe-resources/{resource_id}/downloads",
+			Summary:     "Issue download links for a letmoe resource",
+			Description: "Returns a www.letmoe.com resource's download options: hosted files as direct links, off-site links with their share code and archive password, and merged downloads. " +
+				"Counts one download on letmoe, so call it when a reader asks to download. Never cached. Anonymous callers may use it.",
+			Tags: []string{"works"},
+			Responses: problemResponses(map[int]string{
+				404: "NOT_FOUND when letmoe has no visible resource with this id.",
+				503: "SERVICE_UNAVAILABLE: www.letmoe.com cannot be reached, or this forum's key lacks the letmoe:files scope.",
+			}),
+		}), svc.createLetmoeResourceDownload)
 	}
 }
