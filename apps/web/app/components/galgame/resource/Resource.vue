@@ -1,11 +1,13 @@
 <script setup lang="ts">
 import {
   GALGAME_RESOURCE_PROVIDER_BUCKETS,
+  bucketizeLetmoeProviders,
   bucketizeResourceProvider,
   type GalgameResourceProviderBucketKey
 } from '~/constants/galgameResource'
 import type {
   GalgameResource,
+  LetmoeResource,
   ListLetmoeResource,
   Work
 } from '#shared/utils/api/schemas'
@@ -53,6 +55,8 @@ const resourceRank = useState<Record<string, number>>(
   'galgame-resource-rank',
   () => ({})
 )
+
+const letmoeRankKey = (item: LetmoeResource) => `letmoe:${item.id}`
 
 const shuffle = (items: GalgameResource[]) => {
   for (const item of items) {
@@ -133,11 +137,16 @@ useHead({
 
 const { data: letmoe, status: letmoeStatus } = useApi<ListLetmoeResource>(
   () => `work-letmoe-resources:${workId.value}`,
-  (api, { signal }) =>
-    api.GET('/works/{work_id}/letmoe-resources', {
+  async (api, { signal }) => {
+    const result = await api.GET('/works/{work_id}/letmoe-resources', {
       params: { path: { work_id: workId.value } },
       signal
-    }),
+    })
+    for (const item of result.data?.items ?? []) {
+      resourceRank.value[letmoeRankKey(item)] ??= Math.random()
+    }
+    return result
+  },
   { lazy: true }
 )
 const letmoeDirect = computed(
@@ -185,8 +194,15 @@ const kindTabs = computed(() => [
   }
 ])
 
+type BucketItem =
+  | { kind: 'forum'; key: string; resource: GalgameResource }
+  | { kind: 'letmoe'; key: string; resource: LetmoeResource }
+
+const isExpired = (item: BucketItem) =>
+  item.kind === 'forum' && item.resource.state === 'expired'
+
 const groupedResources = computed(() => {
-  const grouped: Record<GalgameResourceProviderBucketKey, GalgameResource[]> = {
+  const grouped: Record<GalgameResourceProviderBucketKey, BucketItem[]> = {
     baidu: [],
     quark: [],
     caiyun: [],
@@ -196,40 +212,44 @@ const groupedResources = computed(() => {
     other: []
   }
   for (const r of data.value ?? []) {
-    grouped[bucketizeResourceProvider(r.provider_names)].push(r)
+    grouped[bucketizeResourceProvider(r.provider_names)].push({
+      kind: 'forum',
+      key: r.id,
+      resource: r
+    })
   }
+  for (const r of letmoeNetdisk.value) {
+    grouped[bucketizeLetmoeProviders(r.providers)].push({
+      kind: 'letmoe',
+      key: letmoeRankKey(r),
+      resource: r
+    })
+  }
+  const rank = (item: BucketItem) => resourceRank.value[item.key] ?? 0
   return GALGAME_RESOURCE_PROVIDER_BUCKETS.flatMap((bucket) => {
-    const items = grouped[bucket.key]
+    const items = grouped[bucket.key].sort(
+      (a, b) => Number(isExpired(a)) - Number(isExpired(b)) || rank(a) - rank(b)
+    )
     return items.length ? [{ ...bucket, items }] : []
   })
 })
 
-const providerTabs = computed(() => [
-  ...(letmoeNetdisk.value.length
-    ? [
-        {
-          value: 'letmoe',
-          textValue: `letmoe (${letmoeNetdisk.value.length})`,
-          icon: 'lucide:heart-handshake'
-        }
-      ]
-    : []),
-  ...groupedResources.value.map((g) => ({
+const providerTabs = computed(() =>
+  groupedResources.value.map((g) => ({
     value: g.key,
     textValue: `${g.label} (${g.items.length})`,
     icon: g.icon
   }))
-])
+)
 
-type ProviderTab = GalgameResourceProviderBucketKey | 'letmoe'
-const pickedProvider = ref<ProviderTab | null>(null)
-const activeProvider = computed<ProviderTab | ''>({
+const pickedProvider = ref<GalgameResourceProviderBucketKey | null>(null)
+const activeProvider = computed<GalgameResourceProviderBucketKey | ''>({
   get: () => {
     const tabs = providerTabs.value
     if (tabs.some((t) => t.value === pickedProvider.value)) {
       return pickedProvider.value!
     }
-    return (tabs[0]?.value ?? '') as ProviderTab | ''
+    return tabs[0]?.value ?? ''
   },
   set: (key) => {
     pickedProvider.value = key || null
@@ -366,7 +386,7 @@ const activeBucket = computed(() =>
       />
 
       <div v-if="activeKind === 'direct'" class="space-y-3">
-        <GalgameResourceLetmoeSourceNotice kind="direct" />
+        <GalgameResourceLetmoeSourceNotice />
         <GalgameResourceLetmoeCard
           v-for="resource in letmoeDirect"
           :key="resource.id"
@@ -385,22 +405,19 @@ const activeBucket = computed(() =>
           size="md"
           scrollable
         />
-        <div v-if="activeProvider === 'letmoe'" class="space-y-3">
-          <GalgameResourceLetmoeSourceNotice kind="netdisk" />
-          <GalgameResourceLetmoeCard
-            v-for="resource in letmoeNetdisk"
-            :key="resource.id"
-            :resource="resource"
-            mode="netdisk"
-          />
-        </div>
-        <div v-else-if="activeBucket" class="space-y-3">
-          <GalgameResourceLink
-            v-for="resource in activeBucket.items"
-            :key="resource.id"
-            :resource="resource"
-            :refresh="refresh"
-          />
+        <div v-if="activeBucket" class="space-y-3">
+          <template v-for="item in activeBucket.items" :key="item.key">
+            <GalgameResourceLink
+              v-if="item.kind === 'forum'"
+              :resource="item.resource"
+              :refresh="refresh"
+            />
+            <GalgameResourceLetmoeCard
+              v-else
+              :resource="item.resource"
+              mode="netdisk"
+            />
+          </template>
         </div>
       </template>
     </template>

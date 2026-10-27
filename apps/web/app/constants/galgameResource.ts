@@ -155,6 +155,28 @@ export const bucketizeResourceProvider = (
   return 'other'
 }
 
+const LETMOE_PROVIDER_BUCKETS: Record<
+  string,
+  GalgameResourceProviderBucketKey
+> = {
+  baidu: 'baidu',
+  quark: 'quark',
+  caiyun: 'caiyun',
+  pan123: 'pan123',
+  xunlei: 'xunlei',
+  lanzou: 'lanzou'
+}
+
+export const bucketizeLetmoeProviders = (
+  providers: string[]
+): GalgameResourceProviderBucketKey => {
+  const keys = providers.map((p) => LETMOE_PROVIDER_BUCKETS[p])
+  return (
+    GALGAME_RESOURCE_PROVIDER_BUCKETS.find((b) => keys.includes(b.key))?.key ??
+    'other'
+  )
+}
+
 export const LETMOE_PROVIDER_LABEL_MAP: Record<string, string> = {
   direct: '一起萌直链',
   baidu: '百度网盘',

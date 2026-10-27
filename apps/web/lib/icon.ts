@@ -129,7 +129,6 @@ export const ICON_NAMES: string[] = [
   'lucide:hard-drive-upload',
   'lucide:hash',
   'lucide:heart',
-  'lucide:heart-handshake',
   'lucide:history',
   'lucide:home',
   'lucide:house',

@@ -1,19 +1,5 @@
-<script setup lang="ts">
-defineProps<{
-  kind: 'direct' | 'netdisk'
-}>()
-</script>
-
 <template>
-  <KunInfo
-    color="primary"
-    variant="flat"
-    :title="
-      kind === 'direct'
-        ? '直链下载由 LetMoe·一起萌 提供'
-        : '这些网盘链接由 LetMoe·一起萌 用户发布'
-    "
-  >
+  <KunInfo color="primary" variant="flat" title="直链下载由 LetMoe·一起萌 提供">
     <p class="text-sm">
       以下资源来自
       <GalgameResourceLetmoeLink />
