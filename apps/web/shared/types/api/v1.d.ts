@@ -7696,6 +7696,16 @@ export interface components {
             aliases: string[];
             /**
              * Format: int64
+             * @description Catalog's rated_work_count: works among catalog_work_count that at least 10 people rated on VNDB, Bangumi or ErogameScape.
+             */
+            catalog_rated_work_count: number;
+            /**
+             * Format: int64
+             * @description Catalog's rater_count over the same works: each work's largest rater count on VNDB, Bangumi or ErogameScape, summed. Up to an hour stale. A popularity signal; catalog_work_count is padded by many works nobody rated.
+             */
+            catalog_rater_count: number;
+            /**
+             * Format: int64
              * @description Works catalog files under it, NSFW ones included. How many a reader can page through is the total of its works collection.
              */
             catalog_work_count: number;

@@ -16,6 +16,10 @@ defineProps<{
         {{ `+ ${engine.galgame_count}` }}
       </KunChip>
     </h3>
+    <p class="text-default-500 text-xs tabular-nums">
+      {{ engine.rater_count.toLocaleString() }} 人评分 ·
+      {{ engine.rated_count.toLocaleString() }} 部作品有 10 人以上评分
+    </p>
     <div
       v-if="engine.alias.length"
       class="text-default-500 flex flex-wrap gap-2"

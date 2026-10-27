@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import type { Engine } from '#shared/utils/api/schemas'
 import { engineItemOf } from '~/utils/galgame/entityCards'
+import { KUN_GALGAME_ENGINE_SORT_TABS } from '~/constants/galgame'
 
 const nameOf = useCatalogName()
 
@@ -24,6 +25,7 @@ const { data: engines } = await useApi<Engine[]>('engines:all', async (api) => {
 })
 
 const searchQuery = ref('')
+const sort = ref('popularity')
 
 const data = computed(() => {
   const q = searchQuery.value.trim().toLowerCase()
@@ -36,7 +38,10 @@ const data = computed(() => {
         )
       })
     : items
-  return matched.map((e) => engineItemOf(e, nameOf))
+  const cards = matched.map((e) => engineItemOf(e, nameOf))
+  return sort.value === 'popularity'
+    ? cards.toSorted((a, b) => b.rater_count - a.rater_count || a.id - b.id)
+    : cards
 })
 </script>
 
@@ -53,6 +58,16 @@ const data = computed(() => {
             type="text"
             placeholder="搜索引擎名称或别名..."
           />
+          <KunTab
+            v-model="sort"
+            :items="KUN_GALGAME_ENGINE_SORT_TABS"
+            variant="bordered"
+            size="sm"
+            class-name="mt-4"
+          />
+          <p v-if="sort === 'popularity'" class="text-default-400 mt-2 text-xs">
+            热度为引擎下作品在 VNDB、Bangumi、批评空间的评分人数之和
+          </p>
           <div class="text-default-600 mt-4 text-sm">
             {{
               searchQuery.trim()

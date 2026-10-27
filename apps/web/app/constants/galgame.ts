@@ -1,3 +1,5 @@
+import type { KunTabItem } from '@kungal/ui-vue'
+
 export const KUN_RESOURCE_TYPE_CONST = [
   'game',
   'patch',
@@ -77,6 +79,11 @@ export const KUN_GALGAME_LIBRARY_SORT_FIELD_MAP: Record<string, string> = {
   release_date: '发售日期',
   time: '资料更新'
 }
+
+export const KUN_GALGAME_ENGINE_SORT_TABS: KunTabItem[] = [
+  { value: 'popularity', textValue: '按热度' },
+  { value: 'count', textValue: '按作品数' }
+]
 
 export const KUN_GALGAME_INTRO_LANGUAGE_MAP: Record<string, string> = {
   'zh-Hans': '简体中文',

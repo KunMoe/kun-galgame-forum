@@ -38,12 +38,14 @@ func (s *Service) buildEngineIndex(ctx context.Context) ([]Engine, error) {
 			e := &res.Items[i]
 			name := workrepr.Name(cmp.Or(e.DisplayName, e.Name), e.Latin, client.LocalizedValues(e.Localized))
 			rows = append(rows, Engine{
-				Object:           "engine",
-				ID:               repr.ID(int(e.ID)),
-				CatalogName:      name,
-				Aliases:          aliases(e.Aliases.Values(name.DisplayName)),
-				Description:      e.Description,
-				CatalogWorkCount: max(e.WorkCount, 0),
+				Object:                "engine",
+				ID:                    repr.ID(int(e.ID)),
+				CatalogName:           name,
+				Aliases:               aliases(e.Aliases.Values(name.DisplayName)),
+				Description:           e.Description,
+				CatalogWorkCount:      max(e.WorkCount, 0),
+				CatalogRaterCount:     max(e.RaterCount, 0),
+				CatalogRatedWorkCount: max(e.RatedWorkCount, 0),
 			})
 		}
 		if res.NextCursor == nil || *res.NextCursor == "" {
@@ -129,12 +131,14 @@ func (s *Service) getEngine(ctx context.Context, in *enginePathInput) (*getEngin
 	}
 	name := workrepr.Name(cmp.Or(e.DisplayName, e.Name), "", client.LocalizedValues(e.Localized))
 	return &getEngineOutput{Body: Engine{
-		Object:           "engine",
-		ID:               repr.ID(int(e.ID)),
-		CatalogName:      name,
-		Aliases:          aliases(e.Aliases.Values(name.DisplayName)),
-		Description:      e.Description,
-		CatalogWorkCount: max(e.WorkCount, 0),
+		Object:                "engine",
+		ID:                    repr.ID(int(e.ID)),
+		CatalogName:           name,
+		Aliases:               aliases(e.Aliases.Values(name.DisplayName)),
+		Description:           e.Description,
+		CatalogWorkCount:      max(e.WorkCount, 0),
+		CatalogRaterCount:     max(e.RaterCount, 0),
+		CatalogRatedWorkCount: max(e.RatedWorkCount, 0),
 	}}, nil
 }
 

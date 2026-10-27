@@ -36,7 +36,9 @@ export const engineItemOf = (e: Engine, nameOf: NameOf): GalgameEngineItem => ({
   name: nameOf(e).name,
   description: e.description,
   alias: e.aliases,
-  galgame_count: e.catalog_work_count
+  galgame_count: e.catalog_work_count,
+  rater_count: e.catalog_rater_count,
+  rated_count: e.catalog_rated_work_count
 })
 
 export const seriesCardOf = (

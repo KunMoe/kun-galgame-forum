@@ -19,6 +19,8 @@ type CatalogTaxonomyItem struct {
 	Kind            string                      `json:"kind"`
 	Tier            string                      `json:"tier"`
 	WorkCount       int                         `json:"work_count"`
+	RaterCount      int64                       `json:"rater_count"`
+	RatedWorkCount  int                         `json:"rated_work_count"`
 	Description     string                      `json:"description"`
 	Aliases         catAliases                  `json:"aliases"`
 	Sexual          bool                        `json:"sexual"`
@@ -79,13 +81,15 @@ type CatalogTagFacts struct {
 }
 
 type CatalogEngineDetail struct {
-	ID          int64                       `json:"id"`
-	Name        string                      `json:"name"`
-	DisplayName string                      `json:"display_name"`
-	Localized   map[string]catLocalizedName `json:"localized"`
-	Description string                      `json:"description"`
-	Aliases     catAliases                  `json:"aliases"`
-	WorkCount   int                         `json:"work_count"`
+	ID             int64                       `json:"id"`
+	Name           string                      `json:"name"`
+	DisplayName    string                      `json:"display_name"`
+	Localized      map[string]catLocalizedName `json:"localized"`
+	Description    string                      `json:"description"`
+	Aliases        catAliases                  `json:"aliases"`
+	WorkCount      int                         `json:"work_count"`
+	RaterCount     int64                       `json:"rater_count"`
+	RatedWorkCount int                         `json:"rated_work_count"`
 }
 
 type CatalogSeriesDetail struct {
