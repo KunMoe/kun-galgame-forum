@@ -1,9 +1,13 @@
 <script setup lang="ts">
 import type { UserProfile } from '#shared/utils/api/schemas'
-import {
-  REPLY_NAV_CONFIG,
-  type KUN_USER_PAGE_REPLY_TYPE
-} from '~/constants/user'
+import { REPLY_NAV_CONFIG, KUN_USER_PAGE_REPLY_TYPE } from '~/constants/user'
+
+definePageMeta({
+  validate: (route) =>
+    (KUN_USER_PAGE_REPLY_TYPE as readonly string[]).includes(
+      String(route.params.type).replace(/-/g, '_')
+    )
+})
 
 const props = defineProps<{
   user: UserProfile

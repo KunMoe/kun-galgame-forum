@@ -1,9 +1,13 @@
 <script setup lang="ts">
 import type { UserProfile } from '#shared/utils/api/schemas'
-import {
-  TOPIC_NAV_CONFIG,
-  type KUN_USER_PAGE_TOPIC_TYPE
-} from '~/constants/user'
+import { TOPIC_NAV_CONFIG, KUN_USER_PAGE_TOPIC_TYPE } from '~/constants/user'
+
+definePageMeta({
+  validate: (route) =>
+    (KUN_USER_PAGE_TOPIC_TYPE as readonly string[]).includes(
+      String(route.params.type).replace(/-/g, '_')
+    )
+})
 
 const props = defineProps<{
   user: UserProfile

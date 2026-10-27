@@ -50,6 +50,8 @@ onMounted(() => {
          trips Nuxt's "does not have a single root node" warning, and
          silently drops the page-transition enter animation. -->
 
+    <h1 class="sr-only">{{ kungal.title }}</h1>
+
     <div class="sm:hidden">
       <KunTab
         v-model="activeTab"

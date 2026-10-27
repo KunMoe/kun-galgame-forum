@@ -10,6 +10,14 @@ export interface ClientProblem {
   requestId: string | null
 }
 
+// Only these say the entity is not there. Any other failure answered 404 too,
+// and a crawler drops a 404 page: a slow catalog unlisted the page it served.
+export const isMissingProblem = (p: ClientProblem | null) =>
+  p !== null && (p.status === 404 || p.status === 400)
+
+export const isTransientProblem = (p: ClientProblem) =>
+  p.kind === 'timeout' || p.kind === 'network' || p.status >= 500
+
 export type ApiResult<T> =
   | { ok: true; data: T }
   | { ok: false; problem: ClientProblem }

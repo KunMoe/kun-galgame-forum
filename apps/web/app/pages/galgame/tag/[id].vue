@@ -1,4 +1,5 @@
 <script setup lang="ts">
+import { isMissingProblem } from '#shared/utils/api/problem'
 import { KUN_GALGAME_TAG_CATEGORY_MAP } from '~/constants/galgameTag'
 import type { GalgameTag, WorkPage } from '#shared/utils/api/schemas'
 
@@ -45,10 +46,11 @@ const {
         query: { include_nsfw: allowsNsfw.value }
       },
       signal
-    })
+    }),
+  { critical: true }
 )
 
-useKunNotFound(() => problem.value !== null, '未找到 Galgame 标签')
+useKunNotFound(() => isMissingProblem(problem.value), '未找到 Galgame 标签')
 const galgames = useWorkCards(() => works.value?.items)
 const total = computed(() => works.value?.total ?? 0)
 

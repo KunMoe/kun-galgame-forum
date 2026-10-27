@@ -26,6 +26,7 @@ export const useKunSeoMeta = (source: MaybeRefOrGetter<KunSeoMetaInput>) => {
     const pageUrl = `${kungal.domain.main}${route.path}`
     if (input.noindex) {
       return {
+        pageTitle: input.title,
         title: input.title ?? '',
         description: '',
         keywords: undefined,
@@ -53,6 +54,7 @@ export const useKunSeoMeta = (source: MaybeRefOrGetter<KunSeoMetaInput>) => {
     // rather than left to describe a different picture.
     const size = cardUrl ? KUN_OG_CARD_SIZE : input.ogImage ? null : site
     return {
+      pageTitle: input.title,
       title,
       description: input.description,
       keywords: input.keywords ?? kungal.keywords.toString(),
@@ -72,8 +74,10 @@ export const useKunSeoMeta = (source: MaybeRefOrGetter<KunSeoMetaInput>) => {
   const description = () => meta.value.description
   const image = () => meta.value.image
 
+  // The app's titleTemplate appends the site name; handing it the full title
+  // put the name in <title> twice.
   useSeoMeta({
-    title,
+    title: () => meta.value.pageTitle,
     description,
     keywords: () => meta.value.keywords,
     robots: () => meta.value.robots,

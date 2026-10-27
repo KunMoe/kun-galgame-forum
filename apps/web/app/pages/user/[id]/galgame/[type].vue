@@ -2,8 +2,15 @@
 import type { UserProfile } from '#shared/utils/api/schemas'
 import {
   GALGAME_NAV_CONFIG,
-  type KUN_USER_PAGE_GALGAME_TYPE
+  KUN_USER_PAGE_GALGAME_TYPE
 } from '~/constants/user'
+
+definePageMeta({
+  validate: (route) =>
+    (KUN_USER_PAGE_GALGAME_TYPE as readonly string[]).includes(
+      String(route.params.type).replace(/-/g, '_')
+    )
+})
 
 const props = defineProps<{
   user: UserProfile

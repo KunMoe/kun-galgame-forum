@@ -1,4 +1,5 @@
 <script setup lang="ts">
+import { isMissingProblem } from '#shared/utils/api/problem'
 import type { Engine, WorkPage } from '#shared/utils/api/schemas'
 
 const route = useRoute()
@@ -44,10 +45,11 @@ const {
     api.GET('/engines/{engine_id}', {
       params: { path: { engine_id: String(engine_id.value) } },
       signal
-    })
+    }),
+  { critical: true }
 )
 
-useKunNotFound(() => problem.value !== null, '未找到 Galgame 引擎')
+useKunNotFound(() => isMissingProblem(problem.value), '未找到 Galgame 引擎')
 const galgames = useWorkCards(() => works.value?.items)
 const total = computed(() => works.value?.total ?? 0)
 

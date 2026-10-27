@@ -1,3 +1,4 @@
+import { isMissingProblem } from '#shared/utils/api/problem'
 import type {
   Company,
   CompanyWorkPage,
@@ -31,7 +32,8 @@ export const useGalgameOfficialDetail = async (subPath = '') => {
       })
       movedTo.value = mergedInto(res.error)
       return res
-    }
+    },
+    { critical: true }
   )
   const company = read.data
   const redirect = (id: number) =>
@@ -76,7 +78,7 @@ export const useGalgameOfficialDetail = async (subPath = '') => {
       }
     })
     useKunNotFound(
-      () => read.problem.value !== null && movedTo.value === null,
+      () => isMissingProblem(read.problem.value) && movedTo.value === null,
       notFound
     )
     return detail
@@ -89,7 +91,7 @@ export const useGalgameOfficialDetail = async (subPath = '') => {
     await nuxtApp.runWithContext(() => redirect(id))
     return detail
   }
-  useKunNotFound(() => read.problem.value !== null, notFound)
+  useKunNotFound(() => isMissingProblem(read.problem.value), notFound)
   return detail
 }
 

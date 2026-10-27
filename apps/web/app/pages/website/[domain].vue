@@ -24,7 +24,8 @@ const { data, problem, pending, refresh } = await useKunApi<Website>(
   (api) =>
     api.GET('/websites/{website_host}', {
       params: { path: { website_host: host.value } }
-    })
+    }),
+  { critical: true }
 )
 
 const iconUrl = computed(

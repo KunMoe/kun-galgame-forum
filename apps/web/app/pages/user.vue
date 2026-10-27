@@ -20,7 +20,8 @@ const { data, problem, pending } = useKunApi<UserProfile>(
     api.GET('/users/{user_id}', {
       params: { path: { user_id: userId.value } },
       signal
-    })
+    }),
+  { critical: true }
 )
 
 const isSignInRequired = computed(

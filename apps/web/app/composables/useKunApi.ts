@@ -5,6 +5,7 @@ import {
   type ApiClient
 } from '#shared/utils/api/client'
 import {
+  isTransientProblem,
   settle,
   type ApiResult,
   type ClientProblem
@@ -33,7 +34,12 @@ type ApiCall<R> = (api: ApiClient, ctx: { signal: AbortSignal }) => Promise<R>
 export type UseKunApiOptions<T> = Pick<
   AsyncDataOptions<ApiResult<T>>,
   'lazy' | 'server' | 'immediate' | 'getCachedData'
->
+> & {
+  // The page's main read. If it fails for a moment during SSR the response is
+  // 503: the 200 it used to be, with an error body and noindex, told crawlers
+  // to drop the page whenever the catalog was slow.
+  critical?: boolean
+}
 
 export type KunApi<T> = {
   data: ComputedRef<T | undefined>
@@ -60,11 +66,12 @@ export const useKunApi = <T>(
   call: ApiCall<FetchOutcome<T>> | ApiCall<ApiResult<T>>,
   options?: UseKunApiOptions<T>
 ): KunApi<T> & Promise<KunApi<T>> => {
+  const { critical, ...asyncOptions } = options ?? {}
   const api = useApiClient()
   const asyncData = useAsyncData(
     () => `api:${toValue(key)}`,
     (_app, { signal }) => toResult(call(api, { signal })),
-    { lazy: true, ...options }
+    { lazy: true, ...asyncOptions }
   )
   const result = asyncData.data
 
@@ -78,6 +85,21 @@ export const useKunApi = <T>(
     ),
     status: asyncData.status,
     refresh: asyncData.refresh
+  }
+
+  if (import.meta.server && critical) {
+    const event = useRequestEvent()
+    const retryAfter = useResponseHeader('Retry-After')
+    watch(
+      kunApi.problem,
+      (problem) => {
+        if (event && problem && isTransientProblem(problem)) {
+          setResponseStatus(event, 503)
+          retryAfter.value = '60'
+        }
+      },
+      { flush: 'sync' }
+    )
   }
 
   return Object.assign(

@@ -65,7 +65,8 @@ useHead({
 })
 
 useSeoMeta({
-  titleTemplate: () => kungal.titleTemplate,
+  titleTemplate: (title) =>
+    title ? kungal.titleTemplate.replace('%s', title) : kungal.title,
   charset: 'utf-8',
   viewport: 'width=device-width, initial-scale=1',
   formatDetection: 'telephone=no',

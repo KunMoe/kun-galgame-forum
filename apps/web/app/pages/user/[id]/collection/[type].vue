@@ -5,6 +5,13 @@ import {
   KUN_USER_PAGE_COLLECTION_TYPE
 } from '~/constants/user'
 
+definePageMeta({
+  validate: (route) =>
+    (KUN_USER_PAGE_COLLECTION_TYPE as readonly string[]).includes(
+      String(route.params.type)
+    )
+})
+
 const props = defineProps<{
   user: UserProfile
 }>()

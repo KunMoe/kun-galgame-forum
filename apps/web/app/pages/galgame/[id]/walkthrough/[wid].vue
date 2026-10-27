@@ -32,7 +32,8 @@ const {
     api.GET('/walkthroughs/{walkthrough_id}', {
       params: { path: { walkthrough_id: walkthroughId } },
       signal
-    })
+    }),
+  { critical: true }
 )
 
 useKunNotFound(() => problem.value?.status === 404, '未找到这份攻略')

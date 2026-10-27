@@ -9,6 +9,7 @@ import (
 	"slices"
 	"strconv"
 	"strings"
+	"sync"
 	"time"
 	"unicode/utf8"
 
@@ -382,7 +383,6 @@ func (s *Service) companiesOf(ctx context.Context, d *client.CatalogWorkDetail) 
 		}
 	}
 	out := make([]WorkCompany, 0, len(order))
-	detail := s.detailCatalog()
 	for _, id := range order {
 		a := byID[id]
 		roles := make([]AttributionRole, len(a.roles))
@@ -405,29 +405,39 @@ func (s *Service) companiesOf(ctx context.Context, d *client.CatalogWorkDetail) 
 			AttributionRoles: roles,
 			Lang:             workrepr.Lang(a.lang),
 		}
-		if detail != nil && id > 0 {
-			rec, found, _, appErr := detail.CatalogLabel(ctx, strconv.FormatInt(id, 10))
-			if appErr == nil && found && rec != nil {
-				name := workrepr.Name(rec.DisplayName, rec.Latin, client.LocalizedValues(rec.Localized))
-				co.CatalogName = name
-				if companyKinds[rec.Kind] {
-					co.CompanyKind = rec.Kind
-				}
-				co.Logo = workrepr.ImageFromHash(s.cdn, rec.LogoHash)
-				co.Aliases = aliasNames(rec.Aliases.Values(name.DisplayName))
-				co.CatalogWorkCount = max(rec.WorkCount, 0)
-				if lang := workrepr.Lang(rec.Lang); lang != nil {
-					co.Lang = lang
-				}
-				links := []workrepr.CatalogLink{}
-				for _, ln := range rec.Links {
-					links = workrepr.AppendLink(links, ln)
-				}
-				co.Links = links
-			}
-		}
 		out = append(out, co)
 	}
+	detail := s.detailCatalog()
+	if detail == nil {
+		return out
+	}
+	fillEach(len(out), func(i int) {
+		id := order[i]
+		if id <= 0 {
+			return
+		}
+		rec, found, _, appErr := detail.CatalogLabel(ctx, strconv.FormatInt(id, 10))
+		if appErr != nil || !found || rec == nil {
+			return
+		}
+		co := &out[i]
+		name := workrepr.Name(rec.DisplayName, rec.Latin, client.LocalizedValues(rec.Localized))
+		co.CatalogName = name
+		if companyKinds[rec.Kind] {
+			co.CompanyKind = rec.Kind
+		}
+		co.Logo = workrepr.ImageFromHash(s.cdn, rec.LogoHash)
+		co.Aliases = aliasNames(rec.Aliases.Values(name.DisplayName))
+		co.CatalogWorkCount = max(rec.WorkCount, 0)
+		if lang := workrepr.Lang(rec.Lang); lang != nil {
+			co.Lang = lang
+		}
+		links := []workrepr.CatalogLink{}
+		for _, ln := range rec.Links {
+			links = workrepr.AppendLink(links, ln)
+		}
+		co.Links = links
+	})
 	return out
 }
 
@@ -442,51 +452,84 @@ func aliasNames(values []string) []entityapiv1.AliasName {
 }
 
 func (s *Service) enginesOf(ctx context.Context, d *client.CatalogWorkDetail) []entityapiv1.Engine {
-	out := []entityapiv1.Engine{}
-	detail := s.detailCatalog()
+	out := make([]entityapiv1.Engine, 0, len(d.Engines))
 	for _, e := range d.Engines {
-		eng := entityapiv1.Engine{
+		out = append(out, entityapiv1.Engine{
 			Object: "engine", ID: repr.ID(int(e.ID)),
 			CatalogName:      workrepr.Name(cmp.Or(e.DisplayName, e.Name), "", client.LocalizedValues(e.Localized)),
 			Aliases:          []entityapiv1.AliasName{},
 			CatalogWorkCount: max(e.WorkCount, 0),
-		}
-		if detail != nil && e.ID > 0 {
-			rec, found, appErr := detail.CatalogEngine(ctx, strconv.FormatInt(e.ID, 10))
-			if appErr == nil && found && rec != nil {
-				name := workrepr.Name(cmp.Or(rec.DisplayName, rec.Name), "", client.LocalizedValues(rec.Localized))
-				eng.CatalogName = name
-				eng.Aliases = aliasNames(rec.Aliases.Values(name.DisplayName))
-				eng.Description = rec.Description
-				eng.CatalogWorkCount = max(rec.WorkCount, 0)
-			}
-		}
-		out = append(out, eng)
+		})
 	}
+	detail := s.detailCatalog()
+	if detail == nil {
+		return out
+	}
+	fillEach(len(out), func(i int) {
+		id := d.Engines[i].ID
+		if id <= 0 {
+			return
+		}
+		rec, found, appErr := detail.CatalogEngine(ctx, strconv.FormatInt(id, 10))
+		if appErr != nil || !found || rec == nil {
+			return
+		}
+		eng := &out[i]
+		name := workrepr.Name(cmp.Or(rec.DisplayName, rec.Name), "", client.LocalizedValues(rec.Localized))
+		eng.CatalogName = name
+		eng.Aliases = aliasNames(rec.Aliases.Values(name.DisplayName))
+		eng.Description = rec.Description
+		eng.CatalogWorkCount = max(rec.WorkCount, 0)
+	})
 	return out
 }
 
 func (s *Service) seriesOf(ctx context.Context, d *client.CatalogWorkDetail) []entityapiv1.SeriesSummary {
-	out := []entityapiv1.SeriesSummary{}
-	detail := s.detailCatalog()
+	out := make([]entityapiv1.SeriesSummary, 0, len(d.Series))
 	for _, sr := range d.Series {
-		card := entityapiv1.SeriesSummary{
+		out = append(out, entityapiv1.SeriesSummary{
 			Object: "series", ID: repr.ID(int(sr.ID)),
 			CatalogName: workrepr.Name(cmp.Or(sr.DisplayName, sr.Name), "", client.LocalizedValues(sr.Localized)),
 			SampleWorks: []entityapiv1.SeriesSampleWork{},
+		})
+	}
+	detail := s.detailCatalog()
+	if detail == nil {
+		return out
+	}
+	fillEach(len(out), func(i int) {
+		id := d.Series[i].ID
+		if id <= 0 {
+			return
 		}
-		if detail != nil && sr.ID > 0 {
-			rec, found, appErr := detail.CatalogSeries(ctx, strconv.FormatInt(sr.ID, 10))
+		card := &out[i]
+		var series sync.WaitGroup
+		series.Go(func() {
+			rec, found, appErr := detail.CatalogSeries(ctx, strconv.FormatInt(id, 10))
 			if appErr == nil && found && rec != nil {
 				card.CatalogName = workrepr.Name(cmp.Or(rec.DisplayName, rec.Name), "", client.LocalizedValues(rec.Localized))
 				card.HasNSFWWorks = rec.HasNSFW
 				card.CatalogWorkCount = max(rec.WorkCount, 0)
 			}
-			s.fillSeriesSamples(ctx, int(sr.ID), &card)
-		}
-		out = append(out, card)
-	}
+		})
+		samples := entityapiv1.SeriesSummary{SampleWorks: []entityapiv1.SeriesSampleWork{}}
+		series.Go(func() { s.fillSeriesSamples(ctx, int(id), &samples) })
+		series.Wait()
+		card.SampleWorks = samples.SampleWorks
+		card.ListedWorkCount = samples.ListedWorkCount
+	})
 	return out
+}
+
+// fillEach runs fn for every index at once. The catalog reads behind a work
+// page are independent, and one after another they added up past the 10s the
+// server render waits for the API.
+func fillEach(n int, fn func(i int)) {
+	var wg sync.WaitGroup
+	for i := range n {
+		wg.Go(func() { fn(i) })
+	}
+	wg.Wait()
 }
 
 func (s *Service) fillSeriesSamples(ctx context.Context, seriesID int, card *entityapiv1.SeriesSummary) {

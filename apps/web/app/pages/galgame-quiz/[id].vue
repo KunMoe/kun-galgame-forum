@@ -22,15 +22,14 @@ const { data, problem, pending } = useKunApi<Quiz>(
     api.GET('/quizzes/{quiz_id}', {
       params: { path: { quiz_id: quizId.value } },
       signal
-    })
+    }),
+  { critical: true }
 )
 
 useKunSeoMeta(() => {
   const quiz = data.value
   if (!quiz) {
-    return problem.value
-      ? { noindex: true, title: '题目不存在或已被删除' }
-      : {}
+    return problem.value ? { noindex: true, title: '题目不存在或已被删除' } : {}
   }
 
   const galgameNames = quiz.works.map((work) => workName(work)).filter(Boolean)
@@ -80,10 +79,7 @@ useKunSeoMeta(() => {
       />
     </template>
     <GalgameQuizPlaySkeleton v-else-if="pending" />
-    <KunNull
-      v-else-if="problem"
-      :description="problemMessage(problem)"
-    />
+    <KunNull v-else-if="problem" :description="problemMessage(problem)" />
     <KunNull v-else description="题目不存在或已被删除" />
   </div>
 </template>

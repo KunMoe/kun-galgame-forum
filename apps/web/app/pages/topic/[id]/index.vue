@@ -26,20 +26,23 @@ const { isEdit } = storeToRefs(useTempReplyStore())
 const topicId = computed(() => (route.params as { id: string }).id)
 provide('topicId', Number(topicId.value))
 
-const { data, problem, pending, refresh } = useKunApi<Topic>(
+const topicRead = useKunApi<Topic>(
   () => `topic:${topicId.value}`,
   (api, { signal }) =>
     api.GET('/topics/{topic_id}', {
       params: { path: { topic_id: topicId.value } },
       signal
-    })
+    }),
+  { critical: true }
 )
 
 const { polls, lotteries, upvotes } = provideTopicPage(topicId.value)
 const firstScreenPending = computed(
-  () =>
-    polls.pending.value || lotteries.pending.value || upvotes.pending.value
+  () => polls.pending.value || lotteries.pending.value || upvotes.pending.value
 )
+
+const { data, problem, pending, refresh } = await topicRead
+useKunNotFound(() => problem.value?.status === 404, '未找到这个话题')
 
 const replaced = ref<Topic>()
 watch(data, () => {
@@ -156,21 +159,28 @@ const jsonLdOf = (topic: Topic): WithContext<DiscussionForumPosting> => {
 }
 
 useHead(() => ({
-  script: data.value
-    ? [
-        {
-          id: 'schema-org-qa-page',
-          type: 'application/ld+json',
-          innerHTML: jsonLdOf(data.value)
-        }
-      ]
-    : []
+  script:
+    data.value && !data.value.is_nsfw
+      ? [
+          {
+            id: 'schema-org-qa-page',
+            type: 'application/ld+json',
+            innerHTML: jsonLdOf(data.value)
+          }
+        ]
+      : []
 }))
 
 useKunSeoMeta(() => {
   const topic = data.value
   if (!topic) {
-    return problem.value ? { noindex: true, title: '未找到此话题' } : {}
+    if (!problem.value) {
+      return {}
+    }
+    return {
+      noindex: true,
+      title: problem.value.status === 404 ? '未找到此话题' : '加载话题失败'
+    }
   }
   if (topic.is_nsfw) {
     // Being signed in used to be enough on its own. The account's stance

@@ -22,7 +22,8 @@ const { data, problem, pending, refresh } = useKunApi(
     api.GET('/ratings/{rating_id}', {
       params: { path: { rating_id: id.value } },
       signal
-    })
+    }),
+  { critical: true }
 )
 
 const jsonLd = computed<WithContext<Review> | null>(() => {

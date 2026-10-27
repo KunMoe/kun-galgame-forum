@@ -14,7 +14,8 @@ const { data, problem, pending } = useKunApi(
     api.GET('/docs/{doc_slug}', {
       params: { path: { doc_slug: docSlug.value } },
       signal
-    })
+    }),
+  { critical: true }
 )
 
 const headings = computed(() => contentHeadings(data.value?.content))

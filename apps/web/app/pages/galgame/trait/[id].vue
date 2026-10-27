@@ -1,4 +1,5 @@
 <script setup lang="ts">
+import { isMissingProblem } from '#shared/utils/api/problem'
 import type { Trait } from '#shared/utils/api/schemas'
 import { traitFullName, traitSections, traitSide } from '~/utils/galgame/trait'
 import { provideTraitRoots } from '~/composables/galgame/useTraitRoots'
@@ -30,13 +31,14 @@ const {
         query: { include_nsfw: allowsNsfw.value }
       },
       signal
-    })
+    }),
+  { critical: true }
 )
 
 await roots
 
 useKunNotFound(
-  () => problem.value !== null,
+  () => isMissingProblem(problem.value),
   allowsNsfw.value
     ? '未找到该角色属性'
     : '未找到该角色属性, 如果它是成人向属性, 请在设置面板开启 NSFW 开关'
