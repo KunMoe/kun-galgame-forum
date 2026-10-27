@@ -12,9 +12,11 @@ import type {
 const props = defineProps<{
   resource: LetmoeResource
   mode: 'direct' | 'netdisk'
+  downloadCount: number
 }>()
 
 const open = defineModel<boolean>({ required: true })
+const emit = defineEmits<{ counted: [] }>()
 
 const api = useApiClient()
 const download = ref<LetmoeResourceDownload | null>(null)
@@ -37,6 +39,7 @@ const fetchDownload = async () => {
     return
   }
   download.value = result.data
+  emit('counted')
 }
 
 watch(open, (isOpen) => {
@@ -75,7 +78,7 @@ const isEmpty = computed(
         </div>
         <KunChip variant="flat" color="primary" size="sm">
           <KunIcon name="lucide:download" />
-          {{ resource.download_count }} 次下载
+          {{ downloadCount }} 次下载
         </KunChip>
       </div>
 

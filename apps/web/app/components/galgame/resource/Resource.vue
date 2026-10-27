@@ -295,6 +295,13 @@ const activeBucket = computed(() =>
         <GalgameResourceLetmoeLink />
       </p>
     </KunInfo>
+    <KunInfo v-if="!isHostedElsewhere" color="danger" title="我们需要你的帮助">
+      <p class="text-sm">
+        直链下载是由所有 Galgame 爱好者提供的，如果有余力，可以前往
+        <GalgameResourceLetmoeLink :to="letmoeHref" />
+        上传日语硬盘版游戏资源，以及中文手机模拟器资源，目前缺少这两类资源，我们需要你的帮助。
+      </p>
+    </KunInfo>
     <KunInfo
       v-if="resourcePublishBanned"
       color="danger"
