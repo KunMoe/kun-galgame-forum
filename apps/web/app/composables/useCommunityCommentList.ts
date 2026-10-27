@@ -101,8 +101,9 @@ export const useCommunityCommentList = (
     seeded.value = true
     reportRead()
   }
-  seed()
-  watch([data, problem], seed)
+  // Only a sync watcher runs on the server, and the first page lands after
+  // setup there: a plain watch left the server HTML without its comments.
+  watch([data, problem], seed, { immediate: true, flush: 'sync' })
 
   const reload = async () => {
     seeded.value = false

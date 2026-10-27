@@ -10,18 +10,29 @@ const IDS_PER_CALL = 100
 // and a link opened cold arrives with nothing to draw its chips with until
 // catalog answers the names.
 export const useEntityNames = () => {
-  const named = reactive(new Map<string, SearchEntityItem>())
+  // In the payload, and awaited before the server renders: a component-local
+  // map came to the client empty, so the server's chip read 「2D」 and the
+  // hydrated one 「#1」.
+  const named = useState<Record<string, SearchEntityItem>>(
+    'entity-names',
+    () => ({})
+  )
+  const resolving: Promise<unknown>[] = []
+  if (import.meta.server && getCurrentInstance()) {
+    onServerPrefetch(() => Promise.all(resolving))
+  }
   const api = useApiClient()
   const nameOf = useCatalogName()
   const { allowsNsfw } = useContentStance()
 
   const keyOf = (family: string, id: number) => `${family}:${id}`
 
-  const remember = (item: SearchEntityItem) =>
-    named.set(keyOf(item.family, item.id), item)
+  const remember = (item: SearchEntityItem) => {
+    named.value[keyOf(item.family, item.id)] = item
+  }
 
   const itemOf = (family: EntityNameFamily, id: number) =>
-    named.get(keyOf(family, id))
+    named.value[keyOf(family, id)]
 
   const labelOf = (family: EntityNameFamily, id: number) =>
     itemOf(family, id)?.name ?? `#${id}`
@@ -51,11 +62,11 @@ export const useEntityNames = () => {
     })
   }
 
-  const resolve = async (wanted: Partial<Record<EntityNameFamily, number[]>>) =>
+  const lookup = (wanted: Partial<Record<EntityNameFamily, number[]>>) =>
     Promise.all(
       (Object.keys(wanted) as EntityNameFamily[]).map(async (family) => {
         const missing = (wanted[family] ?? []).filter(
-          (id) => id > 0 && !named.has(keyOf(family, id))
+          (id) => id > 0 && !named.value[keyOf(family, id)]
         )
         if (!missing.length) {
           return
@@ -96,6 +107,12 @@ export const useEntityNames = () => {
         }
       })
     )
+
+  const resolve = (wanted: Partial<Record<EntityNameFamily, number[]>>) => {
+    const pending = lookup(wanted)
+    resolving.push(pending)
+    return pending
+  }
 
   return { remember, labelOf, itemsOf, resolve }
 }

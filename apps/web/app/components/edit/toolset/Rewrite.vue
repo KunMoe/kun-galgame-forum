@@ -97,7 +97,7 @@ const applyLoaded = () => {
   }
 }
 
-watch([toolset, source], applyLoaded, { immediate: true })
+watch([toolset, source], applyLoaded, { immediate: true, flush: 'sync' })
 
 const loadProblem = computed(
   () => toolsetProblem.value ?? sourceProblem.value ?? null
