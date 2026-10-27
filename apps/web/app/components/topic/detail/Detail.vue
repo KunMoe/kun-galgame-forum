@@ -1,13 +1,10 @@
 <script setup lang="ts">
-import {
-  replyPageStart,
-  useTopicReplies
-} from '~/composables/topic/useTopicReplies'
+import { useTopicReplies } from '~/composables/topic/useTopicReplies'
+import { useTopicPage } from '~/composables/topic/useTopicPage'
 import { useTopicReadMarker } from '~/composables/topic/useTopicReadMarker'
 import { useTopicScroll } from '~/composables/topic/useTopicScroll'
 import { TOPIC_TOC_SOURCE } from '~/composables/topic/useTopicTOC'
 import { problemMessage } from '#shared/utils/api/message'
-import { settle } from '#shared/utils/api/problem'
 import type { Reply, Topic } from '#shared/utils/api/schemas'
 import { toKunUserWithPoints } from '~/utils/userRef'
 
@@ -32,7 +29,6 @@ const {
   hasEarlier,
   sortOrder,
   problem,
-  loadInitialReplies,
   loadMore,
   loadEarlier,
   setSort,
@@ -49,20 +45,12 @@ const api = useApiClient()
 
 const targetFloor = Number(route.query.reply) || 0
 const targetCommentId = Number(route.query.comment) || 0
+const { replyTarget } = useTopicPage()
 
-let targetReplyFloor = targetFloor
-if (targetReplyFloor <= 0 && targetCommentId > 0) {
-  const located = await settle(
-    api.GET('/comments/{comment_id}', {
-      params: { path: { comment_id: String(targetCommentId) } }
-    })
-  )
-  if (located.ok) {
-    targetReplyFloor = located.data.reply_floor
-  }
-}
-
-const activeFloor = ref(targetReplyFloor)
+const activeFloor = ref(replyTarget.value)
+watch(replyTarget, (floor) => {
+  activeFloor.value = floor
+})
 watch(
   () => route.query.reply,
   (value) => {
@@ -74,10 +62,6 @@ watch(
   }
 )
 
-await loadInitialReplies({
-  fromFloor: targetReplyFloor > 0 ? replyPageStart(targetReplyFloor) : undefined
-})
-
 const sendViewBeacon = () => {
   void api
     .POST('/topics/{topic_id}/views', {
@@ -87,11 +71,7 @@ const sendViewBeacon = () => {
 }
 
 let scrollTimer: ReturnType<typeof setTimeout> | undefined
-onMounted(() => {
-  sendViewBeacon()
-  if (!targetFloor && !targetCommentId) {
-    return
-  }
+const scrollToTarget = () => {
   scrollTimer = setTimeout(() => {
     const ok =
       targetCommentId > 0
@@ -101,6 +81,17 @@ onMounted(() => {
       useMessage('目标回复或评论可能已被删除', 'info')
     }
   }, 300)
+}
+onMounted(() => {
+  sendViewBeacon()
+  if (!targetFloor && !targetCommentId) {
+    return
+  }
+  if (status.value === 'pending') {
+    watch(status, scrollToTarget, { once: true })
+    return
+  }
+  scrollToTarget()
 })
 onBeforeUnmount(() => clearTimeout(scrollTimer))
 
@@ -273,9 +264,9 @@ watch(
 
         <div
           v-else-if="status === 'pending' && replies.length === 0"
-          class="flex justify-center py-16"
+          class="space-y-4"
         >
-          <KunLoading description="少女祈祷中..." />
+          <ActivityCardSkeleton v-for="n in 3" :key="n" />
         </div>
 
         <TopicReplyList

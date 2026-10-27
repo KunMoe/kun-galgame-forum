@@ -9,6 +9,7 @@ const props = defineProps<{
   galgame: Work
 }>()
 
+const { id } = usePersistUserStore()
 const { playtimeOf, ensureLoaded } = useMyGalgameInteractions()
 onMounted(() => ensureLoaded([props.galgame.id]))
 
@@ -38,17 +39,16 @@ const chips = computed(() =>
   })
 )
 
-const myDuration = computed(() => {
-  const mine = playtimeOf(props.galgame.id)
-  return mine && mine.minutes > 0 ? formatDurationMinutes(mine.minutes) : ''
-})
+const mine = computed(() => (id ? playtimeOf(props.galgame.id) : null))
+const myDuration = computed(() =>
+  mine.value && mine.value.minutes > 0
+    ? formatDurationMinutes(mine.value.minutes)
+    : ''
+)
 </script>
 
 <template>
-  <div
-    v-if="chips.length || myDuration"
-    class="flex flex-wrap items-center gap-2"
-  >
+  <div v-if="chips.length || id" class="flex flex-wrap items-center gap-2">
     <span class="text-default-600 flex shrink-0 items-center gap-1.5 text-sm">
       <KunIcon name="lucide:clock" class="text-default-400" />
       游玩时长
@@ -69,11 +69,24 @@ const myDuration = computed(() => {
       </KunChip>
     </KunTooltip>
 
-    <KunTooltip v-if="myDuration" text="你记录的游玩时长" class-name="shrink-0">
+    <KunSkeleton
+      v-if="mine === undefined"
+      height="1.5rem"
+      width="4.5rem"
+      rounded="full"
+    />
+    <KunTooltip
+      v-else-if="myDuration"
+      text="你记录的游玩时长"
+      class-name="shrink-0"
+    >
       <KunChip size="sm" variant="flat" color="primary">
         <KunIcon name="lucide:user-round" />
         <span class="tabular-nums">{{ myDuration }}</span>
       </KunChip>
     </KunTooltip>
+    <span v-else-if="!chips.length" class="text-default-400 text-sm">
+      未记录
+    </span>
   </div>
 </template>

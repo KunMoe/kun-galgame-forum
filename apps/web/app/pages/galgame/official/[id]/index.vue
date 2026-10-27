@@ -1,4 +1,5 @@
 <script setup lang="ts">
+import type { CompanyGraph } from '#shared/utils/api/schemas'
 import {
   KUN_GALGAME_OFFICIAL_CATEGORY_MAP,
   KUN_GALGAME_OFFICIAL_LANGUAGE_MAP
@@ -20,23 +21,31 @@ if (Object.keys(carriedFilters).length) {
 
 const GALGAME_PREVIEW_LIMIT = 8
 
-const { officialId, data, pending } = await useGalgameOfficialDetail()
-
 const { allowsNsfw } = useContentStance()
 const isSfwMode = computed(() => !allowsNsfw.value)
 
-const {
-  galgames,
-  total,
-  own,
-  imprint,
-  pending: worksPending
-} = await useCompanyWorks(officialId, () => ({
-  page: 1,
-  limit: GALGAME_PREVIEW_LIMIT,
-  sort: 'resource_updated_desc',
-  include_nsfw: allowsNsfw.value
-}))
+const routeOfficialId = Number((route.params as { id: string }).id)
+const { data: graph } = useKunApi<CompanyGraph>(
+  () => `company-graph:${routeOfficialId}`,
+  (api, { signal }) =>
+    api.GET('/companies/{company_id}/graph', {
+      params: { path: { company_id: String(routeOfficialId) } },
+      signal
+    })
+)
+
+const [
+  { officialId, data, pending },
+  { galgames, total, own, imprint, pending: worksPending }
+] = await Promise.all([
+  useGalgameOfficialDetail(),
+  useCompanyWorks(routeOfficialId, () => ({
+    page: 1,
+    limit: GALGAME_PREVIEW_LIMIT,
+    sort: 'resource_updated_desc',
+    include_nsfw: allowsNsfw.value
+  }))
+])
 
 const gamePath = computed(
   () => `${taxonomyDetailPath('official', officialId)}/game`
@@ -70,7 +79,7 @@ useKunSeoMeta(() => {
 
 <template>
   <div>
-    <div v-if="data" class="space-y-6">
+    <div v-if="data && !worksPending" class="space-y-6">
       <KunHeader :name="data.name" :description="data.original">
         <template v-if="data.logo" #headerEndContent>
           <GalgameOfficialBrandMark :src="data.logo" :name="data.name" />
@@ -154,13 +163,8 @@ useKunSeoMeta(() => {
       <div class="space-y-3">
         <KunHeader name="作品" :description="worksDescription" scale="h3" />
 
-        <GalgameCardGridSkeleton
-          v-if="worksPending"
-          :count="GALGAME_PREVIEW_LIMIT"
-        />
-
         <GalgameCard
-          v-else-if="galgames.length"
+          v-if="galgames.length"
           :is-transparent="false"
           :galgames="galgames"
           :hide-company="data.name"
@@ -185,12 +189,12 @@ useKunSeoMeta(() => {
         </KunButton>
 
         <KunNull
-          v-if="!worksPending && !total"
+          v-if="!total"
           :description="`${data.name} 会社下暂无 Galgame`"
         />
       </div>
 
-      <GalgameOfficialRelationGraph :official-id="officialId" />
+      <GalgameOfficialRelationGraph :official-id="officialId" :company-graph="graph" />
 
       <p class="text-default-400 text-xs">
         本页展示该会社的作品, 资料来自 鲲 Galgame 论坛。<template
@@ -201,6 +205,6 @@ useKunSeoMeta(() => {
         <KunLink to="/doc/contact" size="sm">联系我们</KunLink>。
       </p>
     </div>
-    <GalgameEntityDetailSkeleton v-else-if="pending" />
+    <GalgameEntityDetailSkeleton v-else-if="pending || (data && worksPending)" />
   </div>
 </template>

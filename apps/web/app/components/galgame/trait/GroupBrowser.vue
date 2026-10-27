@@ -1,6 +1,7 @@
 <script setup lang="ts">
-import type { Trait, TraitPage, TraitSummary } from '#shared/utils/api/schemas'
+import type { Trait, TraitSummary } from '#shared/utils/api/schemas'
 import { traitSections } from '~/utils/galgame/trait'
+import { useTraitRoots } from '~/composables/galgame/useTraitRoots'
 
 const props = withDefaults(
   defineProps<{
@@ -16,16 +17,7 @@ const group = defineModel<string>('group', { default: '' })
 
 const { allowsNsfw, stanceKey } = useContentStance()
 
-// Awaited for the server: the tree's key comes from the roots, and SSR does
-// not refetch when a key changes after setup.
-const { data: roots, pending: rootsPending } = await useKunApi<TraitPage>(
-  () => `trait-roots:${stanceKey.value}`,
-  (api, { signal }) =>
-    api.GET('/traits', {
-      params: { query: { include_nsfw: allowsNsfw.value } },
-      signal
-    })
-)
+const { data: roots, pending: rootsPending } = useTraitRoots()
 
 const activeId = computed(() => {
   const items = roots.value?.items ?? []

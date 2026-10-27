@@ -10,6 +10,18 @@ const params = route.params as { id: string; wid: string }
 const workId = String(params.id)
 const walkthroughId = String(params.wid)
 
+const { data: work, pending: workPending } = useKunApi<Work>(
+  () => `work:${workId}:${stanceKey.value}`,
+  (api, { signal }) =>
+    api.GET('/works/{work_id}', {
+      params: {
+        path: { work_id: workId },
+        query: { include_nsfw: allowsNsfw.value }
+      },
+      signal
+    })
+)
+
 const {
   data: walkthrough,
   problem,
@@ -38,18 +50,6 @@ watch(walkthrough, (next) => {
     redirectToOwner(next.work_id)
   }
 })
-
-const { data: work, pending: workPending } = useKunApi<Work>(
-  () => `work:${workId}:${stanceKey.value}`,
-  (api, { signal }) =>
-    api.GET('/works/{work_id}', {
-      params: {
-        path: { work_id: workId },
-        query: { include_nsfw: allowsNsfw.value }
-      },
-      signal
-    })
-)
 
 const revealed = ref(false)
 const isRouteHintsDismissed = ref(false)

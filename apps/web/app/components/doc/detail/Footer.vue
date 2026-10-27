@@ -1,7 +1,7 @@
 <script setup lang="ts">
 const route = useRoute()
 
-const { docs } = useAllDocs('published_desc')
+const { docs, pending } = useAllDocs('published_desc')
 
 const currentIndex = computed(() =>
   docs.value.findIndex((doc) => `/doc/${doc.slug}` === route.path)
@@ -19,7 +19,11 @@ const next = computed(() =>
 </script>
 
 <template>
-  <div class="flex items-center justify-between">
+  <div v-if="pending" class="flex items-center justify-between">
+    <KunSkeleton height="2.5rem" width="10rem" rounded="lg" />
+    <KunSkeleton height="2.5rem" width="10rem" rounded="lg" />
+  </div>
+  <div v-else class="flex items-center justify-between">
     <KunButton
       class-name="mr-auto justify-start text-start gap-2"
       v-if="prev"

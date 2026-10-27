@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import { ref } from 'vue'
+import { useTopicPage } from '~/composables/topic/useTopicPage'
 import type { Poll } from '#shared/utils/api/schemas'
 import type { PollFormData } from './types'
 
@@ -20,14 +21,7 @@ const isModalOpen = ref(false)
 const pollToEdit = ref<Poll | undefined>(undefined)
 const formToCreate = ref<PollFormData | undefined>(undefined)
 
-const { data, refresh } = useKunApi(
-  () => `topic-polls:${topicId.value}`,
-  (api, { signal }) =>
-    api.GET('/topics/{topic_id}/polls', {
-      params: { path: { topic_id: topicId.value } },
-      signal
-    })
-)
+const { data, refresh } = useTopicPage().polls
 
 const polls = computed(() => data.value?.items ?? [])
 

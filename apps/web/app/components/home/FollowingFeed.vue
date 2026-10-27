@@ -1,6 +1,9 @@
 <script setup lang="ts">
 import { useIntersectionObserver, useThrottleFn } from '@vueuse/core'
-import type { FollowingActivityGroup } from '#shared/utils/api/schemas'
+import type {
+  FollowingActivityGroup,
+  SubscribedTopic
+} from '#shared/utils/api/schemas'
 
 const { allowsNsfw } = useContentStance()
 const { markSeen } = useFollowingUnseen()
@@ -19,6 +22,28 @@ const { items, status, pending, problem, hasMore, loadingMore, loadMore } =
         signal
       })
   )
+
+const {
+  items: subscribedItems,
+  pending: subscribedPending,
+  hasMore: subscribedHasMore,
+  loadingMore: subscribedLoadingMore,
+  loadMore: loadMoreSubscribed
+} = useCursorList<SubscribedTopic>(
+  () => `topic-subscriptions-unread:${allowsNsfw.value}`,
+  (api, cursor, { signal }) =>
+    api.GET('/me/topic-subscriptions', {
+      params: {
+        query: {
+          has_unread: true,
+          include_nsfw: allowsNsfw.value,
+          limit: 5,
+          ...(cursor ? { cursor } : {})
+        }
+      },
+      signal
+    })
+)
 
 const goneIds = ref(new Set<string>())
 const groups = computed(() =>
@@ -69,41 +94,48 @@ useIntersectionObserver(
     class="min-w-0"
     :loading="status === 'pending' && items.length > 0"
   >
-    <HomeSubscribedTopics />
+    <ActivityCardSkeletonList v-if="pending || subscribedPending" />
 
-    <ActivityCardSkeletonList v-if="pending" />
+    <template v-else>
+      <HomeSubscribedTopics
+        :items="subscribedItems"
+        :has-more="subscribedHasMore"
+        :loading-more="subscribedLoadingMore"
+        @more="loadMoreSubscribed"
+      />
 
-    <KunNull
-      v-else-if="problem && !groups.length"
-      description="关注动态加载失败，请稍后再试"
-    />
+      <KunNull
+        v-if="problem && !groups.length"
+        description="关注动态加载失败，请稍后再试"
+      />
 
-    <div v-else-if="status !== 'pending' && !groups.length">
-      <KunNull description="你关注的人还没有动态" />
-      <p class="text-default-500 text-center text-sm">
-        在用户主页点击「关注」，TA 在鲲 Galgame 和 NextMoe
-        各站的新动态会出现在这里
-      </p>
-    </div>
-
-    <div v-else class="divide-default-200/60 divide-y">
-      <div
-        v-for="group in groups"
-        :key="group.id"
-        class="py-5 first:pt-0 last:pb-0"
-      >
-        <HomeFollowingGroup
-          :group="group"
-          :include-nsfw="allowsNsfw"
-          @gone="dropGroup"
-        />
+      <div v-else-if="status !== 'pending' && !groups.length">
+        <KunNull description="你关注的人还没有动态" />
+        <p class="text-default-500 text-center text-sm">
+          在用户主页点击「关注」，TA 在鲲 Galgame 和 NextMoe
+          各站的新动态会出现在这里
+        </p>
       </div>
-      <template v-if="loadingMore">
-        <div v-for="n in 3" :key="`skeleton-${n}`" class="py-5">
-          <ActivityCardSkeleton />
+
+      <div v-else class="divide-default-200/60 divide-y">
+        <div
+          v-for="group in groups"
+          :key="group.id"
+          class="py-5 first:pt-0 last:pb-0"
+        >
+          <HomeFollowingGroup
+            :group="group"
+            :include-nsfw="allowsNsfw"
+            @gone="dropGroup"
+          />
         </div>
-      </template>
-    </div>
+        <template v-if="loadingMore">
+          <div v-for="n in 3" :key="`skeleton-${n}`" class="py-5">
+            <ActivityCardSkeleton />
+          </div>
+        </template>
+      </div>
+    </template>
 
     <div v-if="groups.length" ref="sentinel" class="flex justify-center pt-4">
       <KunButton

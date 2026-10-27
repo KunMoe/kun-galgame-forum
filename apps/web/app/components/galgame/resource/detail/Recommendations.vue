@@ -6,7 +6,7 @@ const props = defineProps<{
   currentId: string
 }>()
 
-const { data } = useKunApi<PageListGalgameResource>(
+const { data, pending } = useKunApi<PageListGalgameResource>(
   () => `work-resources-recs:${props.workId}`,
   (api, { signal }) =>
     api.GET('/works/{work_id}/resources', {
@@ -27,12 +27,15 @@ const recommendations = computed(() =>
 
 <template>
   <KunCard
-    v-if="recommendations.length"
+    v-if="pending || recommendations.length"
     :is-hoverable="false"
     :is-transparent="false"
     content-class="space-y-4 h-full"
   >
-    <div class="flex flex-col gap-3">
+    <div v-if="pending" class="flex flex-col gap-3" aria-hidden="true">
+      <GalgameResourceCardSkeleton v-for="n in 3" :key="n" />
+    </div>
+    <div v-else class="flex flex-col gap-3">
       <GalgameResourceCard
         v-for="resource in recommendations"
         :key="resource.id"

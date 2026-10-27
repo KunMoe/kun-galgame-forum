@@ -5,9 +5,10 @@ const props = withDefaults(
   defineProps<{
     sources: KunNewsSource[]
     archive?: KunNewsArchive | null
+    archivePending?: boolean
     orientation?: 'vertical' | 'horizontal'
   }>(),
-  { archive: null, orientation: 'vertical' }
+  { archive: null, archivePending: false, orientation: 'vertical' }
 )
 
 const lane = defineModel<string>('lane', { required: true })
@@ -131,6 +132,15 @@ const monthHref = computed(() => {
             {{ entry.count }}
           </span>
         </KunButton>
+        <template v-if="archivePending">
+          <KunSkeleton
+            v-for="n in 4"
+            :key="n"
+            height="2rem"
+            width="5rem"
+            rounded="lg"
+          />
+        </template>
       </div>
 
       <div

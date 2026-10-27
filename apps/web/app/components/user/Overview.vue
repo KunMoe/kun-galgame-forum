@@ -123,7 +123,11 @@ const comments = useKunApi<PageListUserCommentItem>(
       signal
     })
 )
-await Promise.all([topics, works, ratings, resources, replies, comments])
+const pending = computed(() =>
+  [topics, works, ratings, resources, replies, comments].some(
+    (read) => read.pending.value
+  )
+)
 
 const topicItems = computed(() =>
   (topics.data.value?.items ?? []).map((t) => ({
@@ -173,10 +177,11 @@ const isEmpty = computed(
 
 <template>
   <div class="space-y-8">
-    <KunNull v-if="isEmpty" description="这只笨蛋萝莉还没有任何动态" />
+    <UserListSkeleton v-if="pending" :rows="4" />
+    <KunNull v-else-if="isEmpty" description="这只笨蛋萝莉还没有任何动态" />
 
     <UserOverviewSection
-      v-if="topicItems.length"
+      v-if="!pending && topicItems.length"
       title="话题"
       icon="lucide:square-gantt-chart"
       :view-all-href="`/user/${uid}/topic/topic`"
@@ -184,7 +189,7 @@ const isEmpty = computed(
     />
 
     <UserOverviewSection
-      v-if="galgameItems.length"
+      v-if="!pending && galgameItems.length"
       title="Galgame"
       icon="lucide:gamepad-2"
       :view-all-href="`/user/${uid}/galgame/galgame-publish`"
@@ -193,7 +198,7 @@ const isEmpty = computed(
     </UserOverviewSection>
 
     <UserOverviewSection
-      v-if="ratingItems.length"
+      v-if="!pending && ratingItems.length"
       title="Gal 评分"
       icon="lucide:star"
       :view-all-href="`/user/${uid}/rating`"
@@ -202,7 +207,7 @@ const isEmpty = computed(
     </UserOverviewSection>
 
     <UserOverviewSection
-      v-if="resourceItems.length"
+      v-if="!pending && resourceItems.length"
       title="Gal 资源"
       icon="lucide:package"
       :view-all-href="`/user/${uid}/resource/valid`"
@@ -210,7 +215,7 @@ const isEmpty = computed(
     />
 
     <UserOverviewSection
-      v-if="replyItems.length"
+      v-if="!pending && replyItems.length"
       title="回复"
       icon="carbon:reply"
       :view-all-href="`/user/${uid}/reply/reply-created`"
@@ -218,7 +223,7 @@ const isEmpty = computed(
     />
 
     <UserOverviewSection
-      v-if="commentItems.length"
+      v-if="!pending && commentItems.length"
       title="评论"
       icon="uil:comment-dots"
       :view-all-href="`/user/${uid}/comment/comment-created`"

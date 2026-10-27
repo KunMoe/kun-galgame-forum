@@ -86,8 +86,10 @@ const toggleNotify = async () => {
   )
 }
 
-onMounted(() => {
-  void loadFollowState()
+const settled = ref(false)
+onMounted(async () => {
+  await loadFollowState()
+  settled.value = true
 })
 watch(currentUserId, () => {
   void loadFollowState()
@@ -140,4 +142,10 @@ watch(currentUserId, () => {
       </KunButton>
     </KunTooltip>
   </div>
+
+  <KunSkeleton
+    v-else-if="!compact && currentUserId && !settled"
+    :width="block ? '100%' : '4rem'"
+    :height="block ? '2rem' : '1.5rem'"
+  />
 </template>

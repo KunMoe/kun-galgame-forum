@@ -8,6 +8,7 @@ import {
   type EntityDeletion
 } from '#shared/utils/api/deleted'
 import { problemMessage } from '#shared/utils/api/message'
+import { provideGalgamePage } from '~/composables/galgame/useGalgamePage'
 import {
   catalogVocabularyName,
   pickCatalogIntro
@@ -24,6 +25,10 @@ const nameOf = useWorkName()
 const namesOf = useCatalogName()
 
 const workId = computed(() => String((route.params as { id: string }).id))
+const { ratings, walkthroughs } = provideGalgamePage(workId.value)
+const firstScreenPending = computed(
+  () => ratings.pending.value || walkthroughs.pending.value
+)
 
 const movedTo = ref<number | null>(null)
 const deletion = useState<EntityDeletion | null>(
@@ -262,13 +267,13 @@ useKunSeoMeta(() => {
 
 <template>
   <div>
-    <div v-if="data">
+    <div v-if="data && !firstScreenPending">
       <Galgame v-if="isShowGalgame" :galgame="data" />
 
       <KunNsfwGate v-else noun="Galgame" @reveal="revealed = true" />
     </div>
 
-    <GalgameDetailSkeleton v-else-if="pending" />
+    <GalgameDetailSkeleton v-else-if="pending || (data && firstScreenPending)" />
 
     <KunNull v-else-if="deletion" :description="deletionText" />
 

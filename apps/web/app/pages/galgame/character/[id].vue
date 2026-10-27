@@ -6,7 +6,8 @@ import {
 import type {
   Appearance,
   AppearanceList,
-  Character
+  Character,
+  ListWalkthrough
 } from '#shared/utils/api/schemas'
 import { mergedInto } from '#shared/utils/api/merged'
 import { settle } from '#shared/utils/api/problem'
@@ -43,6 +44,21 @@ const { data: firstPage, pending: appearancesPending } =
         params: {
           path: { character_id: String(characterId.value) },
           query: appearancesQuery()
+        },
+        signal
+      })
+  )
+
+const { data: walkthroughs, pending: walkthroughsPending } =
+  useKunApi<ListWalkthrough>(
+    () => `character-walkthroughs:${characterId.value}:${stanceKey.value}`,
+    (client, { signal }) =>
+      client.GET('/walkthroughs', {
+        params: {
+          query: {
+            character_id: String(characterId.value),
+            include_nsfw: allowsNsfw.value
+          }
         },
         signal
       })
@@ -200,7 +216,7 @@ useKunSeoMeta(() => {
 
 <template>
   <div>
-    <div v-if="data" class="space-y-8">
+    <div v-if="data && !walkthroughsPending" class="space-y-8">
       <div class="flex flex-col gap-8 lg:flex-row lg:items-start">
         <aside
           v-if="data.figure || data.image"
@@ -328,7 +344,10 @@ useKunSeoMeta(() => {
         </div>
       </div>
 
-      <GalgameCharacterWalkthroughs :character-id="String(characterId)" />
+      <GalgameCharacterWalkthroughs
+        :character-id="String(characterId)"
+        :walkthroughs="walkthroughs?.items ?? []"
+      />
 
       <section class="space-y-3">
         <h2 class="text-foreground text-lg font-semibold">登场作品</h2>
@@ -371,6 +390,8 @@ useKunSeoMeta(() => {
         :initial-index="lightboxIndex"
       />
     </div>
-    <GalgameCharacterDetailSkeleton v-else-if="pending" />
+    <GalgameCharacterDetailSkeleton
+      v-else-if="pending || (data && walkthroughsPending)"
+    />
   </div>
 </template>

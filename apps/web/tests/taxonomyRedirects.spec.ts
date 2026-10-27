@@ -165,7 +165,7 @@ describe('merged-id pages stop rendering after the hop', () => {
     }
     // A merged id leaves data null after the hop, so the gate on data is what
     // keeps the page from rendering a half-empty body under the 301.
-    expect(source).toMatch(/<template>\s*<div>\s*<div v-if="data"/)
+    expect(source).toMatch(/<template>\s*<div>\s*<div v-if="data[" ]/)
   })
 
   it('the shared 会社 hop is the one that parks the 301', () => {

@@ -10,6 +10,8 @@ if (!/^\d{1,20}$/.test(newsItemId.value)) {
   })
 }
 
+const { byKey } = useNewsSources()
+
 const {
   data: item,
   problem,
@@ -24,8 +26,6 @@ const {
 )
 
 useKunNotFound(() => problem.value !== null, '未找到该情报')
-
-const { byKey } = useNewsSources()
 
 useKunSeoMeta(() =>
   item.value

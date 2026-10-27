@@ -1,4 +1,6 @@
 <script setup lang="ts">
+import { provideTraitRoots } from '~/composables/galgame/useTraitRoots'
+
 useKunSeoMeta({
   title: 'Galgame 角色属性',
   description:
@@ -6,6 +8,8 @@ useKunSeoMeta({
 })
 
 const group = useTabQuery('', 'group')
+
+await provideTraitRoots()
 </script>
 
 <template>

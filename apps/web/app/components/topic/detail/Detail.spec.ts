@@ -3,6 +3,8 @@ import { afterEach, describe, expect, it, vi } from 'vitest'
 import { mockNuxtImport, mountSuspended } from '@nuxt/test-utils/runtime'
 import type { VueWrapper } from '@vue/test-utils'
 import type { Reply, Topic, UserRef } from '#shared/utils/api/schemas'
+import { defineComponent, h } from 'vue'
+import { provideTopicPage } from '~/composables/topic/useTopicPage'
 import TopicDetail from './Detail.vue'
 
 mockNuxtImport('useTopicSections', () => () => {
@@ -153,6 +155,17 @@ const requestedFromFloors = (fetchSpy: ReturnType<typeof stubFetch>) =>
     .filter((input) => isRepliesList(input))
     .map((input) => requestUrl(input).searchParams.get('from_floor'))
 
+const mountDetail = (subject: Topic, route: string) =>
+  mountSuspended(
+    defineComponent({
+      setup: () => {
+        provideTopicPage(subject.id)
+        return () => h(TopicDetail, { topic: subject })
+      }
+    }),
+    { route }
+  )
+
 const replyIds = (root: VueWrapper) =>
   root.findAll('.kun-reply').map((node) => node.attributes('id') ?? '')
 
@@ -161,14 +174,9 @@ describe('TopicDetail', () => {
     const pinned = reply('10', 10, { is_pinned: true })
     const best = reply('20', 20, { is_best_answer: true })
     const fetchSpy = stubFetch([pinned, reply('11', 11), best, reply('21', 21)])
-    wrapper = await mountSuspended(TopicDetail, {
-      props: {
-        topic: topic('501', { pinned_reply: pinned, best_answer: best })
-      },
-      route: '/topic/501'
-    })
+    wrapper = await mountDetail(topic('501', { pinned_reply: pinned, best_answer: best }), '/topic/501')
     await vi.waitFor(() => {
-      expect(replyIds(wrapper!).length).toBeGreaterThan(0)
+      expect(replyIds(wrapper!).some((id) => id.startsWith('21.'))).toBe(true)
     })
     const ids = replyIds(wrapper!)
     expect(ids.filter((id) => id.startsWith('10.')).length).toBe(1)
@@ -184,10 +192,7 @@ describe('TopicDetail', () => {
 
   it('loads the whole page holding the floor for ?reply=N', async () => {
     const fetchSpy = stubFetch([reply('45', 45)])
-    wrapper = await mountSuspended(TopicDetail, {
-      props: { topic: topic('502') },
-      route: '/topic/502?reply=45'
-    })
+    wrapper = await mountDetail(topic('502'), '/topic/502?reply=45')
     await vi.waitFor(() => {
       expect(requestedFromFloors(fetchSpy)).toContain('31')
     })
@@ -195,10 +200,7 @@ describe('TopicDetail', () => {
 
   it('loads the whole page holding the comment for ?comment=N', async () => {
     const fetchSpy = stubFetch([reply('4', 4)], 4)
-    wrapper = await mountSuspended(TopicDetail, {
-      props: { topic: topic('505') },
-      route: '/topic/505?comment=3322'
-    })
+    wrapper = await mountDetail(topic('505'), '/topic/505?comment=3322')
     await vi.waitFor(() => {
       expect(requestedFromFloors(fetchSpy)).toContain('1')
     })
@@ -207,10 +209,7 @@ describe('TopicDetail', () => {
   it('drops the pending scroll to the target when unmounted before it runs', async () => {
     stubFetch([reply('4', 4)], 4)
     const lookup = vi.spyOn(document, 'getElementById')
-    wrapper = await mountSuspended(TopicDetail, {
-      props: { topic: topic('506') },
-      route: '/topic/506?comment=3322'
-    })
+    wrapper = await mountDetail(topic('506'), '/topic/506?comment=3322')
     wrapper.unmount()
     wrapper = undefined
     await new Promise((resolve) => setTimeout(resolve, 400))
@@ -221,10 +220,7 @@ describe('TopicDetail', () => {
 
   it('sends the view beacon once on mount', async () => {
     const fetchSpy = stubFetch([])
-    wrapper = await mountSuspended(TopicDetail, {
-      props: { topic: topic('503') },
-      route: '/topic/503'
-    })
+    wrapper = await mountDetail(topic('503'), '/topic/503')
     await vi.waitFor(() => {
       expect(
         fetchSpy.mock.calls.filter((call) => isViews(call[0] as Request)).length
@@ -237,10 +233,7 @@ describe('TopicDetail', () => {
 
   it('applies a created reply and an updated v1 Reply, and removes a deleted one', async () => {
     stubFetch([reply('11', 11)])
-    wrapper = await mountSuspended(TopicDetail, {
-      props: { topic: topic('504') },
-      route: '/topic/504'
-    })
+    wrapper = await mountDetail(topic('504'), '/topic/504')
     await vi.waitFor(() => {
       expect(wrapper!.text()).toContain('floor 11')
     })

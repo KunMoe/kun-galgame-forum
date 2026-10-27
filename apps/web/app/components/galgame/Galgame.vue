@@ -1,12 +1,8 @@
 <script setup lang="ts">
 import type { KunTabItem } from '@kungal/ui-vue'
 import { useElementSize, useWindowSize } from '@vueuse/core'
-import type {
-  ListMoyuPatch,
-  ListWalkthrough,
-  RatingPage,
-  Work
-} from '#shared/utils/api/schemas'
+import type { Work } from '#shared/utils/api/schemas'
+import { useGalgamePage } from '~/composables/galgame/useGalgamePage'
 import { ratingSummaryToPageCard } from '~/utils/galgame/ratingCard'
 import { toKunUser } from '~/utils/userRef'
 
@@ -42,29 +38,9 @@ watch(activeTab, (tab) => {
   })
 })
 
-// A failed lookup is not reported: moyu is another site, and the tab is only
-// drawn when there is something in it.
-const { data: moyuPatches, status: moyuPatchStatus } = useKunApi<ListMoyuPatch>(
-  () => `galgame-moyu-patches:${props.galgame.id}`,
-  (api, { signal }) =>
-    api.GET('/works/{work_id}/moyu-patches', {
-      params: { path: { work_id: props.galgame.id } },
-      signal
-    }),
-  { lazy: true, server: false }
-)
-const { data: walkthroughs, status: walkthroughStatus } =
-  useKunApi<ListWalkthrough>(
-    () => `galgame-walkthroughs:${props.galgame.id}`,
-    (api, { signal }) =>
-      api.GET('/walkthroughs', {
-        params: {
-          query: { work_id: props.galgame.id, include_nsfw: true }
-        },
-        signal
-      }),
-    { lazy: true, server: false }
-  )
+const page = useGalgamePage()
+const { data: moyuPatches, status: moyuPatchStatus } = page.moyuPatches
+const { data: walkthroughs, status: walkthroughStatus } = page.walkthroughs
 const hasWalkthrough = computed(() => !!walkthroughs.value?.items.length)
 
 const hasPatchResource = computed(
@@ -104,23 +80,7 @@ const contentTabs = computed<KunTabItem[]>(() => [
   { value: 'quiz', textValue: '题库', icon: 'lucide:brain' }
 ])
 
-const RATING_PREVIEW_LIMIT = 6
-
-const { data: ratingsPage, refresh: refreshRatings } = useKunApi<RatingPage>(
-  () => `work-ratings:${props.galgame.id}`,
-  (api, { signal }) =>
-    api.GET('/ratings', {
-      params: {
-        query: {
-          work_id: props.galgame.id,
-          include_nsfw: true,
-          limit: RATING_PREVIEW_LIMIT,
-          sort: 'created_desc'
-        }
-      },
-      signal
-    })
-)
+const { data: ratingsPage, refresh: refreshRatings } = page.ratings
 
 const ratings = computed(() =>
   (ratingsPage.value?.items ?? []).map((item) =>

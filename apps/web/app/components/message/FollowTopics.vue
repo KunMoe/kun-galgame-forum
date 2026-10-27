@@ -2,59 +2,16 @@
 import { settle } from '#shared/utils/api/problem'
 import type { SubscribedTopic } from '#shared/utils/api/schemas'
 
-const PAGE_SIZE = 30
+defineProps<{
+  items: SubscribedTopic[]
+  failed: boolean
+  hasMore: boolean
+  loadingMore: boolean
+}>()
+
+const emit = defineEmits<{ more: []; unfollowed: [id: string] }>()
 
 const api = useApiClient()
-const { allowsNsfw } = useContentStance()
-
-const items = ref<SubscribedTopic[]>([])
-const nextCursor = ref<string | undefined>()
-const status = ref<'pending' | 'success' | 'error'>('pending')
-const loadingMore = ref(false)
-
-const fetchPage = (cursor?: string) =>
-  settle(
-    api.GET('/me/topic-subscriptions', {
-      params: {
-        query: {
-          include_nsfw: allowsNsfw.value,
-          limit: PAGE_SIZE,
-          ...(cursor ? { cursor } : {})
-        }
-      }
-    })
-  )
-
-const loadFirst = async () => {
-  status.value = 'pending'
-  const result = await fetchPage()
-  if (!result.ok) {
-    status.value = 'error'
-    return
-  }
-  items.value = result.data.items
-  nextCursor.value = result.data.next_cursor
-  status.value = 'success'
-}
-
-const loadMore = async () => {
-  if (!nextCursor.value || loadingMore.value) {
-    return
-  }
-  loadingMore.value = true
-  const result = await fetchPage(nextCursor.value)
-  loadingMore.value = false
-  if (!result.ok) {
-    reportProblem(result.problem)
-    return
-  }
-  const seen = new Set(items.value.map((item) => item.id))
-  items.value = [
-    ...items.value,
-    ...result.data.items.filter((item) => !seen.has(item.id))
-  ]
-  nextCursor.value = result.data.next_cursor
-}
 
 const unfollow = async (item: SubscribedTopic) => {
   const result = await settle(
@@ -67,27 +24,15 @@ const unfollow = async (item: SubscribedTopic) => {
     reportProblem(result.problem)
     return
   }
-  items.value = items.value.filter((row) => row.id !== item.id)
+  emit('unfollowed', item.id)
 }
-
-onMounted(() => {
-  void loadFirst()
-})
-watch(allowsNsfw, () => {
-  void loadFirst()
-})
 </script>
 
 <template>
   <section class="space-y-2">
     <h3 class="text-default-600 text-sm font-medium">关注的话题</h3>
 
-    <KunLoading v-if="status === 'pending'" />
-
-    <KunNull
-      v-else-if="status === 'error'"
-      description="关注的话题加载失败，请稍后再试"
-    />
+    <KunNull v-if="failed" description="关注的话题加载失败，请稍后再试" />
 
     <div v-else-if="items.length" class="space-y-2">
       <KunCard
@@ -131,12 +76,12 @@ watch(allowsNsfw, () => {
     </p>
 
     <KunButton
-      v-if="nextCursor"
+      v-if="hasMore"
       variant="light"
       color="primary"
       full-width
       :loading="loadingMore"
-      @click="loadMore"
+      @click="emit('more')"
     >
       <KunIcon name="lucide:chevron-down" />
       加载更多话题

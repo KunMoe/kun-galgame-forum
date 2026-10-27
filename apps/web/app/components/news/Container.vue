@@ -6,8 +6,33 @@ const { lane, source, year, month, set } = useQueryState({
   month: queryInt(0, 0)
 })
 
+const { directory: partners } = useNewsSources()
+
+const archiveLane = computed(() =>
+  lane.value && lane.value !== 'all' ? lane.value : undefined
+)
+const archiveSource = computed(() =>
+  source.value && source.value !== 'all' ? source.value : undefined
+)
+const { data: archive, pending: archivePending } = useKunApi(
+  () =>
+    `news-archive:${archiveLane.value ?? ''}:${archiveSource.value ?? ''}:${year.value > 0 ? year.value : 0}`,
+  (api, { signal }) =>
+    api.GET('/news-archive', {
+      params: {
+        query: {
+          ...(archiveLane.value
+            ? { lane: archiveLane.value as KunNewsItem['lane'] }
+            : {}),
+          ...(archiveSource.value ? { news_source: archiveSource.value } : {}),
+          ...(year.value > 0 ? { year: year.value } : {})
+        }
+      },
+      signal
+    })
+)
+
 const {
-  filters,
   items,
   groups,
   total,
@@ -18,28 +43,6 @@ const {
   loadMore,
   sentinel
 } = await useNewsFeed({ limit: 20, maxAutoLoads: 8, lane, source, year, month })
-
-const { directory: partners } = useNewsSources()
-
-const { data: archive } = useKunApi(
-  () =>
-    `news-archive:${filters.lane.value ?? ''}:${filters.source.value ?? ''}:${filters.year.value ?? 0}`,
-  (api, { signal }) =>
-    api.GET('/news-archive', {
-      params: {
-        query: {
-          ...(filters.lane.value
-            ? { lane: filters.lane.value as KunNewsItem['lane'] }
-            : {}),
-          ...(filters.source.value
-            ? { news_source: filters.source.value }
-            : {}),
-          ...(filters.year.value ? { year: filters.year.value } : {})
-        }
-      },
-      signal
-    })
-)
 
 const isEmpty = computed(
   () => status.value !== 'pending' && !items.value.length
@@ -85,6 +88,7 @@ const reset = () => {
           v-model:month="month"
           :sources="partners"
           :archive="archive"
+          :archive-pending="archivePending"
           orientation="horizontal"
           class="lg:hidden"
         />
@@ -95,6 +99,7 @@ const reset = () => {
           v-model:month="month"
           :sources="partners"
           :archive="archive"
+          :archive-pending="archivePending"
           class="hidden lg:block"
         />
         <NewsPartners :sources="partners" class="hidden lg:block" />
