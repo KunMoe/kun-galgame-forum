@@ -41,12 +41,11 @@ const firstScreenPending = computed(
     polls.pending.value || lotteries.pending.value || upvotes.pending.value
 )
 
-const topic = ref<Topic | undefined>(data.value)
-watch(data, (next) => {
-  if (next) {
-    topic.value = next
-  }
+const replaced = ref<Topic>()
+watch(data, () => {
+  replaced.value = undefined
 })
+const topic = computed(() => replaced.value ?? data.value)
 // Decided once at setup, the gate stayed open when the account's stance
 // narrowed after hydration (2026-09-24), so it follows topic and stance.
 const revealed = ref(false)
@@ -55,7 +54,7 @@ const isShowTopic = computed(
 )
 provide('refreshTopic', refresh)
 provide('replaceTopic', (next: Topic) => {
-  topic.value = next
+  replaced.value = next
 })
 
 onBeforeRouteLeave(async () => {

@@ -1,8 +1,8 @@
 <script setup lang="ts">
 import { watchDebounced } from '@vueuse/core'
 import { TAG_FILTER_MAX } from '~/components/search/items'
-import type { TagPage, WorkSummary } from '#shared/utils/api/schemas'
-import { settle } from '#shared/utils/api/problem'
+import type { TagPage, WorkPage } from '#shared/utils/api/schemas'
+import { settle, type ApiResult } from '#shared/utils/api/problem'
 import { tagItemOf } from '~/utils/galgame/entityCards'
 
 // One page for both lists below: they are mutually exclusive (tag grid while
@@ -103,52 +103,34 @@ const chips = computed<FilterChip[]>(() =>
   }))
 )
 
-const resultWorks = ref<WorkSummary[]>([])
-const resultGames = useWorkCards(() => resultWorks.value)
-const totalGameCount = ref(0)
 const gamesLimit = 24
-const loadingGames = ref(false)
-
-const fetchGames = async () => {
-  if (!selectedIds.value.length) {
-    resultWorks.value = []
-    totalGameCount.value = 0
-    return
-  }
-  loadingGames.value = true
-  const res = await settle(
-    api.GET('/tagged-works', {
-      params: {
-        query: {
-          tag_ids: selectedIds.value.map(String),
-          page: page.value,
-          limit: gamesLimit,
-          include_nsfw: allowsNsfw.value,
-          include_all_original_languages:
-            showKUNGalgameAllOriginalLanguages.value,
-          ...excludeQuery.value
-        }
-      }
-    })
-  )
-  loadingGames.value = false
-  if (res.ok) {
-    resultWorks.value = res.data.items
-    totalGameCount.value = res.data.total
-  }
-}
+const gamesQuery = computed(() => ({
+  tag_ids: selectedIds.value.map(String),
+  page: page.value,
+  limit: gamesLimit,
+  include_nsfw: allowsNsfw.value,
+  include_all_original_languages: showKUNGalgameAllOriginalLanguages.value,
+  ...excludeQuery.value
+}))
+const { data: games, status: gamesStatus } = useKunApi<WorkPage>(
+  () => `tagged-works:${JSON.stringify(gamesQuery.value)}`,
+  async (client, { signal }): Promise<ApiResult<WorkPage>> =>
+    selectedIds.value.length
+      ? settle(
+          client.GET('/tagged-works', {
+            params: { query: gamesQuery.value },
+            signal
+          })
+        )
+      : { ok: true, data: { object: 'list', items: [], total: 0, total_relation: 'eq' } }
+)
+const resultGames = useWorkCards(() => games.value?.items ?? [])
+const totalGameCount = computed(() => games.value?.total ?? 0)
+const loadingGames = computed(() => gamesStatus.value === 'pending')
 
 watch(selectedIds, () => entityNames.resolve({ tag: selectedIds.value }), {
   immediate: true
 })
-
-// Immediate, and it must not reset the page: a reader arriving on
-// ?tag_ids=…&page=3 has to get page 3.
-watch(
-  [selectedIds, page, showKUNGalgameAllOriginalLanguages],
-  () => fetchGames(),
-  { immediate: true }
-)
 
 const isBrowsing = computed(() => !selectedIds.value.length)
 </script>

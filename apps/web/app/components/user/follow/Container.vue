@@ -62,12 +62,16 @@ const { data, problem, status, pending } = useKunApi<FollowPage>(
   (client, { signal }) => listFollow(client, undefined, signal)
 )
 
-watchEffect(() => {
-  if (data.value) {
-    items.value = [...data.value.items]
-    nextCursor.value = data.value.next_cursor
-  }
-})
+watch(
+  data,
+  (page) => {
+    if (page) {
+      items.value = [...page.items]
+      nextCursor.value = page.next_cursor
+    }
+  },
+  { immediate: true, flush: 'sync' }
+)
 
 const loadMore = async () => {
   if (!nextCursor.value || loadingMore.value) {

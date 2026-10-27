@@ -1,4 +1,5 @@
 <script setup lang="ts">
+import { contentPlainText } from '~/utils/contentPlainText'
 import {
   kunUserGalgameNavItem,
   type KUN_USER_PAGE_GALGAME_TYPE
@@ -104,7 +105,7 @@ watch(
     comments.value = page.items
     commentCursor.value = page.next_cursor
   },
-  { immediate: true }
+  { immediate: true, flush: 'sync' }
 )
 
 const loadMoreComments = async () => {
@@ -189,7 +190,9 @@ const loadMoreComments = async () => {
           >
             [已删除]
           </p>
-          <ContentDocument v-else compact :document="c.content" />
+          <p v-else class="line-clamp-4 break-words whitespace-pre-line">
+            {{ contentPlainText(c.content) }}
+          </p>
 
           <div
             class="text-default-500 flex items-center justify-between text-sm"

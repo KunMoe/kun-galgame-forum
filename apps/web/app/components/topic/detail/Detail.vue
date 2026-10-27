@@ -48,9 +48,13 @@ const targetCommentId = Number(route.query.comment) || 0
 const { replyTarget } = useTopicPage()
 
 const activeFloor = ref(replyTarget.value)
-watch(replyTarget, (floor) => {
-  activeFloor.value = floor
-})
+watch(
+  replyTarget,
+  (floor) => {
+    activeFloor.value = floor
+  },
+  { flush: 'sync' }
+)
 watch(
   () => route.query.reply,
   (value) => {

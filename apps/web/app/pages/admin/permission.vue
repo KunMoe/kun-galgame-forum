@@ -155,7 +155,7 @@ watch(
       applyMatrix(m)
     }
   },
-  { immediate: true }
+  { immediate: true, flush: 'sync' }
 )
 
 const handleDiscard = () => {
