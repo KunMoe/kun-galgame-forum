@@ -4,27 +4,11 @@ import { KUN_GALGAME_WALKTHROUGH_SOURCE } from '~/constants/galgameWalkthrough'
 
 const props = defineProps<{
   characterId: string
+  walkthroughs: ListWalkthrough['items']
 }>()
 
-const { allowsNsfw, stanceKey } = useContentStance()
-
-const { data } = useKunApi<ListWalkthrough>(
-  () => `character-walkthroughs:${props.characterId}:${stanceKey.value}`,
-  (api, { signal }) =>
-    api.GET('/walkthroughs', {
-      params: {
-        query: {
-          character_id: props.characterId,
-          include_nsfw: allowsNsfw.value
-        }
-      },
-      signal
-    }),
-  { lazy: true, server: false }
-)
-
 const items = computed(() =>
-  (data.value?.items ?? []).map((w) => ({
+  props.walkthroughs.map((w) => ({
     walkthrough: w,
     key: w.chart_characters.find(
       (c) => c.catalog_character?.id === props.characterId

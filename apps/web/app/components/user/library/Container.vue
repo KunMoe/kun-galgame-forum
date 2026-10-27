@@ -1,5 +1,4 @@
 <script setup lang="ts">
-import { settle } from '#shared/utils/api/problem'
 import type {
   UserWorkRecord,
   UserWorkRecordList,
@@ -20,7 +19,6 @@ type LibraryPage = Omit<UserWorkRecordList, 'items'> & {
   items: LibraryItem[]
 }
 
-const api = useApiClient()
 const { allowsNsfw, stanceKey } = useContentStance()
 // The field is named state for the ?state= URL, and useQueryState's own
 // `state` (every field at once) would shadow a destructured ref of that name.
@@ -94,16 +92,14 @@ const recordOf = computed(
   () => new Map(items.value.map((item) => [Number(item.id), item]))
 )
 
-const ownRecordsPublic = ref<boolean | null>(null)
-onMounted(async () => {
-  if (!props.isOwner) {
-    return
-  }
-  const result = await settle(api.GET('/me/privacy-settings'))
-  if (result.ok) {
-    ownRecordsPublic.value = result.data.is_play_records_public
-  }
-})
+const privacy = useKunApi(
+  () => `me-privacy-settings:${props.userId}`,
+  (client, { signal }) => client.GET('/me/privacy-settings', { signal }),
+  { immediate: props.isOwner }
+)
+const ownRecordsPublic = computed(
+  () => privacy.data.value?.is_play_records_public ?? null
+)
 
 const settingHref = computed(() => `/user/${props.userId}/setting#play-records`)
 
@@ -122,8 +118,14 @@ const emptyText = computed(() => {
     <KunNull v-if="isPrivate" description="TA 未公开游玩记录" />
 
     <template v-else>
+      <KunSkeleton
+        v-if="isOwner && privacy.pending.value"
+        variant="text"
+        width="14rem"
+        class-name="text-sm"
+      />
       <KunInfo
-        v-if="isOwner && ownRecordsPublic === false"
+        v-else-if="isOwner && ownRecordsPublic === false"
         color="warning"
         title="仅自己可见"
       >

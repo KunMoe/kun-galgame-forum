@@ -2,6 +2,10 @@
 import { randomUpvoteDescription } from '~/constants/upvote'
 import type { TopicUpvote, UpvoteExcerpt } from '#shared/utils/api/schemas'
 import { toKunUser } from '~/utils/userRef'
+import {
+  useOptionalTopicPage,
+  useTopicUpvotes
+} from '~/composables/topic/useTopicPage'
 
 const props = defineProps<{
   topicId?: string | number
@@ -31,19 +35,7 @@ watch(
 const fetched =
   props.records || !props.topicId
     ? null
-    : useCursorList<TopicUpvote>(
-        () => `topic-upvotes:${props.topicId}`,
-        (api, cursor) =>
-          api.GET('/topics/{topic_id}/upvotes', {
-            params: {
-              path: { topic_id: String(props.topicId) },
-              query: {
-                limit: 20,
-                ...(cursor ? { cursor } : {})
-              }
-            }
-          })
-      )
+    : (useOptionalTopicPage()?.upvotes ?? useTopicUpvotes(String(props.topicId)))
 
 type Row = {
   id: string

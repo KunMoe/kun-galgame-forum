@@ -1,9 +1,13 @@
 <script setup lang="ts">
+import { provideTraitRoots } from '~/composables/galgame/useTraitRoots'
+
 useKunSeoMeta({
   title: 'Galgame 角色库',
   description:
     '按名字或属性查找 Galgame 角色: 发色、瞳色、发型、服装、性格、身份…… 可以同时组合多个属性, 例如「银发 + 双马尾 + 傲娇」, 找到你喜欢的角色和她们登场的 Galgame。'
 })
+
+await provideTraitRoots()
 </script>
 
 <template>

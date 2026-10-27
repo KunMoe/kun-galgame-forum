@@ -4,18 +4,12 @@ import type { CompanyGraph } from '#shared/utils/api/schemas'
 
 const props = defineProps<{
   officialId: number
+  companyGraph?: CompanyGraph
 }>()
 
 const nameOf = useCatalogName()
 
-const { data: v1Graph } = useKunApi<CompanyGraph>(
-  () => `company-graph:${props.officialId}`,
-  (api) =>
-    api.GET('/companies/{company_id}/graph', {
-      params: { path: { company_id: String(props.officialId) } }
-    }),
-  { lazy: true }
-)
+const v1Graph = computed(() => props.companyGraph)
 
 const data = computed<GalgameOfficialRelationGraph | undefined>(() =>
   v1Graph.value

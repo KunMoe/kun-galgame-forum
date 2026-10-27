@@ -20,6 +20,12 @@ const showAd = useAdVisible()
     :to="kungal.ad[0]!.link"
     v-if="showAd"
   >
-    <KunImage class-name="w-full rounded-lg" :src="kungal.ad[0]!.banner" />
+    <KunImage
+      class-name="w-full rounded-lg"
+      :src="kungal.ad[0]!.banner"
+      :width="1920"
+      :height="300"
+      aspect-ratio="1920 / 300"
+    />
   </KunLink>
 </template>

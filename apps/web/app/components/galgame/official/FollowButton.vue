@@ -50,8 +50,10 @@ const toggleFollow = async () => {
   }
 }
 
-onMounted(() => {
-  void loadFollowState()
+const settled = ref(false)
+onMounted(async () => {
+  await loadFollowState()
+  settled.value = true
 })
 watch(currentUserId, () => {
   void loadFollowState()
@@ -60,11 +62,16 @@ watch(currentUserId, () => {
 
 <template>
   <div
-    v-if="visible || shownCount !== null"
+    v-if="visible || shownCount !== null || (currentUserId && !settled)"
     :class="cn('flex shrink-0 items-center gap-2')"
   >
+    <KunSkeleton
+      v-if="!visible && currentUserId && !settled"
+      width="4.5rem"
+      height="2rem"
+    />
     <KunButton
-      v-if="visible"
+      v-else-if="visible"
       variant="flat"
       size="sm"
       :color="followState?.is_following ? 'default' : 'primary'"

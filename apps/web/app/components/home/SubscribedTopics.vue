@@ -1,53 +1,18 @@
 <script setup lang="ts">
-import { settle } from '#shared/utils/api/problem'
 import type { SubscribedTopic } from '#shared/utils/api/schemas'
 
-const PAGE_SIZE = 5
+defineProps<{
+  items: SubscribedTopic[]
+  hasMore: boolean
+  loadingMore: boolean
+}>()
 
-const api = useApiClient()
-const { allowsNsfw } = useContentStance()
-
-const items = ref<SubscribedTopic[]>([])
-const nextCursor = ref<string | undefined>()
-const loading = ref(false)
-
-const load = async (cursor?: string) => {
-  loading.value = true
-  const result = await settle(
-    api.GET('/me/topic-subscriptions', {
-      params: {
-        query: {
-          has_unread: true,
-          include_nsfw: allowsNsfw.value,
-          limit: PAGE_SIZE,
-          ...(cursor ? { cursor } : {})
-        }
-      }
-    })
-  )
-  loading.value = false
-  if (!result.ok) {
-    return
-  }
-  const seen = new Set(cursor ? items.value.map((item) => item.id) : [])
-  items.value = [
-    ...(cursor ? items.value : []),
-    ...result.data.items.filter((item) => !seen.has(item.id))
-  ]
-  nextCursor.value = result.data.next_cursor
-}
+const emit = defineEmits<{ more: [] }>()
 
 const topicLink = (item: SubscribedTopic) =>
   item.first_unread_floor
     ? `/topic/${item.id}?reply=${item.first_unread_floor}`
     : `/topic/${item.id}`
-
-onMounted(() => {
-  void load()
-})
-watch(allowsNsfw, () => {
-  void load()
-})
 </script>
 
 <template>
@@ -98,11 +63,11 @@ watch(allowsNsfw, () => {
     </ul>
 
     <KunButton
-      v-if="nextCursor"
+      v-if="hasMore"
       variant="light"
       size="sm"
-      :loading="loading"
-      @click="load(nextCursor)"
+      :loading="loadingMore"
+      @click="emit('more')"
     >
       查看更多
     </KunButton>

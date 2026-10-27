@@ -18,6 +18,7 @@ mockNuxtImport('useKunApi', () => (key: unknown) => {
   const result = {
     data: computed(() => work.value),
     problem: computed(() => null),
+    pending: computed(() => false),
     status: ref('pending'),
     refresh: vi.fn()
   }

@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import { ref } from 'vue'
+import { useTopicPage } from '~/composables/topic/useTopicPage'
 import type { Lottery } from '#shared/utils/api/schemas'
 import type { LotteryFormData } from './types'
 
@@ -21,17 +22,7 @@ const isModalOpen = ref(false)
 const lotteryToEdit = ref<Lottery | undefined>(undefined)
 const formToCreate = ref<LotteryFormData | undefined>(undefined)
 
-const { data, refresh } = useKunApi(
-  () => `topic-lotteries:${topicId.value}:${stanceKey.value}`,
-  (api, { signal }) =>
-    api.GET('/topics/{topic_id}/lotteries', {
-      params: {
-        path: { topic_id: topicId.value },
-        query: { include_nsfw: allowsNsfw.value }
-      },
-      signal
-    })
-)
+const { data, refresh } = useTopicPage().lotteries
 
 const lotteries = computed(() => data.value?.items ?? [])
 

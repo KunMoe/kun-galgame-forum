@@ -18,6 +18,7 @@ const messageInput = ref('')
 const messages = ref<DirectMessage[]>([])
 const nextCursor = ref<string | undefined>(undefined)
 const loadingMore = ref(false)
+const loadingFirst = ref(!props.composerDisabled)
 const isSending = ref(false)
 const isUploadingImage = ref(false)
 const pendingImages = ref<{ name: string; url: string }[]>([])
@@ -86,9 +87,12 @@ const loadFirstPage = async () => {
   nextCursor.value = undefined
   didMarkRead.value = false
   if (props.composerDisabled) {
+    loadingFirst.value = false
     return
   }
+  loadingFirst.value = true
   const result = await getMessageHistory()
+  loadingFirst.value = false
   if (!result.ok) {
     reportProblem(result.problem)
     return
@@ -346,8 +350,10 @@ onMounted(() => {
           @context-menu="handleRecallContextMenu"
         />
 
+        <MessagePmHistorySkeleton v-if="loadingFirst" />
+
         <div
-          v-if="!messages.length && !composerDisabled"
+          v-else-if="!messages.length && !composerDisabled"
           class="text-default-500 py-10 text-center"
         >
           暂无消息，发送一条消息开始聊天吧
@@ -406,7 +412,10 @@ onMounted(() => {
                 <KunIcon name="lucide:smile" />
               </KunButton>
             </template>
-            <MessagePmEmojiStickerPicker @emoji="onEmoji" @sticker="onSticker" />
+            <MessagePmEmojiStickerPicker
+              @emoji="onEmoji"
+              @sticker="onSticker"
+            />
           </KunPopover>
 
           <KunButton

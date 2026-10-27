@@ -12,7 +12,13 @@ const showAd = useAdVisible()
     v-if="showAd"
   >
     <KunLink target="_blank" :to="kungal.ad[0]!.link">
-      <KunImage class-name="block h-11" :src="kungal.ad[0]!.icon" />
+      <KunImage
+        class-name="block h-11"
+        :src="kungal.ad[0]!.icon"
+        :width="500"
+        :height="193"
+        aspect-ratio="500 / 193"
+      />
     </KunLink>
   </KunTooltip>
 </template>

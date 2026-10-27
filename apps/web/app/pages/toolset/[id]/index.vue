@@ -17,36 +17,28 @@ definePageMeta({ key: (route) => route.path })
 const route = useRoute()
 const id = computed(() => (route.params as { id: string }).id)
 
-// Awaited: the comments key below is built from it, and the server never
-// re-keys a fetch.
-const { data, problem, pending } = await useKunApi<Toolset>(
+const { data: comments } = useKunApi<WallComment[]>(
+  () => `toolset-comments:${id.value}`,
+  async (api, { signal }) => {
+    const page = await api.GET('/wall-comments', {
+      params: {
+        query: { subject_type: 'toolset', subject_id: id.value, limit: 5 }
+      },
+      signal
+    })
+    return page.data
+      ? { data: page.data.items, response: page.response }
+      : { error: page.error, response: page.response }
+  }
+)
+
+const { data, problem, pending } = useKunApi<Toolset>(
   () => `toolset:${id.value}`,
   (api, { signal }) =>
     api.GET('/toolsets/{toolset_id}', {
       params: { path: { toolset_id: id.value } },
       signal
     })
-)
-
-const { data: comments } = useKunApi<WallComment[]>(
-  () => `toolset-comments:${data.value?.id ?? 'none'}`,
-  async (api) => {
-    if (!data.value || data.value.comment_count === 0) {
-      return { data: [], response: new Response(null, { status: 200 }) }
-    }
-    const page = await api.GET('/wall-comments', {
-      params: {
-        query: {
-          subject_type: 'toolset',
-          subject_id: data.value.id,
-          limit: 5
-        }
-      }
-    })
-    return page.data
-      ? { data: page.data.items, response: page.response }
-      : { error: page.error, response: page.response }
-  }
 )
 
 const pageUrl = computed(() => `${kungal.domain.main}${route.path}`)

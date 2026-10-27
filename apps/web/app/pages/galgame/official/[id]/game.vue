@@ -1,16 +1,13 @@
 <script setup lang="ts">
 const { page, limit, query } = useEntityWorksQuery()
 
-const { officialId, data, pending } = await useGalgameOfficialDetail('/game')
-
-const {
-  galgames,
-  total,
-  status,
-  own,
-  imprint,
-  pending: worksPending
-} = await useCompanyWorks(officialId, () => query.value)
+const [
+  { officialId, data, pending },
+  { galgames, total, status, own, imprint, pending: worksPending }
+] = await Promise.all([
+  useGalgameOfficialDetail('/game'),
+  useCompanyWorks(Number((useRoute().params as { id: string }).id), () => query.value)
+])
 
 const { allowsNsfw } = useContentStance()
 const isSfwMode = computed(() => !allowsNsfw.value)

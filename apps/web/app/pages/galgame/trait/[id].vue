@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import type { Trait } from '#shared/utils/api/schemas'
 import { traitFullName, traitSections, traitSide } from '~/utils/galgame/trait'
+import { provideTraitRoots } from '~/composables/galgame/useTraitRoots'
 
 const route = useRoute()
 const traitId = computed(() => Number((route.params as { id: string }).id))
@@ -14,6 +15,7 @@ if (!Number.isInteger(traitId.value) || traitId.value <= 0) {
 }
 
 const { allowsNsfw, stanceKey } = useContentStance()
+const roots = provideTraitRoots()
 
 const {
   data: trait,
@@ -30,6 +32,8 @@ const {
       signal
     })
 )
+
+await roots
 
 useKunNotFound(
   () => problem.value !== null,

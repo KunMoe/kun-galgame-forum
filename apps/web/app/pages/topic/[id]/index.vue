@@ -11,6 +11,7 @@ import { contentPlainText } from '~/utils/contentPlainText'
 import { firstImageUrl } from '#shared/utils/content/plainText'
 import { toKunUser } from '~/utils/userRef'
 import { problemMessage } from '#shared/utils/api/message'
+import { provideTopicPage } from '~/composables/topic/useTopicPage'
 
 definePageMeta({ key: (route) => route.path })
 
@@ -32,6 +33,12 @@ const { data, problem, pending, refresh } = useKunApi<Topic>(
       params: { path: { topic_id: topicId.value } },
       signal
     })
+)
+
+const { polls, lotteries, upvotes } = provideTopicPage(topicId.value)
+const firstScreenPending = computed(
+  () =>
+    polls.pending.value || lotteries.pending.value || upvotes.pending.value
 )
 
 const topic = ref<Topic | undefined>(data.value)
@@ -187,13 +194,13 @@ useKunSeoMeta(() => {
 
 <template>
   <div>
-    <template v-if="topic">
+    <template v-if="topic && !firstScreenPending">
       <TopicDetail v-if="isShowTopic" :topic="topic" />
 
       <KunNsfwGate v-else noun="话题" @reveal="revealed = true" />
     </template>
 
-    <TopicDetailSkeleton v-else-if="pending" />
+    <TopicDetailSkeleton v-else-if="pending || (topic && firstScreenPending)" />
 
     <template v-else-if="problem && problem.status !== 404">
       <KunNull :description="problemMessage(problem)" />

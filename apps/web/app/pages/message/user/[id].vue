@@ -44,16 +44,7 @@ useKunDisableSeo('私信')
   <div class="flex h-full min-w-0 flex-1 flex-col pl-3">
     <MessagePmHeader :conversation="conversation" :missing="peerMissing" />
 
-    <div v-if="pending" class="flex-1 space-y-3 pt-4" aria-hidden="true">
-      <KunSkeleton height="2.75rem" width="55%" rounded="lg" />
-      <KunSkeleton
-        height="2.75rem"
-        width="40%"
-        rounded="lg"
-        class-name="ml-auto"
-      />
-      <KunSkeleton height="2.75rem" width="50%" rounded="lg" />
-    </div>
+    <MessagePmHistorySkeleton v-if="pending" class="flex-1 pt-4" />
 
     <MessagePmContainer
       v-else
