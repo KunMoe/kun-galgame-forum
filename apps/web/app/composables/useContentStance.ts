@@ -23,7 +23,7 @@ export const useContentStance = () => {
   const allowsNsfw = computed(() => stance.value !== 'hide')
   const isBlurred = computed(() => stance.value === 'blur')
 
-  // For useApi keys. A signed-in stance can change after hydration (refreshMe),
+  // For useKunApi keys. A signed-in stance can change after hydration (refreshMe),
   // and a key that moves then misses the SSR payload: setup ran with no data and
   // an NSFW work rendered ungated for a hide-stance account (2026-09-24).
   // useRefreshMe refetches on a narrowing flip instead.

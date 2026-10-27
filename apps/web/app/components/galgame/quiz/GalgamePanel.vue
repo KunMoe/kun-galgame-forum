@@ -12,7 +12,7 @@ const emit = defineEmits<{
 const page = usePageQuery()
 const limit = 12
 
-const { data, status, problem, refresh } = await useApi<PageListQuizSummary>(
+const { data, status, problem, pending, refresh } = useKunApi<PageListQuizSummary>(
   () => `quizzes-work:${workId.value}:${page.value}:${limit}`,
   (api, { signal }) =>
     api.GET('/quizzes', {
@@ -27,7 +27,9 @@ const { data, status, problem, refresh } = await useApi<PageListQuizSummary>(
       signal
     })
 )
-watchEffect(() => emit('update:loading', status.value === 'pending'))
+watchEffect(() =>
+  emit('update:loading', status.value === 'pending' && !pending.value)
+)
 
 const showPublish = ref(false)
 const openPublish = () => {
@@ -58,6 +60,7 @@ const onPublished = () => {
     </div>
 
     <KunNull v-if="problem" :description="problemMessage(problem)" />
+    <GalgameQuizListSkeleton v-else-if="pending" :count="4" />
     <GalgameQuizList
       v-else-if="data && data.items.length"
       :quizzes="data.items"

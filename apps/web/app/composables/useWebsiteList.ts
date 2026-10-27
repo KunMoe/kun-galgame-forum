@@ -12,7 +12,7 @@ export const useWebsiteList = (
   filter: MaybeRefOrGetter<WebsiteFilter> = {}
 ) => {
   const { allowsNsfw, stanceKey } = useContentStance()
-  return useApi<WebsiteSummary[]>(
+  return useKunApi<WebsiteSummary[]>(
     () =>
       `websites:${JSON.stringify(toValue(filter))}:${stanceKey.value}`,
     (api) =>

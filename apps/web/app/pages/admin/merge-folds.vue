@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { settle } from '#shared/utils/api/problem'
+import { problemMessage } from '#shared/utils/api/message'
 import type {
   WorkMergeFold,
   WorkMergeFoldProblem
@@ -31,31 +31,17 @@ const CAUSE_LABELS: Record<WorkMergeFoldProblem['cause'], string> = {
     '保留方又被合并了一次, 原作品带来的发布 / 禁令 / 创建者标记可能留在了最终那部作品上'
 }
 
-type FoldPage = { items: WorkMergeFold[]; total: number }
-
-const api = useApiClient()
 const page = ref(1)
 const limit = 20
-const data = ref<FoldPage | null>(null)
-const loading = ref(false)
 
-const load = async () => {
-  loading.value = true
-  const result = await settle(
-    api.GET('/admin/work-merge-folds', {
-      params: { query: { page: page.value, limit } }
+const { data, problem, pending, status } = useKunApi(
+  () => `admin-work-merge-folds:${page.value}`,
+  (client, { signal }) =>
+    client.GET('/admin/work-merge-folds', {
+      params: { query: { page: page.value, limit } },
+      signal
     })
-  )
-  loading.value = false
-  if (!result.ok) {
-    reportProblem(result.problem)
-    return
-  }
-  data.value = result.data
-}
-
-onMounted(load)
-watch(page, load)
+)
 
 const totalPage = computed(() =>
   data.value ? Math.max(1, Math.ceil(data.value.total / limit)) : 1
@@ -83,7 +69,8 @@ const counts = (fold: WorkMergeFold) =>
       </p>
     </div>
 
-    <KunLoading v-if="loading && !data" />
+    <AdminListSkeleton v-if="pending" />
+    <KunNull v-else-if="problem" :description="problemMessage(problem)" />
     <KunNull v-else-if="!data?.items.length" description="暂无合并记录" />
 
     <template v-else>
@@ -150,7 +137,7 @@ const counts = (fold: WorkMergeFold) =>
         v-if="totalPage > 1"
         v-model:current-page="page"
         :total-page="totalPage"
-        :is-loading="loading"
+        :is-loading="status === 'pending'"
       />
     </template>
   </div>

@@ -18,8 +18,8 @@ const query = computed(() => ({
   limit: 30
 }))
 
-const { items, status, hasMore, loadingMore, loadMore } =
-  await useCursorList<Activity>(
+const { items, status, pending, hasMore, loadingMore, loadMore } =
+  useCursorList<Activity>(
     () => `activities:${JSON.stringify(query.value)}`,
     (api, cursor, { signal }) =>
       api.GET('/activities', {
@@ -66,8 +66,10 @@ useIntersectionObserver(
     class="min-w-0"
     :loading="status === 'pending' && items.length > 0"
   >
+    <ActivityCardSkeletonList v-if="pending" />
+
     <KunNull
-      v-if="status !== 'pending' && !items.length"
+      v-else-if="status !== 'pending' && !items.length"
       description="暂无动态"
     />
 

@@ -8,7 +8,7 @@ export interface CommunityCommentGroup {
 
 const PAGE_LIMIT = 30
 
-export const useCommunityCommentList = async (
+export const useCommunityCommentList = (
   target: CommunityCommentTarget,
   initialTotal = 0
 ) => {
@@ -33,11 +33,10 @@ export const useCommunityCommentList = async (
     ...(cursor ? { cursor } : {})
   })
 
-  const { data, problem, status, refresh } = await useApi(
+  const { data, problem, status, refresh } = useKunApi(
     `wall:${surface.subjectType}:${surface.subjectId}`,
     (client, { signal }) =>
-      client.GET('/wall-comments', { params: { query: listQuery() }, signal }),
-    { lazy: true }
+      client.GET('/wall-comments', { params: { query: listQuery() }, signal })
   )
 
   // The read receipt is a write the reader makes, never something inferred from

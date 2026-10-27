@@ -4,7 +4,7 @@ import { problemMessage } from '#shared/utils/api/message'
 
 const { page, limit, listQuery } = useToolsetFilters()
 
-const { data, status, problem } = await useApi<PageListToolsetSummary>(
+const { data, status, problem, pending } = useKunApi<PageListToolsetSummary>(
   () => `toolsets:${JSON.stringify(listQuery.value)}`,
   (api, { signal }) =>
     api.GET('/toolsets', {
@@ -17,7 +17,7 @@ const { data, status, problem } = await useApi<PageListToolsetSummary>(
 <template>
   <div>
     <KunNull v-if="problem" :description="problemMessage(problem)" />
-    <div v-else-if="data" class="flex flex-col gap-3">
+    <div v-else class="flex flex-col gap-3">
       <div class="z-10">
         <KunHeader
           name="Galgame 工具资源下载"
@@ -29,13 +29,15 @@ const { data, status, problem } = await useApi<PageListToolsetSummary>(
         </KunHeader>
       </div>
 
-      <KunLoading :loading="status === 'pending'">
+      <ToolsetCardSkeleton v-if="pending" />
+
+      <KunLoading v-else-if="data" :loading="status === 'pending'">
         <ToolsetCard v-if="data.items.length" :items="data.items" />
         <KunNull v-else description="没有找到符合条件的工具资源" />
       </KunLoading>
 
       <KunCard
-        v-if="data.items.length"
+        v-if="data?.items.length"
         :is-hoverable="false"
         :is-transparent="false"
         content-class="gap-3"

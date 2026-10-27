@@ -4,7 +4,7 @@ import type { Settings } from '#shared/utils/api/schemas'
 import { problemMessage } from '#shared/utils/api/message'
 
 const api = useApiClient()
-const { data, problem, refresh } = await useApi(
+const { data, problem, pending, refresh } = useKunApi(
   'admin-settings',
   (client, { signal }) => client.GET('/admin/settings', { signal })
 )
@@ -120,6 +120,15 @@ const save = async () => {
 
       <div class="flex justify-end">
         <KunButton :loading="isSaving" @click="save">保存</KunButton>
+      </div>
+    </template>
+    <template v-else-if="pending">
+      <div class="space-y-3">
+        <KunSkeleton height="1.5rem" width="14rem" rounded="full" />
+        <KunSkeleton height="1.5rem" width="12rem" rounded="full" />
+      </div>
+      <div class="grid gap-4 sm:grid-cols-2">
+        <KunSkeleton v-for="n in 4" :key="n" height="3.5rem" rounded="lg" />
       </div>
     </template>
   </KunCard>

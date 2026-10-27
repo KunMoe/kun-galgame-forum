@@ -1,16 +1,16 @@
 // @vitest-environment nuxt
 import { afterEach, describe, expect, it, vi } from 'vitest'
 import { mountSuspended, mockNuxtImport } from '@nuxt/test-utils/runtime'
-import { computed, ref } from 'vue'
+import { computed, ref, toValue } from 'vue'
 import UserPage from '~/pages/user.vue'
 
-const { holder, startOAuthLogin, useKunDisableSeo } = vi.hoisted(() => ({
+const { holder, startOAuthLogin, useKunSeoMeta } = vi.hoisted(() => ({
   holder: { code: null as string | null, status: 0 },
   startOAuthLogin: vi.fn(),
-  useKunDisableSeo: vi.fn()
+  useKunSeoMeta: vi.fn()
 }))
 
-mockNuxtImport('useApi', () => () => {
+mockNuxtImport('useKunApi', () => () => {
   const result = {
     data: computed(() => undefined),
     problem: computed(() => ({
@@ -26,11 +26,13 @@ mockNuxtImport('useApi', () => () => {
   return Object.assign(Promise.resolve(result), result)
 })
 mockNuxtImport('startOAuthLogin', () => startOAuthLogin)
-mockNuxtImport('useKunDisableSeo', () => useKunDisableSeo)
+mockNuxtImport('useKunSeoMeta', () => useKunSeoMeta)
+
+const seo = () => toValue(useKunSeoMeta.mock.lastCall?.[0])
 
 afterEach(() => {
   startOAuthLogin.mockReset()
-  useKunDisableSeo.mockReset()
+  useKunSeoMeta.mockReset()
 })
 
 const mountRefused = (code: string, status: number) => {
@@ -45,7 +47,7 @@ describe('user profile page for an anonymous visitor', () => {
 
     expect(wrapper.text()).toContain('该用户设置了仅登录用户可查看主页')
     expect(wrapper.text()).not.toContain('未找到该用户')
-    expect(useKunDisableSeo).toHaveBeenCalledOnce()
+    expect(seo()).toEqual({ noindex: true, title: '登录后查看该用户' })
 
     const login = wrapper
       .findAllComponents({ name: 'KunButton' })
@@ -62,6 +64,6 @@ describe('user profile page for an anonymous visitor', () => {
 
     expect(wrapper.text()).toContain('未找到该用户')
     expect(wrapper.text()).not.toContain('仅登录用户')
-    expect(useKunDisableSeo).toHaveBeenCalledWith('未找到该用户')
+    expect(seo()).toEqual({ noindex: true, title: '未找到该用户' })
   })
 })

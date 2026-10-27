@@ -1,7 +1,7 @@
 import { settle, type ClientProblem } from '#shared/utils/api/problem'
 import type { ApiClient } from '#shared/utils/api/client'
 import { isHistoryPop } from '~/utils/historyPop'
-import { useApiClient } from './useApi'
+import { useApiClient, useKunApi } from './useKunApi'
 
 type Page<Item> = { items: Item[]; next_cursor?: string; total?: number }
 
@@ -27,6 +27,7 @@ type UseCursorListReturn<Item, P extends Page<Item>> = {
   // What the first page carries besides its items, such as facet counts.
   head: Ref<Head<P> | undefined>
   problem: ComputedRef<ClientProblem | null>
+  pending: ComputedRef<boolean>
   status: ReturnType<typeof useAsyncData>['status']
   loadingMore: Ref<boolean>
   loadMore: () => Promise<void>
@@ -69,11 +70,11 @@ export const useCursorList = <
   let loadMoreGeneration = 0
   let seenKey: string | undefined
 
-  const asyncKey = () => `cursor:${toValue(key)}`
+  const listKey = () => `cursor:${toValue(key)}`
 
-  const asyncData = useAsyncData(
-    asyncKey,
-    (_app, { signal }) => settle(fetchPage(api, undefined, { signal })),
+  const list = useKunApi(
+    listKey,
+    (client, { signal }) => fetchPage(client, undefined, { signal }),
     {
       getCachedData: (dataKey, nuxtApp, ctx) => {
         if (nuxtApp.isHydrating) {
@@ -82,7 +83,7 @@ export const useCursorList = <
         if (!import.meta.client || ctx.cause !== 'initial' || !isHistoryPop()) {
           return undefined
         }
-        const snap = snapshots.get(dataKey) as Snapshot<Item> | undefined
+        const snap = snapshots.get(listKey()) as Snapshot<Item> | undefined
         if (!snap) {
           return undefined
         }
@@ -93,7 +94,7 @@ export const useCursorList = <
             items: snap.items,
             ...(snap.nextCursor ? { next_cursor: snap.nextCursor } : {}),
             ...(snap.total === undefined ? {} : { total: snap.total })
-          }
+          } as P
         }
       }
     }
@@ -122,9 +123,10 @@ export const useCursorList = <
   watch(
     () =>
       ({
-        dataKey: asyncKey(),
-        result: asyncData.data.value,
-        status: asyncData.status.value
+        dataKey: listKey(),
+        data: list.data.value,
+        problem: list.problem.value,
+        status: list.status.value
       }) as const,
     (curr) => {
       if (seenKey !== undefined && seenKey !== curr.dataKey) {
@@ -141,11 +143,11 @@ export const useCursorList = <
         }
       }
       seenKey = curr.dataKey
-      if (curr.result?.ok) {
-        applyPage(curr.result.data, curr.dataKey)
+      if (curr.data) {
+        applyPage(curr.data, curr.dataKey)
         return
       }
-      if (curr.result && !curr.result.ok) {
+      if (curr.problem) {
         items.value = []
         hasMore.value = false
         nextCursor.value = undefined
@@ -156,18 +158,12 @@ export const useCursorList = <
     { immediate: true, flush: 'sync' }
   )
 
-  const problem = computed(() =>
-    asyncData.data.value && !asyncData.data.value.ok
-      ? asyncData.data.value.problem
-      : null
-  )
-
   const loadMore = async () => {
     if (loadingMore.value || !hasMore.value) {
       return
     }
     const generation = loadMoreGeneration
-    const dataKey = asyncKey()
+    const dataKey = listKey()
     const cursor = nextCursor.value
     if (!cursor) {
       return
@@ -202,15 +198,18 @@ export const useCursorList = <
     hasMore,
     total,
     head,
-    problem,
-    status: asyncData.status,
+    problem: list.problem,
+    pending: computed(
+      () => list.status.value === 'pending' && items.value.length === 0
+    ),
+    status: list.status,
     loadingMore,
     loadMore,
-    refresh: asyncData.refresh
+    refresh: list.refresh
   }
 
   return Object.assign(
-    Promise.resolve(asyncData).then(() => result),
+    Promise.resolve(list).then(() => result),
     result
   )
 }

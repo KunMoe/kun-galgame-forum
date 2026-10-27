@@ -13,22 +13,12 @@ const { sectionOf } = useTopicSections()
 const section = computed(() => sectionOf(props.sectionKey))
 const isUnknownSection = computed(() => !!props.sectionKey && !section.value)
 
-const seoTitle = () => `${section.value?.label ?? '话题列表'} - ${kungal.title}`
-const seoDescription = () =>
-  section.value?.description ??
-  `${kungal.titleShort} 话题列表, Galgame 讨论, Galgame 攻略, 长文评价, 新作资讯, 游戏运行, 开发技术, ACGN, 日常杂谈`
-
-useKunSeoMeta({ title: '话题列表', description: seoDescription() })
-// Switching sections only changes the query, so the page is not set up again
-// and the head has to follow the section reactively.
-useSeoMeta({
-  title: seoTitle,
-  description: seoDescription,
-  ogTitle: seoTitle,
-  ogDescription: seoDescription,
-  twitterTitle: seoTitle,
-  twitterDescription: seoDescription
-})
+useKunSeoMeta(() => ({
+  title: section.value?.label ?? '话题列表',
+  description:
+    section.value?.description ??
+    `${kungal.titleShort} 话题列表, Galgame 讨论, Galgame 攻略, 长文评价, 新作资讯, 游戏运行, 开发技术, ACGN, 日常杂谈`
+}))
 
 type TopicSort = NonNullable<
   NonNullable<operations['listTopics']['parameters']['query']>['sort']
@@ -106,7 +96,7 @@ const setSortOrder = (value: SortOrder) => {
 }
 
 const { items, hasMore, problem, status, loadingMore, loadMore, refresh } =
-  await useCursorList<TopicSummary>(
+  useCursorList<TopicSummary>(
     () =>
       `topics:${props.sectionKey || 'all'}:${offeredSort.value}:${includeNsfw.value ? 'nsfw' : 'sfw'}`,
     (api, cursor, { signal }) =>
@@ -190,24 +180,7 @@ watch([isSentinelVisible, hasMore, loadingMore], ([visible, more, busy]) => {
         </template>
 
         <template v-else>
-          <div
-            v-if="status === 'pending'"
-            class="divide-default-200/60 divide-y"
-            aria-busy="true"
-          >
-            <div v-for="n in 6" :key="n" class="space-y-2 py-4 first:pt-0">
-              <KunSkeleton width="70%" height="1.25rem" />
-              <KunSkeleton width="6rem" height="1.25rem" rounded="full" />
-              <div class="flex items-center gap-2">
-                <KunSkeleton
-                  variant="circle"
-                  width="1.25rem"
-                  height="1.25rem"
-                />
-                <KunSkeleton width="40%" height="0.875rem" />
-              </div>
-            </div>
-          </div>
+          <TopicCardSkeleton v-if="status === 'pending'" />
           <template v-else>
             <div class="divide-default-200/60 divide-y">
               <TopicCard

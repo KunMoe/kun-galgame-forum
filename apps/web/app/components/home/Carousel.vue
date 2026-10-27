@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import { useMouseInElement } from '@vueuse/core'
 
-const { data: pinnedResponse } = await useApi(
+const { data: pinnedResponse, pending } = useKunApi(
   'docs:pinned-carousel',
   (api, { signal }) =>
     api.GET('/docs', {
@@ -191,6 +191,8 @@ onBeforeUnmount(() => stopAutoplay())
           />
         </div>
       </template>
+
+      <KunSkeleton v-else-if="pending" height="10rem" rounded="none" />
 
       <KunNull v-else description="暂时没有置顶文档" />
     </div>

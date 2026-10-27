@@ -11,7 +11,11 @@ const { allowsNsfw, stanceKey } = useContentStance()
 const isSfwMode = computed(() => !allowsNsfw.value)
 const nameOf = useCatalogName()
 
-const { data: seriesPage, status } = await useApi<SeriesPage>(
+const {
+  data: seriesPage,
+  status,
+  pending
+} = useKunApi<SeriesPage>(
   () => `series:${page.value}:${stanceKey.value}`,
   (api) =>
     api.GET('/series', {
@@ -91,7 +95,9 @@ watchDebounced(searchQuery, handleSearch, { debounce: 500, maxWait: 1000 })
       description="当前为 SFW 模式, 只列出全部作品均为全年龄的系列。本站收录的 Galgame 系列绝大多数含有 R18 作品, 如需查看, 请在设置面板开启 NSFW 开关。"
     />
 
-    <div class="grid grid-cols-1 gap-6 lg:grid-cols-2">
+    <GalgameSeriesCardSkeleton v-if="pending && !isSearchMode" />
+
+    <div v-else class="grid grid-cols-1 gap-6 lg:grid-cols-2">
       <GalgameSeriesCard
         v-for="(series, index) in displaySeries"
         :key="series.id"

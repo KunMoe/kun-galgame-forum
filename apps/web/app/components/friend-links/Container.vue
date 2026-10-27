@@ -4,7 +4,7 @@ import {
   FRIEND_LINK_STATE_CHIP
 } from '~/constants/friendLink'
 
-const { links } = await useFriendLinks()
+const { links, pending } = useFriendLinks()
 
 const utmLink = useUtmLink()
 
@@ -30,6 +30,14 @@ const groups = computed(() =>
         </b>
       </template>
     </KunHeader>
+
+    <div
+      v-if="pending"
+      class="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4"
+      aria-hidden="true"
+    >
+      <KunSkeleton v-for="n in 8" :key="n" height="9rem" rounded="lg" />
+    </div>
 
     <template v-for="(group, index) in groups" :key="index">
       <h2 class="mb-4 text-2xl font-bold">

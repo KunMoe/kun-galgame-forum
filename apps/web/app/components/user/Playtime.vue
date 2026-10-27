@@ -11,7 +11,7 @@ const { id: myId } = storeToRefs(usePersistUserStore())
 const nameOf = useCatalogName()
 const pageData = reactive({ page: usePageQuery(), limit: 24 })
 
-const { data, status, problem } = await useApi<WorkPlaytimeList>(
+const { data, status, problem, pending } = useKunApi<WorkPlaytimeList>(
   () => `me-playtimes:${pageData.page}:${pageData.limit}:${stanceKey.value}`,
   (api, { signal }) =>
     api.GET('/me/playtimes', {
@@ -117,6 +117,7 @@ const bannerOf = (item: WorkPlaytimeList['items'][number]) =>
       />
     </div>
 
+    <UserListSkeleton v-else-if="pending" shape="media" />
     <KunInfo
       v-else-if="problem && status !== 'pending'"
       color="danger"

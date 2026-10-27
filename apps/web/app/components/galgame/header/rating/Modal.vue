@@ -20,7 +20,7 @@ const open = defineModel<boolean>({ required: true })
 const workName = useWorkName()
 const nameOf = useCatalogName()
 
-const { data: allRatingsPage, refresh: refreshAllRatings } = useApi<RatingPage>(
+const { data: allRatingsPage, refresh: refreshAllRatings } = useKunApi<RatingPage>(
   () => `work-ratings-all:${props.galgame.id}`,
   (api, { signal }) =>
     api.GET('/ratings', {

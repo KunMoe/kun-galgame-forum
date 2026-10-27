@@ -5,7 +5,7 @@ const route = useRoute()
 const router = useRouter()
 const aliasId = computed(() => String((route.params as { id: string }).id))
 
-const { data, status } = await useApi<CollectionAlias>(
+const { data, pending } = await useKunApi<CollectionAlias>(
   () => `collection-alias:${aliasId.value}`,
   (api, { signal }) =>
     api.GET('/collection-aliases/{alias_id}', {
@@ -14,11 +14,26 @@ const { data, status } = await useApi<CollectionAlias>(
     })
 )
 
-if (data.value) {
-  await router.replace({
-    path: `/collection/${data.value.collection_id}`,
+const open = (alias: CollectionAlias) =>
+  router.replace({
+    path: `/collection/${alias.collection_id}`,
     query: route.query
   })
+
+if (import.meta.server) {
+  if (data.value) {
+    await open(data.value)
+  }
+} else {
+  watch(
+    data,
+    (alias) => {
+      if (alias) {
+        open(alias)
+      }
+    },
+    { immediate: true }
+  )
 }
 
 useKunDisableSeo('收藏夹')
@@ -27,7 +42,7 @@ useKunDisableSeo('收藏夹')
 <template>
   <div>
     <KunNull
-      v-if="status !== 'pending' && !data"
+      v-if="!pending && !data"
       description="收藏夹不存在或你没有权限查看"
     />
   </div>

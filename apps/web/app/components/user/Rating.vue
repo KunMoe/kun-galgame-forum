@@ -13,7 +13,7 @@ const pageData = reactive({
   limit: 24
 })
 
-const { data, status } = await useApi<RatingPage>(
+const { data, status, pending } = useKunApi<RatingPage>(
   () =>
     `user-ratings:${props.userId}:${pageData.page}:${pageData.limit}:${includeNsfw.value ? 'nsfw' : 'sfw'}`,
   (client, { signal }) =>
@@ -38,6 +38,7 @@ const ratings = computed(() =>
 
 <template>
   <div class="space-y-3">
+    <GalgameRatingCardSkeleton v-if="pending" :count="8" />
     <div v-if="data && data.items.length" class="space-y-3">
       <GalgameRatingCard :ratings="ratings" :is-transparent="false" />
 

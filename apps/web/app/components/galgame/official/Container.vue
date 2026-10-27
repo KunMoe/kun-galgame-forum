@@ -9,7 +9,7 @@ const limit = 100
 const api = useApiClient()
 const nameOf = useCatalogName()
 
-const { data, status } = await useApi<CompanyPage>(
+const { data, status, pending } = useKunApi<CompanyPage>(
   () => `companies:${page.value}`,
   (client) =>
     client.GET('/companies', { params: { query: { page: page.value, limit } } })
@@ -73,7 +73,10 @@ watchDebounced(
       </template>
     </KunHeader>
 
+    <GalgameEntityGridSkeleton v-if="pending && !searchQuery.trim()" />
+
     <div
+      v-else
       class="grid grid-cols-2 gap-3 sm:grid-cols-2 sm:gap-3 lg:grid-cols-3 xl:grid-cols-4"
     >
       <GalgameOfficialCard

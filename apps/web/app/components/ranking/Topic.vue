@@ -5,7 +5,7 @@ import { RANKING_LIMIT, topicRankingPageData, getRankClasses } from './pageData'
 
 const { allowsNsfw, stanceKey } = useContentStance()
 
-const { data } = await useApi(
+const { data, pending } = useKunApi(
   () =>
     `ranking-topics:${topicRankingPageData.sort}:${stanceKey.value}`,
   (client, { signal }) =>
@@ -77,4 +77,5 @@ const icon = computed(
       </KunLink>
     </li>
   </ul>
+  <RankingListSkeleton v-else-if="pending" />
 </template>

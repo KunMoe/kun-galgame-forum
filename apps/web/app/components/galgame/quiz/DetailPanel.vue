@@ -37,7 +37,7 @@ const {
   refresh,
   status,
   problem
-} = await useCursorList<QuizAnswer>(
+} = useCursorList<QuizAnswer>(
   () => `quiz-answers:${props.quiz.id}`,
   (api, cursor, { signal }) =>
     api.GET('/quizzes/{quiz_id}/answers', {

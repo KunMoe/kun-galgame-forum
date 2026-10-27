@@ -21,7 +21,7 @@ const isModalOpen = ref(false)
 const lotteryToEdit = ref<Lottery | undefined>(undefined)
 const formToCreate = ref<LotteryFormData | undefined>(undefined)
 
-const { data, refresh } = await useApi(
+const { data, refresh } = useKunApi(
   () => `topic-lotteries:${topicId.value}:${stanceKey.value}`,
   (api, { signal }) =>
     api.GET('/topics/{topic_id}/lotteries', {

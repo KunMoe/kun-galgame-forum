@@ -20,7 +20,11 @@ const isSubmitting = ref(false)
 const api = useApiClient()
 const toolsetId = computed(() => toolsetUpdateForm.toolset_id)
 
-const { data: toolset, problem: toolsetProblem } = await useApi<Toolset>(
+const {
+  data: toolset,
+  problem: toolsetProblem,
+  pending: toolsetPending
+} = useKunApi<Toolset>(
   () => `toolset-rewrite:${toolsetId.value || 'none'}`,
   (apiClient, { signal }) => {
     if (!toolsetId.value) {
@@ -36,7 +40,11 @@ const { data: toolset, problem: toolsetProblem } = await useApi<Toolset>(
   }
 )
 
-const { data: source, problem: sourceProblem } = await useApi<ToolsetSource>(
+const {
+  data: source,
+  problem: sourceProblem,
+  pending: sourcePending
+} = useKunApi<ToolsetSource>(
   () => `toolset-source:${toolsetId.value || 'none'}`,
   (apiClient, { signal }) => {
     if (!toolsetId.value) {
@@ -199,6 +207,8 @@ const handleUpdatePageLink = (value: string | number) => {
       :description="problemMessage(loadProblem)"
     />
 
+    <EditFormSkeleton v-else-if="toolsetPending || sourcePending" />
+
     <template v-else>
       <div class="space-y-2">
         <label class="text-sm font-medium">名称</label>
@@ -244,7 +254,9 @@ const handleUpdatePageLink = (value: string | number) => {
         <KunMilkdownDualEditorProvider
           :key="source?.toolset_id ?? 'empty'"
           :value-markdown="toolsetUpdateForm.content_markdown"
-          @set-markdown="(value) => (toolsetUpdateForm.content_markdown = value)"
+          @set-markdown="
+            (value) => (toolsetUpdateForm.content_markdown = value)
+          "
           language="zh-cn"
         >
           <KunLink target="_blank" to="/doc/create-galgame-toolset">

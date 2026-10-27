@@ -16,7 +16,7 @@ const {
   loadingMore,
   status,
   problem
-} = await useCursorList<Reaction>(
+} = useCursorList<Reaction>(
   () =>
     props.replyId
       ? `reply-reactions:${props.replyId}`
@@ -47,9 +47,13 @@ const {
 
       <div
         v-if="status === 'pending' && !records.length"
-        class="flex justify-center py-8"
+        class="space-y-0.5"
+        aria-hidden="true"
       >
-        <KunLoading />
+        <div v-for="n in 5" :key="n" class="flex items-center gap-3 p-2">
+          <KunSkeleton variant="circle" width="2rem" height="2rem" />
+          <KunSkeleton variant="text" width="40%" />
+        </div>
       </div>
 
       <KunNull v-else-if="problem" :description="problemMessage(problem)" />

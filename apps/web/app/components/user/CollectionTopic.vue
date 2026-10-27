@@ -9,7 +9,7 @@ const page = usePageQuery()
 const limit = 24
 const { allowsNsfw: includeNsfw } = useContentStance()
 
-const { data, status } = await useApi<PageListUserTopicItem>(
+const { data, status, pending } = useKunApi<PageListUserTopicItem>(
   () =>
     `user-topics:${props.userId}:favorited:${page.value}:${limit}:${includeNsfw.value ? 'nsfw' : 'sfw'}`,
   (client, { signal }) =>
@@ -30,6 +30,7 @@ const { data, status } = await useApi<PageListUserTopicItem>(
 
 <template>
   <div class="space-y-3">
+    <UserListSkeleton v-if="pending" />
     <div v-if="data && data.items.length" class="flex flex-col space-y-3">
       <KunCard
         v-for="topic in data.items"

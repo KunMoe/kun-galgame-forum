@@ -10,7 +10,11 @@ if (!/^\d{1,20}$/.test(newsItemId.value)) {
   })
 }
 
-const { data: item } = await useApi(
+const {
+  data: item,
+  problem,
+  pending
+} = await useKunApi(
   () => `news-item:${newsItemId.value}`,
   (api, { signal }) =>
     api.GET('/news-items/{news_item_id}', {
@@ -19,27 +23,26 @@ const { data: item } = await useApi(
     })
 )
 
-if (!item.value) {
-  throw createError({
-    statusCode: 404,
-    statusMessage: '未找到该情报',
-    fatal: true
-  })
-}
+useKunNotFound(() => problem.value !== null, '未找到该情报')
 
-const { byKey } = await useNewsSources()
+const { byKey } = useNewsSources()
 
-useKunSeoMeta({
-  title: item.value.title,
-  description: item.value.preview,
-  ogType: 'article',
-  ogImage: item.value.banner?.url,
-  articlePublishedTime: item.value.published_at
-})
+useKunSeoMeta(() =>
+  item.value
+    ? {
+        title: item.value.title,
+        description: item.value.preview,
+        ogType: 'article',
+        ogImage: item.value.banner?.url,
+        articlePublishedTime: item.value.published_at
+      }
+    : {}
+)
 </script>
 
 <template>
   <div class="pb-12">
     <NewsDetail v-if="item" :item="item" :source="byKey[item.news_source]" />
+    <NewsDetailSkeleton v-else-if="pending" />
   </div>
 </template>

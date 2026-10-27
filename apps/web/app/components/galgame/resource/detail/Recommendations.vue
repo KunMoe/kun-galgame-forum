@@ -6,7 +6,7 @@ const props = defineProps<{
   currentId: string
 }>()
 
-const { data } = await useApi<PageListGalgameResource>(
+const { data } = useKunApi<PageListGalgameResource>(
   () => `work-resources-recs:${props.workId}`,
   (api, { signal }) =>
     api.GET('/works/{work_id}/resources', {

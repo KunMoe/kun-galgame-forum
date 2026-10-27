@@ -12,7 +12,7 @@ definePageMeta({
 useKunDisableSeo('友链管理')
 
 const api = useApiClient()
-const { links, refresh } = await useFriendLinks()
+const { links, pending, refresh } = useFriendLinks()
 
 const shelf = (category: FriendLinkCategory) =>
   links.value.filter((link) => link.friend_link_category === category)
@@ -88,8 +88,11 @@ const handleReorder = async (category: FriendLinkCategory, ids: string[]) => {
       description="增删改友链, 拖拽左侧手柄可调整每个分类内的展示顺序"
     />
 
+    <AdminListSkeleton v-if="pending" />
+
     <AdminFriendLinkSection
       v-for="category in FRIEND_LINK_CATEGORIES"
+      v-else
       :key="category.key"
       :category="category.key"
       :label="category.label"

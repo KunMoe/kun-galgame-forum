@@ -29,7 +29,7 @@ export const collectPages = async <T>(
 }
 
 export const useWebsiteCategories = () =>
-  useApi<WebsiteCategory[]>('website-categories', (api) =>
+  useKunApi<WebsiteCategory[]>('website-categories', (api) =>
     collectPages((cursor) =>
       api.GET('/website-categories', {
         params: { query: { limit: 100, ...(cursor ? { cursor } : {}) } }
@@ -38,7 +38,7 @@ export const useWebsiteCategories = () =>
   )
 
 export const useWebsiteTagGroups = () =>
-  useApi<WebsiteTagGroup[]>('website-tag-groups', (api) =>
+  useKunApi<WebsiteTagGroup[]>('website-tag-groups', (api) =>
     collectPages((cursor) =>
       api.GET('/website-tag-groups', {
         params: { query: { limit: 100, ...(cursor ? { cursor } : {}) } }
@@ -47,7 +47,7 @@ export const useWebsiteTagGroups = () =>
   )
 
 export const useWebsiteTags = () =>
-  useApi<WebsiteTag[]>('website-tags', (api) =>
+  useKunApi<WebsiteTag[]>('website-tags', (api) =>
     collectPages((cursor) =>
       api.GET('/website-tags', {
         params: { query: { limit: 100, ...(cursor ? { cursor } : {}) } }

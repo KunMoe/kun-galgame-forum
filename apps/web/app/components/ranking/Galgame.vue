@@ -12,7 +12,7 @@ const settings = usePersistSettingsStore()
 const { allowsNsfw, stanceKey } = useContentStance()
 const { excludeQuery } = useTagBlocks()
 
-const { data } = await useApi(
+const { data, pending } = useKunApi(
   () =>
     `ranking-works:${galgameRankingPageData.sort}:${stanceKey.value}:${settings.showKUNGalgameNoResource ? 'all' : 'resourced'}:${settings.showKUNGalgameAllOriginalLanguages ? 'every-language' : 'ja-zh'}:${JSON.stringify(excludeQuery.value)}`,
   (client, { signal }) =>
@@ -108,4 +108,5 @@ const icon = computed(
       </KunLink>
     </li>
   </ul>
+  <RankingListSkeleton v-else-if="pending" height="5.5rem" />
 </template>

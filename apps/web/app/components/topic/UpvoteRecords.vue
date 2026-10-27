@@ -31,7 +31,7 @@ watch(
 const fetched =
   props.records || !props.topicId
     ? null
-    : await useCursorList<TopicUpvote>(
+    : useCursorList<TopicUpvote>(
         () => `topic-upvotes:${props.topicId}`,
         (api, cursor) =>
           api.GET('/topics/{topic_id}/upvotes', {

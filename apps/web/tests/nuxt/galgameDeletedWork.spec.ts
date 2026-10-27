@@ -13,7 +13,7 @@ const deleted = {
 }
 
 mockNuxtImport(
-  'useApi',
+  'useKunApi',
   () =>
     async (
       _key: unknown,

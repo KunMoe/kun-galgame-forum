@@ -11,7 +11,7 @@ const holder = vi.hoisted(() => ({
 
 // setup resolves before the data lands, which is what a hydration key miss
 // does: useAsyncData fetches on mount instead of awaiting.
-mockNuxtImport('useApi', () => (key: unknown) => {
+mockNuxtImport('useKunApi', () => (key: unknown) => {
   holder.key = key
   holder.work ??= ref(undefined)
   const work = holder.work
@@ -23,6 +23,9 @@ mockNuxtImport('useApi', () => (key: unknown) => {
   }
   return Object.assign(Promise.resolve(result), result)
 })
+
+// The fixture work carries only what the gate reads, not the names SEO needs.
+mockNuxtImport('useKunSeoMeta', () => () => {})
 
 const signIn = (nsfwDisplay: string) => {
   usePersistUserStore().setUserInfo({

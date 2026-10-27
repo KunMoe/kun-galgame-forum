@@ -18,7 +18,7 @@ const pageData = reactive({
   limit: 24
 })
 
-const { data, status, problem } = await useApi<PageListToolsetSummary>(
+const { data, status, problem, pending } = useKunApi<PageListToolsetSummary>(
   () => `user-toolsets:${props.userId}:${props.relation}:${pageData.page}`,
   (api, { signal }) =>
     api.GET('/users/{user_id}/toolsets', {
@@ -53,6 +53,7 @@ const emptyDescription = computed(() =>
       />
     </div>
 
+    <UserListSkeleton v-else-if="pending" />
     <KunNull
       v-else-if="data && !data.items.length"
       :description="emptyDescription"

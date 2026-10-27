@@ -3,7 +3,7 @@ import type { WorkPage } from '#shared/utils/api/schemas'
 
 const { page, limit, query } = useLibraryWorksQuery()
 
-const { data, status, problem } = await useApi<WorkPage>(
+const { data, status, problem, pending } = useKunApi<WorkPage>(
   () => `library-works:${JSON.stringify(query.value)}`,
   (api, { signal }) =>
     api.GET('/library-works', { params: { query: query.value }, signal })
@@ -45,7 +45,9 @@ const releaseLabel = (galgame: GalgameCard) => {
       </KunHeader>
     </div>
 
-    <KunLoading :loading="status === 'pending'">
+    <GalgameCardGridSkeleton v-if="pending" />
+
+    <KunLoading v-else :loading="status === 'pending'">
       <GalgameCard v-if="galgames.length" :galgames="galgames">
         <template #meta="{ galgame }">
           <p class="text-default-500 mt-1 text-xs">

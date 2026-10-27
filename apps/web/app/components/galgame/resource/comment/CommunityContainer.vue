@@ -22,7 +22,7 @@ const {
   handleUpdated,
   handleTombstoned,
   scrollToPost
-} = await useCommunityCommentList(
+} = useCommunityCommentList(
   { kind: 'resource', resourceId: props.resourceId },
   props.commentCount
 )
@@ -63,7 +63,7 @@ const onPublished = (post: WallComment) => {
     <div class="space-y-5">
       <CommentCommunityComposer :target="target" @submitted="onPublished" />
 
-      <KunLoading v-if="status === 'pending' && !seeded" />
+      <CommentCommunityListSkeleton v-if="!seeded" />
 
       <KunNull
         v-else-if="loadFailed"

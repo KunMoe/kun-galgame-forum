@@ -57,7 +57,7 @@ export const useNewsFeed = async (options: KunNewsFeedOptions = {}) => {
   // instance" and silently never fires.
   const sourcesReady = useNewsSources()
   const { byKey: sources } = sourcesReady
-  const asyncData = useApi(
+  const asyncData = useKunApi(
     () => `news-items:${JSON.stringify(query.value)}`,
     (client, { signal }) =>
       client.GET('/news-items', { params: { query: query.value }, signal })

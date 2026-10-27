@@ -12,7 +12,7 @@ const api = useApiClient()
 const { sectionLabel } = useTopicSections()
 const deciding = ref('')
 
-const { data, problem, refresh } = await useApi(
+const { data, problem, pending, refresh } = useKunApi(
   () => `admin-section-requests:${props.state}`,
   (client, { signal }) =>
     client.GET('/admin/section-requests', {
@@ -46,6 +46,7 @@ const decide = async (
 <template>
   <div class="space-y-3">
     <KunNull v-if="problem" :description="problemMessage(problem)" />
+    <AdminListSkeleton v-else-if="pending" />
     <KunNull v-else-if="!items.length" description="没有申请" />
 
     <KunCard

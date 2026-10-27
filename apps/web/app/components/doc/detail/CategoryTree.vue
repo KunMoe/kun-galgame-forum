@@ -4,7 +4,7 @@ import { KUN_DOC_CATEGORIES, KUN_DOC_CATEGORY_MAP } from '~/constants/doc'
 
 const route = useRoute()
 
-const { docs } = await useAllDocs('published_desc')
+const { docs } = useAllDocs('published_desc')
 
 const expandedCategories = ref<Record<DocCategory, boolean>>({
   galgame: true,

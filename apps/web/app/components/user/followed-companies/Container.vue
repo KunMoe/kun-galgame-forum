@@ -7,16 +7,17 @@ const LIMIT = 24
 const pageData = reactive({ page: usePageQuery(), limit: LIMIT })
 const nameOf = useCatalogName()
 
-const { data, status, refresh, problem } = await useApi<FollowedCompanyList>(
-  () => `me-followed-companies:${pageData.page}:${pageData.limit}`,
-  (api, { signal }) =>
-    api.GET('/me/followed-companies', {
-      params: {
-        query: { page: pageData.page, limit: pageData.limit }
-      },
-      signal
-    })
-)
+const { data, status, pending, refresh, problem } =
+  useKunApi<FollowedCompanyList>(
+    () => `me-followed-companies:${pageData.page}:${pageData.limit}`,
+    (api, { signal }) =>
+      api.GET('/me/followed-companies', {
+        params: {
+          query: { page: pageData.page, limit: pageData.limit }
+        },
+        signal
+      })
+  )
 
 const officials = computed(() =>
   (data.value?.items ?? []).map((item) => companyItemOf(item.company, nameOf))
@@ -36,7 +37,8 @@ const onFollowChange = async (delta: number) => {
 
 <template>
   <div class="space-y-3">
-    <KunLoading :loading="status === 'pending' && !data">
+    <UserListSkeleton v-if="pending" shape="media" />
+    <template v-else>
       <div v-if="officials.length" class="flex flex-col gap-3">
         <div
           v-for="official in officials"
@@ -66,6 +68,6 @@ const onFollowChange = async (delta: number) => {
         v-else-if="status !== 'pending'"
         description="还没有关注任何厂商"
       />
-    </KunLoading>
+    </template>
   </div>
 </template>

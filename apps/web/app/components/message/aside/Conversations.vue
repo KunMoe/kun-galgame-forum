@@ -9,19 +9,18 @@ const {
   hasMore,
   loadingMore,
   loadMore,
+  pending,
   refresh: refreshConversations
-} = await useCursorList<Conversation>(
-  'me-conversations',
-  (api, cursor, { signal }) =>
-    api.GET('/me/conversations', {
-      params: {
-        query: {
-          limit: 50,
-          ...(cursor ? { cursor } : {})
-        }
-      },
-      signal
-    })
+} = useCursorList<Conversation>('me-conversations', (api, cursor, { signal }) =>
+  api.GET('/me/conversations', {
+    params: {
+      query: {
+        limit: 50,
+        ...(cursor ? { cursor } : {})
+      }
+    },
+    signal
+  })
 )
 
 watch(conversationEpoch, () => {
@@ -31,6 +30,9 @@ watch(conversationEpoch, () => {
 
 <template>
   <div class="space-y-3">
+    <template v-if="pending">
+      <MessageAsideItemSkeleton v-for="n in 4" :key="n" />
+    </template>
     <MessageAsideItem
       v-for="conversation in conversations"
       :key="conversation.id"

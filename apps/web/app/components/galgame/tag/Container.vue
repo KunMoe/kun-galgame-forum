@@ -29,9 +29,8 @@ const { showKUNGalgameAllOriginalLanguages } = storeToRefs(
 )
 const isSfwMode = computed(() => !allowsNsfw.value)
 
-const { data, status } = await useApi<TagPage>(
-  () =>
-    `tags:${selectedIds.value.length ? 1 : page.value}:${stanceKey.value}`,
+const { data, status, pending } = useKunApi<TagPage>(
+  () => `tags:${selectedIds.value.length ? 1 : page.value}:${stanceKey.value}`,
   (api) =>
     api.GET('/tags', {
       params: {
@@ -48,6 +47,7 @@ const searchResult = ref<GalgameTagItem[]>([])
 const searchQuery = ref('')
 const isSearching = ref(false)
 
+const tagsPending = computed(() => pending.value && !searchQuery.value.trim())
 const displayTags = computed(() =>
   searchQuery.value.trim()
     ? searchResult.value
@@ -204,7 +204,10 @@ const isBrowsing = computed(() => !selectedIds.value.length)
     </FilterBar>
 
     <template v-if="isBrowsing">
+      <GalgameEntityGridSkeleton v-if="tagsPending" />
+
       <div
+        v-else
         class="grid grid-cols-2 gap-3 sm:grid-cols-2 sm:gap-3 lg:grid-cols-3 xl:grid-cols-4"
       >
         <GalgameTagCard v-for="tag in displayTags" :key="tag.id" :tag="tag" />
@@ -213,7 +216,7 @@ const isBrowsing = computed(() => !selectedIds.value.length)
       <KunLoading v-if="isSearching" />
 
       <KunNull
-        v-else-if="!displayTags.length"
+        v-else-if="!displayTags.length && !tagsPending"
         :description="
           isSfwMode
             ? '没有匹配的标签。成人标签在 SFW 模式下搜不到, 请在设置面板打开 NSFW 开关'

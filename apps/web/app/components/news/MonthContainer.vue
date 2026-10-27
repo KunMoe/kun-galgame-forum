@@ -27,7 +27,7 @@ const { byKey: sources } = sourcesReady
 
 const monthPath = { year: props.year, month: props.month }
 
-const summaryReady = useApi(
+const summaryReady = useKunApi(
   () => `news-month:${props.year}-${props.month}:${lane.value}:${source.value}`,
   (api, { signal }) =>
     api.GET('/news-archive/{year}/{month}', {
@@ -35,7 +35,7 @@ const summaryReady = useApi(
       signal
     })
 )
-const itemsReady = useApi(
+const itemsReady = useKunApi(
   () =>
     `news-month-items:${props.year}-${props.month}:${lane.value}:${source.value}:${day.value}:${page.value}`,
   (api, { signal }) =>
@@ -52,7 +52,7 @@ const itemsReady = useApi(
       signal
     })
 )
-const archiveReady = useApi(
+const archiveReady = useKunApi(
   () => `news-archive:${lane.value}:${source.value}:${props.year}`,
   (api, { signal }) =>
     api.GET('/news-archive', {

@@ -79,7 +79,7 @@ const listQuery = computed(() => {
   return query
 })
 
-const { data, status, problem, refresh } = await useApi<PageListQuizSummary>(
+const { data, status, problem, pending, refresh } = useKunApi<PageListQuizSummary>(
   () =>
     activeTab.value === 'mine'
       ? `me-answered-quizzes:${page.value}:${limit}`
@@ -190,6 +190,7 @@ const onPublished = () => {
     </div>
 
     <KunNull v-if="problem" :description="problemMessage(problem)" />
+    <GalgameQuizListSkeleton v-else-if="pending" />
     <GalgameQuizList
       v-else-if="data && data.items.length"
       :quizzes="data.items"

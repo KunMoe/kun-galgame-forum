@@ -7,10 +7,10 @@ const chatEnabled = useRuntimeConfig().public.chatEnabled
 
 const noticeEpoch = useState('message-notice-epoch', () => 0)
 
-const { data: summary, refresh: refreshSummary } = await useApi<NotificationSummary>(
-  'me-notification-summary',
-  (api, { signal }) => api.GET('/me/notifications/summary', { signal })
-)
+const { data: summary, refresh: refreshSummary } =
+  useKunApi<NotificationSummary>('me-notification-summary', (api, { signal }) =>
+    api.GET('/me/notifications/summary', { signal })
+  )
 
 watch(noticeEpoch, () => {
   void refreshSummary()

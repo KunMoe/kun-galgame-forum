@@ -21,7 +21,7 @@ const {
   loadingMore,
   status,
   problem
-} = await useCursorList<PollVote>(
+} = useCursorList<PollVote>(
   () => `poll-votes:${props.pollId}`,
   (api, cursor) =>
     api.GET('/polls/{poll_id}/votes', {
@@ -38,11 +38,8 @@ const {
     <div class="space-y-3">
       <h2 class="text-xl font-bold">投票记录</h2>
 
-      <div
-        v-if="status === 'pending' && !votes.length"
-        class="flex justify-center py-8"
-      >
-        <KunLoading description="正在加载记录..." />
+      <div v-if="status === 'pending' && !votes.length" class="space-y-4">
+        <ActivityCardSkeleton v-for="n in 4" :key="n" />
       </div>
 
       <KunNull v-else-if="problem" :description="problemMessage(problem)" />

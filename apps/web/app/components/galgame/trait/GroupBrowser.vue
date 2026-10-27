@@ -16,11 +16,14 @@ const group = defineModel<string>('group', { default: '' })
 
 const { allowsNsfw, stanceKey } = useContentStance()
 
-const { data: roots } = await useApi<TraitPage>(
+// Awaited for the server: the tree's key comes from the roots, and SSR does
+// not refetch when a key changes after setup.
+const { data: roots, pending: rootsPending } = await useKunApi<TraitPage>(
   () => `trait-roots:${stanceKey.value}`,
-  (api) =>
+  (api, { signal }) =>
     api.GET('/traits', {
-      params: { query: { include_nsfw: allowsNsfw.value } }
+      params: { query: { include_nsfw: allowsNsfw.value } },
+      signal
     })
 )
 
@@ -38,16 +41,20 @@ const tabs = computed(() =>
   }))
 )
 
-const { data: tree, status } = await useApi<Trait>(
+const { data: tree, pending: treePending } = useKunApi<Trait>(
   () => `trait-tree:${activeId.value}:${stanceKey.value}`,
-  (api) =>
-    api.GET('/traits/{trait_id}', {
-      params: {
-        path: { trait_id: activeId.value },
-        query: { include_nsfw: allowsNsfw.value }
-      }
-    })
+  (api, { signal }) =>
+    activeId.value
+      ? api.GET('/traits/{trait_id}', {
+          params: {
+            path: { trait_id: activeId.value },
+            query: { include_nsfw: allowsNsfw.value }
+          },
+          signal
+        })
+      : Promise.resolve({ response: new Response(null, { status: 200 }) })
 )
+const pending = computed(() => rootsPending.value || treePending.value)
 
 const sections = computed(() =>
   tree.value ? traitSections(tree.value.id, tree.value.subtraits) : []
@@ -73,7 +80,9 @@ const isPicked = (t: TraitSummary) => !!props.pickedIds?.includes(Number(t.id))
       @update:model-value="group = String($event)"
     />
 
-    <KunLoading :loading="status === 'pending'">
+    <GalgameTraitGroupSkeleton v-if="pending" />
+
+    <template v-else>
       <div v-if="sections.length" class="space-y-4">
         <div v-if="leaves.length" class="flex flex-wrap gap-1.5">
           <GalgameTraitChip
@@ -117,7 +126,7 @@ const isPicked = (t: TraitSummary) => !!props.pickedIds?.includes(Number(t.id))
       </div>
 
       <KunNull v-else description="这个分组下暂无属性" />
-    </KunLoading>
+    </template>
 
     <p v-if="!allowsNsfw" class="text-default-400 text-xs">
       当前为 SFW 模式, 成人向属性与「主动(性) / 被动(性)」分组已隐藏。如需查看,

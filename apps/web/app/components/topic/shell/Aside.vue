@@ -6,7 +6,7 @@ const ASIDE_LIMIT = 6
 const { allowsNsfw } = useContentStance()
 
 const list = (sort: 'created_desc' | 'views_7d_desc') =>
-  useApi(
+  useKunApi(
     () => `topic-aside:${sort}:${allowsNsfw.value ? 'nsfw' : 'sfw'}`,
     (api, { signal }) =>
       api.GET('/topics', {

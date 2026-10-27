@@ -58,8 +58,9 @@ const {
   data: monthData,
   status: monthStatus,
   refresh: refreshMonth,
-  problem: monthProblem
-} = await useApi<ReleaseCalendarMonth>(
+  problem: monthProblem,
+  pending: monthLoading
+} = useKunApi<ReleaseCalendarMonth>(
   () =>
     `release-calendar:${month.value}:${stanceKey.value}:${includeDoujin.value}:${followedOnly.value}:${blockKey.value}`,
   (api, { signal }) => {
@@ -94,8 +95,9 @@ const {
   data: upcomingData,
   status: upcomingStatus,
   refresh: refreshUpcoming,
-  problem: upcomingProblem
-} = await useApi<ReleaseCalendarUpcoming>(
+  problem: upcomingProblem,
+  pending: upcomingLoading
+} = useKunApi<ReleaseCalendarUpcoming>(
   () =>
     `release-calendar-upcoming:${stanceKey.value}:${includeDoujin.value}:${followedOnly.value}:${blockKey.value}`,
   (api, { signal }) => {
@@ -125,8 +127,9 @@ const {
   data: pendingData,
   status: pendingStatus,
   refresh: refreshPending,
-  problem: pendingProblem
-} = await useApi<ReleaseCalendarPending>(
+  problem: pendingProblem,
+  pending: pendingLoading
+} = useKunApi<ReleaseCalendarPending>(
   () =>
     `release-calendar-pending:${year.value}:${stanceKey.value}:${includeDoujin.value}:${followedOnly.value}:${blockKey.value}`,
   (api, { signal }) => {
@@ -161,8 +164,9 @@ const {
   data: tbaData,
   status: tbaStatus,
   refresh: refreshTba,
-  problem: tbaProblem
-} = await useApi<ReleaseCalendarTBA>(
+  problem: tbaProblem,
+  pending: tbaLoading
+} = useKunApi<ReleaseCalendarTBA>(
   () =>
     `release-calendar-tba:${stanceKey.value}:${includeDoujin.value}:${followedOnly.value}:${blockKey.value}`,
   (api, { signal }) => {
@@ -279,7 +283,9 @@ const goNextYear = () => {
         </span>
       </div>
 
-      <KunLoading :loading="upcomingStatus === 'pending'">
+      <GalgameCardGridSkeleton v-if="upcomingLoading" />
+
+      <KunLoading v-else :loading="upcomingStatus === 'pending'">
         <template v-if="upcomingData">
           <div v-if="upcomingData.entries.length" class="flex flex-col gap-6">
             <section
@@ -344,7 +350,9 @@ const goNextYear = () => {
         作品过多，未全部列出
       </p>
 
-      <KunLoading :loading="pendingStatus === 'pending'">
+      <GalgameCardGridSkeleton v-if="pendingLoading" />
+
+      <KunLoading v-else :loading="pendingStatus === 'pending'">
         <template v-if="pendingData">
           <GalgameCard
             v-if="pendingData.items.length"
@@ -382,7 +390,9 @@ const goNextYear = () => {
         作品过多，未全部列出
       </p>
 
-      <KunLoading :loading="tbaStatus === 'pending'">
+      <GalgameCardGridSkeleton v-if="tbaLoading" />
+
+      <KunLoading v-else :loading="tbaStatus === 'pending'">
         <template v-if="tbaData">
           <GalgameCard
             v-if="tbaData.items.length"
@@ -403,7 +413,12 @@ const goNextYear = () => {
     </template>
 
     <template v-else>
-      <KunLoading :loading="monthStatus === 'pending'">
+      <div v-if="monthLoading" class="flex flex-col gap-3">
+        <KunSkeleton height="3.25rem" rounded="lg" />
+        <GalgameCardGridSkeleton />
+      </div>
+
+      <KunLoading v-else :loading="monthStatus === 'pending'">
         <template v-if="monthData">
           <GalgameCalendarMonth
             v-if="monthData.items.length || !followedOnly"

@@ -25,7 +25,7 @@ const pageData = reactive({
   limit: 50
 })
 
-const { data, status } = await useApi<PageListUserReplyItem>(
+const { data, status, pending } = useKunApi<PageListUserReplyItem>(
   () =>
     `user-replies:${props.userId}:${relation.value}:${pageData.page}:${pageData.limit}:${includeNsfw.value ? 'nsfw' : 'sfw'}`,
   (client, { signal }) =>
@@ -54,6 +54,7 @@ const { data, status } = await useApi<PageListUserReplyItem>(
       scrollable
     />
 
+    <UserListSkeleton v-if="pending" />
     <div v-if="data" class="flex flex-col space-y-3">
       <KunCard
         v-for="(reply, index) in data.items"

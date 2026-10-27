@@ -32,9 +32,10 @@ const { sort, page } = useQueryState(
 
 const {
   data: detail,
-  status: detailStatus,
+  problem,
+  pending,
   refresh
-} = await useApi<Collection>(
+} = useKunApi<Collection>(
   () => `collection:${collectionId.value}:${stanceKey.value}`,
   (client, { signal }) =>
     client.GET('/collections/{collection_id}', {
@@ -46,7 +47,11 @@ const {
     })
 )
 
-const { data: works, status: worksStatus } = await useApi<WorkPage>(
+const {
+  data: works,
+  status: worksStatus,
+  pending: worksPending
+} = useKunApi<WorkPage>(
   () =>
     `collection-works:${collectionId.value}:${sort.value}:${page.value}:${limit}:${stanceKey.value}`,
   (client, { signal }) =>
@@ -83,14 +88,15 @@ const displayDescription = computed(() =>
     : ''
 )
 
-if (detail.value) {
-  useKunSeoMeta({
-    title: displayName.value,
-    description: displayDescription.value || `${displayName.value}`
-  })
-} else {
-  useKunDisableSeo('未找到该收藏夹')
-}
+useKunSeoMeta(() => {
+  if (detail.value) {
+    return {
+      title: displayName.value,
+      description: displayDescription.value || displayName.value
+    }
+  }
+  return problem.value ? { noindex: true, title: '未找到该收藏夹' } : {}
+})
 
 const hiddenCount = computed(() =>
   detail.value && works.value
@@ -215,7 +221,12 @@ const remove = async () => {
         />
       </div>
 
-      <div v-if="works && works.items.length" class="flex flex-col space-y-3">
+      <GalgameCardGridSkeleton v-if="worksPending" />
+
+      <div
+        v-else-if="works && works.items.length"
+        class="flex flex-col space-y-3"
+      >
         <GalgameCard :is-transparent="false" :galgames="galgames" />
         <KunPagination
           v-if="works.total > limit"
@@ -241,9 +252,15 @@ const remove = async () => {
       />
     </div>
 
-    <KunNull
-      v-else-if="detailStatus !== 'pending'"
-      description="收藏夹不存在或你没有权限查看"
-    />
+    <div v-else-if="pending" class="space-y-6" aria-hidden="true">
+      <div class="space-y-2">
+        <KunSkeleton variant="text" width="14rem" class-name="text-2xl" />
+        <KunSkeleton variant="text" width="50%" />
+        <KunSkeleton variant="text" width="16rem" class-name="text-sm" />
+      </div>
+      <GalgameCardGridSkeleton />
+    </div>
+
+    <KunNull v-else description="收藏夹不存在或你没有权限查看" />
   </div>
 </template>

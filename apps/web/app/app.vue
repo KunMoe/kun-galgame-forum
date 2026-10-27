@@ -4,7 +4,7 @@ import { kunFeedUrl } from '#shared/utils/feedUrl'
 
 const { isOpen: isAuthModalOpen } = useAuthModal()
 
-await useTopicSections()
+useTopicSections()
 
 const route = useRoute()
 const config = useRuntimeConfig()

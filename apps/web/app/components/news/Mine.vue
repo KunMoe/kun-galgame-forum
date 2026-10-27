@@ -4,8 +4,8 @@ import { KUN_NEWS_SUBMISSION_STATE_MAP } from '~/constants/news'
 
 const api = useApiClient()
 
-const { items, hasMore, loadingMore, loadMore, problem, status } =
-  await useCursorList<KunNewsSubmission>(
+const { items, hasMore, loadingMore, loadMore, problem, status, pending } =
+  useCursorList<KunNewsSubmission>(
     'my-news-submissions',
     (client, cursor, { signal }) =>
       client.GET('/me/news-submissions', {
@@ -62,8 +62,10 @@ const handleWithdraw = async (item: KunNewsSubmission) => {
       </template>
     </KunHeader>
 
+    <NewsCardSkeletonList v-if="pending" height="9rem" />
+
     <KunInfo
-      v-if="problem"
+      v-else-if="problem"
       color="danger"
       title="加载失败"
       description="暂时无法获取你的投稿，请稍后重试。"

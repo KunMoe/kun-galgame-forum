@@ -15,8 +15,8 @@ const query = computed(() => ({
   limit: 50
 }))
 
-const { items, status, hasMore, loadingMore, loadMore } =
-  await useCursorList<Activity>(
+const { items, status, pending, hasMore, loadingMore, loadMore } =
+  useCursorList<Activity>(
     () => `activities:${JSON.stringify(query.value)}`,
     (api, cursor, { signal }) =>
       api.GET('/activities', {
@@ -42,8 +42,12 @@ useIntersectionObserver(
       description="动态时间线, 展示全站 话题, 回复, Galgame 与社区的最新 Galgame 资源, Galgame 动态, Galgame 讨论, Galgame 评论等"
     />
 
+    <div v-if="pending" class="space-y-6">
+      <ActivityCardSkeleton v-for="n in 6" :key="n" />
+    </div>
+
     <KunNull
-      v-if="status !== 'pending' && !items.length"
+      v-else-if="status !== 'pending' && !items.length"
       description="暂无动态"
     />
 

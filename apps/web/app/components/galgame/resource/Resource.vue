@@ -82,7 +82,7 @@ const guideAuthor = computed<KunUser>(() => {
 })
 onMounted(loadGuideAuthor)
 
-const { data, status, refresh, problem } = await useApi<GalgameResource[]>(
+const { data, status, refresh, problem, pending } = useKunApi<GalgameResource[]>(
   () => `work-resources:${workId.value}`,
   async (api, { signal }) => {
     const limit = 100
@@ -118,7 +118,9 @@ const { data, status, refresh, problem } = await useApi<GalgameResource[]>(
     return { data: shuffle(items), response: first.response }
   }
 )
-watchEffect(() => emit('update:loading', status.value === 'pending'))
+watchEffect(() =>
+  emit('update:loading', status.value === 'pending' && !pending.value)
+)
 
 useHead({
   link: computed(() =>
@@ -135,7 +137,7 @@ useHead({
   )
 })
 
-const { data: letmoe, status: letmoeStatus } = useApi<ListLetmoeResource>(
+const { data: letmoe, status: letmoeStatus } = useKunApi<ListLetmoeResource>(
   () => `work-letmoe-resources:${workId.value}`,
   async (api, { signal }) => {
     const result = await api.GET('/works/{work_id}/letmoe-resources', {
@@ -429,6 +431,6 @@ const activeBucket = computed(() =>
       </template>
     </template>
 
-    <KunLoading v-if="isLoading" />
+    <GalgamePanelSkeleton v-if="isLoading" />
   </div>
 </template>

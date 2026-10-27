@@ -25,7 +25,7 @@ const namesOf = useCatalogName()
 
 const workId = computed(() => String((route.params as { id: string }).id))
 
-let movedTo: number | null = null
+const movedTo = ref<number | null>(null)
 const deletion = useState<EntityDeletion | null>(
   `work-deletion:${workId.value}`,
   () => null
@@ -38,7 +38,7 @@ const deletionText = computed(() => {
   const when = d.at ? ` (${d.at.slice(0, 10)})` : ''
   return `这部作品已被删除: ${deletionReasonLabel(d.reason)}${when}`
 })
-const { data, problem } = await useApi<Work>(
+const { data, problem, pending } = await useKunApi<Work>(
   () => `work:${workId.value}:${stanceKey.value}`,
   async (api, { signal }) => {
     const res = await api.GET('/works/{work_id}', {
@@ -48,28 +48,30 @@ const { data, problem } = await useApi<Work>(
       },
       signal
     })
-    movedTo = mergedInto(res.error)
+    movedTo.value = mergedInto(res.error)
     deletion.value = entityDeletion(res.error)
     return res
   }
 )
 
-if (movedTo) {
-  await navigateTo(`/galgame/${movedTo}`, {
-    redirectCode: 301,
-    replace: true
-  })
-} else if (deletion.value) {
-  if (import.meta.server) {
-    setResponseStatus(useRequestEvent()!, 410)
-  }
-} else if (problem.value?.status === 404) {
-  throw createError({
-    statusCode: 404,
-    statusMessage: '未找到这个 Galgame',
-    fatal: true
-  })
+const redirectToMerged = (id: number) =>
+  navigateTo(`/galgame/${id}`, { redirectCode: 301, replace: true })
+
+if (movedTo.value) {
+  await redirectToMerged(movedTo.value)
+} else if (deletion.value && import.meta.server) {
+  setResponseStatus(useRequestEvent()!, 410)
 }
+watch(movedTo, (id) => {
+  if (id) {
+    redirectToMerged(id)
+  }
+})
+useKunNotFound(
+  () =>
+    problem.value?.status === 404 && !movedTo.value && !deletion.value,
+  '未找到这个 Galgame'
+)
 
 // Being signed in used to be enough on its own, which showed every NSFW
 // detail page to a reader who had never asked for one. The account's stance
@@ -82,153 +84,163 @@ const isShowGalgame = computed(
   () => !data.value?.is_nsfw || allowsNsfw.value || revealed.value
 )
 
-const galgame = data.value
+const indexable = computed(() => {
+  const galgame = data.value
+  return galgame && galgame.is_published && !galgame.is_nsfw ? galgame : null
+})
 
-if (galgame) {
-  const nsfw = galgame.is_nsfw
+const seo = computed(() => {
+  const galgame = indexable.value
+  if (!galgame) {
+    return null
+  }
+  const { name: titleBase, original } = namesOf(galgame)
+  const title = original ? `${titleBase} | ${original}` : titleBase
+  const pageUrl = `${kungal.domain.main}${route.path}`
 
-  if (!galgame.is_published || nsfw) {
-    useKunDisableSeo(nameOf(galgame))
-  } else {
-    const { name: titleBase, original } = namesOf(galgame)
-    const title = original ? `${titleBase} | ${original}` : titleBase
-    const pageUrl = `${kungal.domain.main}${route.path}`
+  const developer = galgame.companies[0]
+    ? namesOf(galgame.companies[0]).name
+    : ''
+  const releaseYear = galgame.release_date
+    ? new Date(galgame.release_date).getFullYear()
+    : undefined
+  const platformText = galgame.resource_platforms
+    .slice(0, 3)
+    .map((platform) => resourcePlatformLabel(platform))
+    .join('、')
+  // The API hands over every spoiler level so the tag panel can filter on the
+  // client; anything a search engine indexes has to stay at none.
+  const safeTags = galgame.tags.filter((t) => t.spoiler === 'none')
+  const contentGenres = safeTags
+    .filter((t) => t.tag_kind === 'content')
+    .map((t) => catalogVocabularyName(t))
+  const fallbackDescription =
+    `《${titleBase}》是一款${developer ? `由 ${developer} 开发的 ` : ''}Galgame（视觉小说）` +
+    `${releaseYear ? `，${releaseYear} 年发售` : ''}` +
+    `${platformText ? `，登陆 ${platformText}` : ''}` +
+    `${contentGenres.length ? `，题材包括${contentGenres.slice(0, 3).join('、')}` : ''}` +
+    `。本页收录其基本资料、制作 Staff、登场角色与声优, 以及玩家评分与评价。`
 
-    const developer = galgame.companies[0]
-      ? namesOf(galgame.companies[0]).name
-      : ''
-    const releaseYear = galgame.release_date
-      ? new Date(galgame.release_date).getFullYear()
-      : undefined
-    const platformText = galgame.resource_platforms
-      .slice(0, 3)
-      .map((platform) => resourcePlatformLabel(platform))
-      .join('、')
-    // The API hands over every spoiler level so the tag panel can filter on the
-    // client; anything a search engine indexes has to stay at none.
-    const safeTags = galgame.tags.filter((t) => t.spoiler === 'none')
-    const contentGenres = safeTags
-      .filter((t) => t.tag_kind === 'content')
+  const introText = truncateRunes(
+    markdownToText(pickCatalogIntro(galgame.intros)?.value ?? ''),
+    175
+  )
+  const description = introText || fallbackDescription
+
+  const jsonLd: WithContext<VideoGame> = {
+    '@context': 'https://schema.org',
+    '@type': 'VideoGame',
+    name: titleBase,
+    alternateName: [...(original ? [original] : []), ...galgame.aliases],
+    url: pageUrl,
+    image: galgame.banner?.url || galgame.cover?.url,
+    description: description,
+    inLanguage: galgame.original_language ?? undefined,
+    datePublished: galgame.release_date || galgame.created_at,
+    dateModified: galgame.updated_at,
+    publisher: galgame.companies.map((company) => ({
+      '@type': 'Organization',
+      name: namesOf(company).name
+    })),
+
+    genre: contentGenres,
+    keywords: safeTags
+      .filter((t) => t.tag_kind === 'meta')
       .map((t) => catalogVocabularyName(t))
-    const fallbackDescription =
-      `《${titleBase}》是一款${developer ? `由 ${developer} 开发的 ` : ''}Galgame（视觉小说）` +
-      `${releaseYear ? `，${releaseYear} 年发售` : ''}` +
-      `${platformText ? `，登陆 ${platformText}` : ''}` +
-      `${contentGenres.length ? `，题材包括${contentGenres.slice(0, 3).join('、')}` : ''}` +
-      `。本页收录其基本资料、制作 Staff、登场角色与声优, 以及玩家评分与评价。`
+      .join(', '),
 
-    const introText = truncateRunes(
-      markdownToText(pickCatalogIntro(galgame.intros)?.value ?? ''),
-      175
-    )
-    const description = introText || fallbackDescription
+    ...(galgame.resource_platforms.length && {
+      gamePlatform: galgame.resource_platforms.map((platform) =>
+        resourcePlatformLabel(platform)
+      )
+    }),
 
-    const jsonLd: WithContext<VideoGame> = {
-      '@context': 'https://schema.org',
-      '@type': 'VideoGame',
-      name: titleBase,
-      alternateName: [...(original ? [original] : []), ...galgame.aliases],
-      url: pageUrl,
-      image: galgame.banner?.url || galgame.cover?.url,
-      description: description,
-      inLanguage: galgame.original_language ?? undefined,
-      datePublished: galgame.release_date || galgame.created_at,
-      dateModified: galgame.updated_at,
-      publisher: galgame.companies.map((company) => ({
-        '@type': 'Organization',
-        name: namesOf(company).name
-      })),
-
-      genre: contentGenres,
-      keywords: safeTags
-        .filter((t) => t.tag_kind === 'meta')
-        .map((t) => catalogVocabularyName(t))
-        .join(', '),
-
-      ...(galgame.resource_platforms.length && {
-        gamePlatform: galgame.resource_platforms.map((platform) =>
-          resourcePlatformLabel(platform)
-        )
+    ...(galgame.rating_count &&
+      galgame.rating_score != null && {
+        aggregateRating: {
+          '@type': 'AggregateRating',
+          ratingValue: Number(galgame.rating_score.toFixed(1)),
+          ratingCount: galgame.rating_count,
+          bestRating: 10,
+          worstRating: 1
+        }
       }),
 
-      ...(galgame.rating_count &&
-        galgame.rating_score != null && {
-          aggregateRating: {
-            '@type': 'AggregateRating',
-            ratingValue: Number(galgame.rating_score.toFixed(1)),
-            ratingCount: galgame.rating_count,
-            bestRating: 10,
-            worstRating: 1
-          }
-        }),
-
-      interactionStatistic: [
-        {
-          '@type': 'InteractionCounter',
-          interactionType: {
-            '@type': 'LikeAction'
-          },
-          userInteractionCount: galgame.like_count
+    interactionStatistic: [
+      {
+        '@type': 'InteractionCounter',
+        interactionType: {
+          '@type': 'LikeAction'
         },
-        {
-          '@type': 'InteractionCounter',
-          interactionType: {
-            '@type': 'WatchAction'
-          },
-          userInteractionCount: galgame.view_count
+        userInteractionCount: galgame.like_count
+      },
+      {
+        '@type': 'InteractionCounter',
+        interactionType: {
+          '@type': 'WatchAction'
+        },
+        userInteractionCount: galgame.view_count
+      }
+    ],
+
+    ...(galgame.creator
+      ? {
+          author: {
+            '@type': 'Person',
+            name: galgame.creator.name ?? deletedUserName
+          } satisfies Person
         }
-      ],
+      : {}),
+    contributor: galgame.contributors.map((c) => ({
+      '@type': 'Person',
+      name: c.name ?? deletedUserName
+    })) satisfies Person[]
+  }
 
-      ...(galgame.creator
-        ? {
-            author: {
-              '@type': 'Person',
-              name: galgame.creator.name ?? deletedUserName
-            } satisfies Person
-          }
-        : {}),
-      contributor: galgame.contributors.map((c) => ({
-        '@type': 'Person',
-        name: c.name ?? deletedUserName
-      })) satisfies Person[]
-    }
+  const breadcrumbLd: WithContext<BreadcrumbList> = {
+    '@context': 'https://schema.org',
+    '@type': 'BreadcrumbList',
+    itemListElement: [
+      {
+        '@type': 'ListItem',
+        position: 1,
+        name: '首页',
+        item: kungal.domain.main
+      },
+      {
+        '@type': 'ListItem',
+        position: 2,
+        name: 'Galgame',
+        item: `${kungal.domain.main}/galgame`
+      },
+      { '@type': 'ListItem', position: 3, name: titleBase, item: pageUrl }
+    ]
+  }
 
-    const breadcrumbLd: WithContext<BreadcrumbList> = {
-      '@context': 'https://schema.org',
-      '@type': 'BreadcrumbList',
-      itemListElement: [
-        {
-          '@type': 'ListItem',
-          position: 1,
-          name: '首页',
-          item: kungal.domain.main
-        },
-        {
-          '@type': 'ListItem',
-          position: 2,
-          name: 'Galgame',
-          item: `${kungal.domain.main}/galgame`
-        },
-        { '@type': 'ListItem', position: 3, name: titleBase, item: pageUrl }
-      ]
-    }
+  return { galgame, title, description, jsonLd, breadcrumbLd }
+})
 
-    useHead({
-      script: [
+useHead(() => ({
+  script: seo.value
+    ? [
         {
           id: 'schema-org-video-game',
           type: 'application/ld+json',
-          innerHTML: jsonLd
+          innerHTML: seo.value.jsonLd
         },
         {
           id: 'schema-org-breadcrumb',
           type: 'application/ld+json',
-          innerHTML: breadcrumbLd
+          innerHTML: seo.value.breadcrumbLd
         }
       ]
-    })
+    : []
+}))
 
-    useKunSeoMeta({
+useKunSeoMeta(() => {
+  if (seo.value) {
+    const { galgame, title, description } = seo.value
+    return {
       title,
       description,
       ogCard: { kind: 'galgame', id: Number(galgame.id) },
@@ -239,11 +251,13 @@ if (galgame) {
         : {}),
       articlePublishedTime: galgame.created_at,
       articleModifiedTime: galgame.updated_at
-    })
+    }
   }
-} else {
-  useKunDisableSeo('请求 Galgame 错误')
-}
+  if (data.value) {
+    return { noindex: true, title: nameOf(data.value) }
+  }
+  return problem.value ? { noindex: true, title: '请求 Galgame 错误' } : {}
+})
 </script>
 
 <template>
@@ -253,6 +267,8 @@ if (galgame) {
 
       <KunNsfwGate v-else noun="Galgame" @reveal="revealed = true" />
     </div>
+
+    <GalgameDetailSkeleton v-else-if="pending" />
 
     <KunNull v-else-if="deletion" :description="deletionText" />
 

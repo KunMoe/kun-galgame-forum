@@ -26,7 +26,7 @@ const {
   handleUpdated,
   handleTombstoned,
   scrollToPost
-} = await useCommunityCommentList(target)
+} = useCommunityCommentList(target)
 
 const onPublished = (post: WallComment) => {
   handleNewComment(post)
@@ -58,7 +58,7 @@ const onPublished = (post: WallComment) => {
 
     <CommentCommunityComposer :target="target" @submitted="onPublished" />
 
-    <KunLoading v-if="status === 'pending' && !seeded" />
+    <CommentCommunityListSkeleton v-if="!seeded" />
 
     <KunNull
       v-else-if="loadFailed"

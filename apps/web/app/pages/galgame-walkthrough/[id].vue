@@ -4,7 +4,7 @@ import type { Walkthrough } from '#shared/utils/api/schemas'
 const route = useRoute()
 const walkthroughId = String((route.params as { id: string }).id)
 
-const { data, problem } = await useApi<Walkthrough>(
+const { data, problem } = await useKunApi<Walkthrough>(
   () => `walkthrough:${walkthroughId}`,
   (api, { signal }) =>
     api.GET('/walkthroughs/{walkthrough_id}', {
@@ -13,22 +13,37 @@ const { data, problem } = await useApi<Walkthrough>(
     })
 )
 
-if (data.value) {
-  await navigateTo(
+const redirect = (walkthrough: Walkthrough) =>
+  navigateTo(
     {
-      path: `/galgame/${data.value.work_id}/walkthrough/${walkthroughId}`,
+      path: `/galgame/${walkthrough.work_id}/walkthrough/${walkthroughId}`,
       query: route.query,
       hash: route.hash
     },
     { redirectCode: 301, replace: true }
   )
-} else {
-  throw createError({
+const unavailable = () =>
+  createError({
     statusCode: (problem.value?.status ?? 0) >= 500 ? 503 : 404,
     statusMessage: '未找到这份攻略',
     fatal: true
   })
+
+if (data.value) {
+  await redirect(data.value)
+} else if (import.meta.server) {
+  throw unavailable()
 }
+watch(data, (walkthrough) => {
+  if (walkthrough) {
+    redirect(walkthrough)
+  }
+})
+watch(problem, (failed) => {
+  if (failed) {
+    showError(unavailable())
+  }
+})
 </script>
 
 <template>
