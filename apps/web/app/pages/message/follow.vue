@@ -38,7 +38,7 @@ const items = ref<FollowedWall[]>([])
 const nextCursor = ref<string | undefined>()
 const loadingMore = ref(false)
 
-const { data, status } = await useApi('me-walls', (client, { signal }) =>
+const { data, status, pending } = useKunApi('me-walls', (client, { signal }) =>
   client.GET('/me/walls', { params: { query: { limit: 30 } }, signal })
 )
 
@@ -105,7 +105,7 @@ const unfollow = async (item: FollowedWall) => {
 
     <h3 class="text-default-600 text-sm font-medium">关注的评论区</h3>
 
-    <KunLoading v-if="status === 'pending' && !items.length" />
+    <UserListSkeleton v-if="pending && !items.length" :rows="3" />
 
     <div v-else-if="items.length" class="space-y-2">
       <KunCard

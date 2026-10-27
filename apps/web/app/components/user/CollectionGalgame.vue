@@ -11,7 +11,7 @@ const { allowsNsfw, stanceKey } = useContentStance()
 const page = usePageQuery()
 const limit = 24
 
-const { data, status } = await useApi<PageListCollectionSummary>(
+const { data, status, pending } = useKunApi<PageListCollectionSummary>(
   () =>
     `user-collections:${props.userId}:${page.value}:${limit}:${stanceKey.value}`,
   (api, { signal }) =>
@@ -31,6 +31,7 @@ const { data, status } = await useApi<PageListCollectionSummary>(
 
 <template>
   <div class="space-y-3">
+    <UserCollectionGridSkeleton v-if="pending" />
     <div v-if="data && data.items.length" class="flex flex-col space-y-3">
       <div class="grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-4">
         <GalgameCollectionCard

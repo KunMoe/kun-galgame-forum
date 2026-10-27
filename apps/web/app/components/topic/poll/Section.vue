@@ -20,7 +20,7 @@ const isModalOpen = ref(false)
 const pollToEdit = ref<Poll | undefined>(undefined)
 const formToCreate = ref<PollFormData | undefined>(undefined)
 
-const { data, refresh } = await useApi(
+const { data, refresh } = useKunApi(
   () => `topic-polls:${topicId.value}`,
   (api, { signal }) =>
     api.GET('/topics/{topic_id}/polls', {

@@ -1,7 +1,7 @@
 // @vitest-environment nuxt
-import { describe, expect, it, vi } from 'vitest'
+import { afterEach, describe, expect, it, vi } from 'vitest'
 import { flushPromises } from '@vue/test-utils'
-import { mountSuspended, mockNuxtImport } from '@nuxt/test-utils/runtime'
+import { mountSuspended } from '@nuxt/test-utils/runtime'
 import MergeFolds from '~/pages/admin/merge-folds.vue'
 
 const page = {
@@ -45,18 +45,26 @@ const page = {
   ]
 }
 
-const get = vi.hoisted(() => vi.fn())
-mockNuxtImport('useApiClient', () => () => ({ GET: get }))
+afterEach(() => {
+  vi.unstubAllGlobals()
+})
 
 describe('admin merge folds page', () => {
   it('lists folds and says which rows an undo could not put back', async () => {
-    get.mockResolvedValue({ data: page, response: new Response() })
+    const fetchSpy = vi.fn(
+      async (_request: Request) =>
+        new Response(JSON.stringify(page), {
+          headers: { 'content-type': 'application/json' }
+        })
+    )
+    vi.stubGlobal('fetch', fetchSpy)
     const wrapper = await mountSuspended(MergeFolds)
     await flushPromises()
 
-    expect(get).toHaveBeenCalledWith('/admin/work-merge-folds', {
-      params: { query: { page: 1, limit: 20 } }
-    })
+    const url = new URL(fetchSpy.mock.calls[0]![0].url)
+    expect(url.pathname).toMatch(/\/admin\/work-merge-folds$/)
+    expect(url.searchParams.get('page')).toBe('1')
+    expect(url.searchParams.get('limit')).toBe('20')
     const text = wrapper.text()
     expect(text).toContain('已撤销')
     expect(text).toContain('生效中')

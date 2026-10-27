@@ -14,7 +14,7 @@ const route = useRoute()
 
 const userId = computed(() => (route.params as { id: string }).id)
 
-const { data, problem } = await useApi<UserProfile>(
+const { data, problem, pending } = useKunApi<UserProfile>(
   () => `user:${userId.value}`,
   (api, { signal }) =>
     api.GET('/users/{user_id}', {
@@ -69,16 +69,15 @@ const activeGroup = computed(() => userSegmentGroup(activeSegment.value))
 const goToSegment = (seg: string) =>
   navigateTo(userSegmentHref(Number(userId.value), seg))
 
-if (data.value) {
-  useKunSeoMeta({
-    title: data.value.name ?? '',
-    description: data.value.bio ?? ''
-  })
-} else if (isSignInRequired.value) {
-  useKunDisableSeo('登录后查看该用户')
-} else {
-  useKunDisableSeo('未找到该用户')
-}
+useKunSeoMeta(() => {
+  if (data.value) {
+    return { title: data.value.name ?? '', description: data.value.bio ?? '' }
+  }
+  if (isSignInRequired.value) {
+    return { noindex: true, title: '登录后查看该用户' }
+  }
+  return problem.value ? { noindex: true, title: '未找到该用户' } : {}
+})
 </script>
 
 <template>
@@ -136,6 +135,8 @@ if (data.value) {
         </div>
       </div>
     </template>
+
+    <UserProfileSkeleton v-else-if="pending" />
 
     <div
       v-else-if="isSignInRequired"

@@ -25,7 +25,7 @@ const { isEdit } = storeToRefs(useTempReplyStore())
 const topicId = computed(() => (route.params as { id: string }).id)
 provide('topicId', Number(topicId.value))
 
-const { data, problem, refresh } = await useApi<Topic>(
+const { data, problem, pending, refresh } = useKunApi<Topic>(
   () => `topic:${topicId.value}`,
   (api, { signal }) =>
     api.GET('/topics/{topic_id}', {
@@ -72,119 +72,117 @@ onBeforeMount(() => {
   isEdit.value = false
 })
 
-if (data.value) {
-  const topic = data.value
+const describe = (topic: Topic) =>
+  topic.ai_summary || truncateRunes(contentPlainText(topic.content).trim(), 233)
+
+const jsonLdOf = (topic: Topic): WithContext<DiscussionForumPosting> => {
+  const topicUrl = `${kungal.domain.main}/topic/${topic.id}`
   const author = toKunUser(topic.author)
-  const banner =
-    topic.cover_images[0]?.url ||
-    firstImageUrl(topic.content) ||
-    `${kungal.domain.main}/kungalgame.webp`
-  const created = new Date(topic.created_at).toString()
-  const updated = topic.edited_at ? new Date(topic.edited_at).toString() : ''
-  const description = computed(
-    () =>
-      topic.ai_summary ||
-      truncateRunes(contentPlainText(topic.content).trim(), 233)
-  )
 
-  const jsonLd = computed<WithContext<DiscussionForumPosting>>(() => {
-    const topicUrl = `${kungal.domain.main}/topic/${topic.id}`
+  const authorSchema: Person = {
+    '@type': 'Person',
+    name: author.name,
+    url: `${kungal.domain.main}/user/${topic.author.id}`,
+    image: author.avatar
+  }
 
-    const authorSchema: Person = {
-      '@type': 'Person',
-      name: author.name,
-      url: `${kungal.domain.main}/user/${topic.author.id}`,
-      image: author.avatar
+  const interactionStatistics: InteractionCounter[] = [
+    {
+      '@type': 'InteractionCounter',
+      interactionType: {
+        '@type': 'CommentAction'
+      },
+      userInteractionCount: topic.reply_count
+    },
+    {
+      '@type': 'InteractionCounter',
+      interactionType: {
+        '@type': 'LikeAction'
+      },
+      userInteractionCount: topic.like_count
+    },
+    {
+      '@type': 'InteractionCounter',
+      interactionType: {
+        '@type': 'VoteAction'
+      },
+      userInteractionCount: topic.upvote_count
     }
+  ]
 
-    const interactionStatistics: InteractionCounter[] = [
-      {
-        '@type': 'InteractionCounter',
-        interactionType: {
-          '@type': 'CommentAction'
-        },
-        userInteractionCount: topic.reply_count
-      },
-      {
-        '@type': 'InteractionCounter',
-        interactionType: {
-          '@type': 'LikeAction'
-        },
-        userInteractionCount: topic.like_count
-      },
-      {
-        '@type': 'InteractionCounter',
-        interactionType: {
-          '@type': 'VoteAction'
-        },
-        userInteractionCount: topic.upvote_count
-      }
-    ]
-
-    const ba = topic.best_answer
-    const baAuthor = ba ? toKunUser(ba.author) : undefined
-    const acceptedAnswerSchema: Comment | undefined = ba
-      ? {
-          '@type': 'Comment',
-          text: truncateRunes(contentPlainText(ba.content).trim(), 5000),
-          datePublished: new Date(ba.created_at).toISOString(),
-          url: `${topicUrl}#k${ba.floor}`,
-          author: {
-            '@type': 'Person',
-            name: baAuthor!.name,
-            url: `${kungal.domain.main}/user/${ba.author.id}`,
-            image: baAuthor!.avatar
-          }
+  const ba = topic.best_answer
+  const baAuthor = ba ? toKunUser(ba.author) : undefined
+  const acceptedAnswerSchema: Comment | undefined = ba
+    ? {
+        '@type': 'Comment',
+        text: truncateRunes(contentPlainText(ba.content).trim(), 5000),
+        datePublished: new Date(ba.created_at).toISOString(),
+        url: `${topicUrl}#k${ba.floor}`,
+        author: {
+          '@type': 'Person',
+          name: baAuthor!.name,
+          url: `${kungal.domain.main}/user/${ba.author.id}`,
+          image: baAuthor!.avatar
         }
-      : undefined
-
-    return {
-      '@context': 'https://schema.org',
-      '@type': 'DiscussionForumPosting',
-      mainEntityOfPage: topicUrl,
-      headline: topic.title,
-      description: description.value,
-      image: banner,
-      author: authorSchema,
-      datePublished: new Date(topic.created_at).toISOString(),
-      dateModified: topic.edited_at
-        ? new Date(topic.edited_at).toISOString()
-        : new Date(topic.created_at).toISOString(),
-      interactionStatistic: interactionStatistics,
-      commentCount: topic.reply_count,
-      ...(acceptedAnswerSchema && { acceptedAnswer: acceptedAnswerSchema }),
-      keywords: sectionLabel(topic.section)
-    }
-  })
-
-  useHead({
-    script: [
-      {
-        id: 'schema-org-qa-page',
-        type: 'application/ld+json',
-        innerHTML: jsonLd.value
       }
-    ]
-  })
+    : undefined
 
+  return {
+    '@context': 'https://schema.org',
+    '@type': 'DiscussionForumPosting',
+    mainEntityOfPage: topicUrl,
+    headline: topic.title,
+    description: describe(topic),
+    image:
+      topic.cover_images[0]?.url ||
+      firstImageUrl(topic.content) ||
+      `${kungal.domain.main}/kungalgame.webp`,
+    author: authorSchema,
+    datePublished: new Date(topic.created_at).toISOString(),
+    dateModified: topic.edited_at
+      ? new Date(topic.edited_at).toISOString()
+      : new Date(topic.created_at).toISOString(),
+    interactionStatistic: interactionStatistics,
+    commentCount: topic.reply_count,
+    ...(acceptedAnswerSchema && { acceptedAnswer: acceptedAnswerSchema }),
+    keywords: sectionLabel(topic.section)
+  }
+}
+
+useHead(() => ({
+  script: data.value
+    ? [
+        {
+          id: 'schema-org-qa-page',
+          type: 'application/ld+json',
+          innerHTML: jsonLdOf(data.value)
+        }
+      ]
+    : []
+}))
+
+useKunSeoMeta(() => {
+  const topic = data.value
+  if (!topic) {
+    return problem.value ? { noindex: true, title: '未找到此话题' } : {}
+  }
   if (topic.is_nsfw) {
     // Being signed in used to be enough on its own. The account's stance
     // decides now; 模糊 lets the topic through and masks its covers instead.
-    useKunDisableSeo(allowsNsfw.value ? topic.title : '')
-  } else {
-    useKunSeoMeta({
-      title: topic.title,
-      description: description.value,
-      ogCard: { kind: 'topic', id: Number(topic.id) },
-      ogType: 'article',
-      articleAuthor: [`${kungal.domain.main}/user/${topic.author.id}`],
-      articlePublishedTime: created,
-      articleModifiedTime: updated
-    })
+    return { noindex: true, title: allowsNsfw.value ? topic.title : '' }
   }
-} else {
-  useKunDisableSeo('未找到此话题')
-}
+  return {
+    title: topic.title,
+    description: describe(topic),
+    ogCard: { kind: 'topic', id: Number(topic.id) },
+    ogType: 'article',
+    articleAuthor: [`${kungal.domain.main}/user/${topic.author.id}`],
+    articlePublishedTime: new Date(topic.created_at).toString(),
+    articleModifiedTime: topic.edited_at
+      ? new Date(topic.edited_at).toString()
+      : ''
+  }
+})
 </script>
 
 <template>
@@ -194,6 +192,8 @@ if (data.value) {
 
       <KunNsfwGate v-else noun="话题" @reveal="revealed = true" />
     </template>
+
+    <TopicDetailSkeleton v-else-if="pending" />
 
     <template v-else-if="problem && problem.status !== 404">
       <KunNull :description="problemMessage(problem)" />

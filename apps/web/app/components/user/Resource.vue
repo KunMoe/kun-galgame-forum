@@ -51,7 +51,7 @@ const state = computed(() => {
   return undefined
 })
 
-const { data, status, refresh } = await useApi<PageListGalgameResource>(
+const { data, status, pending, refresh } = useKunApi<PageListGalgameResource>(
   () =>
     `user-galgame-resources:${props.userId}:${relation.value}:${state.value ?? 'all'}:${pageData.page}:${pageData.limit}:${includeNsfw.value ? 'nsfw' : 'sfw'}`,
   (client, { signal }) =>
@@ -134,6 +134,7 @@ const openEdit = (res: GalgameResource) => {
       scrollable
     />
 
+    <UserListSkeleton v-if="pending" />
     <div class="flex flex-col space-y-3" v-if="data && data.items.length">
       <KunCard
         v-for="res in data.items"
@@ -157,7 +158,9 @@ const openEdit = (res: GalgameResource) => {
 
         <div class="mb-2 flex flex-wrap items-center gap-2">
           <KunChip color="primary">
-            <KunIcon :name="GALGAME_RESOURCE_TYPE_ICON_MAP[res.resource_type]" />
+            <KunIcon
+              :name="GALGAME_RESOURCE_TYPE_ICON_MAP[res.resource_type]"
+            />
             {{ resourceTypeLabel(res.resource_type) }}
           </KunChip>
           <KunChip v-if="res.size" color="warning">

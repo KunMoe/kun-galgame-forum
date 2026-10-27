@@ -1,5 +1,5 @@
 export const useNewsSources = () => {
-  const asyncData = useApi('news-sources', (api, { signal }) =>
+  const asyncData = useKunApi('news-sources', (api, { signal }) =>
     api.GET('/news-sources', { signal })
   )
   const directory = computed<KunNewsSource[]>(

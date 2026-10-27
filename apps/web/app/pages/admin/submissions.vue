@@ -16,8 +16,8 @@ const queueTabs = [
   { value: 'hidden', textValue: '已封禁' }
 ]
 
-const { items, hasMore, loadingMore, loadMore, problem, refresh } =
-  await useCursorList<WorkSubmissionSummary>(
+const { items, hasMore, loadingMore, loadMore, problem, pending, refresh } =
+  useCursorList<WorkSubmissionSummary>(
     () => `work-submissions:queue:${queue.value}`,
     (api, cursor, { signal }) =>
       api.GET('/work-submissions', {
@@ -154,6 +154,8 @@ const handleConfirmReason = async () => {
       title="加载失败"
       description="无法获取审核队列, 请稍后重试。"
     />
+
+    <EditGalgameClaimRowSkeleton v-else-if="pending" />
 
     <div v-else-if="items.length" class="flex flex-col gap-3">
       <div

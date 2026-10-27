@@ -1,5 +1,5 @@
 import type { components } from '#shared/types/api/v1'
-import { useApi } from './useApi'
+import { useKunApi } from './useKunApi'
 
 type Equal<A, B> =
   (<T>() => T extends A ? 1 : 2) extends <T>() => T extends B ? 1 : 2
@@ -7,7 +7,7 @@ type Equal<A, B> =
     : false
 
 const _unused = () => {
-  const result = useApi('k', (api) => api.GET('/topics', {}))
+  const result = useKunApi('k', (api) => api.GET('/topics', {}))
   const _data: Equal<
     typeof result.data.value,
     components['schemas']['ListTopicSummary'] | undefined

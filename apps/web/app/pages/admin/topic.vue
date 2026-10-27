@@ -66,7 +66,7 @@ watchDebounced(
   { debounce: 500, maxWait: 1000 }
 )
 
-const { data, status, refresh } = await useApi(
+const { data, status, pending, refresh } = useKunApi(
   () =>
     `admin-hidden-topics:${pageData.page}:${pageData.limit}:${pageData.hidden_by}:${pageData.q}`,
   (client, { signal }) =>
@@ -175,7 +175,7 @@ const handlePurge = async () => {
 
     <KunDivider />
 
-    <KunLoading v-if="status === 'pending'" />
+    <EditGalgameClaimRowSkeleton v-if="pending" />
 
     <KunNull v-else-if="!topics.length" description="暂无被隐藏的话题" />
 

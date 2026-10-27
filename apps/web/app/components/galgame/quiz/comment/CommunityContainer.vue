@@ -25,7 +25,7 @@ const {
   handleUpdated,
   handleTombstoned,
   scrollToPost
-} = await useCommunityCommentList(
+} = useCommunityCommentList(
   { kind: 'quiz', quizId: props.quizId },
   props.commentCount
 )
@@ -70,7 +70,7 @@ const onPublished = (post: WallComment) => {
       </template>
     </KunHeader>
 
-    <KunLoading v-if="status === 'pending' && !seeded" />
+    <CommentCommunityListSkeleton v-if="!seeded" />
 
     <KunNull
       v-else-if="locked"

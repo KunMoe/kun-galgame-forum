@@ -6,7 +6,7 @@ import type {
   CharacterSort,
   TraitSummary
 } from '#shared/utils/api/schemas'
-import { settle } from '#shared/utils/api/problem'
+import { settle, type ApiResult } from '#shared/utils/api/problem'
 import { traitSide } from '~/utils/galgame/trait'
 
 const TRAIT_MAX = 10
@@ -67,24 +67,25 @@ const sort = computed<CharacterSort>(() => {
 
 const picked = reactive(new Map<number, TraitSummary>())
 
-const { data: resolved } = await useAsyncData(
+const { data: resolved } = useKunApi(
   () => `trait-names:${pickedIds.value.join(',')}:${stanceKey.value}`,
-  async () => {
+  async (client, { signal }): Promise<ApiResult<TraitSummary[]>> => {
     if (!pickedIds.value.length) {
-      return []
+      return { ok: true, data: [] }
     }
     const res = await settle(
-      api.GET('/traits', {
+      client.GET('/traits', {
         params: {
           query: {
             ids: pickedIds.value.map(String),
             limit: pickedIds.value.length,
             include_nsfw: allowsNsfw.value
           }
-        }
+        },
+        signal
       })
     )
-    return res.ok ? res.data.items : []
+    return { ok: true, data: res.ok ? res.data.items : [] }
   }
 )
 
@@ -222,9 +223,10 @@ const query = computed(() => ({
   include_nsfw: allowsNsfw.value
 }))
 
-const { data, status, problem } = await useApi<CharacterPage>(
+const { data, status, problem, pending } = useKunApi<CharacterPage>(
   () => `characters:${JSON.stringify(query.value)}:${stanceKey.value}`,
-  (client) => client.GET('/characters', { params: { query: query.value } })
+  (client, { signal }) =>
+    client.GET('/characters', { params: { query: query.value }, signal })
 )
 
 const characters = computed(() => data.value?.items ?? [])
@@ -348,6 +350,8 @@ const pageHref = (n: number) =>
       title="筛选里有成人向属性"
       description="当前为 SFW 模式, 成人向属性不能用来筛选。请在设置面板开启 NSFW 开关, 或移除这个属性。"
     />
+
+    <GalgameCharacterCardSkeleton v-else-if="pending" />
 
     <KunLoading v-else :loading="status === 'pending'">
       <div

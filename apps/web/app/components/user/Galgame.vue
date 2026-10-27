@@ -45,7 +45,11 @@ const commentRelation = computed(() =>
     : ('authored' as const)
 )
 
-const { data: galgameData, status: galgameStatus } = await useApi<WorkPage>(
+const {
+  data: galgameData,
+  status: galgameStatus,
+  pending: galgamePending
+} = useKunApi<WorkPage>(
   () =>
     `user-works:${props.userId}:${workRelation.value}:${pageData.page}:${pageData.limit}:${includeNsfw.value ? 'nsfw' : 'sfw'}`,
   (client, { signal }) =>
@@ -68,7 +72,7 @@ const galgameCards = computed(() =>
   (galgameData.value?.items ?? []).map((w) => workSummaryToCard(w, nameOf))
 )
 
-const { data: commentData } = await useApi(
+const { data: commentData, pending: commentPending } = useKunApi(
   () =>
     `user-wall-comments:${props.userId}:${commentRelation.value}:galgame:${pageData.limit}`,
   (client, { signal }) =>
@@ -147,6 +151,7 @@ const loadMoreComments = async () => {
     />
 
     <template v-if="!isCommentMode">
+      <GalgameCardGridSkeleton v-if="galgamePending" :count="8" />
       <div
         v-if="galgameData && galgameData.items.length"
         class="flex flex-col space-y-3"
@@ -207,10 +212,8 @@ const loadMoreComments = async () => {
         </div>
       </div>
 
-      <KunNull
-        v-else
-        description="这只笨蛋萝莉在 Galgame 下没有相关的评论"
-      />
+      <UserListSkeleton v-else-if="commentPending" />
+      <KunNull v-else description="这只笨蛋萝莉在 Galgame 下没有相关的评论" />
     </template>
   </div>
 </template>

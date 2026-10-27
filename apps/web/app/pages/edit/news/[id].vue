@@ -14,7 +14,7 @@ if (!/^\d{1,20}$/.test(submissionId.value)) {
   })
 }
 
-const { data: submission } = await useApi(
+const { data: submission, pending } = useKunApi(
   () => `my-news-submission:${submissionId.value}`,
   (api, { signal }) =>
     api.GET('/me/news-submissions/{news_submission_id}', {
@@ -43,6 +43,7 @@ const isEditable = computed(
       v-else-if="submission"
       description="这条投稿已经未通过审核或已撤回，不能再编辑"
     />
+    <EditFormSkeleton v-else-if="pending" />
     <KunNull v-else description="未找到该投稿" />
   </div>
 </template>

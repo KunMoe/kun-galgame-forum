@@ -35,7 +35,7 @@ const tabItems = computed<KunTabItem[]>(() => {
 const limit = 50
 const authorId = computed(() => String(props.userId))
 
-const { data, status, problem } = await useApi<PageListQuizSummary>(
+const { data, status, problem, pending } = useKunApi<PageListQuizSummary>(
   () =>
     tab.value === 'answered'
       ? `me-answered-quizzes:${page.value}:${limit}`
@@ -88,6 +88,7 @@ const onTab = (v: string) => {
       />
     </template>
 
+    <UserListSkeleton v-else-if="pending" />
     <KunNull
       v-else-if="status !== 'pending'"
       :description="tab === 'answered' ? '还没有作答记录' : '还没有出过题'"

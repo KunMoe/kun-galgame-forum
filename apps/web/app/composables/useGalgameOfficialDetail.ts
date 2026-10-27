@@ -18,36 +18,27 @@ export const useGalgameOfficialDetail = async (subPath = '') => {
     })
   }
 
-  const nuxtApp = useNuxtApp()
   const nameOf = useCatalogName()
+  const notFound = '未找到 Galgame 会社'
 
-  let movedTo: number | null = null
-  const { data: company } = await useApi<Company>(
+  const movedTo = ref<number | null>(null)
+  const read = useKunApi<Company>(
     () => `company:${officialId}`,
-    async (api) => {
+    async (api, { signal }) => {
       const res = await api.GET('/companies/{company_id}', {
-        params: { path: { company_id: String(officialId) } }
+        params: { path: { company_id: String(officialId) } },
+        signal
       })
-      movedTo = mergedInto(res.error)
+      movedTo.value = mergedInto(res.error)
       return res
     }
   )
-
-  if (movedTo) {
-    const target = `${taxonomyDetailPath('official', movedTo)}${subPath}`
-    await nuxtApp.runWithContext(() =>
-      navigateTo(target, { redirectCode: 301, replace: true })
-    )
-    return { officialId, data: computed(() => null) }
-  }
-
-  if (!company.value) {
-    throw createError({
-      statusCode: 404,
-      statusMessage: '未找到 Galgame 会社',
-      fatal: true
+  const company = read.data
+  const redirect = (id: number) =>
+    navigateTo(`${taxonomyDetailPath('official', id)}${subPath}`, {
+      redirectCode: 301,
+      replace: true
     })
-  }
 
   const data = computed(() => {
     const c = company.value
@@ -74,7 +65,32 @@ export const useGalgameOfficialDetail = async (subPath = '') => {
     }
   })
 
-  return { officialId, data }
+  const detail = { officialId, data, pending: read.pending }
+
+  // Watchers go on before the await: past it this composable has lost its
+  // component instance.
+  if (import.meta.client) {
+    watch(movedTo, (id) => {
+      if (id) {
+        redirect(id)
+      }
+    })
+    useKunNotFound(
+      () => read.problem.value !== null && movedTo.value === null,
+      notFound
+    )
+    return detail
+  }
+
+  const nuxtApp = useNuxtApp()
+  await read
+  if (movedTo.value) {
+    const id = movedTo.value
+    await nuxtApp.runWithContext(() => redirect(id))
+    return detail
+  }
+  useKunNotFound(() => read.problem.value !== null, notFound)
+  return detail
 }
 
 export const useCompanyWorks = async (
@@ -85,8 +101,8 @@ export const useCompanyWorks = async (
   const { excludeQuery } = useTagBlocks()
   const query = (): WorksQuery => ({ ...baseQuery(), ...excludeQuery.value })
   // Both reads start before either is awaited: a composable resumed after an
-  // await has lost the Nuxt instance, so a second useApi there throws on SSR.
-  const pageRead = useApi<CompanyWorkPage>(
+  // await has lost the Nuxt instance, so a second useKunApi there throws on SSR.
+  const pageRead = useKunApi<CompanyWorkPage>(
     () => `company-works:${officialId}:${JSON.stringify(query())}`,
     (client) =>
       client.GET('/companies/{company_id}/works', {
@@ -95,7 +111,7 @@ export const useCompanyWorks = async (
   )
   // Own and imprint are the same collection split by via=; a one-row page of
   // each carries its total.
-  const splitRead = useApi<{ own: number; imprint: number }>(
+  const splitRead = useKunApi<{ own: number; imprint: number }>(
     () =>
       `company-works-split:${officialId}:${JSON.stringify({ ...query(), page: 1 })}`,
     async (client) => {
@@ -110,18 +126,13 @@ export const useCompanyWorks = async (
         )
       )
       return {
-        data: { own: own?.data?.total ?? 0, imprint: imprint?.data?.total ?? 0 },
-        response: new Response(null, { status: 200 })
+        ok: true as const,
+        data: { own: own?.data?.total ?? 0, imprint: imprint?.data?.total ?? 0 }
       }
     }
   )
-  const [{ data: page, status }, { data: split }] = await Promise.all([
-    pageRead,
-    splitRead
-  ])
-
   const galgames = computed(() =>
-    (page.value?.items ?? []).map((item) => ({
+    (pageRead.data.value?.items ?? []).map((item) => ({
       ...workSummaryToCard(item.work_summary, nameOf),
       via_official: item.via_company
         ? {
@@ -131,9 +142,18 @@ export const useCompanyWorks = async (
         : undefined
     }))
   )
-  const total = computed(() => page.value?.total ?? 0)
-  const own = computed(() => split.value?.own ?? 0)
-  const imprint = computed(() => split.value?.imprint ?? 0)
+  const total = computed(() => pageRead.data.value?.total ?? 0)
+  const own = computed(() => splitRead.data.value?.own ?? 0)
+  const imprint = computed(() => splitRead.data.value?.imprint ?? 0)
 
-  return { galgames, total, status, own, imprint }
+  await Promise.all([pageRead, splitRead])
+
+  return {
+    galgames,
+    total,
+    status: pageRead.status,
+    pending: pageRead.pending,
+    own,
+    imprint
+  }
 }

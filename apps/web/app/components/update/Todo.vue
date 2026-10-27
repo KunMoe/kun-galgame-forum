@@ -35,7 +35,7 @@ const {
   status,
   problem,
   refresh
-} = await useCursorList<Todo>(
+} = useCursorList<Todo>(
   () => `todos:${stateFilter.value ?? 'all'}`,
   (api, cursor, { signal }) =>
     api.GET('/todos', {
@@ -189,9 +189,10 @@ const remove = async (todo: Todo) => {
 
     <div
       v-if="status === 'pending' && !todos.length"
-      class="flex justify-center py-8"
+      class="space-y-6"
+      aria-hidden="true"
     >
-      <KunLoading description="正在加载待办..." />
+      <KunSkeleton v-for="n in 4" :key="n" height="11rem" rounded="lg" />
     </div>
 
     <KunNull v-else-if="problem" :description="problemMessage(problem)" />

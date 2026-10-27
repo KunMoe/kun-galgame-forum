@@ -16,7 +16,7 @@ watch(quizId, () => {
 })
 const workName = useWorkName()
 
-const { data, problem } = await useApi<Quiz>(
+const { data, problem, pending } = useKunApi<Quiz>(
   () => `quiz:${quizId.value}`,
   (api, { signal }) =>
     api.GET('/quizzes/{quiz_id}', {
@@ -25,8 +25,14 @@ const { data, problem } = await useApi<Quiz>(
     })
 )
 
-const quiz = data.value
-if (quiz) {
+useKunSeoMeta(() => {
+  const quiz = data.value
+  if (!quiz) {
+    return problem.value
+      ? { noindex: true, title: '题目不存在或已被删除' }
+      : {}
+  }
+
   const galgameNames = quiz.works.map((work) => workName(work)).filter(Boolean)
   const namesText = galgameNames.join('、')
   const promptText = contentPlainText(quiz.prompt).replace(/\s+/g, ' ').trim()
@@ -53,16 +59,14 @@ if (quiz) {
     .filter(Boolean)
     .join(',')
 
-  useKunSeoMeta({
+  return {
     title: seoTitle,
     description: seoDescription,
     keywords: seoKeywords,
     ogType: 'article',
     ...(banner ? { ogImage: banner } : {})
-  })
-} else {
-  useKunDisableSeo('题目不存在或已被删除')
-}
+  }
+})
 </script>
 
 <template>
@@ -75,6 +79,7 @@ if (quiz) {
         :answered="answered"
       />
     </template>
+    <GalgameQuizPlaySkeleton v-else-if="pending" />
     <KunNull
       v-else-if="problem"
       :description="problemMessage(problem)"

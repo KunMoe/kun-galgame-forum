@@ -5,8 +5,8 @@ import type { WebsiteForm } from '~/components/website/modal/types'
 
 const api = useApiClient()
 const createKey = useIdempotencyKey()
-const { data, refresh } = await useWebsiteList()
-const { data: categories } = await useWebsiteCategories()
+const { data, refresh, pending } = useWebsiteList()
+const { data: categories, pending: categoriesPending } = useWebsiteCategories()
 
 const canCreateWebsite = useCan('website.create')
 const canManageTaxonomy = useCan('website.edit')
@@ -130,43 +130,57 @@ const handleCreateWebsite = async (form: WebsiteForm) => {
       @submit="handleCreateWebsite"
     />
 
-    <div v-for="categoryGroup in categorizedWebsites" :key="categoryGroup.key">
-      <div class="mb-3 flex items-center space-x-3">
-        <h2 class="text-default-900 text-2xl">
-          {{ categoryGroup.name }}
-        </h2>
-        <KunChip> {{ categoryGroup.sites.length }} 个网站 </KunChip>
+    <WebsiteCardSkeleton
+      v-if="pending || categoriesPending"
+      :count="12"
+      class="xl:grid-cols-4"
+    />
+
+    <template v-else>
+      <div
+        v-for="categoryGroup in categorizedWebsites"
+        :key="categoryGroup.key"
+      >
+        <div class="mb-3 flex items-center space-x-3">
+          <h2 class="text-default-900 text-2xl">
+            {{ categoryGroup.name }}
+          </h2>
+          <KunChip> {{ categoryGroup.sites.length }} 个网站 </KunChip>
+        </div>
+
+        <div
+          class="grid grid-cols-1 gap-3 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4"
+        >
+          <WebsiteCard
+            v-for="website in categoryGroup.sites"
+            :key="website.id"
+            :website="website"
+          />
+        </div>
       </div>
 
       <div
-        class="grid grid-cols-1 gap-3 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4"
+        v-if="closedWebsites.length"
+        class="border-default-200 border-t pt-6"
       >
-        <WebsiteCard
-          v-for="website in categoryGroup.sites"
-          :key="website.id"
-          :website="website"
-        />
-      </div>
-    </div>
+        <div class="mb-3 flex items-center space-x-3">
+          <h2 class="text-default-500 text-2xl">已关站</h2>
+          <KunChip color="danger"> {{ closedWebsites.length }} 个网站 </KunChip>
+        </div>
+        <p class="text-default-500 mb-3 text-sm">
+          这些网站已经停止运营, 仅作存档保留, 链接大概率已经失效。
+        </p>
 
-    <div v-if="closedWebsites.length" class="border-default-200 border-t pt-6">
-      <div class="mb-3 flex items-center space-x-3">
-        <h2 class="text-default-500 text-2xl">已关站</h2>
-        <KunChip color="danger"> {{ closedWebsites.length }} 个网站 </KunChip>
+        <div
+          class="grid grid-cols-1 gap-3 opacity-75 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4"
+        >
+          <WebsiteCard
+            v-for="website in closedWebsites"
+            :key="website.id"
+            :website="website"
+          />
+        </div>
       </div>
-      <p class="text-default-500 mb-3 text-sm">
-        这些网站已经停止运营, 仅作存档保留, 链接大概率已经失效。
-      </p>
-
-      <div
-        class="grid grid-cols-1 gap-3 opacity-75 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4"
-      >
-        <WebsiteCard
-          v-for="website in closedWebsites"
-          :key="website.id"
-          :website="website"
-        />
-      </div>
-    </div>
+    </template>
   </div>
 </template>

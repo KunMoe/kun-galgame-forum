@@ -16,7 +16,7 @@ const route = useRoute()
 const id = computed(() => (route.params as { id: string }).id)
 const nameOf = useCatalogName()
 
-const { data, refresh } = await useApi(
+const { data, problem, pending, refresh } = useKunApi(
   () => `rating:${id.value}`,
   (api, { signal }) =>
     api.GET('/ratings/{rating_id}', {
@@ -110,53 +110,60 @@ const jsonLd = computed<WithContext<Review> | null>(() => {
   }
 })
 
-if (data.value) {
+useHead(() => ({
+  script:
+    jsonLd.value && !data.value?.work_summary.is_nsfw
+      ? [
+          {
+            id: 'schema-org-galgame-rating',
+            type: 'application/ld+json',
+            innerHTML: jsonLd.value
+          }
+        ]
+      : []
+}))
+
+useKunSeoMeta(() => {
   const rating = data.value
+  if (!rating) {
+    return problem.value
+      ? { noindex: true, title: '请求 Galgame 评分数据错误' }
+      : {}
+  }
   const work = rating.work_summary
   const author = toKunUser(rating.author)
   if (work.is_nsfw) {
-    useKunDisableSeo(`${author.name} 的评价`)
-  } else {
-    useHead({
-      script: [
-        {
-          id: 'schema-org-galgame-rating',
-          type: 'application/ld+json',
-          innerHTML: jsonLd.value
-        }
-      ]
-    })
-
-    const { name: titleBase, original } = nameOf(work)
-    const title =
-      original && original !== titleBase
-        ? `${author.name} 对 ${titleBase} (${original}) 的评价`
-        : `${author.name} 对 ${titleBase} 的评价`
-
-    const description = truncateRunes(
-      rating.short_summary
-        ? markdownToText(rating.short_summary)
-        : `${author.name} 对 ${titleBase} 的评分 ${rating.overall}/10`,
-      175
-    )
-
-    useKunSeoMeta({
-      title,
-      description,
-      ogImage: work.banner?.url ?? '',
-      articleAuthor: [`${kungal.domain.main}/user/${author.id}`],
-      articlePublishedTime: rating.created_at,
-      articleModifiedTime: rating.updated_at
-    })
+    return { noindex: true, title: `${author.name} 的评价` }
   }
-} else {
-  useKunDisableSeo('请求 Galgame 评分数据错误')
-}
+
+  const { name: titleBase, original } = nameOf(work)
+  const title =
+    original && original !== titleBase
+      ? `${author.name} 对 ${titleBase} (${original}) 的评价`
+      : `${author.name} 对 ${titleBase} 的评价`
+
+  const description = truncateRunes(
+    rating.short_summary
+      ? markdownToText(rating.short_summary)
+      : `${author.name} 对 ${titleBase} 的评分 ${rating.overall}/10`,
+    175
+  )
+
+  return {
+    title,
+    description,
+    ogImage: work.banner?.url ?? '',
+    articleAuthor: [`${kungal.domain.main}/user/${author.id}`],
+    articlePublishedTime: rating.created_at,
+    articleModifiedTime: rating.updated_at
+  }
+})
 </script>
 
 <template>
   <div>
     <GalgameRatingDetail v-if="data" :data="data" :refresh="refresh" />
+    <GalgameRatingDetailSkeleton v-else-if="pending" />
     <KunNull v-else description="未找到该评分" />
   </div>
 </template>

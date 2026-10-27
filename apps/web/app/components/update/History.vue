@@ -16,7 +16,7 @@ const {
   status,
   problem,
   refresh
-} = await useCursorList<UpdateLog>('update-logs', (api, cursor, { signal }) =>
+} = useCursorList<UpdateLog>('update-logs', (api, cursor, { signal }) =>
   api.GET('/update-logs', {
     params: { query: cursor ? { cursor } : {} },
     signal
@@ -117,9 +117,10 @@ const remove = async (log: UpdateLog) => {
 
     <div
       v-if="status === 'pending' && !logs.length"
-      class="flex justify-center py-8"
+      class="space-y-6"
+      aria-hidden="true"
     >
-      <KunLoading description="正在加载更新日志..." />
+      <KunSkeleton v-for="n in 4" :key="n" height="9rem" rounded="lg" />
     </div>
 
     <KunNull v-else-if="problem" :description="problemMessage(problem)" />

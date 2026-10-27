@@ -1,7 +1,7 @@
 import type { ApiClient } from '#shared/utils/api/client'
 import { settle, type ClientProblem } from '#shared/utils/api/problem'
 import type { Reply } from '#shared/utils/api/schemas'
-import { useApiClient } from '~/composables/useApi'
+import { useApiClient } from '~/composables/useKunApi'
 
 const PAGE_SIZE = 30
 

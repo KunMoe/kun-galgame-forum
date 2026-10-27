@@ -57,7 +57,7 @@ const items = ref<FollowItem[]>([])
 const nextCursor = ref<string | undefined>()
 const loadingMore = ref(false)
 
-const { data, problem, status } = await useApi<FollowPage>(
+const { data, problem, status, pending } = useKunApi<FollowPage>(
   () => `user-follow:${props.user.id}:${props.type}`,
   (client, { signal }) => listFollow(client, undefined, signal)
 )
@@ -97,7 +97,7 @@ const emptyDescription = computed(() =>
   <div class="space-y-3">
     <KunTab :items="tabItems" :model-value="type" variant="light" size="sm" />
 
-    <KunLoading v-if="status === 'pending' && !items.length" />
+    <UserListSkeleton v-if="pending && !items.length" shape="user" />
 
     <KunNull v-else-if="problem" :description="problemMessage(problem)" />
 

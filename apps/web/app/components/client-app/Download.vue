@@ -4,9 +4,12 @@ import {
   KUN_APP_PLATFORMS
 } from '~/constants/app-release'
 
-const { data, problem: error } = await useApi(
-  'app-version',
-  (api, { signal }) => api.GET('/app/version', { signal })
+const {
+  data,
+  problem: error,
+  pending
+} = useKunApi('app-version', (api, { signal }) =>
+  api.GET('/app/version', { signal })
 )
 
 const platforms = computed(() =>
@@ -76,6 +79,21 @@ const platforms = computed(() =>
             即将推出
           </KunButton>
         </KunCard>
+      </div>
+    </template>
+
+    <template v-else-if="pending">
+      <KunCard :is-hoverable="false" content-class="space-y-2">
+        <KunSkeleton variant="text" width="10rem" class-name="text-xl" />
+        <KunSkeleton variant="text" width="70%" class-name="text-sm" />
+      </KunCard>
+      <div class="grid grid-cols-1 gap-3 sm:grid-cols-2">
+        <KunSkeleton
+          v-for="platform in KUN_APP_PLATFORMS"
+          :key="platform.key"
+          height="9rem"
+          rounded="lg"
+        />
       </div>
     </template>
   </div>

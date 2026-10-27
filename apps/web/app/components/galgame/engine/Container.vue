@@ -7,22 +7,25 @@ const nameOf = useCatalogName()
 
 // Catalog records a couple of hundred engines; the page shows them all, which
 // takes more than one 100-row page.
-const { data: engines } = await useApi<Engine[]>('engines:all', async (api) => {
-  const all: Engine[] = []
-  for (let page = 1; page <= 10; page++) {
-    const res = await api.GET('/engines', {
-      params: { query: { page, limit: 100 } }
-    })
-    if (!res.data) {
-      return res
+const { data: engines, pending } = useKunApi<Engine[]>(
+  'engines:all',
+  async (api) => {
+    const all: Engine[] = []
+    for (let page = 1; page <= 10; page++) {
+      const res = await api.GET('/engines', {
+        params: { query: { page, limit: 100 } }
+      })
+      if (!res.data) {
+        return res
+      }
+      all.push(...res.data.items)
+      if (all.length >= res.data.total) {
+        break
+      }
     }
-    all.push(...res.data.items)
-    if (all.length >= res.data.total) {
-      break
-    }
+    return { data: all, response: new Response(null, { status: 200 }) }
   }
-  return { data: all, response: new Response(null, { status: 200 }) }
-})
+)
 
 const searchQuery = ref('')
 const sort = ref('popularity')
@@ -79,16 +82,20 @@ const data = computed(() => {
       </template>
     </KunHeader>
 
-    <div
-      class="grid grid-cols-2 gap-3 sm:grid-cols-2 sm:gap-3 lg:grid-cols-3 xl:grid-cols-4"
-    >
-      <GalgameEngineCard
-        v-for="engine in data"
-        :key="engine.id"
-        :engine="engine"
-      />
-    </div>
+    <GalgameEntityGridSkeleton v-if="pending" />
 
-    <KunNull v-if="!data.length" />
+    <template v-else>
+      <div
+        class="grid grid-cols-2 gap-3 sm:grid-cols-2 sm:gap-3 lg:grid-cols-3 xl:grid-cols-4"
+      >
+        <GalgameEngineCard
+          v-for="engine in data"
+          :key="engine.id"
+          :engine="engine"
+        />
+      </div>
+
+      <KunNull v-if="!data.length" />
+    </template>
   </div>
 </template>

@@ -1,7 +1,7 @@
 <script setup lang="ts">
 const route = useRoute()
 
-const { docs } = await useAllDocs('published_desc')
+const { docs } = useAllDocs('published_desc')
 
 const currentIndex = computed(() =>
   docs.value.findIndex((doc) => `/doc/${doc.slug}` === route.path)

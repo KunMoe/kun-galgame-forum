@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import { KUN_DOC_CATEGORY_MAP } from '~/constants/doc'
 
-const { docs: articles } = await useAllDocs('position_asc')
+const { docs: articles, pending } = useAllDocs('position_asc')
 </script>
 
 <template>
@@ -12,8 +12,16 @@ const { docs: articles } = await useAllDocs('position_asc')
     />
 
     <div
+      v-if="pending"
       class="grid grid-cols-1 gap-6 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4"
-      v-if="articles.length"
+      aria-hidden="true"
+    >
+      <KunSkeleton v-for="n in 8" :key="n" height="20rem" rounded="lg" />
+    </div>
+
+    <div
+      class="grid grid-cols-1 gap-6 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4"
+      v-else-if="articles.length"
     >
       <KunCard
         :is-transparent="false"

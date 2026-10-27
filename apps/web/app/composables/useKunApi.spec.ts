@@ -1,7 +1,7 @@
 // @vitest-environment nuxt
 import { afterEach, describe, expect, it, vi } from 'vitest'
 import { ref } from 'vue'
-import { useApi } from './useApi'
+import { useKunApi } from './useKunApi'
 
 const listBody = { object: 'list', items: [] }
 
@@ -15,13 +15,13 @@ afterEach(() => {
   vi.unstubAllGlobals()
 })
 
-describe('useApi', () => {
+describe('useKunApi', () => {
   it('exposes a success result', async () => {
     vi.stubGlobal(
       'fetch',
       vi.fn(async () => jsonResponse(200, listBody, 'application/json'))
     )
-    const { data, problem } = await useApi('topics-ok', (api) =>
+    const { data, problem } = await useKunApi('topics-ok', (api) =>
       api.GET('/topics', {})
     )
     expect(data.value).toEqual(listBody)
@@ -46,7 +46,7 @@ describe('useApi', () => {
         )
       )
     )
-    const { data, problem } = await useApi('topics-problem', (api) =>
+    const { data, problem } = await useKunApi('topics-problem', (api) =>
       api.GET('/topics', {})
     )
     expect(data.value).toBeUndefined()
@@ -63,11 +63,44 @@ describe('useApi', () => {
     )
     vi.stubGlobal('fetch', fetchSpy)
     const key = ref('page-a')
-    await useApi(key, (api) => api.GET('/topics', {}))
+    await useKunApi(key, (api) => api.GET('/topics', {}))
     expect(fetchSpy).toHaveBeenCalledTimes(1)
     key.value = 'page-b'
     await vi.waitFor(() => {
       expect(fetchSpy).toHaveBeenCalledTimes(2)
     })
+  })
+
+  it('is pending until the first result lands, without holding setup', async () => {
+    let release = () => {}
+    vi.stubGlobal(
+      'fetch',
+      vi.fn(
+        () =>
+          new Promise<Response>((resolve) => {
+            release = () =>
+              resolve(jsonResponse(200, listBody, 'application/json'))
+          })
+      )
+    )
+    const { data, pending } = useKunApi('topics-pending', (api) =>
+      api.GET('/topics', {})
+    )
+    expect(pending.value).toBe(true)
+    expect(data.value).toBeUndefined()
+    release()
+    await vi.waitFor(() => {
+      expect(pending.value).toBe(false)
+    })
+    expect(data.value).toEqual(listBody)
+  })
+
+  it('passes through a call that already settled', async () => {
+    const { data, problem } = await useKunApi('settled', async () => ({
+      ok: true as const,
+      data: [1, 2]
+    }))
+    expect(data.value).toEqual([1, 2])
+    expect(problem.value).toBeNull()
   })
 })

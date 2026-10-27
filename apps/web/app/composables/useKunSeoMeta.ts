@@ -1,76 +1,101 @@
-import type {
-  ActiveHeadEntry,
-  UseHeadOptions,
-  UseSeoMetaInput
-} from '@unhead/vue'
-import type { NuxtApp } from '#app/nuxt'
+import type { MetaFlatInput } from '@unhead/vue'
 
-interface NuxtUseHeadOptions extends UseHeadOptions {
-  nuxt?: NuxtApp
-}
-
-type KunSeoMetaInput = Omit<
-  UseSeoMetaInput,
-  | 'ogUrl'
-  | 'ogTitle'
-  | 'ogDescription'
-  | 'twitterCard'
-  | 'twitterTitle'
-  | 'twitterDescription'
-  | 'twitterImage'
-  | 'twitterImageAlt'
-> & {
+type KunSeoMetaInput = {
+  title?: string
+  description?: string
+  keywords?: string
+  ogType?: MetaFlatInput['ogType']
+  ogImage?: string
   ogCard?: KunOgCardRef
+  articleAuthor?: string[]
+  articlePublishedTime?: string
+  articleModifiedTime?: string
+  // What useKunDisableSeo does, for a page that only knows once its data lands.
+  noindex?: boolean
 }
 
-export const useKunSeoMeta = (
-  input: KunSeoMetaInput,
-  options?: NuxtUseHeadOptions
-  // eslint-disable-next-line @typescript-eslint/no-invalid-void-type
-): ActiveHeadEntry<UseSeoMetaInput> | void => {
-  const { ogCard, ogImage: explicitImage, ...rest } = input
-
-  const title = `${input.title?.toString()} - ${kungal.title}`
-  const description = input.description?.toString()
+// Pages fetch lazily: a value read once in setup is still undefined during SSR,
+// so the input is a getter the head re-reads as the data lands.
+export const useKunSeoMeta = (source: MaybeRefOrGetter<KunSeoMetaInput>) => {
   const route = useRoute()
-
   const cardsEnabled = useRuntimeConfig().public.ogCardEnabled
   const site = kunOgSiteImage(cardsEnabled, kungal.domain.main)
 
-  const pageUrl = `${kungal.domain.main}${route.path}`
-  const cardUrl =
-    ogCard && cardsEnabled
-      ? `${kungal.domain.main}${kunOgCardPath(ogCard.kind, ogCard.id)}`
-      : ''
-  const image = cardUrl || explicitImage || site.url
-  // A caller's own image is of unknown size, so the site-wide width/height must be cleared
-  // rather than left to describe a different picture.
-  const size = cardUrl ? KUN_OG_CARD_SIZE : explicitImage ? null : site
+  const meta = computed(() => {
+    const input = toValue(source)
+    const pageUrl = `${kungal.domain.main}${route.path}`
+    if (input.noindex) {
+      return {
+        title: input.title ?? '',
+        description: '',
+        keywords: undefined,
+        robots: 'noindex, nofollow',
+        pageUrl,
+        ogType: 'website',
+        image: '',
+        imageWidth: false,
+        imageHeight: false,
+        articleAuthor: undefined,
+        articlePublishedTime: undefined,
+        articleModifiedTime: undefined
+      } as const
+    }
 
-  useSeoMeta(
-    {
+    const title = input.title
+      ? `${input.title} - ${kungal.title}`
+      : kungal.title
+    const cardUrl =
+      input.ogCard && cardsEnabled
+        ? `${kungal.domain.main}${kunOgCardPath(input.ogCard.kind, input.ogCard.id)}`
+        : ''
+    const image = cardUrl || input.ogImage || site.url
+    // A caller's own image is of unknown size, so the site-wide width/height must be cleared
+    // rather than left to describe a different picture.
+    const size = cardUrl ? KUN_OG_CARD_SIZE : input.ogImage ? null : site
+    return {
       title,
-      description,
-      keywords: kungal.keywords.toString(),
-      ogUrl: pageUrl,
-      ogType: input.ogType || 'website',
-      ogTitle: title,
-      ogDescription: description,
-      ogImage: image,
-      ogImageAlt: title,
-      ogImageWidth: size ? size.width : false,
-      ogImageHeight: size ? size.height : false,
-      twitterCard: 'summary_large_image',
-      twitterTitle: title,
-      twitterDescription: description,
-      twitterImage: image,
-      twitterImageAlt: title,
-      ...rest
-    },
-    options
-  )
+      description: input.description,
+      keywords: input.keywords ?? kungal.keywords.toString(),
+      robots: undefined,
+      pageUrl,
+      ogType: input.ogType ?? 'website',
+      image,
+      imageWidth: size ? size.width : false,
+      imageHeight: size ? size.height : false,
+      articleAuthor: input.articleAuthor,
+      articlePublishedTime: input.articlePublishedTime,
+      articleModifiedTime: input.articleModifiedTime
+    } as const
+  })
+
+  const title = () => meta.value.title
+  const description = () => meta.value.description
+  const image = () => meta.value.image
+
+  useSeoMeta({
+    title,
+    description,
+    keywords: () => meta.value.keywords,
+    robots: () => meta.value.robots,
+    ogUrl: () => meta.value.pageUrl,
+    ogType: () => meta.value.ogType,
+    ogTitle: title,
+    ogDescription: description,
+    ogImage: image,
+    ogImageAlt: title,
+    ogImageWidth: () => meta.value.imageWidth,
+    ogImageHeight: () => meta.value.imageHeight,
+    twitterCard: 'summary_large_image',
+    twitterTitle: title,
+    twitterDescription: description,
+    twitterImage: image,
+    twitterImageAlt: title,
+    articleAuthor: () => meta.value.articleAuthor,
+    articlePublishedTime: () => meta.value.articlePublishedTime,
+    articleModifiedTime: () => meta.value.articleModifiedTime
+  })
 
   useHead({
-    link: [{ rel: 'canonical', href: pageUrl }]
+    link: [{ rel: 'canonical', href: () => meta.value.pageUrl }]
   })
 }

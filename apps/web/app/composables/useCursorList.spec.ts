@@ -65,7 +65,7 @@ describe('useCursorList', () => {
   it('uses payload data while hydrating and does not request again', async () => {
     const fetchPage = vi.fn(async () => ok([item('h1')], 'n'))
     const nuxtApp = useNuxtApp()
-    nuxtApp.payload.data['cursor:hydrate-1'] = {
+    nuxtApp.payload.data['api:cursor:hydrate-1'] = {
       ok: true,
       data: { items: [item('h1')], next_cursor: 'n' }
     }
@@ -165,10 +165,15 @@ describe('useCursorList', () => {
     })
     const { list, stop } = await runList(key, fetchPage)
     expect(list.items.value.map((row) => row.id)).toEqual(['a'])
+    expect(list.pending.value).toBe(false)
     key.value = 'page-b'
+    await vi.waitFor(() => {
+      expect(list.pending.value).toBe(true)
+    })
     await vi.waitFor(() => {
       expect(list.items.value.map((row) => row.id)).toEqual(['b'])
     })
+    expect(list.pending.value).toBe(false)
     expect(fetchPage).toHaveBeenCalledTimes(2)
     expect(list.hasMore.value).toBe(false)
     stop()
@@ -208,7 +213,7 @@ describe('useCursorList', () => {
       .mockResolvedValueOnce(ok([item('2')]))
     const { list, stop } = await runList('payload-1', fetchPage)
     await list.loadMore()
-    const stored = useNuxtApp().payload.data['cursor:payload-1'] as {
+    const stored = useNuxtApp().payload.data['api:cursor:payload-1'] as {
       ok: boolean
       data: { items: Item[] }
     }

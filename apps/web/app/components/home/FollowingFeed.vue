@@ -10,8 +10,8 @@ const autoLoadCount = ref(0)
 
 const query = computed(() => ({ include_nsfw: allowsNsfw.value, limit: 20 }))
 
-const { items, status, problem, hasMore, loadingMore, loadMore } =
-  await useCursorList<FollowingActivityGroup>(
+const { items, status, pending, problem, hasMore, loadingMore, loadMore } =
+  useCursorList<FollowingActivityGroup>(
     () => `following-activities:${JSON.stringify(query.value)}`,
     (api, cursor, { signal }) =>
       api.GET('/me/following-activities', {
@@ -71,8 +71,10 @@ useIntersectionObserver(
   >
     <HomeSubscribedTopics />
 
+    <ActivityCardSkeletonList v-if="pending" />
+
     <KunNull
-      v-if="problem && !groups.length"
+      v-else-if="problem && !groups.length"
       description="关注动态加载失败，请稍后再试"
     />
 

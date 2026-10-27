@@ -11,8 +11,6 @@ const workId = parseInt((route.params as { id: string }).id)
 
 const target: CommunityCommentTarget = { kind: 'galgame', workId }
 
-
-
 const {
   posts,
   status,
@@ -29,9 +27,11 @@ const {
   handleUpdated,
   handleTombstoned,
   scrollToPost
-} = await useCommunityCommentList(target)
+} = useCommunityCommentList(target)
 
-watchEffect(() => emit('update:loading', status.value === 'pending'))
+watchEffect(() =>
+  emit('update:loading', status.value === 'pending' && seeded.value)
+)
 
 const showEmpty = computed(() => isEmpty.value)
 
@@ -103,7 +103,9 @@ onMounted(() => {
 
     <CommentCommunityComposer :target="target" @submitted="handleNewComment" />
 
-    <KunLoading v-if="status === 'pending'" />
+    <CommentCommunityListSkeleton v-if="!seeded" />
+
+    <KunLoading v-else-if="status === 'pending'" />
 
     <KunNull v-else-if="loadFailed" description="评论加载失败，请稍后刷新重试" />
 

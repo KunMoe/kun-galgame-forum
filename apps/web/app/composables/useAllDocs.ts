@@ -34,18 +34,13 @@ export const fetchAllDocs = async (
 }
 
 export const useAllDocs = (sort: DocSort) => {
-  const api = useApiClient()
-  const asyncData = useAsyncData(`api:docs:all:${sort}`, (_app, { signal }) =>
+  const list = useKunApi(`docs:all:${sort}`, (api, { signal }) =>
     fetchAllDocs(api, sort, signal)
   )
-  const docs = computed(() =>
-    asyncData.data.value?.ok ? asyncData.data.value.data : []
-  )
+  const docs = computed(() => list.data.value ?? [])
+  const state = { docs, pending: list.pending, refresh: list.refresh }
   return Object.assign(
-    Promise.resolve(asyncData).then(() => ({
-      docs,
-      refresh: asyncData.refresh
-    })),
-    { docs, refresh: asyncData.refresh }
+    Promise.resolve(list).then(() => state),
+    state
   )
 }

@@ -3,7 +3,7 @@ import type { WorkPage } from '#shared/utils/api/schemas'
 
 const { page, limit, query } = useBrowseWorksQuery()
 
-const { data, status, problem } = await useApi<WorkPage>(
+const { data, status, problem, pending } = useKunApi<WorkPage>(
   () => `works:${JSON.stringify(query.value)}`,
   (api, { signal }) =>
     api.GET('/works', { params: { query: query.value }, signal })
@@ -41,7 +41,9 @@ const total = computed(() => data.value?.total ?? 0)
       </KunHeader>
     </div>
 
-    <KunLoading :loading="status === 'pending'">
+    <GalgameCardGridSkeleton v-if="pending" />
+
+    <KunLoading v-else :loading="status === 'pending'">
       <GalgameCard v-if="galgames.length" :galgames="galgames" />
       <GalgameOriginalLanguageNull
         v-else

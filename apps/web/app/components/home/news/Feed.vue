@@ -16,7 +16,11 @@ const {
     class="min-w-0"
     :loading="status === 'pending' && items.length > 0"
   >
-    <KunNull v-if="error" description="情报服务暂时不可用，请稍后再试" />
+    <NewsCardSkeletonList
+      v-if="status === 'pending' && !items.length"
+      :count="5"
+    />
+    <KunNull v-else-if="error" description="情报服务暂时不可用，请稍后再试" />
     <KunNull
       v-else-if="status !== 'pending' && !items.length"
       description="暂无情报"
@@ -48,14 +52,7 @@ const {
         </div>
       </section>
 
-      <div v-if="isLoadingMore" class="space-y-3">
-        <KunSkeleton
-          v-for="n in 3"
-          :key="`skeleton-${n}`"
-          height="8rem"
-          rounded="lg"
-        />
-      </div>
+      <NewsCardSkeletonList v-if="isLoadingMore" />
     </div>
 
     <div v-if="items.length" ref="sentinel" class="flex justify-center pt-6">

@@ -33,31 +33,39 @@ const { state: query, set } = useQueryState({
 
 const state = computed(() => query.value.state)
 
-const { items, head, hasMore, loadingMore, loadMore, problem, status } =
-  await useCursorList<LibraryItem, LibraryPage>(
-    () => `user-library:${props.userId}:${state.value}:${stanceKey.value}`,
-    async (client, cursor, { signal }) => {
-      const res = await client.GET('/users/{user_id}/work-records', {
-        params: {
-          path: { user_id: String(props.userId) },
-          query: {
-            include_nsfw: allowsNsfw.value,
-            ...(state.value === 'all' ? {} : { state: [state.value] }),
-            ...(cursor ? { cursor } : {})
-          }
-        },
-        signal
-      })
-      if (!res.data) {
-        return res
-      }
-      const withIds = res.data.items.map((item) => ({
-        ...item,
-        id: item.work_summary.id
-      }))
-      return { ...res, data: { ...res.data, items: withIds } }
+const {
+  items,
+  head,
+  hasMore,
+  loadingMore,
+  loadMore,
+  problem,
+  status,
+  pending
+} = useCursorList<LibraryItem, LibraryPage>(
+  () => `user-library:${props.userId}:${state.value}:${stanceKey.value}`,
+  async (client, cursor, { signal }) => {
+    const res = await client.GET('/users/{user_id}/work-records', {
+      params: {
+        path: { user_id: String(props.userId) },
+        query: {
+          include_nsfw: allowsNsfw.value,
+          ...(state.value === 'all' ? {} : { state: [state.value] }),
+          ...(cursor ? { cursor } : {})
+        }
+      },
+      signal
+    })
+    if (!res.data) {
+      return res
     }
-  )
+    const withIds = res.data.items.map((item) => ({
+      ...item,
+      id: item.work_summary.id
+    }))
+    return { ...res, data: { ...res.data, items: withIds } }
+  }
+)
 
 const totalOf = (counts: WorkStateCounts) =>
   counts.wish + counts.doing + counts.done + counts.on_hold + counts.dropped
@@ -163,6 +171,8 @@ const emptyText = computed(() => {
           />
         </template>
       </GalgameCard>
+
+      <GalgameCardGridSkeleton v-else-if="pending" />
 
       <KunNull v-else-if="status !== 'pending'" :description="emptyText" />
 

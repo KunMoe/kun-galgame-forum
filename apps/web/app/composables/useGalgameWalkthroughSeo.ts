@@ -2,19 +2,13 @@ import type { Article, BreadcrumbList, WithContext } from 'schema-dts'
 import type { Walkthrough, Work } from '#shared/utils/api/schemas'
 import { KUN_GALGAME_WALKTHROUGH_SOURCE } from '~/constants/galgameWalkthrough'
 
-export const useGalgameWalkthroughSeo = (
+const walkthroughSeo = (
   walkthrough: Walkthrough,
-  work: Work
+  work: Work,
+  name: string,
+  nameOf: ReturnType<typeof useCatalogName>,
+  path: string
 ) => {
-  const route = useRoute()
-  const nameOf = useCatalogName()
-  const workName = useWorkName()
-
-  const name = workName(work)
-  if (!work.is_published || work.is_nsfw || walkthrough.is_nsfw) {
-    useKunDisableSeo(`${name} 攻略`)
-    return
-  }
 
   const { original } = nameOf(work)
   const alias = original && original !== name ? original : ''
@@ -27,7 +21,7 @@ export const useGalgameWalkthroughSeo = (
     KUN_GALGAME_WALKTHROUGH_SOURCE[walkthrough.source_site] ??
     walkthrough.source_site
   const developer = work.maker ? nameOf(work.maker).name : ''
-  const pageUrl = `${kungal.domain.main}${route.path}`
+  const pageUrl = `${kungal.domain.main}${path}`
   const workUrl = `${kungal.domain.main}/galgame/${work.id}`
   const image = work.banner?.url || work.cover?.url
 
@@ -107,27 +101,67 @@ export const useGalgameWalkthroughSeo = (
     ]
   }
 
-  useHead({
-    script: [
-      {
-        id: 'schema-org-walkthrough',
-        type: 'application/ld+json',
-        innerHTML: articleLd
-      },
-      {
-        id: 'schema-org-breadcrumb',
-        type: 'application/ld+json',
-        innerHTML: breadcrumbLd
-      }
-    ]
+  return { title, description, keywords, image, articleLd, breadcrumbLd }
+}
+
+export const useGalgameWalkthroughSeo = (
+  walkthrough: () => Walkthrough | undefined,
+  work: () => Work | undefined
+) => {
+  const route = useRoute()
+  const nameOf = useCatalogName()
+  const workName = useWorkName()
+
+  const seo = computed(() => {
+    const w = walkthrough()
+    const game = work()
+    if (!w || !game) {
+      return null
+    }
+    const name = workName(game)
+    if (!game.is_published || game.is_nsfw || w.is_nsfw) {
+      return { noindex: true as const, name }
+    }
+    return {
+      noindex: false as const,
+      walkthrough: w,
+      ...walkthroughSeo(w, game, name, nameOf, route.path)
+    }
   })
 
-  useKunSeoMeta({
-    title,
-    description,
-    keywords,
-    ogType: 'article',
-    ...(image ? { ogImage: image } : {}),
-    articleModifiedTime: walkthrough.updated_at
+  useHead(() => ({
+    script:
+      seo.value && !seo.value.noindex
+        ? [
+            {
+              id: 'schema-org-walkthrough',
+              type: 'application/ld+json',
+              innerHTML: seo.value.articleLd
+            },
+            {
+              id: 'schema-org-breadcrumb',
+              type: 'application/ld+json',
+              innerHTML: seo.value.breadcrumbLd
+            }
+          ]
+        : []
+  }))
+
+  useKunSeoMeta(() => {
+    const value = seo.value
+    if (!value) {
+      return { noindex: true, title: '攻略' }
+    }
+    if (value.noindex) {
+      return { noindex: true, title: `${value.name} 攻略` }
+    }
+    return {
+      title: value.title,
+      description: value.description,
+      keywords: value.keywords,
+      ogType: 'article',
+      ...(value.image ? { ogImage: value.image } : {}),
+      articleModifiedTime: value.walkthrough.updated_at
+    }
   })
 }

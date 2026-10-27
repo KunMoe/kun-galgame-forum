@@ -18,19 +18,18 @@ watchDebounced(
   { debounce: 300, maxWait: 1000 }
 )
 
-const [{ data: overview }, { data: daily }] = await Promise.all([
-  useApi('admin-overview', (client, { signal }) =>
-    client.GET('/admin/overview', { signal })
-  ),
-  useApi(
-    () => `admin-overview-daily:${debouncedDays.value}`,
-    (client, { signal }) =>
-      client.GET('/admin/overview/daily', {
-        params: { query: { days: debouncedDays.value } },
-        signal
-      })
-  )
-])
+const { data: overview, pending: overviewPending } = useKunApi(
+  'admin-overview',
+  (client, { signal }) => client.GET('/admin/overview', { signal })
+)
+const { data: daily, pending: dailyPending } = useKunApi(
+  () => `admin-overview-daily:${debouncedDays.value}`,
+  (client, { signal }) =>
+    client.GET('/admin/overview/daily', {
+      params: { query: { days: debouncedDays.value } },
+      signal
+    })
+)
 
 const days = computed(() => daily.value?.items ?? [])
 
@@ -66,7 +65,18 @@ useKunDisableSeo('数据总览')
       <h2 class="text-2xl">加和数据</h2>
       <p class="text-default-500 text-sm">网站在建立以来, 各项指标的总和数据</p>
       <div
-        v-if="allStats.length"
+        v-if="overviewPending"
+        class="grid grid-cols-2 gap-3 lg:grid-cols-3 xl:grid-cols-5"
+      >
+        <KunSkeleton
+          v-for="key in KUN_ADMIN_OVERVIEW_STATS_MODEL_ITEM"
+          :key="key"
+          height="5.5rem"
+          rounded="lg"
+        />
+      </div>
+      <div
+        v-else-if="allStats.length"
         class="grid grid-cols-2 gap-3 lg:grid-cols-3 xl:grid-cols-5"
       >
         <KunCard
@@ -93,7 +103,18 @@ useKunDisableSeo('数据总览')
         网站在指定时间段内, 各项指标的增量数据
       </p>
       <KunSlider :min="1" :max="30" :step="1" v-model="selectedDays" />
-      <div class="grid grid-cols-2 gap-3 lg:grid-cols-3 xl:grid-cols-5">
+      <div
+        v-if="dailyPending"
+        class="grid grid-cols-2 gap-3 lg:grid-cols-3 xl:grid-cols-5"
+      >
+        <KunSkeleton
+          v-for="key in KUN_ADMIN_OVERVIEW_STATS_MODEL_ITEM"
+          :key="key"
+          height="7rem"
+          rounded="lg"
+        />
+      </div>
+      <div v-else class="grid grid-cols-2 gap-3 lg:grid-cols-3 xl:grid-cols-5">
         <KunCard
           :is-transparent="true"
           :is-hoverable="false"
@@ -128,7 +149,8 @@ useKunDisableSeo('数据总览')
         如果要用一张可视化的图表来表示网站的增量数据状态, 那就是下面这张图
       </p>
       <KunCard :is-transparent="true" :is-hoverable="false">
-        <AdminOverviewChart v-if="days.length" :data="days" />
+        <KunSkeleton v-if="dailyPending" height="20rem" rounded="lg" />
+        <AdminOverviewChart v-else-if="days.length" :data="days" />
       </KunCard>
     </div>
   </div>

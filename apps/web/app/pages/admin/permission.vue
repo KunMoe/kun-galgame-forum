@@ -24,11 +24,12 @@ const activeTab = ref('matrix')
 
 const api = useApiClient()
 
-const { data } = await useApi('admin-role-permissions', (client, { signal }) =>
-  client.GET('/admin/role-permissions', { signal })
+const { data, pending } = useKunApi(
+  'admin-role-permissions',
+  (client, { signal }) => client.GET('/admin/role-permissions', { signal })
 )
 
-const matrix = ref<RolePermissionMatrix | null>(data.value ?? null)
+const matrix = ref<RolePermissionMatrix | null>(null)
 
 const layerOf = (m: RolePermissionMatrix | null, role: string) =>
   m?.role_permissions.find((layer) => layer.role === role)
@@ -44,9 +45,7 @@ const buildWorking = (m: RolePermissionMatrix): Record<string, Set<string>> =>
     )
   )
 
-const working = ref<Record<string, Set<string>>>(
-  matrix.value ? buildWorking(matrix.value) : {}
-)
+const working = ref<Record<string, Set<string>>>({})
 
 const baseline = computed<Record<string, Set<string>>>(() =>
   Object.fromEntries(
@@ -149,6 +148,15 @@ const applyMatrix = (m: RolePermissionMatrix) => {
   matrix.value = m
   working.value = buildWorking(m)
 }
+watch(
+  data,
+  (m) => {
+    if (m) {
+      applyMatrix(m)
+    }
+  },
+  { immediate: true }
+)
 
 const handleDiscard = () => {
   if (matrix.value) {
@@ -307,6 +315,7 @@ const handleReset = async (role: string) => {
         </div>
       </template>
 
+      <KunSkeleton v-else-if="pending" height="28rem" rounded="lg" />
       <KunNull v-else description="无法加载权限矩阵，请稍后重试" />
     </template>
   </div>

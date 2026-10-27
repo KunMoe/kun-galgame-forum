@@ -13,14 +13,16 @@ definePageMeta({
 useKunDisableSeo('文档管理')
 
 const api = useApiClient()
-const { docs, refresh: refetch } = await useAllDocs('position_asc')
+const { docs, pending, refresh } = useAllDocs('position_asc')
 
-const list = ref<DocSummary[]>([...docs.value])
-
-const refresh = async () => {
-  await refetch()
-  list.value = [...docs.value]
-}
+const list = ref<DocSummary[]>([])
+watch(
+  docs,
+  (next) => {
+    list.value = [...next]
+  },
+  { immediate: true }
+)
 
 const persistOrder = async () => {
   const result = await settle(
@@ -124,6 +126,8 @@ const handleTogglePin = async (row: DocSummary, value: boolean) => {
         新建文档
       </KunButton>
     </div>
+
+    <AdminListSkeleton v-if="pending" />
 
     <div ref="listEl" class="space-y-3">
       <KunCard

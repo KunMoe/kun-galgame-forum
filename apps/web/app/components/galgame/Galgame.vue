@@ -44,7 +44,7 @@ watch(activeTab, (tab) => {
 
 // A failed lookup is not reported: moyu is another site, and the tab is only
 // drawn when there is something in it.
-const { data: moyuPatches, status: moyuPatchStatus } = useApi<ListMoyuPatch>(
+const { data: moyuPatches, status: moyuPatchStatus } = useKunApi<ListMoyuPatch>(
   () => `galgame-moyu-patches:${props.galgame.id}`,
   (api, { signal }) =>
     api.GET('/works/{work_id}/moyu-patches', {
@@ -54,7 +54,7 @@ const { data: moyuPatches, status: moyuPatchStatus } = useApi<ListMoyuPatch>(
   { lazy: true, server: false }
 )
 const { data: walkthroughs, status: walkthroughStatus } =
-  useApi<ListWalkthrough>(
+  useKunApi<ListWalkthrough>(
     () => `galgame-walkthroughs:${props.galgame.id}`,
     (api, { signal }) =>
       api.GET('/walkthroughs', {
@@ -87,14 +87,8 @@ const canStickSidebar = computed(
 )
 
 const panelLoading = reactive<Record<string, boolean>>({})
-const panelReady = reactive<Record<string, boolean>>({
-  [activeTab.value]: true
-})
 const onPanelLoading = (tab: string, loading: boolean) => {
   panelLoading[tab] = loading
-  if (!loading) {
-    panelReady[tab] = true
-  }
 }
 
 const contentTabs = computed<KunTabItem[]>(() => [
@@ -112,7 +106,7 @@ const contentTabs = computed<KunTabItem[]>(() => [
 
 const RATING_PREVIEW_LIMIT = 6
 
-const { data: ratingsPage, refresh: refreshRatings } = await useApi<RatingPage>(
+const { data: ratingsPage, refresh: refreshRatings } = useKunApi<RatingPage>(
   () => `work-ratings:${props.galgame.id}`,
   (api, { signal }) =>
     api.GET('/ratings', {
@@ -248,7 +242,6 @@ const hasContributorCard = computed(
               mount="lazy"
               :loading="!!panelLoading.resource"
             >
-              <GalgamePanelSkeleton v-if="!panelReady.resource" />
               <GalgameResource
                 @update:loading="onPanelLoading('resource', $event)"
               />
@@ -267,7 +260,6 @@ const hasContributorCard = computed(
               mount="lazy"
               :loading="!!panelLoading.comment"
             >
-              <GalgamePanelSkeleton v-if="!panelReady.comment" />
               <GalgameCommentCommunityContainer
                 @update:loading="onPanelLoading('comment', $event)"
               />
@@ -278,7 +270,6 @@ const hasContributorCard = computed(
               mount="lazy"
               :loading="!!panelLoading.quiz"
             >
-              <GalgamePanelSkeleton v-if="!panelReady.quiz" />
               <GalgameQuizGalgamePanel
                 @update:loading="onPanelLoading('quiz', $event)"
               />

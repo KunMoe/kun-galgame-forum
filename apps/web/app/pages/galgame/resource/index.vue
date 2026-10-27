@@ -12,7 +12,7 @@ const { page, keywords, set } = useQueryState(
 const input = ref(keywords.value)
 const { allowsNsfw, stanceKey } = useContentStance()
 
-const { data, status, problem } = await useApi<PageListGalgameResource>(
+const { data, status, problem, pending } = useKunApi<PageListGalgameResource>(
   () =>
     `galgame-resources:${page.value}:${keywords.value}:${stanceKey.value}`,
   (api, { signal }) =>
@@ -78,6 +78,10 @@ useKunSeoMeta({
     </KunHeader>
 
     <KunNull v-if="problem" :description="problemMessage(problem)" />
+
+    <div v-else-if="pending" class="grid grid-cols-1 gap-3 md:grid-cols-2">
+      <GalgameResourceCardSkeleton v-for="n in 8" :key="n" />
+    </div>
 
     <KunLoading v-else :loading="isPending">
       <div

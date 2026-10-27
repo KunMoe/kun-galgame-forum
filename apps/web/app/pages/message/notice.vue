@@ -14,21 +14,27 @@ useKunDisableSeo('通知消息')
 const client = useApiClient()
 const noticeEpoch = useState('message-notice-epoch', () => 0)
 
-const { items, hasMore, problem, status, loadingMore, loadMore, refresh } =
-  await useCursorList<Notification>(
-    'me-notifications',
-    (api, cursor, { signal }) =>
-      api.GET('/me/notifications', {
-        params: {
-          query: {
-            limit: 30,
-            is_muted: false,
-            ...(cursor ? { cursor } : {})
-          }
-        },
-        signal
-      })
-  )
+const {
+  items,
+  hasMore,
+  problem,
+  status,
+  pending,
+  loadingMore,
+  loadMore,
+  refresh
+} = useCursorList<Notification>('me-notifications', (api, cursor, { signal }) =>
+  api.GET('/me/notifications', {
+    params: {
+      query: {
+        limit: 30,
+        is_muted: false,
+        ...(cursor ? { cursor } : {})
+      }
+    },
+    signal
+  })
+)
 
 const isSettingOpen = ref(false)
 const didMarkRead = ref(false)
@@ -116,12 +122,7 @@ onMounted(() => {
 
     <KunDivider />
 
-    <div
-      v-if="status === 'pending' && !items.length"
-      class="flex justify-center py-8"
-    >
-      <KunLoading />
-    </div>
+    <MessageAsideNoticeSkeleton v-if="pending && !items.length" />
 
     <template v-else-if="problem">
       <KunNull :description="problemMessage(problem)" />
@@ -143,11 +144,7 @@ onMounted(() => {
       </KunOverlayScroll>
 
       <div v-if="hasMore" class="flex justify-center pt-2">
-        <KunButton
-          variant="light"
-          :loading="loadingMore"
-          @click="loadMore"
-        >
+        <KunButton variant="light" :loading="loadingMore" @click="loadMore">
           加载更多
         </KunButton>
       </div>

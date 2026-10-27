@@ -3,7 +3,7 @@ import { userSortItem } from '~/constants/ranking'
 import { toKunUser } from '~/utils/userRef'
 import { RANKING_LIMIT, userRankingPageData, getRankClasses } from './pageData'
 
-const { data } = await useApi(
+const { data, pending } = useKunApi(
   () => `ranking-users:${userRankingPageData.sort}`,
   (client, { signal }) =>
     client.GET('/rankings/users', {
@@ -63,4 +63,5 @@ const icon = computed(
       </KunLink>
     </li>
   </ul>
+  <RankingListSkeleton v-else-if="pending" />
 </template>

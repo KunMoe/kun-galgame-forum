@@ -4,7 +4,6 @@ const props = defineProps<{
 }>()
 
 const {
-  status,
   following,
   setFollowing,
   seeded,
@@ -17,7 +16,7 @@ const {
   handleNewComment,
   handleUpdated,
   handleTombstoned
-} = await useCommunityCommentList({
+} = useCommunityCommentList({
   kind: 'toolset',
   toolsetId: props.toolsetId
 })
@@ -45,7 +44,7 @@ const target: CommunityCommentTarget = {
 
     <CommentCommunityComposer :target="target" @submitted="handleNewComment" />
 
-    <KunLoading v-if="status === 'pending' && !seeded" />
+    <CommentCommunityListSkeleton v-if="!seeded" />
 
     <KunNull v-else-if="loadFailed" description="评论加载失败，请稍后刷新重试" />
 

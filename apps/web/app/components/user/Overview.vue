@@ -21,7 +21,7 @@ const uid = props.userId
 const ownerId = String(uid)
 const N = 4
 
-const topics = useApi<PageListUserTopicItem>(
+const topics = useKunApi<PageListUserTopicItem>(
   () =>
     `user-topics:${ownerId}:authored:1:${N}:${includeNsfw.value ? 'nsfw' : 'sfw'}`,
   (api, { signal }) =>
@@ -38,7 +38,7 @@ const topics = useApi<PageListUserTopicItem>(
       signal
     })
 )
-const works = useApi<WorkPage>(
+const works = useKunApi<WorkPage>(
   () =>
     `user-works:${ownerId}:published:1:${N}:${includeNsfw.value ? 'nsfw' : 'sfw'}`,
   (api, { signal }) =>
@@ -55,9 +55,8 @@ const works = useApi<WorkPage>(
       signal
     })
 )
-const ratings = useApi<RatingPage>(
-  () =>
-    `user-ratings:${ownerId}:1:${N}:${includeNsfw.value ? 'nsfw' : 'sfw'}`,
+const ratings = useKunApi<RatingPage>(
+  () => `user-ratings:${ownerId}:1:${N}:${includeNsfw.value ? 'nsfw' : 'sfw'}`,
   (api, { signal }) =>
     api.GET('/ratings', {
       params: {
@@ -72,7 +71,7 @@ const ratings = useApi<RatingPage>(
       signal
     })
 )
-const resources = useApi<PageListGalgameResource>(
+const resources = useKunApi<PageListGalgameResource>(
   () =>
     `user-galgame-resources:${ownerId}:published:valid:1:${N}:${includeNsfw.value ? 'nsfw' : 'sfw'}`,
   (api, { signal }) =>
@@ -90,7 +89,7 @@ const resources = useApi<PageListGalgameResource>(
       signal
     })
 )
-const replies = useApi<PageListUserReplyItem>(
+const replies = useKunApi<PageListUserReplyItem>(
   () =>
     `user-replies:${ownerId}:authored:1:${N}:${includeNsfw.value ? 'nsfw' : 'sfw'}`,
   (api, { signal }) =>
@@ -107,7 +106,7 @@ const replies = useApi<PageListUserReplyItem>(
       signal
     })
 )
-const comments = useApi<PageListUserCommentItem>(
+const comments = useKunApi<PageListUserCommentItem>(
   () =>
     `user-comments:${ownerId}:authored:1:${N}:${includeNsfw.value ? 'nsfw' : 'sfw'}`,
   (api, { signal }) =>

@@ -34,7 +34,7 @@ const pageData = reactive({
   limit: 50
 })
 
-const { data, status } = await useApi<PageListUserTopicItem>(
+const { data, status, pending } = useKunApi<PageListUserTopicItem>(
   () =>
     `user-topics:${props.userId}:${relation.value}:${pageData.page}:${pageData.limit}:${includeNsfw.value ? 'nsfw' : 'sfw'}`,
   (client, { signal }) =>
@@ -85,6 +85,7 @@ const handleUpdateTopicHideStatus = async (topicId: string) => {
       scrollable
     />
 
+    <UserListSkeleton v-if="pending" />
     <div class="flex flex-col space-y-3" v-if="data && data.items.length">
       <template v-if="relation !== 'hidden'">
         <KunCard

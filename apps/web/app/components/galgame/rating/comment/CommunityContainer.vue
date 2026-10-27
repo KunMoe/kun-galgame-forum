@@ -17,7 +17,7 @@ const {
   handleNewComment,
   handleUpdated,
   handleTombstoned
-} = await useCommunityCommentList({ kind: 'rating', ratingId: props.ratingId })
+} = useCommunityCommentList({ kind: 'rating', ratingId: props.ratingId })
 
 const target: CommunityCommentTarget = {
   kind: 'rating',
@@ -43,7 +43,7 @@ const target: CommunityCommentTarget = {
     <div class="space-y-5">
       <CommentCommunityComposer :target="target" @submitted="handleNewComment" />
 
-      <KunLoading v-if="status === 'pending' && !seeded" />
+      <CommentCommunityListSkeleton v-if="!seeded" />
 
       <KunNull
         v-else-if="loadFailed"

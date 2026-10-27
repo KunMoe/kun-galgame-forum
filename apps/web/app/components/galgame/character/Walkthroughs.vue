@@ -8,7 +8,7 @@ const props = defineProps<{
 
 const { allowsNsfw, stanceKey } = useContentStance()
 
-const { data } = useApi<ListWalkthrough>(
+const { data } = useKunApi<ListWalkthrough>(
   () => `character-walkthroughs:${props.characterId}:${stanceKey.value}`,
   (api, { signal }) =>
     api.GET('/walkthroughs', {

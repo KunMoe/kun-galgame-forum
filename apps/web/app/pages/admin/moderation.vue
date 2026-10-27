@@ -46,7 +46,7 @@ const authorFilter = ref<{ id: string; name: string } | null>(null)
 
 const api = useApiClient()
 
-const { data, status, refresh } = await useApi(
+const { data, status, pending, refresh } = useKunApi(
   () =>
     `admin-review-items:${pageData.state}:${pageData.page}:${pageData.limit}:${authorFilter.value?.id ?? ''}`,
   (client, { signal }) =>
@@ -225,7 +225,7 @@ const actionOptions = TRUST_ACTIONS.map((a) => ({
       </KunChip>
     </div>
 
-    <KunLoading v-if="status === 'pending'" />
+    <AdminListSkeleton v-if="pending" />
 
     <KunNull v-else-if="!items.length" description="暂无审核条目" />
 

@@ -14,10 +14,9 @@ definePageMeta({
 
 useKunDisableSeo('已静音的消息')
 
-const { data: prefs } = await useApi<NotificationPreferences>(
+const { data: prefs } = useKunApi<NotificationPreferences>(
   'me-notification-preferences',
-  (api, { signal }) =>
-    api.GET('/me/notification-preferences', { signal })
+  (api, { signal }) => api.GET('/me/notification-preferences', { signal })
 )
 const mutedCategories = computed(() => {
   const muted = new Set(prefs.value?.muted_types ?? [])
@@ -36,24 +35,32 @@ const notificationType = computed((): NotificationType | undefined => {
   return activeTab.value as NotificationType
 })
 
-const { items, hasMore, problem, status, loadingMore, loadMore, refresh } =
-  await useCursorList<Notification>(
-    () => `me-notifications-muted:${activeTab.value}`,
-    (api, cursor, { signal }) =>
-      api.GET('/me/notifications', {
-        params: {
-          query: {
-            limit: 30,
-            is_muted: true,
-            ...(cursor ? { cursor } : {}),
-            ...(notificationType.value
-              ? { notification_type: notificationType.value }
-              : {})
-          }
-        },
-        signal
-      })
-  )
+const {
+  items,
+  hasMore,
+  problem,
+  status,
+  pending,
+  loadingMore,
+  loadMore,
+  refresh
+} = useCursorList<Notification>(
+  () => `me-notifications-muted:${activeTab.value}`,
+  (api, cursor, { signal }) =>
+    api.GET('/me/notifications', {
+      params: {
+        query: {
+          limit: 30,
+          is_muted: true,
+          ...(cursor ? { cursor } : {}),
+          ...(notificationType.value
+            ? { notification_type: notificationType.value }
+            : {})
+        }
+      },
+      signal
+    })
+)
 
 const removeNotification = (id: string) => {
   items.value = items.value.filter((notification) => notification.id !== id)
@@ -79,12 +86,7 @@ const removeNotification = (id: string) => {
 
     <KunDivider />
 
-    <div
-      v-if="status === 'pending' && !items.length"
-      class="flex justify-center py-8"
-    >
-      <KunLoading />
-    </div>
+    <MessageAsideNoticeSkeleton v-if="pending && !items.length" />
 
     <template v-else-if="problem">
       <KunNull :description="problemMessage(problem)" />
@@ -106,19 +108,12 @@ const removeNotification = (id: string) => {
       </KunOverlayScroll>
 
       <div v-if="hasMore" class="flex justify-center pt-2">
-        <KunButton
-          variant="light"
-          :loading="loadingMore"
-          @click="loadMore"
-        >
+        <KunButton variant="light" :loading="loadingMore" @click="loadMore">
           加载更多
         </KunButton>
       </div>
     </template>
 
-    <KunNull
-      v-else-if="status !== 'pending'"
-      description="没有已静音的消息"
-    />
+    <KunNull v-else-if="status !== 'pending'" description="没有已静音的消息" />
   </div>
 </template>

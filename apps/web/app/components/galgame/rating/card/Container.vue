@@ -64,7 +64,7 @@ const query = computed<RatingsQuery>(() => {
 })
 
 const nameOf = useCatalogName()
-const { data, status } = await useApi(
+const { data, status, pending } = useKunApi(
   () => `ratings:${JSON.stringify(query.value)}`,
   (api, { signal }) =>
     api.GET('/ratings', { params: { query: query.value }, signal })
@@ -123,6 +123,7 @@ const ratings = computed(() =>
     </div>
 
     <GalgameRatingCard v-if="data" :ratings="ratings" />
+    <GalgameRatingCardSkeleton v-else-if="pending" />
 
     <KunPagination
       v-if="(data?.total || 0) > params.limit"

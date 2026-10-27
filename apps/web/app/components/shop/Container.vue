@@ -31,9 +31,9 @@ const viewer = computed<KunUser>(() => ({
 const {
   data: offers,
   problem: offersProblem,
-  status: offersStatus,
+  pending: offersPending,
   refresh: refreshOffers
-} = await useApi('shop-offers', (client, { signal }) =>
+} = useKunApi('shop-offers', (client, { signal }) =>
   client.GET('/shop/offers', { signal })
 )
 
@@ -165,7 +165,7 @@ const onWorn = (slot: ShopLoadoutSlot) => {
 
     <template v-if="tab === 'store'">
       <div
-        v-if="offersStatus === 'pending' && !offers"
+        v-if="offersPending"
         class="grid gap-6 sm:grid-cols-2 lg:grid-cols-3"
         aria-busy="true"
       >

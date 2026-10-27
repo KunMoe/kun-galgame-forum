@@ -8,7 +8,7 @@ const props = defineProps<{
 
 const nameOf = useCatalogName()
 
-const { data: v1Graph } = useApi<CompanyGraph>(
+const { data: v1Graph } = useKunApi<CompanyGraph>(
   () => `company-graph:${props.officialId}`,
   (api) =>
     api.GET('/companies/{company_id}/graph', {

@@ -19,9 +19,9 @@ const {
   sentinel
 } = await useNewsFeed({ limit: 20, maxAutoLoads: 8, lane, source, year, month })
 
-const { directory: partners } = await useNewsSources()
+const { directory: partners } = useNewsSources()
 
-const { data: archive } = await useApi(
+const { data: archive } = useKunApi(
   () =>
     `news-archive:${filters.lane.value ?? ''}:${filters.source.value ?? ''}:${filters.year.value ?? 0}`,
   (api, { signal }) =>
@@ -120,7 +120,15 @@ const reset = () => {
         </div>
 
         <KunLoadingDim :loading="status === 'pending' && items.length > 0">
-          <KunNull v-if="error" description="情报服务暂时不可用，请稍后再试" />
+          <NewsCardSkeletonList
+            v-if="status === 'pending' && !items.length"
+            :count="5"
+            height="10rem"
+          />
+          <KunNull
+            v-else-if="error"
+            description="情报服务暂时不可用，请稍后再试"
+          />
           <KunNull v-else-if="isEmpty" description="没有符合条件的情报" />
 
           <div v-else class="space-y-8">
@@ -138,14 +146,7 @@ const reset = () => {
               </div>
             </section>
 
-            <div v-if="isLoadingMore" class="space-y-3">
-              <KunSkeleton
-                v-for="n in 3"
-                :key="`skeleton-${n}`"
-                height="10rem"
-                rounded="lg"
-              />
-            </div>
+            <NewsCardSkeletonList v-if="isLoadingMore" height="10rem" />
           </div>
 
           <div
