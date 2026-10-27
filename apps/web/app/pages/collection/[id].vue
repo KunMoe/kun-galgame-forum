@@ -44,7 +44,8 @@ const {
         query: { include_nsfw: allowsNsfw.value }
       },
       signal
-    })
+    }),
+  { critical: true }
 )
 
 const {

@@ -2,13 +2,16 @@ package apiv1
 
 import (
 	"context"
+	"sync"
 
 	v1 "kun-galgame-api/internal/apiv1"
 	"kun-galgame-api/internal/apiv1/repr"
 	"kun-galgame-api/internal/constants"
 	"kun-galgame-api/internal/galgame/client"
+	"kun-galgame-api/internal/galgame/entityapiv1"
 	"kun-galgame-api/internal/galgame/workrepr"
 	"kun-galgame-api/internal/middleware"
+	"kun-galgame-api/pkg/catalogclient"
 	"kun-galgame-api/pkg/perm"
 	"kun-galgame-api/pkg/problem"
 	"kun-galgame-api/pkg/userclient"
@@ -61,6 +64,19 @@ func (s *Service) assembleWork(
 	includeNSFW bool,
 	user *middleware.UserInfo,
 ) (Work, *problem.Problem) {
+	var (
+		lookups   sync.WaitGroup
+		engines   []entityapiv1.Engine
+		series    []entityapiv1.SeriesSummary
+		companies []WorkCompany
+		tallies   []catalogclient.CoverTally
+	)
+	lookups.Go(func() { engines = s.enginesOf(ctx, d) })
+	lookups.Go(func() { series = s.seriesOf(ctx, d) })
+	lookups.Go(func() { companies = s.companiesOf(ctx, d) })
+	lookups.Go(func() { tallies = s.coverTallies(ctx, workID) })
+	defer lookups.Wait()
+
 	item := d.ListItem()
 	summary := workrepr.WorkSummary{
 		WorkRef:           workrepr.Ref(ctx, &item, s.cdn),
@@ -90,8 +106,6 @@ func (s *Service) assembleWork(
 		Intros:           workrepr.Intros(d.IntroRows()),
 		Links:            linksOf(d),
 		ExternalRefs:     externalRefsOf(d),
-		Engines:          s.enginesOf(ctx, d),
-		Series:           s.seriesOf(ctx, d),
 		RelatedWorks:     relatedWorksOf(ctx, d, s.cdn),
 		Tags:             tagsOf(d, includeNSFW),
 		Credits:          creditsOf(d),
@@ -113,7 +127,6 @@ func (s *Service) assembleWork(
 		brief := client.CatalogItemToBrief(ctx, &item)
 		out.Dlsite = workrepr.DlsiteOf(s.storeLinks.Resolve(workID, brief.DlsiteWorkno()))
 	}
-	out.Companies = s.companiesOf(ctx, d)
 
 	var creatorID int
 	if s.store != nil && s.store.Ready() {
@@ -168,7 +181,9 @@ func (s *Service) assembleWork(
 		out.Contributors = append(out.Contributors, repr.NewUserRef(s.cdn, users[id]))
 	}
 
-	out.Covers = coversOf(d, s.cdn, s.coverTallies(ctx, workID), includeNSFW)
+	lookups.Wait()
+	out.Engines, out.Series, out.Companies = engines, series, companies
+	out.Covers = coversOf(d, s.cdn, tallies, includeNSFW)
 	out.Screenshots = screenshotsOf(d, s.cdn, includeNSFW)
 
 	if user != nil {

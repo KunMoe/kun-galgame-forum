@@ -38,7 +38,7 @@ afterEach(() => {
 const mountRefused = (code: string, status: number) => {
   holder.code = code
   holder.status = status
-  return mountSuspended(UserPage, { route: '/user/5/topic/authored' })
+  return mountSuspended(UserPage, { route: '/user/5/topic/topic' })
 }
 
 describe('user profile page for an anonymous visitor', () => {
@@ -55,7 +55,7 @@ describe('user profile page for an anonymous visitor', () => {
     expect(login).toBeDefined()
     await login!.trigger('click')
     expect(startOAuthLogin).toHaveBeenCalledWith({
-      returnTo: '/user/5/topic/authored'
+      returnTo: '/user/5/topic/topic'
     })
   })
 

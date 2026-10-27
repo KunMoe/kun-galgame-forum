@@ -13,7 +13,8 @@ const { data, problem, pending } = useKunApi<WebsiteCategory>(
   (api) =>
     api.GET('/website-categories/{website_category_slug}', {
       params: { path: { website_category_slug: slug.value } }
-    })
+    }),
+  { critical: true }
 )
 
 useKunSeoMeta(() => {

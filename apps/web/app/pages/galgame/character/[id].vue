@@ -10,7 +10,7 @@ import type {
   ListWalkthrough
 } from '#shared/utils/api/schemas'
 import { mergedInto } from '#shared/utils/api/merged'
-import { settle } from '#shared/utils/api/problem'
+import { settle, isMissingProblem } from '#shared/utils/api/problem'
 import { workSummaryToCard } from '~/utils/galgame/workCard'
 import { characterViewOf } from '~/utils/galgame/entityCards'
 
@@ -89,14 +89,15 @@ const {
     })
     movedTo.value = mergedInto(res.error)
     return res
-  }
+  },
+  { critical: true }
 )
 
 if (import.meta.server && movedTo.value) {
   await moveTo(movedTo.value)
 }
 useKunNotFound(
-  () => problem.value !== null && movedTo.value === null,
+  () => isMissingProblem(problem.value) && movedTo.value === null,
   '未找到该角色'
 )
 

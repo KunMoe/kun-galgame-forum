@@ -11,7 +11,8 @@ const { data, pending } = await useKunApi<CollectionAlias>(
     api.GET('/collection-aliases/{alias_id}', {
       params: { path: { alias_id: aliasId.value } },
       signal
-    })
+    }),
+  { critical: true }
 )
 
 const open = (alias: CollectionAlias) =>

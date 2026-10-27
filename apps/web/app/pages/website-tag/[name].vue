@@ -13,7 +13,8 @@ const { data, problem, pending } = useKunApi<WebsiteTag>(
   (api) =>
     api.GET('/website-tags/{website_tag_slug}', {
       params: { path: { website_tag_slug: slug.value } }
-    })
+    }),
+  { critical: true }
 )
 
 useKunSeoMeta(() => {

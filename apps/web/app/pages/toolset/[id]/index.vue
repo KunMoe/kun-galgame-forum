@@ -38,7 +38,8 @@ const { data, problem, pending } = useKunApi<Toolset>(
     api.GET('/toolsets/{toolset_id}', {
       params: { path: { toolset_id: id.value } },
       signal
-    })
+    }),
+  { critical: true }
 )
 
 const pageUrl = computed(() => `${kungal.domain.main}${route.path}`)

@@ -20,7 +20,8 @@ const { data, problem, pending, refresh } = await useKunApi<GalgameResource>(
     api.GET('/galgame-resources/{resource_id}', {
       params: { path: { resource_id: resourceId.value } },
       signal
-    })
+    }),
+  { critical: true }
 )
 
 const relocation = () =>

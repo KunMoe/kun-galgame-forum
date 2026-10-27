@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import type { Walkthrough } from '#shared/utils/api/schemas'
+import { isTransientProblem } from '#shared/utils/api/problem'
 
 const route = useRoute()
 const walkthroughId = String((route.params as { id: string }).id)
@@ -10,7 +11,8 @@ const { data, problem } = await useKunApi<Walkthrough>(
     api.GET('/walkthroughs/{walkthrough_id}', {
       params: { path: { walkthrough_id: walkthroughId } },
       signal
-    })
+    }),
+  { critical: true }
 )
 
 const redirect = (walkthrough: Walkthrough) =>
@@ -24,7 +26,7 @@ const redirect = (walkthrough: Walkthrough) =>
   )
 const unavailable = () =>
   createError({
-    statusCode: (problem.value?.status ?? 0) >= 500 ? 503 : 404,
+    statusCode: problem.value && isTransientProblem(problem.value) ? 503 : 404,
     statusMessage: '未找到这份攻略',
     fatal: true
   })

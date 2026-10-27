@@ -1,4 +1,5 @@
 <script setup lang="ts">
+import { isMissingProblem } from '#shared/utils/api/problem'
 const route = useRoute()
 const newsItemId = computed(() => (route.params as { id: string }).id)
 
@@ -22,10 +23,11 @@ const {
     api.GET('/news-items/{news_item_id}', {
       params: { path: { news_item_id: newsItemId.value } },
       signal
-    })
+    }),
+  { critical: true }
 )
 
-useKunNotFound(() => problem.value !== null, '未找到该情报')
+useKunNotFound(() => isMissingProblem(problem.value), '未找到该情报')
 
 useKunSeoMeta(() =>
   item.value

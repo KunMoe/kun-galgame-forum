@@ -56,7 +56,8 @@ const { data, problem, pending } = await useKunApi<Work>(
     movedTo.value = mergedInto(res.error)
     deletion.value = entityDeletion(res.error)
     return res
-  }
+  },
+  { critical: true }
 )
 
 const redirectToMerged = (id: number) =>
@@ -73,8 +74,7 @@ watch(movedTo, (id) => {
   }
 })
 useKunNotFound(
-  () =>
-    problem.value?.status === 404 && !movedTo.value && !deletion.value,
+  () => problem.value?.status === 404 && !movedTo.value && !deletion.value,
   '未找到这个 Galgame'
 )
 
@@ -273,7 +273,9 @@ useKunSeoMeta(() => {
       <KunNsfwGate v-else noun="Galgame" @reveal="revealed = true" />
     </div>
 
-    <GalgameDetailSkeleton v-else-if="pending || (data && firstScreenPending)" />
+    <GalgameDetailSkeleton
+      v-else-if="pending || (data && firstScreenPending)"
+    />
 
     <KunNull v-else-if="deletion" :description="deletionText" />
 
