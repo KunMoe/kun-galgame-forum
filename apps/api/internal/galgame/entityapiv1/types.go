@@ -120,9 +120,11 @@ type Engine struct {
 	Object string         `json:"object" enum:"engine" maxLength:"6" doc:"Type discriminant. Always engine."`
 	ID     repr.DecimalID `json:"id" doc:"Engine id: the catalog engine id, which is also the id in the web's /galgame/engine/{id}."`
 	repr.CatalogName
-	Aliases          []AliasName `json:"aliases" maxItems:"1000" doc:"Other names it goes by, never its display_name. Empty array, never null."`
-	Description      string      `json:"description" maxLength:"65535" doc:"Catalog's note on the engine, in whatever language it was written. Empty string if none. Free text; never use it as a decision input."`
-	CatalogWorkCount int         `json:"catalog_work_count" minimum:"0" doc:"Works catalog files under it, NSFW ones included. How many a reader can page through is the total of its works collection."`
+	Aliases               []AliasName `json:"aliases" maxItems:"1000" doc:"Other names it goes by, never its display_name. Empty array, never null."`
+	Description           string      `json:"description" maxLength:"65535" doc:"Catalog's note on the engine, in whatever language it was written. Empty string if none. Free text; never use it as a decision input."`
+	CatalogWorkCount      int         `json:"catalog_work_count" minimum:"0" doc:"Works catalog files under it, NSFW ones included. How many a reader can page through is the total of its works collection."`
+	CatalogRaterCount     int64       `json:"catalog_rater_count" minimum:"0" doc:"Catalog's rater_count over the same works: each work's largest rater count on VNDB, Bangumi or ErogameScape, summed. Up to an hour stale. A popularity signal; catalog_work_count is padded by many works nobody rated."`
+	CatalogRatedWorkCount int         `json:"catalog_rated_work_count" minimum:"0" doc:"Catalog's rated_work_count: works among catalog_work_count that at least 10 people rated on VNDB, Bangumi or ErogameScape."`
 }
 
 type SeriesSampleWork struct {

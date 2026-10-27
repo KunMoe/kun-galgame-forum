@@ -5104,6 +5104,18 @@
             "maxItems": 1000,
             "type": "array"
           },
+          "catalog_rated_work_count": {
+            "description": "Catalog's rated_work_count: works among catalog_work_count that at least 10 people rated on VNDB, Bangumi or ErogameScape.",
+            "format": "int64",
+            "minimum": 0,
+            "type": "integer"
+          },
+          "catalog_rater_count": {
+            "description": "Catalog's rater_count over the same works: each work's largest rater count on VNDB, Bangumi or ErogameScape, summed. Up to an hour stale. A popularity signal; catalog_work_count is padded by many works nobody rated.",
+            "format": "int64",
+            "minimum": 0,
+            "type": "integer"
+          },
           "catalog_work_count": {
             "description": "Works catalog files under it, NSFW ones included. How many a reader can page through is the total of its works collection.",
             "format": "int64",
@@ -5155,6 +5167,8 @@
           "aliases",
           "description",
           "catalog_work_count",
+          "catalog_rater_count",
+          "catalog_rated_work_count",
           "display_name",
           "latin",
           "localized"
