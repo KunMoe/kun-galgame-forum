@@ -17,14 +17,17 @@ const props = withDefaults(
   defineProps<{
     /** The trait page's own trait: always in the filter, never removable. */
     pinned?: TraitSummary | null
+    /** Overrides the reader's stance once they revealed an adult trait. */
+    includeNsfw?: boolean
   }>(),
-  { pinned: null }
+  { pinned: null, includeNsfw: undefined }
 )
 
 const api = useApiClient()
 const route = useRoute()
 const router = useRouter()
-const { allowsNsfw, stanceKey } = useContentStance()
+const { allowsNsfw } = useContentStance()
+const includeNsfw = computed(() => props.includeNsfw ?? allowsNsfw.value)
 
 const GENDERS: CharacterGender[] = ['female', 'male', 'other']
 const gendersField: QueryField<CharacterGender[]> = {
@@ -68,7 +71,7 @@ const sort = computed<CharacterSort>(() => {
 const picked = reactive(new Map<number, TraitSummary>())
 
 const { data: resolved } = useKunApi(
-  () => `trait-names:${pickedIds.value.join(',')}:${stanceKey.value}`,
+  () => `trait-names:${pickedIds.value.join(',')}:${includeNsfw.value}`,
   async (client, { signal }): Promise<ApiResult<TraitSummary[]>> => {
     if (!pickedIds.value.length) {
       return { ok: true, data: [] }
@@ -79,7 +82,7 @@ const { data: resolved } = useKunApi(
           query: {
             ids: pickedIds.value.map(String),
             limit: pickedIds.value.length,
-            include_nsfw: allowsNsfw.value
+            include_nsfw: includeNsfw.value
           }
         },
         signal
@@ -220,11 +223,11 @@ const query = computed(() => ({
   sort: sort.value,
   page: page.value,
   limit: LIMIT,
-  include_nsfw: allowsNsfw.value
+  include_nsfw: includeNsfw.value
 }))
 
 const { data, status, problem, pending } = useKunApi<CharacterPage>(
-  () => `characters:${JSON.stringify(query.value)}:${stanceKey.value}`,
+  () => `characters:${JSON.stringify(query.value)}`,
   (client, { signal }) =>
     client.GET('/characters', { params: { query: query.value }, signal })
 )

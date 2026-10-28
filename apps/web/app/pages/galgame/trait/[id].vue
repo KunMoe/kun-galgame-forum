@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { isMissingProblem } from '#shared/utils/api/problem'
+import { isMissingProblem, settle } from '#shared/utils/api/problem'
 import type { Trait } from '#shared/utils/api/schemas'
 import { traitFullName, traitSections, traitSide } from '~/utils/galgame/trait'
 import { provideTraitRoots } from '~/composables/galgame/useTraitRoots'
@@ -18,31 +18,32 @@ if (!Number.isInteger(traitId.value) || traitId.value <= 0) {
 const { allowsNsfw, stanceKey } = useContentStance()
 const roots = provideTraitRoots()
 
-const {
-  data: trait,
-  problem,
-  pending
-} = await useKunApi<Trait>(
+const traitRead = useKunApi<Trait>(
   () => `trait:${traitId.value}:${stanceKey.value}`,
   (api, { signal }) =>
-    api.GET('/traits/{trait_id}', {
-      params: {
-        path: { trait_id: String(traitId.value) },
-        query: { include_nsfw: allowsNsfw.value }
-      },
-      signal
-    }),
+    readWithNsfwProbe(
+      (includeNsfw) =>
+        settle(
+          api.GET('/traits/{trait_id}', {
+            params: {
+              path: { trait_id: String(traitId.value) },
+              query: { include_nsfw: includeNsfw }
+            },
+            signal
+          })
+        ),
+      allowsNsfw.value
+    ),
   { critical: true }
 )
+const { gated, reveal, includeNsfw } = useKunNsfwGate(
+  () => traitRead.data.value?.is_sexual
+)
 
+const { data: trait, problem, pending } = await traitRead
 await roots
 
-useKunNotFound(
-  () => isMissingProblem(problem.value),
-  allowsNsfw.value
-    ? '未找到该角色属性'
-    : '未找到该角色属性, 如果它是成人向属性, 请在设置面板开启 NSFW 开关'
-)
+useKunNotFound(() => isMissingProblem(problem.value), '未找到该角色属性')
 
 const name = computed(() => catalogVocabularyName(trait.value!))
 const fullName = computed(() => traitFullName(trait.value!))
@@ -78,7 +79,8 @@ useKunSeoMeta(() => {
 
 <template>
   <div>
-    <div v-if="trait" class="flex flex-col gap-6">
+    <KunNsfwGate v-if="trait && gated" noun="角色属性" @reveal="reveal" />
+    <div v-else-if="trait" class="flex flex-col gap-6">
       <KunHeader
         :name="`含有属性「${name}」的 Galgame 角色`"
         :description="
@@ -168,7 +170,7 @@ useKunSeoMeta(() => {
         </KunScrollShadow>
       </section>
 
-      <GalgameCharacterBrowser :pinned="trait" />
+      <GalgameCharacterBrowser :pinned="trait" :include-nsfw="includeNsfw" />
     </div>
     <div v-else-if="pending" class="flex flex-col gap-6" aria-hidden="true">
       <GalgameEntityHeaderSkeleton />
