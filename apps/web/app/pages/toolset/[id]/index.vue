@@ -12,6 +12,10 @@ import { documentPlainText } from '#shared/utils/content/plainText'
 import { contentPlainText } from '~/utils/contentPlainText'
 import { deletedUserName, toKunUser } from '~/utils/userRef'
 import { problemMessage } from '#shared/utils/api/message'
+import {
+  KUN_GALGAME_TOOLSET_PLATFORM_MAP,
+  KUN_GALGAME_TOOLSET_TYPE_MAP
+} from '~/constants/toolset'
 
 definePageMeta({ key: (route) => route.path })
 
@@ -46,8 +50,16 @@ useKunNotFound(() => isMissingProblem(problem.value), '未找到这个工具')
 
 const pageUrl = computed(() => `${kungal.domain.main}${route.path}`)
 const titleOf = (toolset: Toolset) => `${toolset.title} 资源下载`
-const descriptionOf = (toolset: Toolset) =>
-  truncateRunes(contentPlainText(toolset.content), 175)
+const descriptionOf = (toolset: Toolset) => {
+  const text = truncateRunes(contentPlainText(toolset.content), 175).trim()
+  if (text) {
+    return text
+  }
+  const kind = KUN_GALGAME_TOOLSET_TYPE_MAP[toolset.toolset_type] ?? '工具'
+  const platform =
+    KUN_GALGAME_TOOLSET_PLATFORM_MAP[toolset.platform] ?? toolset.platform
+  return `${toolset.title}, ${platform} 平台的 Galgame ${kind}, 在 ${kungal.titleShort} 免费下载。`
+}
 
 const osMap: Record<string, string> = {
   windows: 'Windows',
