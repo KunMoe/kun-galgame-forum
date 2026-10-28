@@ -1,4 +1,5 @@
 <script setup lang="ts">
+import { isMissingProblem } from '#shared/utils/api/problem'
 import {
   KUN_QUIZ_TYPE_MAP,
   KUN_QUIZ_CATEGORY_MAP
@@ -16,7 +17,7 @@ watch(quizId, () => {
 })
 const workName = useWorkName()
 
-const { data, problem, pending } = useKunApi<Quiz>(
+const { data, problem, pending } = await useKunApi<Quiz>(
   () => `quiz:${quizId.value}`,
   (api, { signal }) =>
     api.GET('/quizzes/{quiz_id}', {
@@ -25,6 +26,7 @@ const { data, problem, pending } = useKunApi<Quiz>(
     }),
   { critical: true }
 )
+useKunNotFound(() => isMissingProblem(problem.value), '题目不存在或已被删除')
 
 useKunSeoMeta(() => {
   const quiz = data.value

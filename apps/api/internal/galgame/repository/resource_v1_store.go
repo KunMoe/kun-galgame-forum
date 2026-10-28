@@ -124,6 +124,8 @@ func (s *ResourceV1Store) List(f ResourceListFilter, sort string, offset, limit 
 		q = q.Order("r.created ASC, r.id ASC")
 	case "work":
 		q = q.Order("r.status ASC, r.created DESC, r.id DESC")
+	case "download_desc":
+		q = q.Order("r.download DESC, r.id DESC")
 	case "relevance":
 		q = q.Order(clause.Expr{
 			SQL:  "CASE WHEN r.work_id IN ? THEN 1 ELSE 0 END DESC, r.created DESC, r.id DESC",

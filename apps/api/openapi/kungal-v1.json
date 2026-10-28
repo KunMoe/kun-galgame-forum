@@ -6939,9 +6939,10 @@
       "GalgameResourceSort": {
         "enum": [
           "created_desc",
-          "created_asc"
+          "created_asc",
+          "download_desc"
         ],
-        "maxLength": 12,
+        "maxLength": 13,
         "type": "string",
         "x-vocabulary-closed": true
       },
@@ -39862,14 +39863,14 @@
             }
           },
           {
-            "description": "Sort token. Default created_desc.",
+            "description": "Sort token. Default created_desc. download_desc: most downloaded first.",
             "explode": false,
             "in": "query",
             "name": "sort",
             "schema": {
               "$ref": "#/components/schemas/GalgameResourceSort",
               "default": "created_desc",
-              "description": "Sort token. Default created_desc."
+              "description": "Sort token. Default created_desc. download_desc: most downloaded first."
             }
           }
         ],

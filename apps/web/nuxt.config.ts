@@ -100,6 +100,7 @@ export default defineNuxtConfig({
     // Without this the retired path falls through to /galgame/[id] and
     // answers "未找到这个 Galgame" instead of 404ing or moving.
     '/galgame/library': { redirect: { to: '/gallib', statusCode: 301 } },
+    '/ranking': { redirect: { to: '/ranking/user', statusCode: 301 } },
     '/galgame-resource': {
       redirect: { to: '/galgame/resource', statusCode: 301 }
     },
@@ -133,16 +134,24 @@ export default defineNuxtConfig({
       '/message/**',
       '/report',
       '/user',
-      '/rss'
+      '/rss',
+      '/search',
+      '/news/mine',
+      '/update',
+      '/ranking',
+      '/galgame-edit/**'
     ],
     defaultSitemapsChunkSize: 1000,
     sitemaps: {
       kungal: {
         includeAppSources: true,
-        sources: ['/api/__sitemap__/urls'],
+        // The module aborts a local source after 5s by default, and a cold
+        // collection takes minutes against the upstream rate limits.
+        sources: [['/api/__sitemap__/urls', { timeout: 15 * 60 * 1000 }]],
         chunks: true
       }
     },
+    experimentalWarmUp: true,
     cacheMaxAgeSeconds: 60 * 60 * 6,
     defaults: { changefreq: 'daily', priority: 0.7 }
   },

@@ -11,6 +11,7 @@ import { contentPlainText } from '~/utils/contentPlainText'
 import { firstImageUrl } from '#shared/utils/content/plainText'
 import { toKunUser } from '~/utils/userRef'
 import { problemMessage } from '#shared/utils/api/message'
+import { isMissingProblem } from '#shared/utils/api/problem'
 import { provideTopicPage } from '~/composables/topic/useTopicPage'
 
 definePageMeta({ key: (route) => route.path })
@@ -42,7 +43,7 @@ const firstScreenPending = computed(
 )
 
 const { data, problem, pending, refresh } = await topicRead
-useKunNotFound(() => problem.value?.status === 404, '未找到这个话题')
+useKunNotFound(() => isMissingProblem(problem.value), '未找到这个话题')
 
 const replaced = ref<Topic>()
 watch(data, () => {

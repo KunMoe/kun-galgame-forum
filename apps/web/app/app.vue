@@ -60,7 +60,7 @@ useHead({
       title: 'Mastodon'
     },
     { rel: 'icon', type: 'image/x-icon', href: '/favicon.ico' },
-    { rel: 'canonical', href: kungal.domain.main }
+    { rel: 'canonical', href: () => kunCanonicalUrl(route) }
   ]
 })
 

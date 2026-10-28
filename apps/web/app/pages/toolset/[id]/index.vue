@@ -1,4 +1,5 @@
 <script setup lang="ts">
+import { isMissingProblem } from '#shared/utils/api/problem'
 import type {
   WithContext,
   SoftwareApplication,
@@ -32,7 +33,7 @@ const { data: comments } = useKunApi<WallComment[]>(
   }
 )
 
-const { data, problem, pending } = useKunApi<Toolset>(
+const { data, problem, pending } = await useKunApi<Toolset>(
   () => `toolset:${id.value}`,
   (api, { signal }) =>
     api.GET('/toolsets/{toolset_id}', {
@@ -41,6 +42,7 @@ const { data, problem, pending } = useKunApi<Toolset>(
     }),
   { critical: true }
 )
+useKunNotFound(() => isMissingProblem(problem.value), '未找到这个工具')
 
 const pageUrl = computed(() => `${kungal.domain.main}${route.path}`)
 const titleOf = (toolset: Toolset) => `${toolset.title} 资源下载`
@@ -69,6 +71,7 @@ const appJsonLdOf = (
   operatingSystem:
     osMap[(toolset.platform || '').toLowerCase()] || toolset.platform || 'All',
   softwareVersion: toolset.release_channel,
+  offers: { '@type': 'Offer', price: 0, priceCurrency: 'CNY' },
   inLanguage: toolset.interface_language,
   datePublished: new Date(toolset.created_at).toISOString(),
   dateModified: new Date(toolset.updated_at).toISOString(),

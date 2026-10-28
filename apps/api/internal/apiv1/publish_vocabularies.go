@@ -34,7 +34,7 @@ var vocabularies = []vocabulary{
 	{"FollowNotifyLevel", []string{"all", "feed"}},
 	{"FriendLinkCategory", []string{"official", "galgame", "others"}},
 	{"FriendLinkState", []string{"normal", "down"}},
-	{"GalgameResourceSort", []string{"created_desc", "created_asc"}},
+	{"GalgameResourceSort", []string{"created_desc", "created_asc", "download_desc"}},
 	{"GalgameResourceState", []string{"valid", "expired"}},
 	{"GameType", []string{"ba_saku", "plot", "moe", "daily"}},
 	{"GameTypeFilter", []string{"ba_saku", "plot", "moe", "daily", "uncategorized"}},
