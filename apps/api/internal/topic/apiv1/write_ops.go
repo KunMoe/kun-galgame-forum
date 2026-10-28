@@ -5,6 +5,7 @@ import (
 	"kun-galgame-api/internal/moemoepoint"
 	"kun-galgame-api/internal/trust/gate"
 	userRepo "kun-galgame-api/internal/user/repository"
+	"kun-galgame-api/pkg/imageclient"
 )
 
 type AwardFunc func(userID, delta int, reason, ref, idempotencyKey string)
@@ -19,6 +20,7 @@ type Writes struct {
 
 	ai            *TopicAI
 	classifyLimit classifyLimiter
+	images        func(hashes []string) map[string]imageclient.ImageMeta
 }
 
 // SetAI turns on model classification and summaries; without it both are off.

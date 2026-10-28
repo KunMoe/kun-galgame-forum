@@ -3,7 +3,9 @@ package content
 import (
 	"context"
 	"fmt"
+	"log/slog"
 	"strings"
+	"time"
 
 	"kun-galgame-api/internal/apiv1/repr"
 	"kun-galgame-api/internal/infrastructure/markdown"
@@ -13,11 +15,17 @@ import (
 	"github.com/yuin/goldmark/ast"
 )
 
+// A cold catalog read of the series card index took over 20s on 2026-10-27,
+// and every page carrying a series card waited for it. Past this budget the
+// page renders its entity links as plain links instead.
+const entityLookupTimeout = 2500 * time.Millisecond
+
 type Converter struct {
 	CDNBase  string
 	SiteBase string
 	Images   func(hashes []string) map[string]imageclient.ImageMeta
 	Users    func(ctx context.Context, ids []int) (map[int]userclient.User, error)
+	Entities EntityResolver
 }
 
 func (c *Converter) Convert(ctx context.Context, sources []string) ([]ContentDocument, error) {
@@ -31,6 +39,9 @@ func (c *Converter) Convert(ctx context.Context, sources []string) ([]ContentDoc
 	seenH := map[string]struct{}{}
 	var userIDs []int
 	seenU := map[int]struct{}{}
+	var entityRefs []EntityRef
+	seenE := map[EntityRef]struct{}{}
+	site := strings.TrimRight(c.SiteBase, "/")
 	addHash := func(h string) {
 		if h == "" {
 			return
@@ -51,6 +62,17 @@ func (c *Converter) Convert(ctx context.Context, sources []string) ([]ContentDoc
 		seenU[id] = struct{}{}
 		userIDs = append(userIDs, id)
 	}
+	addEntity := func(ref EntityRef) {
+		if ref.Type == EntityUser {
+			addUser(ref.ID)
+			return
+		}
+		if _, ok := seenE[ref]; ok {
+			return
+		}
+		seenE[ref] = struct{}{}
+		entityRefs = append(entityRefs, ref)
+	}
 	for i, s := range sources {
 		if strings.TrimSpace(s) == "" {
 			items[i].empty = true
@@ -60,6 +82,9 @@ func (c *Converter) Convert(ctx context.Context, sources []string) ([]ContentDoc
 		items[i].root = root
 		items[i].src = src
 		collectRefs(root, src, addHash, addUser)
+		if c.Entities != nil {
+			(&converter{site: site, src: src}).collectEntityRefs(root, addEntity)
+		}
 	}
 
 	var images map[string]imageclient.ImageMeta
@@ -75,6 +100,19 @@ func (c *Converter) Convert(ctx context.Context, sources []string) ([]ContentDoc
 		}
 	}
 
+	entitiesOn := c.Entities != nil
+	var targets map[EntityRef]EntityTarget
+	if len(entityRefs) > 0 && entitiesOn {
+		lookupCtx, cancel := context.WithTimeout(ctx, entityLookupTimeout)
+		var err error
+		targets, err = c.Entities(lookupCtx, entityRefs)
+		cancel()
+		if err != nil {
+			slog.Warn("content: entity previews unavailable, rendering links", "error", err)
+			entitiesOn = false
+		}
+	}
+
 	out := make([]ContentDocument, len(sources))
 	for i, it := range items {
 		if it.empty {
@@ -82,11 +120,13 @@ func (c *Converter) Convert(ctx context.Context, sources []string) ([]ContentDoc
 			continue
 		}
 		cv := &converter{
-			cdn:    c.CDNBase,
-			site:   strings.TrimRight(c.SiteBase, "/"),
-			src:    it.src,
-			images: images,
-			users:  users,
+			cdn:        c.CDNBase,
+			site:       site,
+			src:        it.src,
+			images:     images,
+			users:      users,
+			entitiesOn: entitiesOn,
+			targets:    targets,
 		}
 		out[i] = NewDocument(cv.blocks(it.root))
 	}
@@ -94,12 +134,14 @@ func (c *Converter) Convert(ctx context.Context, sources []string) ([]ContentDoc
 }
 
 type converter struct {
-	cdn       string
-	site      string
-	src       []byte
-	images    map[string]imageclient.ImageMeta
-	users     map[int]userclient.User
-	untrusted bool // raw HTML stays literal, and kungal-user/kungal-reply are not mentions
+	cdn        string
+	site       string
+	src        []byte
+	images     map[string]imageclient.ImageMeta
+	users      map[int]userclient.User
+	untrusted  bool // raw HTML stays literal, and kungal-user/kungal-reply are not mentions
+	entitiesOn bool
+	targets    map[EntityRef]EntityTarget
 }
 
 func (c *converter) userRef(id int) repr.UserRef {

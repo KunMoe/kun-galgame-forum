@@ -436,6 +436,7 @@ const submit = async () => {
         </p>
       </div>
       <KunMilkdownDualEditorProvider
+        entities
         :key="editorKey"
         :value-markdown="description"
         placeholder="补充题目背景、线索图片等（可选）"

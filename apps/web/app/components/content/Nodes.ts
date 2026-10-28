@@ -4,6 +4,7 @@ import { toKunUser } from '~/utils/userRef'
 import type {
   BlockNode,
   CodeNode,
+  EntityTarget,
   HeadingNode,
   ImageNode,
   InlineNode,
@@ -18,6 +19,8 @@ import type {
   VideoNode
 } from '#shared/utils/api/schemas'
 import { isDecimalId, isRecord, isSafeHref, isSafeMediaUrl } from './guards'
+import EntityCard from './EntityCard.vue'
+import EntityChip from './EntityChip.vue'
 
 type ContentNode = BlockNode | InlineNode
 type Rendered = VNode | string | (VNode | string)[] | null
@@ -279,6 +282,26 @@ const renderReplyReference = (node: ReplyReferenceNode): Rendered => {
   )
 }
 
+const ENTITY_TARGETS = new Set([
+  'topic',
+  'work',
+  'galgame_resource',
+  'user',
+  'character',
+  'company',
+  'tag',
+  'series',
+  'credit_name',
+  'rating',
+  'unavailable_entity'
+])
+
+const isKnownTarget = (target: EntityTarget): boolean =>
+  ENTITY_TARGETS.has(target.object) &&
+  (target.object === 'unavailable_entity'
+    ? isDecimalId(target.entity_id)
+    : isDecimalId(target.id))
+
 const renderNode = (node: ContentNode, ctx: Ctx): Rendered => {
   switch (node.object) {
     case 'paragraph':
@@ -333,6 +356,14 @@ const renderNode = (node: ContentNode, ctx: Ctx): Rendered => {
       return renderMention(node)
     case 'reply_reference':
       return renderReplyReference(node)
+    case 'entity_card':
+      return isKnownTarget(node.target)
+        ? h(EntityCard, { target: node.target })
+        : blocks(node.children, ctx)
+    case 'entity_link':
+      return isKnownTarget(node.target)
+        ? h(EntityChip, { target: node.target })
+        : inlines(node.children, ctx)
     default:
       return renderUnknown(node, ctx)
   }

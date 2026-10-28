@@ -89,36 +89,41 @@ func (a *TopicAI) sign(payload []byte) []byte {
 }
 
 // Token binds a verdict to the caller and to the exact text it was given.
-func (a *TopicAI) Token(userID int, title, body, section string, expires time.Time) string {
-	payload := make([]byte, 0, 16+32+len(section))
+func (a *TopicAI) Token(userID int, title, body string, verdict ai.Verdict, expires time.Time) string {
+	payload := make([]byte, 0, 16+32+1+len(verdict.Section))
 	payload = binary.BigEndian.AppendUint64(payload, uint64(userID))
 	payload = binary.BigEndian.AppendUint64(payload, uint64(expires.Unix()))
 	payload = append(payload, textDigest(title, body)...)
-	payload = append(payload, section...)
+	nsfw := byte(0)
+	if verdict.IsNSFW {
+		nsfw = 1
+	}
+	payload = append(payload, nsfw)
+	payload = append(payload, verdict.Section...)
 	return base64.RawURLEncoding.EncodeToString(append(payload, a.sign(payload)...))
 }
 
 var errBadToken = errors.New("classification token does not verify")
 
-func (a *TopicAI) Verify(token string, userID int, title, body string) (string, error) {
+func (a *TopicAI) Verify(token string, userID int, title, body string) (ai.Verdict, error) {
 	raw, err := base64.RawURLEncoding.DecodeString(token)
-	if err != nil || len(raw) < 16+32+16 {
-		return "", errBadToken
+	if err != nil || len(raw) < 16+32+1+16 {
+		return ai.Verdict{}, errBadToken
 	}
 	payload, mac := raw[:len(raw)-16], raw[len(raw)-16:]
 	if !hmac.Equal(mac, a.sign(payload)) {
-		return "", errBadToken
+		return ai.Verdict{}, errBadToken
 	}
 	if int(binary.BigEndian.Uint64(payload[0:8])) != userID {
-		return "", errBadToken
+		return ai.Verdict{}, errBadToken
 	}
 	if time.Now().Unix() > int64(binary.BigEndian.Uint64(payload[8:16])) {
-		return "", errBadToken
+		return ai.Verdict{}, errBadToken
 	}
 	if !hmac.Equal(payload[16:48], textDigest(title, body)) {
-		return "", errBadToken
+		return ai.Verdict{}, errBadToken
 	}
-	return string(payload[48:]), nil
+	return ai.Verdict{Section: string(payload[49:]), IsNSFW: payload[48] == 1}, nil
 }
 
 func (a *TopicAI) wantsSummary(body string) bool {

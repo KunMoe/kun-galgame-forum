@@ -149,6 +149,25 @@ func (s *ResourceV1Store) Find(id int) (*model.GalgameResource, error) {
 	return &row, nil
 }
 
+func (s *ResourceV1Store) FindMany(ids []int) ([]model.GalgameResource, error) {
+	var rows []model.GalgameResource
+	err := s.db.Where("id IN ?", ids).Find(&rows).Error
+	return rows, err
+}
+
+func (s *ResourceV1Store) VisibleWorks(workIDs []int) (map[int]bool, error) {
+	var ids []int
+	err := s.db.Table("galgame").Where("id IN ? AND published AND catalog_rendered", workIDs).Pluck("id", &ids).Error
+	if err != nil {
+		return nil, err
+	}
+	out := make(map[int]bool, len(ids))
+	for _, id := range ids {
+		out[id] = true
+	}
+	return out, nil
+}
+
 func (s *ResourceV1Store) WorkVisible(workID int) (bool, error) {
 	var n int64
 	err := s.db.Table("galgame").Where("id = ? AND published AND catalog_rendered", workID).Count(&n).Error

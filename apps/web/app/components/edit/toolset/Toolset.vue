@@ -157,6 +157,7 @@ const handleUpdatePageLink = (value: string | number) => {
         请在此处具体说明工具是什么, 以及如何使用该工具, 越详细越好
       </p>
       <KunMilkdownDualEditorProvider
+        entities
         :value-markdown="form.content_markdown"
         @set-markdown="(value) => (form.content_markdown = value)"
         language="zh-cn"

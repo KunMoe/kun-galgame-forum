@@ -97,6 +97,7 @@ GET    /api/v1/docs/:doc_slug                         cors.New → v1Headers →
 GET    /api/v1/engines                                cors.New → v1Headers → fiberAdapter.Handle
 GET    /api/v1/engines/:engine_id                     cors.New → v1Headers → fiberAdapter.Handle
 GET    /api/v1/engines/:engine_id/works               cors.New → v1Headers → fiberAdapter.Handle
+GET    /api/v1/entity-previews                        cors.New → v1Headers → fiberAdapter.Handle
 GET    /api/v1/friend-links                           cors.New → v1Headers → fiberAdapter.Handle
 GET    /api/v1/galgame-resource-relocations/:resource_id cors.New → v1Headers → fiberAdapter.Handle
 GET    /api/v1/galgame-resources                      cors.New → v1Headers → fiberAdapter.Handle

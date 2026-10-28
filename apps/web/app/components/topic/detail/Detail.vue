@@ -3,7 +3,7 @@ import { useTopicReplies } from '~/composables/topic/useTopicReplies'
 import { useTopicPage } from '~/composables/topic/useTopicPage'
 import { useTopicReadMarker } from '~/composables/topic/useTopicReadMarker'
 import { useTopicScroll } from '~/composables/topic/useTopicScroll'
-import { TOPIC_TOC_SOURCE } from '~/composables/topic/useTopicTOC'
+import { TOPIC_TOC, useTopicTOC } from '~/composables/topic/useTopicTOC'
 import { problemMessage } from '#shared/utils/api/message'
 import type { Reply, Topic } from '#shared/utils/api/schemas'
 import { toKunUserWithPoints } from '~/utils/userRef'
@@ -123,6 +123,10 @@ provide(
   computed(() => props.topic)
 )
 
+const author = computed(() =>
+  toKunUserWithPoints(props.topic.author, props.topic.author_moemoepoint)
+)
+
 const featuredReplies = computed(() => {
   const items: Reply[] = []
   const seen = new Set<string>()
@@ -154,11 +158,14 @@ const tocReplies = computed(() => {
   return [...map.values()]
 })
 
-provide(TOPIC_TOC_SOURCE, {
-  getContent: () => props.topic.content,
-  getReplies: () => tocReplies.value,
-  getTargetFloor: () => activeFloor.value
-})
+provide(
+  TOPIC_TOC,
+  useTopicTOC({
+    getContent: () => props.topic.content,
+    getReplies: () => tocReplies.value,
+    getTargetFloor: () => activeFloor.value
+  })
+)
 
 watch(
   () => [props.topic.pinned_reply?.id, props.topic.best_answer?.id] as const,
@@ -206,11 +213,11 @@ watch(
 </script>
 
 <template>
-  <div class="flex flex-col gap-4 lg:flex-row lg:items-start">
-    <TopicDetailMasterUser
-      v-if="topic.author"
-      :user="toKunUserWithPoints(topic.author, topic.author_moemoepoint)"
-    />
+  <div class="flex flex-col gap-4 lg:flex-row lg:items-start xl:gap-6">
+    <template v-if="topic.author">
+      <TopicDetailMasterUser :user="author" class="xl:hidden" />
+      <TopicDetailAuthorRail :user="author" :topic-id="topic.id" />
+    </template>
 
     <div class="min-w-0 flex-1 space-y-4">
       <TopicDetailHiddenNotice
@@ -298,5 +305,7 @@ watch(
 
       <TopicDetailActionBar :topic="topic" />
     </div>
+
+    <TopicDetailTocRail />
   </div>
 </template>

@@ -400,3 +400,52 @@ func TestV1TopicsCanLeaveOutHiddenSections(t *testing.T) {
 		t.Fatalf("exclude: tech-help %v daily %v", shown[ids["tech-help"]], shown[ids["daily"]])
 	}
 }
+
+func TestV1TopicNSFWIsJudgedAndOnlyTightenedByTheAuthor(t *testing.T) {
+	f, model := newTopicAIFix(t, true)
+
+	model.set(http.StatusOK, `{"section":"daily","nsfw":true,"reason":"r"}`)
+	resp, verdict := f.callJSON(t, http.MethodPost, "/api/v1/topics/classify", "/topics/classify", "sess-alice", "",
+		map[string]any{"title": "adult", "content_markdown": "body of adult"})
+	if resp.StatusCode != http.StatusOK || verdict["is_nsfw"] != true {
+		t.Fatalf("classify %d %v", resp.StatusCode, verdict)
+	}
+	model.set(http.StatusOK, `{"section":"daily","nsfw":false,"reason":"would differ"}`)
+	body := newTopicBody("adult", "daily")
+	body["classification_token"] = verdict["classification_token"]
+	resp, out := f.callJSON(t, http.MethodPost, "/api/v1/topics", "/topics", "sess-alice", keyUUID(9131), body)
+	if resp.StatusCode != http.StatusCreated || out["is_nsfw"] != true {
+		t.Fatalf("the token's NSFW verdict was dropped: %d %v", resp.StatusCode, out["is_nsfw"])
+	}
+	adultID := strID(out["id"])
+
+	model.set(http.StatusOK, `{"section":"daily","nsfw":false,"reason":"r"}`)
+	marked := newTopicBody("author marks", "daily")
+	marked["is_nsfw"] = true
+	resp, out = f.callJSON(t, http.MethodPost, "/api/v1/topics", "/topics", "sess-alice", keyUUID(9132), marked)
+	if resp.StatusCode != http.StatusCreated || out["is_nsfw"] != true {
+		t.Fatalf("the author's own mark was dropped: %d %v", resp.StatusCode, out["is_nsfw"])
+	}
+	markedID := strID(out["id"])
+
+	model.set(http.StatusOK, `{"section":"daily","nsfw":true,"reason":"r"}`)
+	resp, out = f.callJSON(t, http.MethodPatch, "/api/v1/topics/"+adultID, "/topics/{topic_id}", "sess-alice", "",
+		map[string]any{"is_nsfw": false})
+	if resp.StatusCode != http.StatusOK || out["is_nsfw"] != true {
+		t.Fatalf("an author cleared a judged NSFW mark: %d %v", resp.StatusCode, out["is_nsfw"])
+	}
+
+	model.set(http.StatusInternalServerError, "")
+	resp, out = f.callJSON(t, http.MethodPatch, "/api/v1/topics/"+markedID, "/topics/{topic_id}", "sess-alice", "",
+		map[string]any{"is_nsfw": false})
+	if resp.StatusCode != http.StatusOK || out["is_nsfw"] != true {
+		t.Fatalf("a mark was cleared while the model was down: %d %v", resp.StatusCode, out["is_nsfw"])
+	}
+
+	model.set(http.StatusOK, `{"section":"daily","nsfw":false,"reason":"r"}`)
+	resp, out = f.callJSON(t, http.MethodPatch, "/api/v1/topics/"+markedID, "/topics/{topic_id}", "sess-alice", "",
+		map[string]any{"is_nsfw": false})
+	if resp.StatusCode != http.StatusOK || out["is_nsfw"] != false {
+		t.Fatalf("an author could not clear their own mark: %d %v", resp.StatusCode, out["is_nsfw"])
+	}
+}

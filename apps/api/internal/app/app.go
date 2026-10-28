@@ -3,6 +3,7 @@ package app
 import (
 	"context"
 	"log/slog"
+	"sync"
 	"time"
 
 	activityapiv1 "kun-galgame-api/internal/activity/apiv1"
@@ -135,6 +136,9 @@ type App struct {
 	APIv1                  huma.API
 	Settings               *setting.Store
 	TopicAI                *topicapiv1.TopicAI
+
+	entityOnce    sync.Once
+	entityResolve content.EntityResolver
 }
 
 func New(cfg *config.Config) *App {
@@ -573,6 +577,7 @@ func New(cfg *config.Config) *App {
 		StoreLinkStop:       storeLinks.Start(),
 		CommunityNotifyStop: communitynotify.New(communityCli, messageRepository, anchorResolver, rdb).Start(),
 	}
+	app.ActivityV1.WithEntities(app.entityResolver(cfg.NextMoeAPI.ImageCDNBase))
 	app.ActivityPushStop = startActivityPush(db, communityCli, app.ActivityV1, cfg.OAuth.RedirectURI)
 	app.AnchorPresentationStop = startAnchorPresentations(db, communityCli, uc, gc, cfg.NextMoeAPI.ImageCDNBase, cfg.OAuth.RedirectURI)
 

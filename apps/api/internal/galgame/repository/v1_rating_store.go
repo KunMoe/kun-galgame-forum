@@ -135,6 +135,12 @@ func (s *RatingStore) Get(id int) (RatingRecord, error) {
 	return rows[0], nil
 }
 
+func (s *RatingStore) GetMany(ids []int) ([]RatingRecord, error) {
+	var rows []RatingRecord
+	err := s.db.Table("galgame_rating").Where("id IN ?", ids).Scan(&rows).Error
+	return rows, err
+}
+
 func (s *RatingStore) IncrementView(id int) error {
 	return s.db.Table("galgame_rating").Where("id = ?", id).
 		UpdateColumn("view", gorm.Expr("view + 1")).Error

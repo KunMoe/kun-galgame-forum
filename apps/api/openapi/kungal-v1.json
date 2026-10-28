@@ -1862,6 +1862,7 @@
           "mapping": {
             "blockquote": "#/components/schemas/BlockquoteNode",
             "code": "#/components/schemas/CodeNode",
+            "entity_card": "#/components/schemas/EntityCardNode",
             "heading": "#/components/schemas/HeadingNode",
             "list": "#/components/schemas/ListNode",
             "math": "#/components/schemas/MathNode",
@@ -1899,6 +1900,9 @@
           },
           {
             "$ref": "#/components/schemas/SpoilerNode"
+          },
+          {
+            "$ref": "#/components/schemas/EntityCardNode"
           }
         ]
       },
@@ -2247,6 +2251,72 @@
         "maxLength": 9,
         "type": "string",
         "x-vocabulary-closed": true
+      },
+      "CharacterPreview": {
+        "properties": {
+          "display_name": {
+            "description": "The entity's own name. Never empty. Free text; never use it as a decision input.",
+            "maxLength": 512,
+            "type": "string"
+          },
+          "id": {
+            "description": "Character id: the catalog character id, which is also the id in the web's /galgame/character/{id}.",
+            "maxLength": 20,
+            "minLength": 1,
+            "pattern": "^[0-9]+$",
+            "type": "string"
+          },
+          "image": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/Image"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "The character's portrait, only when catalog grades it safe. null otherwise."
+          },
+          "latin": {
+            "description": "Romanization of the name. null when none is recorded. Free text; never use it as a decision input.",
+            "maxLength": 512,
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "localized": {
+            "additionalProperties": {
+              "$ref": "#/components/schemas/LocalizedName"
+            },
+            "description": "Names by BCP-47 tag, sparse. Empty object when there are none, never null.",
+            "type": "object"
+          },
+          "object": {
+            "const": "character",
+            "description": "Type discriminant. Always character.",
+            "maxLength": 9,
+            "type": "string"
+          },
+          "works": {
+            "description": "Up to three works the character appears in, in catalog's order. Empty array, never null.",
+            "items": {
+              "$ref": "#/components/schemas/WorkRef"
+            },
+            "maxItems": 3,
+            "type": "array"
+          }
+        },
+        "required": [
+          "object",
+          "id",
+          "image",
+          "works",
+          "display_name",
+          "latin",
+          "localized"
+        ],
+        "type": "object"
       },
       "CharacterSort": {
         "enum": [
@@ -3564,6 +3634,75 @@
         "type": "string",
         "x-vocabulary-closed": true
       },
+      "CompanyPreview": {
+        "properties": {
+          "catalog_work_count": {
+            "description": "Works catalog files under it, NSFW ones included.",
+            "format": "int64",
+            "minimum": 0,
+            "type": "integer"
+          },
+          "company_kind": {
+            "$ref": "#/components/schemas/CompanyKind",
+            "description": "What sort of company it is."
+          },
+          "display_name": {
+            "description": "The entity's own name. Never empty. Free text; never use it as a decision input.",
+            "maxLength": 512,
+            "type": "string"
+          },
+          "id": {
+            "description": "Company id: the catalog company id, which is also the id in the web's /galgame/official/{id}.",
+            "maxLength": 20,
+            "minLength": 1,
+            "pattern": "^[0-9]+$",
+            "type": "string"
+          },
+          "latin": {
+            "description": "Romanization of the name. null when none is recorded. Free text; never use it as a decision input.",
+            "maxLength": 512,
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "localized": {
+            "additionalProperties": {
+              "$ref": "#/components/schemas/LocalizedName"
+            },
+            "description": "Names by BCP-47 tag, sparse. Empty object when there are none, never null.",
+            "type": "object"
+          },
+          "logo": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/Image"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "The company's logo. null when catalog has none."
+          },
+          "object": {
+            "const": "company",
+            "description": "Type discriminant. Always company.",
+            "maxLength": 7,
+            "type": "string"
+          }
+        },
+        "required": [
+          "object",
+          "id",
+          "company_kind",
+          "logo",
+          "catalog_work_count",
+          "display_name",
+          "latin",
+          "localized"
+        ],
+        "type": "object"
+      },
       "CompanyRef": {
         "properties": {
           "display_name": {
@@ -4447,6 +4586,83 @@
         ],
         "type": "object"
       },
+      "CreditNamePreview": {
+        "properties": {
+          "display_name": {
+            "description": "The entity's own name. Never empty. Free text; never use it as a decision input.",
+            "maxLength": 512,
+            "type": "string"
+          },
+          "id": {
+            "description": "Credit name id: the catalog credit name id, which is also the id in the web's /galgame/staff/{id}.",
+            "maxLength": 20,
+            "minLength": 1,
+            "pattern": "^[0-9]+$",
+            "type": "string"
+          },
+          "latin": {
+            "description": "Romanization of the name. null when none is recorded. Free text; never use it as a decision input.",
+            "maxLength": 512,
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "localized": {
+            "additionalProperties": {
+              "$ref": "#/components/schemas/LocalizedName"
+            },
+            "description": "Names by BCP-47 tag, sparse. Empty object when there are none, never null.",
+            "type": "object"
+          },
+          "object": {
+            "const": "credit_name",
+            "description": "Type discriminant. Always credit_name.",
+            "maxLength": 11,
+            "type": "string"
+          },
+          "photo": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/Image"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "A photo of the person. null when catalog has none."
+          },
+          "role_names": {
+            "description": "The person's most frequent credited roles as catalog names them, most frequent first. Empty array, never null.",
+            "items": {
+              "description": "A credited role as catalog names it, such as Scenario. Free text; never use it as a decision input.",
+              "maxLength": 128,
+              "type": "string"
+            },
+            "maxItems": 3,
+            "type": "array"
+          },
+          "works": {
+            "description": "Up to three works the person is credited on, in catalog's order. Empty array, never null.",
+            "items": {
+              "$ref": "#/components/schemas/WorkRef"
+            },
+            "maxItems": 3,
+            "type": "array"
+          }
+        },
+        "required": [
+          "object",
+          "id",
+          "photo",
+          "role_names",
+          "works",
+          "display_name",
+          "latin",
+          "localized"
+        ],
+        "type": "object"
+      },
       "CreditNameRef": {
         "properties": {
           "display_name": {
@@ -5186,6 +5402,152 @@
           "account_too_new"
         ],
         "maxLength": 25,
+        "type": "string",
+        "x-vocabulary-closed": true
+      },
+      "EntityCardNode": {
+        "properties": {
+          "children": {
+            "description": "One paragraph holding the plain link the author wrote. Render target instead; the link is for a client that does not know entity_card.",
+            "items": {
+              "$ref": "#/components/schemas/BlockNode"
+            },
+            "type": "array"
+          },
+          "object": {
+            "const": "entity_card",
+            "description": "Type discriminant. Always entity_card.",
+            "maxLength": 11,
+            "type": "string"
+          },
+          "target": {
+            "$ref": "#/components/schemas/EntityTarget",
+            "description": "The entity the card shows, as of this read."
+          }
+        },
+        "required": [
+          "object",
+          "target",
+          "children"
+        ],
+        "type": "object"
+      },
+      "EntityLinkNode": {
+        "properties": {
+          "children": {
+            "description": "The plain link the author wrote. Render target instead; the link is for a client that does not know entity_link.",
+            "items": {
+              "$ref": "#/components/schemas/InlineNode"
+            },
+            "type": "array"
+          },
+          "object": {
+            "const": "entity_link",
+            "description": "Type discriminant. Always entity_link.",
+            "maxLength": 11,
+            "type": "string"
+          },
+          "target": {
+            "$ref": "#/components/schemas/EntityTarget",
+            "description": "The entity the link points at, as of this read."
+          }
+        },
+        "required": [
+          "object",
+          "target",
+          "children"
+        ],
+        "type": "object"
+      },
+      "EntityPreviewList": {
+        "properties": {
+          "items": {
+            "description": "One target per requested id, in the order topic_ids, work_ids, galgame_resource_ids, user_ids, character_ids, company_ids, tag_ids, series_ids, credit_name_ids, rating_ids, each in request order. A target this reader may not preview is unavailable_entity; a user who no longer exists has name null. Empty array, never null.",
+            "items": {
+              "$ref": "#/components/schemas/EntityTarget"
+            },
+            "type": "array"
+          },
+          "object": {
+            "const": "list",
+            "description": "Type discriminant. Always list.",
+            "maxLength": 4,
+            "type": "string"
+          }
+        },
+        "required": [
+          "object",
+          "items"
+        ],
+        "type": "object"
+      },
+      "EntityTarget": {
+        "description": "What an entity link points at. Switch on object; for an unknown type, render the node's children.",
+        "discriminator": {
+          "mapping": {
+            "character": "#/components/schemas/CharacterPreview",
+            "company": "#/components/schemas/CompanyPreview",
+            "credit_name": "#/components/schemas/CreditNamePreview",
+            "galgame_resource": "#/components/schemas/GalgameResourcePreview",
+            "rating": "#/components/schemas/RatingPreview",
+            "series": "#/components/schemas/SeriesPreview",
+            "tag": "#/components/schemas/TagPreview",
+            "topic": "#/components/schemas/TopicPreview",
+            "unavailable_entity": "#/components/schemas/UnavailableEntity",
+            "user": "#/components/schemas/UserRef",
+            "work": "#/components/schemas/WorkPreview"
+          },
+          "propertyName": "object"
+        },
+        "oneOf": [
+          {
+            "$ref": "#/components/schemas/TopicPreview"
+          },
+          {
+            "$ref": "#/components/schemas/WorkPreview"
+          },
+          {
+            "$ref": "#/components/schemas/GalgameResourcePreview"
+          },
+          {
+            "$ref": "#/components/schemas/UserRef"
+          },
+          {
+            "$ref": "#/components/schemas/CharacterPreview"
+          },
+          {
+            "$ref": "#/components/schemas/CompanyPreview"
+          },
+          {
+            "$ref": "#/components/schemas/TagPreview"
+          },
+          {
+            "$ref": "#/components/schemas/SeriesPreview"
+          },
+          {
+            "$ref": "#/components/schemas/CreditNamePreview"
+          },
+          {
+            "$ref": "#/components/schemas/RatingPreview"
+          },
+          {
+            "$ref": "#/components/schemas/UnavailableEntity"
+          }
+        ]
+      },
+      "EntityType": {
+        "enum": [
+          "topic",
+          "work",
+          "galgame_resource",
+          "character",
+          "company",
+          "tag",
+          "series",
+          "credit_name",
+          "rating"
+        ],
+        "maxLength": 16,
         "type": "string",
         "x-vocabulary-closed": true
       },
@@ -6435,6 +6797,108 @@
         },
         "type": "object"
       },
+      "GalgameResourcePreview": {
+        "properties": {
+          "author": {
+            "$ref": "#/components/schemas/UserRef",
+            "description": "Uploader of the resource."
+          },
+          "created_at": {
+            "description": "Creation time.",
+            "format": "date-time",
+            "maxLength": 20,
+            "minLength": 20,
+            "pattern": "^[0-9]{4}-[0-9]{2}-[0-9]{2}T[0-9]{2}:[0-9]{2}:[0-9]{2}Z$",
+            "type": "string"
+          },
+          "download_count": {
+            "description": "Times download secrets were issued.",
+            "format": "int64",
+            "minimum": 0,
+            "type": "integer"
+          },
+          "id": {
+            "description": "Resource id.",
+            "maxLength": 20,
+            "minLength": 1,
+            "pattern": "^[0-9]+$",
+            "type": "string"
+          },
+          "like_count": {
+            "description": "Number of likes.",
+            "format": "int64",
+            "minimum": 0,
+            "type": "integer"
+          },
+          "object": {
+            "const": "galgame_resource",
+            "description": "Type discriminant. Always galgame_resource.",
+            "maxLength": 16,
+            "type": "string"
+          },
+          "resource_languages": {
+            "description": "Languages of the resource. Never null.",
+            "items": {
+              "$ref": "#/components/schemas/ResourceLanguage",
+              "description": "A resource language key."
+            },
+            "type": "array"
+          },
+          "resource_platforms": {
+            "description": "Platforms of the resource. Empty array when only runtimes apply. Never null.",
+            "items": {
+              "$ref": "#/components/schemas/ResourcePlatform",
+              "description": "A resource platform key."
+            },
+            "type": "array"
+          },
+          "resource_type": {
+            "$ref": "#/components/schemas/ResourceType",
+            "description": "Kind of download."
+          },
+          "size": {
+            "description": "Size as the uploader wrote it, such as 1.5 GB. Free text; never use it as a decision input.",
+            "maxLength": 64,
+            "type": "string"
+          },
+          "state": {
+            "$ref": "#/components/schemas/GalgameResourceState",
+            "description": "Whether the links are currently treated as working."
+          },
+          "title": {
+            "description": "Optional title. Empty string when none. Free text; never use it as a decision input.",
+            "maxLength": 200,
+            "type": "string"
+          },
+          "work": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/WorkRef"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "The work this resource belongs to. Never null here; nullable to match WorkRef elsewhere."
+          }
+        },
+        "required": [
+          "object",
+          "id",
+          "work",
+          "author",
+          "resource_type",
+          "resource_languages",
+          "resource_platforms",
+          "title",
+          "size",
+          "state",
+          "download_count",
+          "like_count",
+          "created_at"
+        ],
+        "type": "object"
+      },
       "GalgameResourceRelocation": {
         "properties": {
           "object": {
@@ -6942,6 +7406,7 @@
           "mapping": {
             "break": "#/components/schemas/BreakNode",
             "emphasis": "#/components/schemas/EmphasisNode",
+            "entity_link": "#/components/schemas/EntityLinkNode",
             "image": "#/components/schemas/ImageNode",
             "inline_code": "#/components/schemas/InlineCodeNode",
             "inline_math": "#/components/schemas/InlineMathNode",
@@ -6995,6 +7460,9 @@
           },
           {
             "$ref": "#/components/schemas/ReplyReferenceNode"
+          },
+          {
+            "$ref": "#/components/schemas/EntityLinkNode"
           }
         ]
       },
@@ -14851,6 +15319,73 @@
         },
         "type": "object"
       },
+      "RatingPreview": {
+        "properties": {
+          "author": {
+            "$ref": "#/components/schemas/UserRef",
+            "description": "Who wrote the rating."
+          },
+          "created_at": {
+            "description": "When the rating was written.",
+            "format": "date-time",
+            "maxLength": 20,
+            "minLength": 20,
+            "pattern": "^[0-9]{4}-[0-9]{2}-[0-9]{2}T[0-9]{2}:[0-9]{2}:[0-9]{2}Z$",
+            "type": "string"
+          },
+          "has_spoilers": {
+            "description": "Whether the author marked the rating as containing spoilers. Hide short_summary until the reader asks.",
+            "type": "boolean"
+          },
+          "id": {
+            "description": "Rating id, which is also the id in the web's /galgame-rating/{id}.",
+            "maxLength": 20,
+            "minLength": 1,
+            "pattern": "^[0-9]+$",
+            "type": "string"
+          },
+          "object": {
+            "const": "rating",
+            "description": "Type discriminant. Always rating.",
+            "maxLength": 6,
+            "type": "string"
+          },
+          "overall": {
+            "description": "The overall score.",
+            "format": "int64",
+            "maximum": 10,
+            "minimum": 1,
+            "type": "integer"
+          },
+          "short_summary": {
+            "description": "The author's short review, plain text. Empty string if none. Free text; never use it as a decision input.",
+            "maxLength": 2000,
+            "type": "string"
+          },
+          "work": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/WorkRef"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "The rated work. Never null here; nullable to match WorkRef elsewhere."
+          }
+        },
+        "required": [
+          "object",
+          "id",
+          "work",
+          "author",
+          "overall",
+          "short_summary",
+          "has_spoilers",
+          "created_at"
+        ],
+        "type": "object"
+      },
       "RatingRecommend": {
         "enum": [
           "strong_yes",
@@ -17529,6 +18064,87 @@
         ],
         "type": "object"
       },
+      "SeriesPreview": {
+        "properties": {
+          "catalog_work_count": {
+            "description": "Works catalog files under it, NSFW ones included.",
+            "format": "int64",
+            "minimum": 0,
+            "type": "integer"
+          },
+          "cover": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/Image"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "Portrait cover of the series' earliest listed work. null when none is listed or it has no cover."
+          },
+          "display_name": {
+            "description": "The entity's own name. Never empty. Free text; never use it as a decision input.",
+            "maxLength": 512,
+            "type": "string"
+          },
+          "has_nsfw_works": {
+            "description": "Whether any work of the series is adult content. null when catalog does not know.",
+            "type": [
+              "boolean",
+              "null"
+            ]
+          },
+          "id": {
+            "description": "Series id: the catalog series id, which is also the id in the web's /galgame/series/{id}.",
+            "maxLength": 20,
+            "minLength": 1,
+            "pattern": "^[0-9]+$",
+            "type": "string"
+          },
+          "latin": {
+            "description": "Romanization of the name. null when none is recorded. Free text; never use it as a decision input.",
+            "maxLength": 512,
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "localized": {
+            "additionalProperties": {
+              "$ref": "#/components/schemas/LocalizedName"
+            },
+            "description": "Names by BCP-47 tag, sparse. Empty object when there are none, never null.",
+            "type": "object"
+          },
+          "object": {
+            "const": "series",
+            "description": "Type discriminant. Always series.",
+            "maxLength": 6,
+            "type": "string"
+          },
+          "works": {
+            "description": "Up to three listed works of the series, earliest release first. Empty array, never null.",
+            "items": {
+              "$ref": "#/components/schemas/WorkRef"
+            },
+            "maxItems": 3,
+            "type": "array"
+          }
+        },
+        "required": [
+          "object",
+          "id",
+          "cover",
+          "works",
+          "has_nsfw_works",
+          "catalog_work_count",
+          "display_name",
+          "latin",
+          "localized"
+        ],
+        "type": "object"
+      },
       "SeriesSampleWork": {
         "properties": {
           "banner": {
@@ -19166,6 +19782,74 @@
             ]
           }
         },
+        "type": "object"
+      },
+      "TagPreview": {
+        "properties": {
+          "catalog_work_count": {
+            "description": "Works catalog files under it, NSFW ones included.",
+            "format": "int64",
+            "minimum": 0,
+            "type": "integer"
+          },
+          "description": {
+            "description": "Start of the tag's introduction, Chinese when catalog has it. Empty string when it has none. Free text; never use it as a decision input.",
+            "maxLength": 200,
+            "type": "string"
+          },
+          "display_name": {
+            "description": "The entity's own name. Never empty. Free text; never use it as a decision input.",
+            "maxLength": 512,
+            "type": "string"
+          },
+          "id": {
+            "description": "Tag id: the catalog tag id, which is also the id in the web's /galgame/tag/{id}.",
+            "maxLength": 20,
+            "minLength": 1,
+            "pattern": "^[0-9]+$",
+            "type": "string"
+          },
+          "is_sexual": {
+            "description": "Whether the tag is adult content.",
+            "type": "boolean"
+          },
+          "latin": {
+            "description": "Romanization of the name. null when none is recorded. Free text; never use it as a decision input.",
+            "maxLength": 512,
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "localized": {
+            "additionalProperties": {
+              "$ref": "#/components/schemas/LocalizedName"
+            },
+            "description": "Names by BCP-47 tag, sparse. Empty object when there are none, never null.",
+            "type": "object"
+          },
+          "object": {
+            "const": "tag",
+            "description": "Type discriminant. Always tag.",
+            "maxLength": 3,
+            "type": "string"
+          },
+          "tag_kind": {
+            "$ref": "#/components/schemas/TagKind",
+            "description": "What the tag describes: content is the story and characters, meta is the game as a product."
+          }
+        },
+        "required": [
+          "object",
+          "id",
+          "tag_kind",
+          "is_sexual",
+          "catalog_work_count",
+          "description",
+          "display_name",
+          "latin",
+          "localized"
+        ],
         "type": "object"
       },
       "TagRef": {
@@ -21015,6 +21699,10 @@
             "pattern": "^[A-Za-z0-9_-]+$",
             "type": "string"
           },
+          "is_nsfw": {
+            "description": "Whether the model judges the title and body adult content. When true the topic is published NSFW whatever createTopic's is_nsfw says.",
+            "type": "boolean"
+          },
           "object": {
             "const": "topic_classification",
             "description": "Type discriminant. Always topic_classification.",
@@ -21042,6 +21730,7 @@
         "required": [
           "object",
           "section",
+          "is_nsfw",
           "reason",
           "classification_token",
           "token_expires_at"
@@ -21129,7 +21818,7 @@
             "uniqueItems": true
           },
           "is_nsfw": {
-            "description": "Whether the topic is NSFW.",
+            "description": "The author's own NSFW mark. The topic is also NSFW, whatever this says, when the model judges its title and body adult or the image service grades a body or cover image explicit; false never clears that.",
             "type": "boolean"
           },
           "sections": {
@@ -21882,7 +22571,7 @@
             "uniqueItems": true
           },
           "is_nsfw": {
-            "description": "New NSFW flag.",
+            "description": "The author's NSFW mark. Setting it true always applies. Setting it false, or changing the title, body or covers, has the system judge the topic again, and the topic stays NSFW when it judges the text or a picture adult.",
             "type": "boolean"
           },
           "sections": {
@@ -21907,6 +22596,83 @@
             "type": "string"
           }
         },
+        "type": "object"
+      },
+      "TopicPreview": {
+        "properties": {
+          "author": {
+            "$ref": "#/components/schemas/UserRef",
+            "description": "Topic author."
+          },
+          "cover_images": {
+            "description": "Cover images in stored token order, stickers left out. Empty array if none.",
+            "items": {
+              "$ref": "#/components/schemas/Image"
+            },
+            "maxItems": 9,
+            "type": "array"
+          },
+          "created_at": {
+            "description": "Creation time.",
+            "format": "date-time",
+            "maxLength": 20,
+            "minLength": 20,
+            "pattern": "^[0-9]{4}-[0-9]{2}-[0-9]{2}T[0-9]{2}:[0-9]{2}:[0-9]{2}Z$",
+            "type": "string"
+          },
+          "id": {
+            "description": "Topic id. JSON string of a decimal integer.",
+            "maxLength": 20,
+            "minLength": 1,
+            "pattern": "^[0-9]+$",
+            "type": "string"
+          },
+          "is_nsfw": {
+            "description": "Whether the topic is marked NSFW. Mask its covers unless the reader asked for NSFW content.",
+            "type": "boolean"
+          },
+          "like_count": {
+            "description": "Like count.",
+            "format": "int64",
+            "minimum": 0,
+            "type": "integer"
+          },
+          "object": {
+            "const": "topic",
+            "description": "Type discriminant. Always topic.",
+            "maxLength": 5,
+            "type": "string"
+          },
+          "reply_count": {
+            "description": "Reply count.",
+            "format": "int64",
+            "minimum": 0,
+            "type": "integer"
+          },
+          "title": {
+            "description": "Topic title as stored. Free text; never use it as a decision input.",
+            "maxLength": 233,
+            "type": "string"
+          },
+          "view_count": {
+            "description": "Lifetime view count.",
+            "format": "int64",
+            "minimum": 0,
+            "type": "integer"
+          }
+        },
+        "required": [
+          "object",
+          "id",
+          "title",
+          "cover_images",
+          "author",
+          "view_count",
+          "like_count",
+          "reply_count",
+          "is_nsfw",
+          "created_at"
+        ],
         "type": "object"
       },
       "TopicPublishState": {
@@ -22894,6 +23660,33 @@
           "display_name",
           "latin",
           "localized"
+        ],
+        "type": "object"
+      },
+      "UnavailableEntity": {
+        "properties": {
+          "entity_id": {
+            "description": "Id of the entity the link pointed at. Its page may still open for a reader allowed to see it.",
+            "maxLength": 20,
+            "minLength": 1,
+            "pattern": "^[0-9]+$",
+            "type": "string"
+          },
+          "entity_type": {
+            "$ref": "#/components/schemas/EntityType",
+            "description": "What the link pointed at."
+          },
+          "object": {
+            "const": "unavailable_entity",
+            "description": "Type discriminant. Always unavailable_entity.",
+            "maxLength": 18,
+            "type": "string"
+          }
+        },
+        "required": [
+          "object",
+          "entity_type",
+          "entity_id"
         ],
         "type": "object"
       },
@@ -27553,6 +28346,111 @@
           "total_minutes",
           "finished_work_count",
           "is_truncated"
+        ],
+        "type": "object"
+      },
+      "WorkPreview": {
+        "properties": {
+          "cover": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/Image"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "The portrait cover at its original size, never the 16:9 crop. null when the work has none."
+          },
+          "display_name": {
+            "description": "The entity's own name. Never empty. Free text; never use it as a decision input.",
+            "maxLength": 512,
+            "type": "string"
+          },
+          "id": {
+            "description": "Work id: the catalog work id, which is also the id in the web's /galgame/{id}.",
+            "maxLength": 20,
+            "minLength": 1,
+            "pattern": "^[0-9]+$",
+            "type": "string"
+          },
+          "is_nsfw": {
+            "description": "Whether this forum displays the work as adult content: the editorial display axis (the claim's content limit), not the age rating.",
+            "type": "boolean"
+          },
+          "latin": {
+            "description": "Romanization of the name. null when none is recorded. Free text; never use it as a decision input.",
+            "maxLength": 512,
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "localized": {
+            "additionalProperties": {
+              "$ref": "#/components/schemas/LocalizedName"
+            },
+            "description": "Names by BCP-47 tag, sparse. Empty object when there are none, never null.",
+            "type": "object"
+          },
+          "maker": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/CompanyRef"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "The credited company a card names as the maker: developer, then circle, then brand, then publisher. null when no credited company has a name."
+          },
+          "object": {
+            "const": "work",
+            "description": "Type discriminant. Always work.",
+            "maxLength": 4,
+            "type": "string"
+          },
+          "release_date": {
+            "description": "Release date. A month- or year-precise date is the first day of that month or year. null when catalog has none.",
+            "format": "date",
+            "maxLength": 10,
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "release_date_precision": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/ReleaseDatePrecision"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "How much of release_date is known. null when release_date is null."
+          },
+          "top_tags": {
+            "description": "Up to four of the work's tags, in the order its page lists them, leaving out spoiler and adult tags. Empty array, never null.",
+            "items": {
+              "$ref": "#/components/schemas/TagRef"
+            },
+            "maxItems": 4,
+            "type": "array"
+          }
+        },
+        "required": [
+          "maker",
+          "top_tags",
+          "release_date",
+          "release_date_precision",
+          "object",
+          "id",
+          "cover",
+          "is_nsfw",
+          "display_name",
+          "latin",
+          "localized"
         ],
         "type": "object"
       },
@@ -38516,6 +39414,240 @@
         "summary": "List an engine's works",
         "tags": [
           "galgame-engines"
+        ]
+      }
+    },
+    "/entity-previews": {
+      "get": {
+        "description": "Returns what an entity_card or entity_link would show for each id, resolved exactly as in a content document. It is the same for every reader. At least one id and at most 50 in all. Not paginated.",
+        "operationId": "listEntityPreviews",
+        "parameters": [
+          {
+            "description": "Topic ids, comma-separated.",
+            "explode": false,
+            "in": "query",
+            "name": "topic_ids",
+            "schema": {
+              "description": "Topic ids, comma-separated.",
+              "items": {
+                "maxLength": 20,
+                "minLength": 1,
+                "pattern": "^[0-9]+$",
+                "type": "string"
+              },
+              "maxItems": 50,
+              "type": "array"
+            }
+          },
+          {
+            "description": "Work ids, comma-separated.",
+            "explode": false,
+            "in": "query",
+            "name": "work_ids",
+            "schema": {
+              "description": "Work ids, comma-separated.",
+              "items": {
+                "maxLength": 20,
+                "minLength": 1,
+                "pattern": "^[0-9]+$",
+                "type": "string"
+              },
+              "maxItems": 50,
+              "type": "array"
+            }
+          },
+          {
+            "description": "Galgame resource ids, comma-separated.",
+            "explode": false,
+            "in": "query",
+            "name": "galgame_resource_ids",
+            "schema": {
+              "description": "Galgame resource ids, comma-separated.",
+              "items": {
+                "maxLength": 20,
+                "minLength": 1,
+                "pattern": "^[0-9]+$",
+                "type": "string"
+              },
+              "maxItems": 50,
+              "type": "array"
+            }
+          },
+          {
+            "description": "User ids, comma-separated.",
+            "explode": false,
+            "in": "query",
+            "name": "user_ids",
+            "schema": {
+              "description": "User ids, comma-separated.",
+              "items": {
+                "maxLength": 20,
+                "minLength": 1,
+                "pattern": "^[0-9]+$",
+                "type": "string"
+              },
+              "maxItems": 50,
+              "type": "array"
+            }
+          },
+          {
+            "description": "Character ids, comma-separated.",
+            "explode": false,
+            "in": "query",
+            "name": "character_ids",
+            "schema": {
+              "description": "Character ids, comma-separated.",
+              "items": {
+                "maxLength": 20,
+                "minLength": 1,
+                "pattern": "^[0-9]+$",
+                "type": "string"
+              },
+              "maxItems": 50,
+              "type": "array"
+            }
+          },
+          {
+            "description": "Company ids, comma-separated.",
+            "explode": false,
+            "in": "query",
+            "name": "company_ids",
+            "schema": {
+              "description": "Company ids, comma-separated.",
+              "items": {
+                "maxLength": 20,
+                "minLength": 1,
+                "pattern": "^[0-9]+$",
+                "type": "string"
+              },
+              "maxItems": 50,
+              "type": "array"
+            }
+          },
+          {
+            "description": "Tag ids, comma-separated.",
+            "explode": false,
+            "in": "query",
+            "name": "tag_ids",
+            "schema": {
+              "description": "Tag ids, comma-separated.",
+              "items": {
+                "maxLength": 20,
+                "minLength": 1,
+                "pattern": "^[0-9]+$",
+                "type": "string"
+              },
+              "maxItems": 50,
+              "type": "array"
+            }
+          },
+          {
+            "description": "Series ids, comma-separated.",
+            "explode": false,
+            "in": "query",
+            "name": "series_ids",
+            "schema": {
+              "description": "Series ids, comma-separated.",
+              "items": {
+                "maxLength": 20,
+                "minLength": 1,
+                "pattern": "^[0-9]+$",
+                "type": "string"
+              },
+              "maxItems": 50,
+              "type": "array"
+            }
+          },
+          {
+            "description": "Credit name ids, comma-separated.",
+            "explode": false,
+            "in": "query",
+            "name": "credit_name_ids",
+            "schema": {
+              "description": "Credit name ids, comma-separated.",
+              "items": {
+                "maxLength": 20,
+                "minLength": 1,
+                "pattern": "^[0-9]+$",
+                "type": "string"
+              },
+              "maxItems": 50,
+              "type": "array"
+            }
+          },
+          {
+            "description": "Rating ids, comma-separated.",
+            "explode": false,
+            "in": "query",
+            "name": "rating_ids",
+            "schema": {
+              "description": "Rating ids, comma-separated.",
+              "items": {
+                "maxLength": 20,
+                "minLength": 1,
+                "pattern": "^[0-9]+$",
+                "type": "string"
+              },
+              "maxItems": 50,
+              "type": "array"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/EntityPreviewList"
+                }
+              }
+            },
+            "description": "OK"
+          },
+          "400": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            },
+            "description": "Bad Request"
+          },
+          "422": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            },
+            "description": "VALIDATION_FAILED when no id is given, more than 50 are given in all, or an id is not a positive integer."
+          },
+          "500": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            },
+            "description": "Internal Server Error"
+          },
+          "503": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            },
+            "description": "SERVICE_UNAVAILABLE when a lookup the previews need cannot be made."
+          }
+        },
+        "summary": "Preview linked entities",
+        "tags": [
+          "content"
         ]
       }
     },

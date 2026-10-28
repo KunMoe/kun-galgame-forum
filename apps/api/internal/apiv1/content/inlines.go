@@ -125,6 +125,9 @@ func inlineMathValue(n ast.Node, source []byte) string {
 }
 
 func (c *converter) convertLink(n *ast.Link) Inlines {
+	if el, ok := c.entityLink(n); ok {
+		return Inlines{el}
+	}
 	dest := string(n.Destination)
 	if !c.untrusted {
 		if id, ok := parseUserMention(dest); ok {
@@ -146,6 +149,9 @@ func (c *converter) convertLink(n *ast.Link) Inlines {
 }
 
 func (c *converter) convertAutoLink(n *ast.AutoLink) Inlines {
+	if el, ok := c.entityLink(n); ok {
+		return Inlines{el}
+	}
 	label := string(n.Label(c.src))
 	var dest string
 	if n.AutoLinkType == ast.AutoLinkEmail {

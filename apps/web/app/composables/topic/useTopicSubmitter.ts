@@ -45,7 +45,6 @@ export const useTopicSubmitter = () => {
 
   const rules = reactive({
     isReadRule: false,
-    isAgreeCategory: false,
     isValidTitle: false,
     isKnownConsequence: false
   })

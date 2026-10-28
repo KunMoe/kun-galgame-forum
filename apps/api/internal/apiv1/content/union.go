@@ -22,6 +22,7 @@ func (CodeNode) block()          {}
 func (MathNode) block()          {}
 func (TableNode) block()         {}
 func (SpoilerNode) block()       {}
+func (EntityCardNode) block()    {}
 
 func (TextNode) inline()           {}
 func (EmphasisNode) inline()       {}
@@ -36,6 +37,7 @@ func (VideoNode) inline()          {}
 func (InlineSpoilerNode) inline()  {}
 func (MentionNode) inline()        {}
 func (ReplyReferenceNode) inline() {}
+func (EntityLinkNode) inline()     {}
 
 var blockMembers = []reflect.Type{
 	reflect.TypeFor[ParagraphNode](),
@@ -47,6 +49,7 @@ var blockMembers = []reflect.Type{
 	reflect.TypeFor[MathNode](),
 	reflect.TypeFor[TableNode](),
 	reflect.TypeFor[SpoilerNode](),
+	reflect.TypeFor[EntityCardNode](),
 }
 
 var inlineMembers = []reflect.Type{
@@ -63,6 +66,7 @@ var inlineMembers = []reflect.Type{
 	reflect.TypeFor[InlineSpoilerNode](),
 	reflect.TypeFor[MentionNode](),
 	reflect.TypeFor[ReplyReferenceNode](),
+	reflect.TypeFor[EntityLinkNode](),
 }
 
 type (

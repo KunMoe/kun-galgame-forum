@@ -4,7 +4,6 @@ import (
 	"log/slog"
 	"time"
 
-	"kun-galgame-api/internal/apiv1"
 	"kun-galgame-api/internal/apiv1/content"
 	messageapiv1 "kun-galgame-api/internal/message/apiv1"
 	msgRepo "kun-galgame-api/internal/message/repository"
@@ -23,12 +22,7 @@ func (a *App) newMessageV1() *messageapiv1.Service {
 	}
 	var convert *content.Converter
 	if a.UserClient != nil {
-		convert = &content.Converter{
-			CDNBase:  cdn,
-			SiteBase: apiv1.SiteOrigin,
-			Images:   a.ImageMeta,
-			Users:    a.UserClient.Users,
-		}
+		convert = a.contentConverter(cdn)
 	}
 	return messageapiv1.New(messages, chats, a.UserClient, convert, cdn, a.Messages, a.Config != nil && a.Config.Chat.Enabled)
 }

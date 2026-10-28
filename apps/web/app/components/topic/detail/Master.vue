@@ -45,7 +45,7 @@ provide(
     <KunCard
       :is-transparent="false"
       :is-hoverable="false"
-      class-name="w-full min-w-0"
+      class-name="w-full min-w-0 max-sm:rounded-none max-sm:border-0 max-sm:bg-transparent max-sm:p-0 max-sm:shadow-none max-sm:backdrop-blur-none"
       content-class="gap-4 justify-start"
     >
       <header class="space-y-3">

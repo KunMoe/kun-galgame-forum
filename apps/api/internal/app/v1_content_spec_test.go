@@ -45,9 +45,10 @@ func TestV1SpecPublishesTheContentNodeVocabulary(t *testing.T) {
 		t.Fatal("ContentDocument is not in the published spec")
 	}
 	unions := map[string][]string{
-		"BlockNode": {"blockquote", "code", "heading", "list", "math", "paragraph", "spoiler", "table", "thematic_break"},
-		"InlineNode": {"break", "emphasis", "image", "inline_code", "inline_math", "inline_spoiler", "link",
+		"BlockNode": {"blockquote", "code", "entity_card", "heading", "list", "math", "paragraph", "spoiler", "table", "thematic_break"},
+		"InlineNode": {"break", "emphasis", "entity_link", "image", "inline_code", "inline_math", "inline_spoiler", "link",
 			"mention", "reply_reference", "strikethrough", "strong", "text", "video"},
+		"EntityTarget": {"character", "company", "credit_name", "galgame_resource", "rating", "series", "tag", "topic", "unavailable_entity", "user", "work"},
 	}
 	for name, want := range unions {
 		u, ok := spec.Components.Schemas[name]

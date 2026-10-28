@@ -65,3 +65,12 @@
   border: none;
   border-radius: 0;
 }
+
+/* The forum's 透明度 slider makes --color-content1 translucent for in-page
+ * glass, and the editor's floating panels (the `/` menu, the paste popover, the
+ * mention dropdown) paint with it: on 2026-10-27 the `/` menu showed the text
+ * below it through itself. Floating panels stay opaque, as the overlay roots in
+ * tailwindcss.css do. */
+:root {
+  --kun-editor-surface: oklch(var(--content1) / 1);
+}
