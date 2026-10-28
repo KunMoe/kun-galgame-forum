@@ -1,6 +1,11 @@
 import { describe, expect, it, vi } from 'vitest'
 import { createApiClient } from '#shared/utils/api/client'
-import { collectTopicUrls } from './kunSitemapSources'
+import {
+  collectEntityUrls,
+  collectTopicUrls,
+  collectWorkUrls,
+  createRequester
+} from './kunSitemapSources'
 
 const jsonResponse = (status: number, body: unknown) =>
   new Response(JSON.stringify(body), {
@@ -134,5 +139,137 @@ describe('collectTopicUrls', () => {
     const urls = await collectTopicUrls(api)
     expect(fetchSpy).toHaveBeenCalledTimes(200)
     expect(urls).toHaveLength(200)
+  })
+})
+
+const paged = (items: unknown[], total: number) => ({
+  object: 'list',
+  items,
+  total,
+  total_relation: 'eq'
+})
+
+describe('collectWorkUrls', () => {
+  it('lists every work page and the maker behind each work', async () => {
+    const work = (id: string, maker: string | null) => ({
+      id,
+      resource_updated_at: null,
+      maker: maker ? { object: 'company', id: maker } : null
+    })
+    const fetchSpy = vi.fn(async (input: Request) => {
+      const page = new URL(input.url).searchParams.get('page')
+      return jsonResponse(
+        200,
+        page === '1'
+          ? paged([work('1', '10'), work('2', null)], 60)
+          : paged([work('3', '10')], 60)
+      )
+    })
+    const api = createApiClient({
+      origin: 'http://sitemap.test',
+      fetch: fetchSpy
+    })
+    const locs = (await collectWorkUrls(api)).map((url) => url.loc)
+    expect(locs).toEqual(
+      expect.arrayContaining([
+        '/galgame/1',
+        '/galgame/2',
+        '/galgame/3',
+        '/galgame/official/10'
+      ])
+    )
+    expect(fetchSpy).toHaveBeenCalledTimes(2)
+  })
+})
+
+describe('collectEntityUrls', () => {
+  it('reads each source in its popular order and builds its page URL', async () => {
+    const seen: Record<string, URLSearchParams> = {}
+    const fetchSpy = vi.fn(async (input: Request) => {
+      const url = new URL(input.url)
+      const path = url.pathname.slice(url.pathname.lastIndexOf('/'))
+      seen[path] = url.searchParams
+      switch (path) {
+        case '/galgame-resources':
+          return jsonResponse(200, paged([{ id: '7', edited_at: null }], 1))
+        case '/characters':
+          return jsonResponse(200, paged([{ id: '8' }], 1))
+        case '/news-items': {
+          const cursor = url.searchParams.get('cursor')
+          return jsonResponse(200, {
+            object: 'list',
+            items: [{ id: cursor ? '2' : '1', published_at: null }],
+            ...(cursor ? {} : { next_cursor: 'n1' })
+          })
+        }
+        case '/docs':
+          return jsonResponse(200, {
+            object: 'list',
+            items: [{ slug: 'rules', edited_at: null, published_at: null }]
+          })
+        case '/websites':
+          return jsonResponse(200, {
+            object: 'list',
+            items: [{ host: 'a.example' }]
+          })
+        default:
+          return jsonResponse(200, paged([{ id: '9' }], 1))
+      }
+    })
+    const api = createApiClient({
+      origin: 'http://sitemap.test',
+      fetch: fetchSpy
+    })
+    const locs = (await collectEntityUrls(api)).map((url) => url.loc)
+    expect(locs).toEqual(
+      expect.arrayContaining([
+        '/galgame/resource/7',
+        '/galgame/character/8',
+        '/galgame/tag/9',
+        '/galgame/engine/9',
+        '/galgame/series/9',
+        '/toolset/9',
+        '/galgame-quiz/9',
+        '/news/1',
+        '/news/2',
+        '/doc/rules',
+        '/website/a.example'
+      ])
+    )
+    expect(seen['/galgame-resources']?.get('sort')).toBe('download_desc')
+    expect(seen['/characters']?.get('sort')).toBe('popularity_desc')
+  })
+})
+
+describe('createRequester', () => {
+  it('retries a rate-limited or transient failure, and not a missing one', async () => {
+    vi.useFakeTimers()
+    const request = createRequester(2)
+    const limited = {
+      ok: false as const,
+      problem: {
+        kind: 'problem' as const,
+        status: 429,
+        code: null,
+        errors: [],
+        requestId: null
+      }
+    }
+    const run = vi
+      .fn()
+      .mockResolvedValueOnce(limited)
+      .mockResolvedValueOnce({ ok: true as const, data: 1 })
+    const pending = request(run)
+    await vi.runAllTimersAsync()
+    await expect(pending).resolves.toEqual({ ok: true, data: 1 })
+    expect(run).toHaveBeenCalledTimes(2)
+
+    const missing = vi.fn().mockResolvedValue({
+      ok: false as const,
+      problem: { ...limited.problem, status: 404 }
+    })
+    await request(missing)
+    expect(missing).toHaveBeenCalledTimes(1)
+    vi.useRealTimers()
   })
 })

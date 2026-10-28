@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { settle } from '#shared/utils/api/problem'
+import { settle, isMissingProblem } from '#shared/utils/api/problem'
 import { deletedUserName } from '#shared/utils/deletedUser'
 import type {
   Collection,
@@ -30,12 +30,7 @@ const { sort, page } = useQueryState(
   { pageKey: 'page' }
 )
 
-const {
-  data: detail,
-  problem,
-  pending,
-  refresh
-} = useKunApi<Collection>(
+const collectionRead = useKunApi<Collection>(
   () => `collection:${collectionId.value}:${stanceKey.value}`,
   (client, { signal }) =>
     client.GET('/collections/{collection_id}', {
@@ -69,6 +64,9 @@ const {
       signal
     })
 )
+
+const { data: detail, problem, pending, refresh } = await collectionRead
+useKunNotFound(() => isMissingProblem(problem.value), '未找到这个合集')
 
 const galgames = useWorkCards(() => works.value?.items)
 

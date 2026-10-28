@@ -23,7 +23,7 @@ export const useKunSeoMeta = (source: MaybeRefOrGetter<KunSeoMetaInput>) => {
 
   const meta = computed(() => {
     const input = toValue(source)
-    const pageUrl = `${kungal.domain.main}${route.path}`
+    const pageUrl = kunCanonicalUrl(route)
     if (input.noindex) {
       return {
         pageTitle: input.title,

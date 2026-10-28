@@ -8375,7 +8375,7 @@ export interface components {
             work_id: string;
         };
         /** @enum {string} */
-        GalgameResourceSort: "created_desc" | "created_asc";
+        GalgameResourceSort: "created_desc" | "created_asc" | "download_desc";
         GalgameResourceSource: {
             /** @description Archive password. Empty string when none. Free text; never use it as a decision input. */
             archive_password: string;
@@ -23763,7 +23763,7 @@ export interface operations {
                 include_nsfw?: boolean;
                 /** @description When set, only this state. Omitted means every state. */
                 state?: components["schemas"]["GalgameResourceState"];
-                /** @description Sort token. Default created_desc. */
+                /** @description Sort token. Default created_desc. download_desc: most downloaded first. */
                 sort?: components["schemas"]["GalgameResourceSort"];
             };
             header?: never;

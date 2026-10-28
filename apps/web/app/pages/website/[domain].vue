@@ -1,4 +1,5 @@
 <script setup lang="ts">
+import { isMissingProblem } from '#shared/utils/api/problem'
 import type {
   Article,
   WebSite,
@@ -27,6 +28,7 @@ const { data, problem, pending, refresh } = await useKunApi<Website>(
     }),
   { critical: true }
 )
+useKunNotFound(() => isMissingProblem(problem.value), '未找到该网站')
 
 const iconUrl = computed(
   () => data.value?.icon?.url ?? data.value?.external_icon_url ?? ''

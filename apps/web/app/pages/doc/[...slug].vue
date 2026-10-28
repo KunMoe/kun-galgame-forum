@@ -1,4 +1,5 @@
 <script setup lang="ts">
+import { isMissingProblem } from '#shared/utils/api/problem'
 import { contentHeadings } from '~/utils/contentPlainText'
 
 const route = useRoute()
@@ -8,7 +9,7 @@ const docSlug = computed(() => {
   return Array.isArray(slug) ? slug.join('/') : slug || ''
 })
 
-const { data, problem, pending } = useKunApi(
+const { data, problem, pending } = await useKunApi(
   () => `doc:${docSlug.value}`,
   (api, { signal }) =>
     api.GET('/docs/{doc_slug}', {
@@ -17,6 +18,7 @@ const { data, problem, pending } = useKunApi(
     }),
   { critical: true }
 )
+useKunNotFound(() => isMissingProblem(problem.value), '未找到这篇文档')
 
 const headings = computed(() => contentHeadings(data.value?.content))
 

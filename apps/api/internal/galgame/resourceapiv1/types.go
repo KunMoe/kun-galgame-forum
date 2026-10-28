@@ -229,7 +229,7 @@ type listGalgameResourcesInput struct {
 	Q           string `query:"q" required:"false" maxLength:"107" doc:"Case-insensitive search over the note and catalog work names. Omitted or blank means no search. Free text; never use it as a decision input."`
 	IncludeNSFW bool   `query:"include_nsfw" default:"false" doc:"When true, resources on an NSFW work are included. Default false."`
 	State       string `query:"state" enum:"valid,expired" required:"false" maxLength:"7" doc:"When set, only this state. Omitted means every state."`
-	Sort        string `query:"sort" enum:"created_desc,created_asc" default:"created_desc" maxLength:"12" doc:"Sort token. Default created_desc."`
+	Sort        string `query:"sort" enum:"created_desc,created_asc,download_desc" default:"created_desc" maxLength:"13" doc:"Sort token. Default created_desc. download_desc: most downloaded first."`
 }
 
 type listGalgameResourcesOutput struct {

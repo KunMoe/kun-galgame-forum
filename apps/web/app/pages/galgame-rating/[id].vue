@@ -1,4 +1,5 @@
 <script setup lang="ts">
+import { isMissingProblem } from '#shared/utils/api/problem'
 import type {
   Review,
   WithContext,
@@ -16,7 +17,7 @@ const route = useRoute()
 const id = computed(() => (route.params as { id: string }).id)
 const nameOf = useCatalogName()
 
-const { data, problem, pending, refresh } = useKunApi(
+const { data, problem, pending, refresh } = await useKunApi(
   () => `rating:${id.value}`,
   (api, { signal }) =>
     api.GET('/ratings/{rating_id}', {
@@ -25,6 +26,7 @@ const { data, problem, pending, refresh } = useKunApi(
     }),
   { critical: true }
 )
+useKunNotFound(() => isMissingProblem(problem.value), '未找到这条评价')
 
 const jsonLd = computed<WithContext<Review> | null>(() => {
   if (!data.value) {

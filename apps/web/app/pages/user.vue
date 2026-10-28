@@ -1,4 +1,5 @@
 <script setup lang="ts">
+import { isMissingProblem } from '#shared/utils/api/problem'
 import type { UserProfile } from '#shared/utils/api/schemas'
 import {
   kunUserMainNav,
@@ -8,13 +9,16 @@ import {
   userGalgameGroupOptions
 } from '~/constants/user'
 
-definePageMeta({ key: (route) => (route.params as { id: string }).id })
+definePageMeta({
+  key: (route) => (route.params as { id: string }).id,
+  validate: (route) => /^\d+$/.test(String(route.params.id ?? ''))
+})
 
 const route = useRoute()
 
 const userId = computed(() => (route.params as { id: string }).id)
 
-const { data, problem, pending } = useKunApi<UserProfile>(
+const { data, problem, pending } = await useKunApi<UserProfile>(
   () => `user:${userId.value}`,
   (api, { signal }) =>
     api.GET('/users/{user_id}', {
@@ -23,6 +27,7 @@ const { data, problem, pending } = useKunApi<UserProfile>(
     }),
   { critical: true }
 )
+useKunNotFound(() => isMissingProblem(problem.value), '未找到该用户')
 
 const isSignInRequired = computed(
   () => problem.value?.code === 'PROFILE_SIGN_IN_REQUIRED'

@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import type { GalgameResource } from '#shared/utils/api/schemas'
 import { problemMessage } from '#shared/utils/api/message'
-import { settle } from '#shared/utils/api/problem'
+import { settle, isMissingProblem } from '#shared/utils/api/problem'
 import { contentPlainText } from '~/utils/contentPlainText'
 import {
   resourceLanguageLabel,
@@ -31,10 +31,16 @@ const relocation = () =>
     })
   )
 
-if (!data.value && problem.value?.status === 404) {
+if (!data.value && isMissingProblem(problem.value)) {
   const moved = await relocation()
   if (moved.ok) {
     await navigateTo(moved.data.url, { external: true, redirectCode: 301 })
+  } else if (import.meta.server) {
+    throw createError({
+      statusCode: 404,
+      statusMessage: '未找到对应的 Galgame 资源',
+      fatal: true
+    })
   }
 }
 watch(problem, async (failed) => {
