@@ -24,6 +24,8 @@ const { data, problem, pending, refresh } = await useKunApi<GalgameResource>(
   { critical: true }
 )
 
+const { gated, reveal } = useKunNsfwGate(() => data.value?.work?.is_nsfw)
+
 const relocation = () =>
   settle(
     api.GET('/galgame-resource-relocations/{resource_id}', {
@@ -88,7 +90,8 @@ useKunSeoMeta(() => {
 
 <template>
   <div class="space-y-3">
-    <template v-if="data">
+    <KunNsfwGate v-if="data && gated" noun="资源" @reveal="reveal" />
+    <template v-else-if="data">
       <GalgameResourceDetailHero v-if="data.work" :work="data.work" />
 
       <KunAdAIFYBanner class-name="hidden lg:block" />

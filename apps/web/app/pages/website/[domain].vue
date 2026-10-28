@@ -29,6 +29,7 @@ const { data, problem, pending, refresh } = await useKunApi<Website>(
   { critical: true }
 )
 useKunNotFound(() => isMissingProblem(problem.value), '未找到该网站')
+const { gated, reveal } = useKunNsfwGate(() => data.value?.is_nsfw)
 
 const iconUrl = computed(
   () => data.value?.icon?.url ?? data.value?.external_icon_url ?? ''
@@ -153,7 +154,8 @@ useKunSeoMeta(() => {
 
 <template>
   <div>
-    <div v-if="data" class="grid grid-cols-1 gap-3 lg:grid-cols-3">
+    <KunNsfwGate v-if="data && gated" noun="网站" @reveal="reveal" />
+    <div v-else-if="data" class="grid grid-cols-1 gap-3 lg:grid-cols-3">
       <div class="min-w-0 space-y-3 lg:col-span-2">
         <KunCard
           :is-transparent="false"

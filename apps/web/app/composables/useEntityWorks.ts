@@ -3,7 +3,7 @@ import { emulatorRuntimeFilter } from '#shared/utils/galgameResourceVocab'
 import { workSummaryToCard } from '~/utils/galgame/workCard'
 import { browseSortToken } from './useGalgameFilters'
 
-export const useEntityWorksQuery = () => {
+export const useEntityWorksQuery = (includeNsfw?: () => boolean) => {
   const { page, limit, state } = useGalgameFilters()
   const { allowsNsfw } = useContentStance()
   const { excludeQuery } = useTagBlocks()
@@ -24,7 +24,7 @@ export const useEntityWorksQuery = () => {
       resource_runtime: emulatorRuntimeFilter(f.platform, f.runtime)?.[0],
       resource_language: f.language[0] as WorksQuery['resource_language'],
       game_type: f.gameType || undefined,
-      include_nsfw: allowsNsfw.value,
+      include_nsfw: includeNsfw ? includeNsfw() : allowsNsfw.value,
       include_all_original_languages: showKUNGalgameAllOriginalLanguages.value,
       ...excludeQuery.value
     }

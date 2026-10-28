@@ -52,11 +52,8 @@ watch(walkthrough, (next) => {
   }
 })
 
-const revealed = ref(false)
+const { gated, reveal } = useKunNsfwGate(() => walkthrough.value?.is_nsfw)
 const isRouteHintsDismissed = ref(false)
-const isShowWalkthrough = computed(
-  () => !walkthrough.value?.is_nsfw || allowsNsfw.value || revealed.value
-)
 
 useGalgameWalkthroughSeo(
   () => walkthrough.value,
@@ -67,7 +64,7 @@ useGalgameWalkthroughSeo(
 <template>
   <div>
     <template v-if="walkthrough && work">
-      <div v-if="isShowWalkthrough" class="space-y-10">
+      <div v-if="!gated" class="space-y-10">
         <GalgameWalkthroughHero :walkthrough="walkthrough" :work="work" />
         <GalgameWalkthroughContainer
           v-if="!walkthrough.has_in_game_route_hints || isRouteHintsDismissed"
@@ -80,7 +77,7 @@ useGalgameWalkthroughSeo(
         />
         <GalgameWalkthroughComment :walkthrough-id="Number(walkthrough.id)" />
       </div>
-      <KunNsfwGate v-else noun="攻略" @reveal="revealed = true" />
+      <KunNsfwGate v-else noun="攻略" @reveal="reveal" />
     </template>
     <GalgameWalkthroughDetailSkeleton v-else-if="pending || workPending" />
     <KunNull v-else description="攻略暂时无法加载, 请稍后再试" />

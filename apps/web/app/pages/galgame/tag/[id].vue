@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { isMissingProblem } from '#shared/utils/api/problem'
+import { isMissingProblem, settle } from '#shared/utils/api/problem'
 import { KUN_GALGAME_TAG_CATEGORY_MAP } from '~/constants/galgameTag'
 import type { GalgameTag, WorkPage } from '#shared/utils/api/schemas'
 
@@ -19,7 +19,29 @@ if (!Number.isInteger(tag_id.value) || tag_id.value <= 0) {
 const { allowsNsfw, stanceKey } = useContentStance()
 const isSfwMode = computed(() => !allowsNsfw.value)
 
-const { page, limit, query } = useEntityWorksQuery()
+const tagRead = useKunApi<GalgameTag>(
+  () => `tag:${tag_id.value}:${stanceKey.value}`,
+  (api, { signal }) =>
+    readWithNsfwProbe(
+      (includeNsfw) =>
+        settle(
+          api.GET('/tags/{tag_id}', {
+            params: {
+              path: { tag_id: String(tag_id.value) },
+              query: { include_nsfw: includeNsfw }
+            },
+            signal
+          })
+        ),
+      allowsNsfw.value
+    ),
+  { critical: true }
+)
+const { gated, reveal, includeNsfw } = useKunNsfwGate(
+  () => tagRead.data.value?.is_sexual
+)
+
+const { page, limit, query } = useEntityWorksQuery(() => includeNsfw.value)
 const {
   data: works,
   status,
@@ -33,22 +55,7 @@ const {
     })
 )
 
-const {
-  data: tag,
-  problem,
-  pending
-} = await useKunApi<GalgameTag>(
-  () => `tag:${tag_id.value}:${stanceKey.value}`,
-  (api, { signal }) =>
-    api.GET('/tags/{tag_id}', {
-      params: {
-        path: { tag_id: String(tag_id.value) },
-        query: { include_nsfw: allowsNsfw.value }
-      },
-      signal
-    }),
-  { critical: true }
-)
+const { data: tag, problem, pending } = await tagRead
 
 useKunNotFound(() => isMissingProblem(problem.value), '未找到 Galgame 标签')
 const galgames = useWorkCards(() => works.value?.items)
@@ -99,7 +106,8 @@ useKunSeoMeta(() => {
 
 <template>
   <div>
-    <div v-if="data && tag" class="flex flex-col gap-6">
+    <KunNsfwGate v-if="data && gated" noun="标签" @reveal="reveal" />
+    <div v-else-if="data && tag" class="flex flex-col gap-6">
       <KunHeader
         :name="`含有标签 ${data.name} 的 Galgame`"
         :description="data.description"
@@ -146,7 +154,7 @@ useKunSeoMeta(() => {
 
       <GalgameCardNav :is-show-advanced="false" />
 
-      <GalgameTagBlockNotice :tag="tag" :name="data.name" :sfw="isSfwMode" />
+      <GalgameTagBlockNotice :tag="tag" :name="data.name" :sfw="!includeNsfw" />
 
       <GalgameCardGridSkeleton v-if="worksPending" />
 

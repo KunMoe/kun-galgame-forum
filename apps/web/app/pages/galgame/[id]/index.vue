@@ -78,16 +78,7 @@ useKunNotFound(
   '未找到这个 Galgame'
 )
 
-// Being signed in used to be enough on its own, which showed every NSFW
-// detail page to a reader who had never asked for one. The account's stance
-// decides now; 模糊 lets the page through and masks the imagery instead.
-// It was also decided once at setup, and setup can run before the data lands
-// (a hydration key miss): the gate never closed and an NSFW work rendered for a
-// hide-stance account (2026-09-24). So it follows data and stance.
-const revealed = ref(false)
-const isShowGalgame = computed(
-  () => !data.value?.is_nsfw || allowsNsfw.value || revealed.value
-)
+const { gated, reveal } = useKunNsfwGate(() => data.value?.is_nsfw)
 
 const indexable = computed(() => {
   const galgame = data.value
@@ -268,9 +259,9 @@ useKunSeoMeta(() => {
 <template>
   <div>
     <div v-if="data && !firstScreenPending">
-      <Galgame v-if="isShowGalgame" :galgame="data" />
+      <Galgame v-if="!gated" :galgame="data" />
 
-      <KunNsfwGate v-else noun="Galgame" @reveal="revealed = true" />
+      <KunNsfwGate v-else noun="Galgame" @reveal="reveal" />
     </div>
 
     <GalgameDetailSkeleton

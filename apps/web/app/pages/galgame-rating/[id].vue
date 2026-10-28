@@ -27,6 +27,7 @@ const { data, problem, pending, refresh } = await useKunApi(
   { critical: true }
 )
 useKunNotFound(() => isMissingProblem(problem.value), '未找到这条评价')
+const { gated, reveal } = useKunNsfwGate(() => data.value?.work?.is_nsfw)
 
 const jsonLd = computed<WithContext<Review> | null>(() => {
   if (!data.value) {
@@ -165,7 +166,8 @@ useKunSeoMeta(() => {
 
 <template>
   <div>
-    <GalgameRatingDetail v-if="data" :data="data" :refresh="refresh" />
+    <KunNsfwGate v-if="data && gated" noun="评价" @reveal="reveal" />
+    <GalgameRatingDetail v-else-if="data" :data="data" :refresh="refresh" />
     <GalgameRatingDetailSkeleton v-else-if="pending" />
     <KunNull v-else description="未找到该评分" />
   </div>

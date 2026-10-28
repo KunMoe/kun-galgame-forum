@@ -50,12 +50,7 @@ watch(data, () => {
   replaced.value = undefined
 })
 const topic = computed(() => replaced.value ?? data.value)
-// Decided once at setup, the gate stayed open when the account's stance
-// narrowed after hydration (2026-09-24), so it follows topic and stance.
-const revealed = ref(false)
-const isShowTopic = computed(
-  () => !topic.value?.is_nsfw || allowsNsfw.value || revealed.value
-)
+const { gated, reveal } = useKunNsfwGate(() => topic.value?.is_nsfw)
 provide('refreshTopic', refresh)
 provide('replaceTopic', (next: Topic) => {
   replaced.value = next
@@ -205,9 +200,9 @@ useKunSeoMeta(() => {
 <template>
   <div>
     <template v-if="topic && !firstScreenPending">
-      <TopicDetail v-if="isShowTopic" :topic="topic" />
+      <TopicDetail v-if="!gated" :topic="topic" />
 
-      <KunNsfwGate v-else noun="话题" @reveal="revealed = true" />
+      <KunNsfwGate v-else noun="话题" @reveal="reveal" />
     </template>
 
     <TopicDetailSkeleton v-else-if="pending || (topic && firstScreenPending)" />

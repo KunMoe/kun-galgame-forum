@@ -27,6 +27,8 @@ const { data, problem, pending } = await useKunApi<Quiz>(
   { critical: true }
 )
 useKunNotFound(() => isMissingProblem(problem.value), '题目不存在或已被删除')
+const isNsfw = computed(() => !!data.value?.works.some((work) => work.is_nsfw))
+const { gated, reveal } = useKunNsfwGate(() => isNsfw.value)
 
 useKunSeoMeta(() => {
   const quiz = data.value
@@ -40,6 +42,9 @@ useKunSeoMeta(() => {
   const banner = quiz.works[0]?.cover?.url ?? firstImageUrl(quiz.content)
 
   const seoTitle = `${truncateRunes(promptText, 42)}${namesText ? `｜${namesText}` : ''}`
+  if (isNsfw.value) {
+    return { noindex: true, title: seoTitle }
+  }
 
   const bits = [
     `${KUN_QUIZ_TYPE_MAP[quiz.quiz_type]}·${KUN_QUIZ_CATEGORY_MAP[quiz.quiz_category]}`,
@@ -72,7 +77,8 @@ useKunSeoMeta(() => {
 
 <template>
   <div class="mx-auto max-w-3xl space-y-3">
-    <template v-if="data">
+    <KunNsfwGate v-if="data && gated" noun="题目" @reveal="reveal" />
+    <template v-else-if="data">
       <GalgameQuizPlay :quiz="data" @answered="answered = true" />
       <GalgameQuizCommentCommunityContainer
         :quiz-id="Number(data.id)"
