@@ -1,12 +1,16 @@
 package main
 
 import (
+	"errors"
 	"log/slog"
+	"net/http"
 	"os"
 	"os/signal"
 	"strconv"
 	"syscall"
+	"time"
 
+	"kun-galgame-api/internal/agentmcp"
 	"kun-galgame-api/internal/app"
 	"kun-galgame-api/pkg/config"
 	"kun-galgame-api/pkg/health"
@@ -35,11 +39,22 @@ func main() {
 
 	application := app.New(cfg)
 
+	agentMCP := &http.Server{Addr: cfg.AgentMCP.Addr, Handler: application.AgentMCP, ReadHeaderTimeout: 10 * time.Second}
+	if agentMCP.Addr != "" {
+		go func() {
+			slog.Info("AI 助手站点工具 (MCP) 启动", "addr", agentMCP.Addr, "path", agentmcp.Path)
+			if err := agentMCP.ListenAndServe(); err != nil && !errors.Is(err, http.ErrServerClosed) {
+				slog.Error("AI 助手站点工具 (MCP) 启动失败", "error", err)
+			}
+		}()
+	}
+
 	go func() {
 		quit := make(chan os.Signal, 1)
 		signal.Notify(quit, syscall.SIGINT, syscall.SIGTERM)
 		<-quit
 		slog.Info("正在关闭服务器...")
+		_ = agentMCP.Close()
 		_ = application.Fiber.Shutdown()
 	}()
 

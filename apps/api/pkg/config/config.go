@@ -34,6 +34,7 @@ type Config struct {
 	Dlsite         DlsiteConfig
 	Lottery        LotteryConfig
 	Bearer         BearerConfig
+	AgentMCP       AgentMCPConfig
 	AppRelease     AppReleaseConfig
 	Notification   NotificationConfig
 	AI             AIConfig
@@ -61,6 +62,12 @@ type BearerConfig struct {
 }
 
 func (c BearerConfig) Enabled() bool { return len(c.ClientIDs) > 0 }
+
+// Addr is a listener of its own so that no public route reaches it: the
+// Dokploy domain points at SERVER_PORT.
+type AgentMCPConfig struct {
+	Addr string
+}
 
 type AppReleaseConfig struct {
 	MinVersion     string
@@ -393,6 +400,9 @@ func Load() (*Config, error) {
 			Issuer:    envOrDefault("KUN_OIDC_ISSUER", oauthOrigin),
 			JWKSURL:   envOrDefault("KUN_OIDC_JWKS_URL", oauthOrigin+"/oauth/jwks"),
 			ClientIDs: splitCSV(os.Getenv("KUN_BEARER_CLIENT_IDS")),
+		},
+		AgentMCP: AgentMCPConfig{
+			Addr: envOrDefault("KUN_AGENT_MCP_ADDR", "127.0.0.1:2335"),
 		},
 		AppRelease:   appRelease,
 		Notification: loadNotification(),

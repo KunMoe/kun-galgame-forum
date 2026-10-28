@@ -29,6 +29,10 @@ var legacySectionKeys = map[string]string{
 	"o-forum": "site", "o-patch": "site",
 }
 
+func SectionKeys() []string {
+	return slices.Clone(sectionKeys)
+}
+
 func IsSectionKey(s string) bool {
 	return slices.Contains(sectionKeys, s)
 }

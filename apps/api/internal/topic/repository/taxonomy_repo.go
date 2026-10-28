@@ -92,3 +92,18 @@ func (r *TopicTaxonomyRepository) FindSectionRules(db *gorm.DB, names []string) 
 	}
 	return out, err
 }
+
+func (r *TopicTaxonomyRepository) SectionLabels() (map[string]string, error) {
+	var rows []struct {
+		Name  string
+		Label string
+	}
+	if err := r.db.Table("topic_section").Select("name, label").Find(&rows).Error; err != nil {
+		return nil, err
+	}
+	labels := make(map[string]string, len(rows))
+	for _, row := range rows {
+		labels[row.Name] = row.Label
+	}
+	return labels, nil
+}

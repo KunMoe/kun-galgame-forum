@@ -76,16 +76,20 @@ func (b *Bearer) resolve(c fiber.Ctx, token string) Identity {
 	}
 
 	return Identity{
-		Outcome: IdentityBearerOK,
-		User: &UserInfo{
-			ID:        claims.ID,
-			Sub:       claims.Subject,
-			Name:      claims.Name,
-			Email:     claims.Email,
-			Roles:     role.WithoutStaff(roles),
-			viaBearer: true,
-		},
+		Outcome:     IdentityBearerOK,
+		User:        BearerUser(claims),
 		AccessToken: token,
+	}
+}
+
+func BearerUser(claims *oauth.AccessClaims) *UserInfo {
+	return &UserInfo{
+		ID:        claims.ID,
+		Sub:       claims.Subject,
+		Name:      claims.Name,
+		Email:     claims.Email,
+		Roles:     role.WithoutStaff(role.Union(claims.Roles, claims.SiteRoles)),
+		viaBearer: true,
 	}
 }
 

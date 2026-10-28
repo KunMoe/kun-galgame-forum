@@ -4,6 +4,7 @@ import (
 	"kun-galgame-api/internal/topic/model"
 
 	"gorm.io/gorm"
+	"gorm.io/gorm/clause"
 )
 
 type ReplyRepository struct {
@@ -89,4 +90,16 @@ func (r *ReplyRepository) CreateReply(tx *gorm.DB, reply *model.TopicReply) erro
 
 func (r *ReplyRepository) UpdateReplyContent(tx *gorm.DB, replyID int, fields map[string]any) error {
 	return tx.Model(&model.TopicReply{}).Where("id = ?", replyID).Updates(fields).Error
+}
+
+func (r *ReplyRepository) BestAndMostLikedReplies(topicID int, bestAnswerID *int, limit int) ([]model.TopicReply, error) {
+	best := 0
+	if bestAnswerID != nil {
+		best = *bestAnswerID
+	}
+	var rows []model.TopicReply
+	err := r.db.Where("topic_id = ? AND status = 0 AND (like_count > 0 OR id = ?)", topicID, best).
+		Order(clause.OrderBy{Expression: clause.Expr{SQL: "id = ? DESC, like_count DESC, floor ASC", Vars: []any{best}, WithoutParentheses: true}}).
+		Limit(limit).Find(&rows).Error
+	return rows, err
 }

@@ -3,6 +3,7 @@ package app
 import (
 	"context"
 	"log/slog"
+	"net/http"
 	"sync"
 	"time"
 
@@ -137,6 +138,7 @@ type App struct {
 	APIv1                  huma.API
 	Settings               *setting.Store
 	TopicAI                *topicapiv1.TopicAI
+	AgentMCP               http.Handler
 
 	entityOnce    sync.Once
 	entityResolve content.EntityResolver
@@ -598,6 +600,7 @@ func New(cfg *config.Config) *App {
 		Works:     workHydrator,
 		Community: communityCli, Anchors: anchorResolver, CDN: cfg.NextMoeAPI.ImageCDNBase,
 	})
+	app.AgentMCP = app.newAgentMCP()
 	app.setupRoutes()
 	return app
 }

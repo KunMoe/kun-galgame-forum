@@ -69,6 +69,10 @@ x-kungal-api-env: &kungal-api-env
   KUN_OIDC_ISSUER: https://account.nextmoe.com
   KUN_OIDC_JWKS_URL: http://oauth:9277/oauth/jwks
   KUN_BEARER_CLIENT_IDS: kungal-app,kungal-app-desktop
+  # NextMoe AI assistant site tools (MCP, read-only topic search). Its own port so
+  # no Dokploy domain reaches it: infra-agent calls http://kungal-api:2335/mcp on
+  # dokploy-network with the asking user's token. Keep 2335 out of every domain.
+  KUN_AGENT_MCP_ADDR: ":2335"
   # ── comment areas on the community primitive (track 03) ──
   # Community is now the UNCONDITIONAL backend for the galgame + resource
   # (rating / website / toolset) comment areas: the legacy in-forum comment
@@ -249,7 +253,7 @@ services:
     image: ghcr.io/kunmoe/kungal-api:latest
     pull_policy: always
     environment: { <<: *kungal-api-env }
-    expose: ["2334"]
+    expose: ["2334", "2335"]
     # Wait for `migrate` to finish so the API never serves an un-migrated schema
     # (a failed migration blocks startup by design). postgres/redis live in the
     # infra app (no depends_on for them) — restart reconnects.

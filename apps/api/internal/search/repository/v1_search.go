@@ -15,6 +15,25 @@ type V1Query struct {
 	Limit         int
 	Authenticated bool
 	IncludeNSFW   bool
+	Section       string
+	Order         TopicOrder
+}
+
+type TopicOrder string
+
+const (
+	OrderRelevance TopicOrder = ""
+	OrderNewest    TopicOrder = "newest"
+	OrderActive    TopicOrder = "active"
+	OrderViews     TopicOrder = "views"
+	OrderLikes     TopicOrder = "likes"
+)
+
+var topicOrderColumns = map[TopicOrder]string{
+	OrderNewest: "t.created",
+	OrderActive: "t.status_update_time",
+	OrderViews:  "t.view",
+	OrderLikes:  "t.like_count",
 }
 
 type PostRow struct {
@@ -47,6 +66,14 @@ func (r *SearchRepository) SearchTopicRowsV1(q V1Query) ([]topicRepo.TopicKeyset
 		like := "%" + kw + "%"
 		query = query.Where("(t.title ILIKE ? OR t.content ILIKE ? OR t.category ILIKE ?)", like, like, like)
 	}
+	if q.Section != "" {
+		query = query.Where(`t.id IN (SELECT tsr.topic_id FROM topic_section_relation tsr
+			JOIN topic_section ts ON ts.id = tsr.topic_section_id WHERE ts.name = ?)`, q.Section)
+	}
+	order := orderBy(score+" DESC, t.status_update_time DESC, t.id DESC", scoreArgs)
+	if col, ok := topicOrderColumns[q.Order]; ok {
+		order = orderBy(col+" DESC, t.id DESC", nil)
+	}
 	var total int64
 	if err := query.Session(&gorm.Session{}).Count(&total).Error; err != nil {
 		return nil, 0, err
@@ -56,7 +83,7 @@ func (r *SearchRepository) SearchTopicRowsV1(q V1Query) ([]topicRepo.TopicKeyset
 		Select(`t.id, t.title, t.view, t.status, t.is_nsfw, t.like_count, t.reply_count,
 			t.comment_count, t.best_answer_id, t.status_update_time, t.created, t.upvote_time, t.edited,
 			t.cover_images, t.user_id, t.category, t.favorite_count, t.upvote_count, t.ai_summary`).
-		Order(orderBy(score+" DESC, t.status_update_time DESC, t.id DESC", scoreArgs)).
+		Order(order).
 		Offset(q.Offset).Limit(q.Limit).
 		Find(&rows).Error
 	return rows, total, err

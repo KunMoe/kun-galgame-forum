@@ -32,28 +32,36 @@ func (s *Service) visibleTopic(ctx context.Context, idStr string) (*model.Topic,
 	if !ok {
 		return nil, nil, notFound()
 	}
+	user := v1.User(ctx)
+	topic, p := s.ReadableTopic(ctx, id, user)
+	if p != nil {
+		return nil, nil, p
+	}
+	return topic, user, nil
+}
+
+func (s *Service) ReadableTopic(ctx context.Context, id int, viewer *middleware.UserInfo) (*model.Topic, *problem.Problem) {
 	topic, err := s.topics.FindByID(id)
 	if err != nil {
 		if errors.Is(err, gorm.ErrRecordNotFound) {
-			return nil, nil, notFound()
+			return nil, notFound()
 		}
-		return nil, nil, problem.Internal(err)
+		return nil, problem.Internal(err)
 	}
-	user := v1.User(ctx)
 	var grants []model.TopicAccessGrant
 	if access.NeedsGrants(topic) {
 		grants, err = s.topics.FindAccessGrants(topic.ID)
 		if err != nil {
-			return nil, nil, problem.Internal(err)
+			return nil, problem.Internal(err)
 		}
 	}
-	if !access.CanRead(topic, user, grants) {
-		return nil, nil, notFound()
+	if !access.CanRead(topic, viewer, grants) {
+		return nil, notFound()
 	}
 	if p := s.rejectUnrenderableAuthor(ctx, topic.UserID); p != nil {
-		return nil, nil, p
+		return nil, p
 	}
-	return topic, user, nil
+	return topic, nil
 }
 
 func (s *Service) visibleReply(ctx context.Context, idStr string) (*model.Topic, *model.TopicReply, *middleware.UserInfo, *problem.Problem) {
