@@ -20,6 +20,7 @@ const selectedRoute = defineModel<string | null>('selectedRoute', {
 })
 
 const nameOf = useCatalogName()
+const labels = useWalkthroughLabels()
 
 const routes = computed(() => buildRoutes(props.chart, props.characters))
 const tones = computed(() => characterTones(props.characters))
@@ -43,6 +44,11 @@ const toneClass = (tone: number | null) =>
     : KUN_GALGAME_WALKTHROUGH_TONES[
         tone % KUN_GALGAME_WALKTHROUGH_TONES.length
       ]!
+
+const scrollToSegment = (segmentKey: string) =>
+  document
+    .getElementById(`wt-seg-${segmentKey}`)
+    ?.scrollIntoView({ behavior: 'smooth', block: 'start' })
 
 const highlightedSave = ref<string | null>(null)
 let clearHighlight: ReturnType<typeof setTimeout> | undefined
@@ -98,6 +104,39 @@ const jump = async (saveKey: string) => {
     </nav>
 
     <div v-if="current" class="min-w-0 space-y-8">
+      <nav
+        v-if="current.segments.length > 1"
+        class="border-default-200 space-y-1 rounded-xl border p-2"
+        aria-label="本路线概览"
+      >
+        <p class="text-default-500 px-2 pt-1 text-xs">
+          本路线分 {{ current.segments.length }} 段, 点击跳到对应段落
+        </p>
+        <KunButton
+          v-for="(segment, i) in current.segments"
+          :key="segment.key"
+          variant="light"
+          color="default"
+          size="sm"
+          class-name="w-full justify-start gap-2 text-left"
+          @click="scrollToSegment(segment.key)"
+        >
+          <span class="text-default-400 w-5 shrink-0 text-xs">{{ i + 1 }}</span>
+          <span class="text-default-600 truncate">
+            {{ labels.start(chart, segment) }}
+          </span>
+          <KunIcon
+            name="lucide:arrow-right"
+            class-name="text-default-400 size-3.5 shrink-0"
+          />
+          <span class="text-foreground truncate font-medium">
+            {{ labels.goal(chart, segment) }}
+          </span>
+          <span class="text-default-400 ml-auto shrink-0 text-xs">
+            {{ choiceCount(segment.steps) }} 个选项
+          </span>
+        </KunButton>
+      </nav>
       <GalgameWalkthroughSegment
         v-for="segment in current.segments"
         :key="segment.key"

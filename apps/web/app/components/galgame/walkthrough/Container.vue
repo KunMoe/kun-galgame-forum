@@ -25,11 +25,16 @@ provide('walkthroughTextMode', textMode)
 const textLang = computed(() => props.walkthrough.text_lang)
 provide('walkthroughTextLang', textLang)
 
-const view = ref(route.query.view === 'graph' ? 'graph' : 'list')
 const views: KunTabItem[] = [
-  { value: 'list', textValue: '路线列表', icon: 'lucide:list-tree' },
+  { value: 'list', textValue: '按角色', icon: 'lucide:list-tree' },
+  { value: 'order', textValue: '按顺序', icon: 'lucide:list-checks' },
   { value: 'graph', textValue: '流程图', icon: 'lucide:git-fork' }
 ]
+const view = ref(
+  views.some((v) => v.value === route.query.view && v.value !== 'list')
+    ? String(route.query.view)
+    : 'list'
+)
 const textModes: KunTabItem[] = KUN_GALGAME_WALKTHROUGH_TEXT_MODES.map((m) => ({
   value: m.value,
   textValue: m.textValue
@@ -46,23 +51,31 @@ const initialRoute = () => {
     : (routes.value[0]?.key ?? null)
 }
 const selectedRoute = ref<string | null>(initialRoute())
-const highlightRoute = ref(false)
+const showAllRoutes = ref(false)
 
 watch([view, selectedRoute], ([v, r]) => {
   writeQuery({
-    view: v === 'graph' ? 'graph' : undefined,
+    view: v === 'list' ? undefined : v,
     character: r ?? undefined
   })
 })
 
-const layout = computed(() =>
-  layoutWalkthroughGraph(buildGraphModel(chart.value, characters.value))
-)
-const routeSegments = computed(() => {
-  if (!highlightRoute.value) return null
+const pickRoute = (key: string) => {
+  selectedRoute.value = key
+  if (view.value === 'order') view.value = 'list'
+}
+
+const graphChart = computed(() => {
   const r = routes.value.find((x) => x.key === selectedRoute.value)
-  return r ? new Set(r.segments.map((s) => s.key)) : null
+  if (showAllRoutes.value || !r) return chart.value
+  return { ...chart.value, chart_segments: r.segments }
 })
+const layout = computed(() =>
+  layoutWalkthroughGraph(buildGraphModel(graphChart.value, characters.value))
+)
+const graphKey = computed(() =>
+  showAllRoutes.value ? 'all' : (selectedRoute.value ?? '')
+)
 const selected = ref<{ kind: 'node' | 'edge'; id: string } | null>(null)
 const isFullscreen = ref(false)
 
@@ -90,6 +103,12 @@ const routeName = (key: string, fallback: string) => {
   const ref = characters.value.find((c) => c.key === key)?.catalog_character
   return ref ? nameOf(ref.catalog_name).name : fallback
 }
+provide('walkthroughRouteName', (key: string) =>
+  routeName(
+    key,
+    characters.value.find((c) => c.key === key)?.source_name ?? key
+  )
+)
 
 const endingCount = (segments: (typeof routes.value)[number]['segments']) =>
   segments.filter((s) => s.to_node.node_type === 'ending').length
@@ -111,7 +130,7 @@ const endingCount = (segments: (typeof routes.value)[number]['segments']) =>
           type="button"
           :aria-pressed="selectedRoute === r.key"
           class="group w-24 shrink-0 space-y-1.5 text-left focus:outline-none sm:w-28"
-          @click="selectedRoute = r.key"
+          @click="pickRoute(r.key)"
         >
           <div
             :class="
@@ -161,8 +180,8 @@ const endingCount = (segments: (typeof routes.value)[number]['segments']) =>
       <div class="flex flex-wrap items-center gap-3">
         <KunSwitch
           v-if="view === 'graph'"
-          v-model="highlightRoute"
-          label="只看所选角色"
+          v-model="showAllRoutes"
+          label="显示全部路线"
         />
         <KunTab
           v-if="textLang !== 'zh-Hans'"
@@ -183,6 +202,13 @@ const endingCount = (segments: (typeof routes.value)[number]['segments']) =>
           :portraits="portraits"
         />
       </KunTabPanel>
+      <KunTabPanel value="order" mount="lazy">
+        <GalgameWalkthroughOrderList
+          :chart="chart"
+          :characters="characters"
+          :walkthrough-id="walkthrough.id"
+        />
+      </KunTabPanel>
       <KunTabPanel
         value="graph"
         mount="lazy"
@@ -190,9 +216,9 @@ const endingCount = (segments: (typeof routes.value)[number]['segments']) =>
       >
         <ClientOnly>
           <GalgameWalkthroughGraph
+            :key="graphKey"
             v-model:selected="selected"
             :layout="layout"
-            :route-segments="routeSegments"
             @expand="isFullscreen = true"
           />
           <template #fallback>
@@ -203,8 +229,8 @@ const endingCount = (segments: (typeof routes.value)[number]['segments']) =>
         </ClientOnly>
         <GalgameWalkthroughInspector
           :layout="layout"
+          v-model:selected="selected"
           :chart="chart"
-          :selected="selected"
           @open-segment="openSegment"
         />
       </KunTabPanel>
@@ -218,9 +244,9 @@ const endingCount = (segments: (typeof routes.value)[number]['segments']) =>
       <div v-if="isFullscreen" class="flex h-full flex-col gap-3 lg:flex-row">
         <div class="min-h-0 flex-1">
           <GalgameWalkthroughGraph
+            :key="graphKey"
             v-model:selected="selected"
             :layout="layout"
-            :route-segments="routeSegments"
             :is-fullscreen="true"
           />
         </div>
@@ -229,8 +255,8 @@ const endingCount = (segments: (typeof routes.value)[number]['segments']) =>
         >
           <GalgameWalkthroughInspector
             :layout="layout"
+            v-model:selected="selected"
             :chart="chart"
-            :selected="selected"
             @open-segment="openSegment"
           />
         </div>

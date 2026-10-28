@@ -6,9 +6,12 @@ import type {
 import {
   buildGraphModel,
   buildRoutes,
+  choiceCount,
   COMMON_ROUTE_KEY,
+  groupWalkthroughSteps,
   hasMachineTranslation,
   saveCreators,
+  walkthroughPointLabel,
   walkthroughText
 } from './galgameWalkthrough'
 import { layoutWalkthroughGraph } from './galgameWalkthroughLayout'
@@ -41,11 +44,16 @@ const chart: WalkthroughChart = {
     { key: 's2', title: '因幡 めぐる', localized: {}, character_keys: ['c2'] }
   ],
   entry_points: [
-    { key: 'start', label: 'START', unlocked_by_ending_key: null }
+    {
+      key: 'start',
+      label: 'START',
+      localized: {},
+      unlocked_by_ending_key: null
+    }
   ],
   save_points: [
-    { key: 'sv01', label: 'セーブ01' },
-    { key: 'sv02', label: 'セーブ02' }
+    { key: 'sv01', label: 'セーブ01', localized: {} },
+    { key: 'sv02', label: 'セーブ02', localized: {} }
   ],
   chart_endings: [
     {
@@ -77,6 +85,7 @@ const chart: WalkthroughChart = {
       from_node: { node_type: 'entry', node_key: 'start' },
       condition: null,
       condition_localized: {},
+      requires_ending_keys: [],
       steps: [
         choice('a'),
         save('sv01'),
@@ -92,6 +101,7 @@ const chart: WalkthroughChart = {
       from_node: { node_type: 'save', node_key: 'sv01' },
       condition: null,
       condition_localized: {},
+      requires_ending_keys: [],
       steps: [choice('d')],
       to_node: { node_type: 'ending', node_key: 'e2' }
     },
@@ -101,6 +111,7 @@ const chart: WalkthroughChart = {
       from_node: { node_type: 'save', node_key: 'sv02' },
       condition: null,
       condition_localized: {},
+      requires_ending_keys: [],
       steps: [choice('e')],
       to_node: { node_type: 'ending', node_key: 'e3' }
     },
@@ -110,6 +121,7 @@ const chart: WalkthroughChart = {
       from_node: { node_type: 'save', node_key: 'sv02' },
       condition: null,
       condition_localized: {},
+      requires_ending_keys: [],
       steps: [choice('f')],
       to_node: { node_type: 'collect', node_key: null }
     }
@@ -150,6 +162,18 @@ describe('buildGraphModel', () => {
     expect(model.nodes.filter((n) => n.kind === 'save')).toHaveLength(2)
     expect(model.nodes.find((n) => n.id === 'collect:g4')).toBeTruthy()
     expect(model.nodes.find((n) => n.id === 'ending:e2')?.tone).toBe(1)
+  })
+
+  it('names the route of an ending that belongs to no character', () => {
+    const generic = {
+      ...chart,
+      chart_endings: chart.chart_endings.map((e) =>
+        e.key === 'e2' ? { ...e, character_keys: [] } : e
+      )
+    }
+    const nodes = buildGraphModel(generic, characters).nodes
+    expect(nodes.find((n) => n.id === 'ending:e2')?.contextKey).toBe('c2')
+    expect(nodes.find((n) => n.id === 'ending:e1')?.contextKey).toBeNull()
   })
 
   it('lays out every node inside the canvas', () => {
@@ -209,5 +233,48 @@ describe('hasMachineTranslation', () => {
     })
     expect(hasMachineTranslation(withEnding(human))).toBe(false)
     expect(hasMachineTranslation(withEnding(machine))).toBe(true)
+  })
+})
+
+describe('walkthroughPointLabel', () => {
+  const zh = { 'zh-Hans': { value: '存档１３', is_machine: true } }
+  it('prefers the catalog translation and rewrites an untranslated save', () => {
+    expect(walkthroughPointLabel('セーブ１３', zh, 'both')).toBe('存档13')
+    expect(walkthroughPointLabel('セーブ１３', {}, 'both')).toBe('存档 13')
+    expect(walkthroughPointLabel('セーブ１２（２回使用）', {}, 'zh')).toBe(
+      '存档 12 (使用 2 次)'
+    )
+    expect(walkthroughPointLabel('セーブ１３', zh, 'ja')).toBe('セーブ13')
+    expect(walkthroughPointLabel('鈴１', {}, 'both')).toBe('鈴1')
+  })
+})
+
+describe('groupWalkthroughSteps', () => {
+  it('groups under headings and numbers choices within each group', () => {
+    const steps = [
+      choice('はい'),
+      { ...choice('第九話'), step_type: 'heading' as const },
+      choice('見守る'),
+      { ...choice('ＥＮＤを見ていれば「はい」'), step_type: 'note' as const },
+      save('sv01'),
+      choice('貸す'),
+      choice('５月１５日'),
+      choice('５月１６日'),
+      choice('※ＥＮＤを見ている場合は「はい」'),
+      choice('探す'),
+      { ...choice('迷路'), step_type: 'maze' as unknown as 'choice' }
+    ]
+    const groups = groupWalkthroughSteps(steps)
+    expect(
+      groups.map((g) => [
+        g.heading?.step_text ?? null,
+        g.items.map((i) => `${i.kind}:${i.no}`)
+      ])
+    ).toEqual([
+      [null, ['choice:1']],
+      ['第九話', ['choice:1', 'note:0', 'save:0', 'choice:2']],
+      ['５月１６日', ['note:0', 'choice:1', 'note:0']]
+    ])
+    expect(choiceCount(steps)).toBe(4)
   })
 })

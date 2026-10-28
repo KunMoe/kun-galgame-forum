@@ -130,7 +130,7 @@ var vocabularies = []vocabulary{
 	{"WalkthroughReleaseKind", []string{"default", "digital", "physical", "trial", "patch"}},
 	{"WalkthroughNodeType", []string{"entry", "save", "ending", "collect", "open"}},
 	{"WalkthroughSource", []string{"seiya", "sagaoz_foolmaker", "nextmoe"}},
-	{"WalkthroughStepType", []string{"choice", "action", "save"}},
+	{"WalkthroughStepType", []string{"choice", "action", "save", "heading", "note"}},
 	{"WallCommentState", []string{"visible", "held", "deleted"}},
 	{"WallSubjectType", []string{"galgame", "galgame_rating", "galgame_resource", "galgame_quiz", "galgame_walkthrough", "toolset", "website"}},
 	{"WebsiteState", []string{"normal", "unreachable", "closed"}},

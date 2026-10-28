@@ -4,6 +4,7 @@ import type {
   WalkthroughCharacter,
   WalkthroughNode,
   WalkthroughSegment,
+  WalkthroughStep,
   WorkCharacter
 } from '#shared/utils/api/schemas'
 import type {
@@ -23,16 +24,115 @@ export const walkthroughText = (
   mode: KunWalkthroughTextMode,
   textLang = 'ja'
 ) => {
-  const zh = localized?.['zh-Hans']?.value
-  if (mode === 'ja' || !zh || zh === original) {
-    return { main: original, sub: '', lang: textLang }
+  const text = original.normalize('NFKC')
+  const zh = localized?.['zh-Hans']?.value.normalize('NFKC')
+  if (mode === 'ja' || !zh || zh === text) {
+    return { main: text, sub: '', lang: textLang }
   }
-  return { main: zh, sub: mode === 'both' ? original : '', lang: 'zh-Hans' }
+  return { main: zh, sub: mode === 'both' ? text : '', lang: 'zh-Hans' }
 }
+
+// Catalog translates save and entry labels since spec 2.76.0, but charts
+// imported before it carry {} until infra re-applies them; until then the
+// label is rewritten here.
+export const walkthroughPointLabel = (
+  label: string,
+  localized: Localized | undefined,
+  mode: KunWalkthroughTextMode
+) => {
+  const text = label.normalize('NFKC')
+  if (mode === 'ja') return text
+  const zh = localized?.['zh-Hans']?.value
+  if (zh) return zh.normalize('NFKC')
+  const save = text.match(/^セーブ\s*(\d+)\s*(.*)$/)
+  if (!save) return text
+  const note = save[2]!.replace(/^\((\d+)回使用\)$/, '(使用 $1 次)')
+  return `存档 ${save[1]}${note ? ` ${note}` : ''}`
+}
+
+export const nodeLocalized = (
+  chart: WalkthroughChart,
+  node: WalkthroughNode
+): Localized => {
+  const find = <T extends { key: string; localized: Localized }>(list: T[]) =>
+    list.find((x) => x.key === node.node_key)?.localized ?? {}
+  switch (node.node_type) {
+    case 'entry':
+      return find(chart.entry_points)
+    case 'save':
+      return find(chart.save_points)
+    case 'ending':
+      return find(chart.chart_endings)
+    default:
+      return {}
+  }
+}
+
+// A forum API deployed before this web build omits the field, and reading
+// .length on it blanked the walkthrough page.
+export const requiredEndingKeys = (segment: WalkthroughSegment): string[] =>
+  segment.requires_ending_keys ?? []
+
+export type WalkthroughStepKind = WalkthroughStep['step_type']
+
+const STEP_KINDS = new Set<string>([
+  'choice',
+  'action',
+  'save',
+  'heading',
+  'note'
+])
+
+// Catalog parses day headers and ※ notes into heading / note since spec
+// 2.76.0, but charts imported before it still type them as choices (77 of
+// the 794 "choices" in walkthrough 1039 are dates) until infra re-applies
+// them. Catalog asks for an unknown step_type to be shown unnumbered.
+export const walkthroughStepKind = (
+  step: WalkthroughStep
+): WalkthroughStepKind => {
+  if (!STEP_KINDS.has(step.step_type)) return 'note'
+  if (step.step_type !== 'choice' || !step.step_text) return step.step_type
+  const text = step.step_text.normalize('NFKC')
+  if (/^\d{1,2}月\d{1,2}日$/.test(text)) return 'heading'
+  if (text.startsWith('※')) return 'note'
+  return 'choice'
+}
+
+export type WalkthroughStepGroup = {
+  heading: WalkthroughStep | null
+  items: { step: WalkthroughStep; kind: WalkthroughStepKind; no: number }[]
+}
+
+export const groupWalkthroughSteps = (steps: WalkthroughStep[]) => {
+  const groups: WalkthroughStepGroup[] = []
+  let current: WalkthroughStepGroup | null = null
+  let no = 0
+  for (const step of steps) {
+    const kind = walkthroughStepKind(step)
+    if (kind === 'heading') {
+      current = { heading: step, items: [] }
+      groups.push(current)
+      no = 0
+      continue
+    }
+    if (kind !== 'save' && !step.step_text) continue
+    if (!current) {
+      current = { heading: null, items: [] }
+      groups.push(current)
+    }
+    current.items.push({ step, kind, no: kind === 'choice' ? ++no : 0 })
+  }
+  return groups.filter((g) => g.items.length)
+}
+
+export const choiceCount = (steps: WalkthroughStep[]) =>
+  steps.filter((s) => s.step_text && walkthroughStepKind(s) === 'choice').length
 
 export const hasMachineTranslation = (chart: WalkthroughChart) => {
   const maps: (Localized | undefined)[] = [
     ...chart.route_sections.map((s) => s.localized),
+    ...chart.entry_points.map((e) => e.localized),
+    ...chart.save_points.map((s) => s.localized),
     ...chart.chart_endings.map((e) => e.localized),
     ...chart.chart_segments.flatMap((s) => [
       s.condition_localized,
@@ -142,7 +242,7 @@ export const NODE_SIZE: Record<
 > = {
   entry: { width: 112, height: 40 },
   save: { width: 104, height: 36 },
-  ending: { width: 176, height: 48 },
+  ending: { width: 192, height: 48 },
   collect: { width: 88, height: 30 },
   open: { width: 56, height: 28 }
 }
@@ -204,11 +304,17 @@ export const buildGraphModel = (
       existing.tone ??= tone
       return
     }
-    const localized =
-      kind === 'ending'
-        ? (chart.chart_endings.find((e) => e.key === key)?.localized ?? {})
-        : {}
-    nodes.set(id, { id, kind, key, label, localized, tone, ...NODE_SIZE[kind] })
+    const localized = nodeLocalized(chart, { node_type: kind, node_key: key })
+    nodes.set(id, {
+      id,
+      kind,
+      key,
+      label,
+      localized,
+      tone,
+      contextKey: null,
+      ...NODE_SIZE[kind]
+    })
   }
 
   for (const segment of chart.chart_segments) {
@@ -261,6 +367,9 @@ export const buildGraphModel = (
       nodeLabel(chart, segment.to_node),
       endingTone
     )
+    if (ending && !ending.character_keys.length) {
+      nodes.get(to)!.contextKey ??= routeKey
+    }
     close(to)
   }
   for (const entry of chart.entry_points) {

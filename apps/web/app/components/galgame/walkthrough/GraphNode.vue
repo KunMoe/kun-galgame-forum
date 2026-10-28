@@ -2,13 +2,11 @@
 import type { GalgameWalkthroughGraphNode } from '#shared/types/galgame-walkthrough'
 import {
   KUN_GALGAME_WALKTHROUGH_NEUTRAL_TONE,
-  KUN_GALGAME_WALKTHROUGH_TONES,
-  type KunWalkthroughTextMode
+  KUN_GALGAME_WALKTHROUGH_TONES
 } from '~/constants/galgameWalkthrough'
 
 const props = defineProps<{
   node: GalgameWalkthroughGraphNode
-  isDimmed: boolean
   isSelected: boolean
 }>()
 
@@ -20,18 +18,8 @@ const tone = computed(() =>
       ]!
 )
 
-const mode = inject<Ref<KunWalkthroughTextMode>>(
-  'walkthroughTextMode',
-  ref('both')
-)
-const label = computed(
-  () =>
-    walkthroughText(
-      props.node.label,
-      props.node.localized,
-      mode.value === 'ja' ? 'ja' : 'zh'
-    ).main
-)
+const labels = useWalkthroughLabels()
+const label = computed(() => labels.node(props.node))
 
 const icon = computed(
   () =>
@@ -48,7 +36,7 @@ const icon = computed(
 <template>
   <button
     type="button"
-    :title="node.label"
+    :title="label"
     :style="{
       left: `${node.x - node.width / 2}px`,
       top: `${node.y - node.height / 2}px`,
@@ -57,7 +45,7 @@ const icon = computed(
     }"
     :class="
       cn(
-        'absolute flex items-center gap-1.5 overflow-hidden border px-2 text-left text-xs transition-[opacity,box-shadow] duration-200',
+        'absolute flex items-center gap-1.5 overflow-hidden border px-2 text-left text-xs transition-shadow duration-200',
         node.kind === 'ending' ? 'rounded-xl font-medium' : 'rounded-full',
         node.kind === 'entry' &&
           'bg-success-100 text-success-800 border-success-400',
@@ -66,8 +54,7 @@ const icon = computed(
         node.kind === 'ending' && tone.chip,
         (node.kind === 'collect' || node.kind === 'open') &&
           'bg-default-100 text-default-500 border-default-200 border-dashed',
-        isSelected && 'ring-primary-500 ring-2',
-        isDimmed && 'opacity-25'
+        isSelected && 'ring-primary-500 ring-2'
       )
     "
   >

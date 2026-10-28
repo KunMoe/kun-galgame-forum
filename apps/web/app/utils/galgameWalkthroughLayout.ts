@@ -4,6 +4,7 @@ import type { WalkthroughGraphModel } from './galgameWalkthrough'
 
 const MARGIN = 24
 export const WALKTHROUGH_HEAD_LENGTH = 9
+export const WALKTHROUGH_EDGE_LABEL = { width: 88, height: 26 }
 
 type Point = { x: number; y: number }
 
@@ -28,7 +29,7 @@ export const layoutWalkthroughGraph = (
   g.setGraph({
     rankdir: 'TB',
     nodesep: 24,
-    ranksep: 56,
+    ranksep: 28,
     edgesep: 8,
     marginx: MARGIN,
     marginy: MARGIN
@@ -38,7 +39,14 @@ export const layoutWalkthroughGraph = (
     g.setNode(n.id, { width: n.width, height: n.height })
   }
   for (const e of model.edges) {
-    g.setEdge(e.from, e.to, { minlen: 1, weight: e.steps.length ? 2 : 1 }, e.id)
+    g.setEdge(
+      e.from,
+      e.to,
+      e.steps.length
+        ? { minlen: 1, weight: 2, labelpos: 'c', ...WALKTHROUGH_EDGE_LABEL }
+        : { minlen: 1, weight: 1 },
+      e.id
+    )
   }
   dagre.layout(g)
 
@@ -47,8 +55,8 @@ export const layoutWalkthroughGraph = (
     return { ...n, x: p.x, y: p.y }
   })
   const edges = model.edges.map((e) => {
-    const points = (g.edge({ v: e.from, w: e.to, name: e.id })?.points ??
-      []) as Point[]
+    const label = g.edge({ v: e.from, w: e.to, name: e.id })
+    const points = (label?.points ?? []) as Point[]
     const last = points.at(-1) ?? { x: 0, y: 0 }
     const before = points.at(-2) ?? last
     const angle =
@@ -58,8 +66,8 @@ export const layoutWalkthroughGraph = (
       ...e,
       path: smoothPath(points),
       head: { x: last.x, y: last.y, angle },
-      labelX: mid.x + 8,
-      labelY: mid.y + 3
+      labelX: label?.x ?? mid.x,
+      labelY: label?.y ?? mid.y
     }
   })
   const graph = g.graph()

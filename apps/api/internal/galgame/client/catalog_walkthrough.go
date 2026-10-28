@@ -52,13 +52,15 @@ type CatalogWalkthroughChart struct {
 		CharacterKeys []string                    `json:"character_keys"`
 	} `json:"sections"`
 	Entries []struct {
-		Key                 string  `json:"key"`
-		Label               string  `json:"label"`
-		UnlockedByEndingKey *string `json:"unlocked_by_ending_key"`
+		Key                 string                      `json:"key"`
+		Label               string                      `json:"label"`
+		Localized           map[string]catLocalizedName `json:"localized"`
+		UnlockedByEndingKey *string                     `json:"unlocked_by_ending_key"`
 	} `json:"entries"`
 	Saves []struct {
-		Key   string `json:"key"`
-		Label string `json:"label"`
+		Key       string                      `json:"key"`
+		Label     string                      `json:"label"`
+		Localized map[string]catLocalizedName `json:"localized"`
 	} `json:"saves"`
 	Endings []struct {
 		Key           string                      `json:"key"`
@@ -81,6 +83,7 @@ type CatalogWalkthroughSegment struct {
 	FromNode           CatalogWalkthroughNode      `json:"from_node"`
 	Condition          *string                     `json:"condition"`
 	ConditionLocalized map[string]catLocalizedName `json:"condition_localized"`
+	RequiresEndingKeys []string                    `json:"requires_ending_keys"`
 	Steps              []struct {
 		StepType     string                      `json:"step_type"`
 		Text         *string                     `json:"text"`

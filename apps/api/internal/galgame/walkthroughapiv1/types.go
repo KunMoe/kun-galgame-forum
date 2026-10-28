@@ -82,12 +82,14 @@ type WalkthroughSection struct {
 type WalkthroughEntry struct {
 	Key                 ChartKey  `json:"key" doc:"Chart-local key nodes refer to."`
 	Label               string    `json:"label" maxLength:"256" doc:"The entry as the source names it, such as START or RESTART. Free text; never use it as a decision input."`
+	Localized           Localized `json:"localized" doc:"Translations of label by BCP-47 tag. Empty object when none."`
 	UnlockedByEndingKey *ChartKey `json:"unlocked_by_ending_key" doc:"chart_endings[].key whose completion unlocks this entry. null if open from the start."`
 }
 
 type WalkthroughSave struct {
-	Key   ChartKey `json:"key" doc:"Chart-local key save steps and nodes refer to."`
-	Label string   `json:"label" maxLength:"256" doc:"The save point as the source labels it. Free text; never use it as a decision input."`
+	Key       ChartKey  `json:"key" doc:"Chart-local key save steps and nodes refer to."`
+	Label     string    `json:"label" maxLength:"256" doc:"The save point as the source labels it. Free text; never use it as a decision input."`
+	Localized Localized `json:"localized" doc:"Translations of label by BCP-47 tag, such as 存档12 for セーブ１２. Empty object when none."`
 }
 
 type WalkthroughEnding struct {
@@ -104,6 +106,7 @@ type WalkthroughSegment struct {
 	FromNode           WalkthroughNode   `json:"from_node" doc:"Where the segment starts."`
 	Condition          *string           `json:"condition" maxLength:"1024" doc:"Precondition the source states. null if none. Free text; never use it as a decision input."`
 	ConditionLocalized Localized         `json:"condition_localized" doc:"Translations of condition by BCP-47 tag. Empty object when none."`
+	RequiresEndingKeys []ChartKey        `json:"requires_ending_keys" doc:"chart_endings[].key the player must have seen before this segment. Filled only when every ending the condition names resolved, so a condition with this empty is an unresolved prerequisite. Empty array, never null."`
 	Steps              []WalkthroughStep `json:"steps" doc:"Steps in play order. Empty array, never null."`
 	ToNode             WalkthroughNode   `json:"to_node" doc:"Where the segment ends."`
 }
@@ -114,7 +117,7 @@ type WalkthroughNode struct {
 }
 
 type WalkthroughStep struct {
-	StepType          string                   `json:"step_type" enum:"choice,action,save" maxLength:"6" doc:"choice picks step_text; action is a non-choice step; save creates save_key here."`
+	StepType          string                   `json:"step_type" enum:"choice,action,save,heading,note" maxLength:"7" doc:"choice picks step_text; action is a non-choice step; save creates save_key here; heading groups the steps after it (a date, day, chapter or floor) up to the next heading; note is an instruction for the reader. heading and note are never numbered as choices."`
 	StepText          *string                  `json:"step_text" maxLength:"1024" doc:"The choice or action as the source writes it. null for a save step. Free text; never use it as a decision input."`
 	Localized         Localized                `json:"localized" doc:"Translations of step_text by BCP-47 tag. Empty object when none."`
 	Alternatives      []WalkthroughAlternative `json:"alternatives" doc:"Other choices kept for collecting CG differences. Empty array, never null."`

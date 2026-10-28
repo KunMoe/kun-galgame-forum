@@ -17,6 +17,7 @@ export interface GalgameWalkthroughGraphNode {
   label: string
   localized: Record<string, { value: string; is_machine: boolean }>
   tone: number | null
+  contextKey: string | null
   x: number
   y: number
   width: number

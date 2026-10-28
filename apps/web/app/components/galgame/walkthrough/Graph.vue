@@ -4,6 +4,7 @@ import type {
   GalgameWalkthroughGraphEdge,
   GalgameWalkthroughGraphLayout
 } from '#shared/types/galgame-walkthrough'
+import { WALKTHROUGH_EDGE_LABEL } from '~/utils/galgameWalkthroughLayout'
 import {
   KUN_GALGAME_WALKTHROUGH_NEUTRAL_TONE,
   KUN_GALGAME_WALKTHROUGH_TONES
@@ -11,7 +12,6 @@ import {
 
 const props = defineProps<{
   layout: GalgameWalkthroughGraphLayout
-  routeSegments: Set<string> | null
   isFullscreen?: boolean
 }>()
 
@@ -30,7 +30,12 @@ const content = computed(() => ({
   height: props.layout.height
 }))
 const focus = computed(() => {
-  const start = props.layout.nodes.find((n) => n.kind === 'entry')
+  const start =
+    props.layout.nodes.find((n) => n.kind === 'entry') ??
+    props.layout.nodes.reduce<(typeof props.layout.nodes)[number] | undefined>(
+      (top, n) => (!top || n.y < top.y ? n : top),
+      undefined
+    )
   return start ? { x: start.x, y: start.y + 280 } : null
 })
 const isWide = useMediaQuery('(min-width: 640px)')
@@ -56,21 +61,6 @@ const toneOf = (tone: number | null) =>
     : KUN_GALGAME_WALKTHROUGH_TONES[
         tone % KUN_GALGAME_WALKTHROUGH_TONES.length
       ]!
-
-const onRoute = (edge: GalgameWalkthroughGraphEdge) =>
-  !props.routeSegments || props.routeSegments.has(edge.segmentKey)
-
-const litNodes = computed(() => {
-  if (!props.routeSegments) return null
-  const ids = new Set<string>()
-  for (const e of props.layout.edges) {
-    if (onRoute(e)) {
-      ids.add(e.from)
-      ids.add(e.to)
-    }
-  }
-  return ids
-})
 
 const isEdgeSelected = (edge: GalgameWalkthroughGraphEdge) =>
   selected.value?.kind === 'edge' && selected.value.id === edge.id
@@ -162,8 +152,7 @@ const uid = useId()
                 'pointer-events-none transition-[opacity,stroke-width] duration-200',
                 isEdgeSelected(edge)
                   ? 'stroke-primary-500'
-                  : toneOf(edge.tone).stroke,
-                !onRoute(edge) && 'opacity-15'
+                  : toneOf(edge.tone).stroke
               )
             "
           />
@@ -175,8 +164,7 @@ const uid = useId()
                 'pointer-events-none',
                 isEdgeSelected(edge)
                   ? 'fill-primary-500'
-                  : toneOf(edge.tone).fill,
-                !onRoute(edge) && 'opacity-15'
+                  : toneOf(edge.tone).fill
               )
             "
           />
@@ -191,25 +179,46 @@ const uid = useId()
             @pointerdown.stop
             @click.stop="selected = { kind: 'edge', id: edge.id }"
           />
-          <text
-            v-if="edge.steps.length && onRoute(edge)"
-            :x="edge.labelX"
-            :y="edge.labelY"
-            text-anchor="start"
-            stroke-width="4"
-            paint-order="stroke"
-            class="fill-default-500 stroke-default-50 pointer-events-none text-[10px]"
-          >
-            {{ edge.steps.length }} 步
-          </text>
         </g>
       </svg>
+
+      <template v-for="edge in layout.edges" :key="edge.id">
+        <button
+          v-if="edge.steps.length"
+          type="button"
+          :style="{
+            left: `${edge.labelX - WALKTHROUGH_EDGE_LABEL.width / 2}px`,
+            top: `${edge.labelY - WALKTHROUGH_EDGE_LABEL.height / 2}px`,
+            width: `${WALKTHROUGH_EDGE_LABEL.width}px`,
+            height: `${WALKTHROUGH_EDGE_LABEL.height}px`
+          }"
+          :class="
+            cn(
+              'absolute flex items-center justify-center gap-1 rounded-full border text-xs transition-colors',
+              isEdgeSelected(edge)
+                ? 'bg-primary-500 border-primary-500 text-white'
+                : cn(
+                    'bg-default-50 text-default-600 hover:text-foreground',
+                    toneOf(edge.tone).border
+                  )
+            )
+          "
+          @pointerdown.stop
+          @click="selected = { kind: 'edge', id: edge.id }"
+        >
+          <KunIcon name="lucide:list" class-name="size-3.5 shrink-0" />
+          {{
+            choiceCount(edge.steps)
+              ? `${choiceCount(edge.steps)} 个选项`
+              : '查看步骤'
+          }}
+        </button>
+      </template>
 
       <GalgameWalkthroughGraphNode
         v-for="node in layout.nodes"
         :key="node.id"
         :node="node"
-        :is-dimmed="!!litNodes && !litNodes.has(node.id)"
         :is-selected="selected?.kind === 'node' && selected.id === node.id"
         @pointerdown.stop
         @click="selected = { kind: 'node', id: node.id }"
@@ -267,7 +276,7 @@ const uid = useId()
     <p
       class="text-default-400 pointer-events-none absolute bottom-2 left-3 text-xs"
     >
-      滚轮缩放 · 拖拽平移 · 点击连线查看选项
+      滚轮缩放 · 拖拽平移 · 点击「N 个选项」或存档、结局查看要选的选项
     </p>
   </div>
 </template>

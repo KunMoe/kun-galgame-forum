@@ -169,10 +169,15 @@ func chartFrom(c client.CatalogWalkthroughChart) *WalkthroughChart {
 		})
 	}
 	for _, e := range c.Entries {
-		out.EntryPoints = append(out.EntryPoints, WalkthroughEntry{Key: ChartKey(e.Key), Label: e.Label, UnlockedByEndingKey: keyPtr(e.UnlockedByEndingKey)})
+		out.EntryPoints = append(out.EntryPoints, WalkthroughEntry{
+			Key: ChartKey(e.Key), Label: e.Label, Localized: localized(client.LocalizedValues(e.Localized)),
+			UnlockedByEndingKey: keyPtr(e.UnlockedByEndingKey),
+		})
 	}
 	for _, s := range c.Saves {
-		out.SavePoints = append(out.SavePoints, WalkthroughSave{Key: ChartKey(s.Key), Label: s.Label})
+		out.SavePoints = append(out.SavePoints, WalkthroughSave{
+			Key: ChartKey(s.Key), Label: s.Label, Localized: localized(client.LocalizedValues(s.Localized)),
+		})
 	}
 	for _, e := range c.Endings {
 		out.ChartEndings = append(out.ChartEndings, WalkthroughEnding{
@@ -187,7 +192,8 @@ func chartFrom(c client.CatalogWalkthroughChart) *WalkthroughChart {
 		seg := WalkthroughSegment{
 			Key: ChartKey(s.Key), SectionKey: keyPtr(s.SectionKey), FromNode: node(s.FromNode), ToNode: node(s.ToNode),
 			Condition: s.Condition, ConditionLocalized: localized(client.LocalizedValues(s.ConditionLocalized)),
-			Steps: make([]WalkthroughStep, 0, len(s.Steps)),
+			RequiresEndingKeys: keys(s.RequiresEndingKeys),
+			Steps:              make([]WalkthroughStep, 0, len(s.Steps)),
 		}
 		for _, st := range s.Steps {
 			step := WalkthroughStep{

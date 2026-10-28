@@ -170,3 +170,34 @@ func TestGetWalkthroughCarriesRouteHintsAndRelease(t *testing.T) {
 		t.Errorf("a walkthrough without the fields = hints %v, release %+v", out.HasInGameRouteHints, out.FollowedRelease)
 	}
 }
+
+func TestGetWalkthroughCarriesPointTranslationsAndPrerequisites(t *testing.T) {
+	spec276 := strings.Replace(catalogDetail, `"saves":[{"key":"sv01","label":"セーブ01"}]`,
+		`"saves":[{"key":"sv01","label":"セーブ01","localized":{"zh-Hans":{"value":"存档01","is_machine":true}}}]`, 1)
+	spec276 = strings.Replace(spec276, `"condition":null,"condition_localized":{},`,
+		`"condition":"END後に","condition_localized":{},"requires_ending_keys":["e1"],`, 1)
+	spec276 = strings.Replace(spec276, `"step_type":"choice","text":"はい"`, `"step_type":"heading","text":"５月１４日"`, 1)
+	var w client.CatalogWalkthrough
+	if err := json.Unmarshal([]byte(spec276), &w); err != nil {
+		t.Fatal(err)
+	}
+	c := walkthroughFrom(w).Chart
+	if got := c.SavePoints[0].Localized["zh-Hans"].Value; got != "存档01" {
+		t.Errorf("save localized = %q", got)
+	}
+	if got := c.ChartSegments[0].RequiresEndingKeys; len(got) != 1 || got[0] != "e1" {
+		t.Errorf("requires_ending_keys = %v", got)
+	}
+	if got := c.ChartSegments[0].Steps[0].StepType; got != "heading" {
+		t.Errorf("step_type = %q", got)
+	}
+
+	var old client.CatalogWalkthrough
+	if err := json.Unmarshal([]byte(catalogDetail), &old); err != nil {
+		t.Fatal(err)
+	}
+	oc := walkthroughFrom(old).Chart
+	if oc.ChartSegments[0].RequiresEndingKeys == nil || oc.SavePoints[0].Localized == nil || oc.EntryPoints[0].Localized == nil {
+		t.Error("a catalog before spec 2.76.0 must still answer [] and {}, never null")
+	}
+}

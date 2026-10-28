@@ -15305,6 +15305,10 @@ export interface components {
             key: string;
             /** @description The entry as the source names it, such as START or RESTART. Free text; never use it as a decision input. */
             label: string;
+            /** @description Translations of label by BCP-47 tag. Empty object when none. */
+            localized: {
+                [key: string]: components["schemas"]["LocalizedName"];
+            };
             /** @description chart_endings[].key whose completion unlocks this entry. null if open from the start. */
             unlocked_by_ending_key: string | null;
         };
@@ -15340,6 +15344,10 @@ export interface components {
             key: string;
             /** @description The save point as the source labels it. Free text; never use it as a decision input. */
             label: string;
+            /** @description Translations of label by BCP-47 tag, such as 存档12 for セーブ１２. Empty object when none. */
+            localized: {
+                [key: string]: components["schemas"]["LocalizedName"];
+            };
         };
         WalkthroughSection: {
             /** @description chart_characters[].key this heading is about. Empty array, never null. */
@@ -15364,6 +15372,8 @@ export interface components {
             from_node: components["schemas"]["WalkthroughNode"];
             /** @description Chart-local segment key. */
             key: string;
+            /** @description chart_endings[].key the player must have seen before this segment. Filled only when every ending the condition names resolved, so a condition with this empty is an unresolved prerequisite. Empty array, never null. */
+            requires_ending_keys: string[];
             /** @description route_sections[].key this segment is listed under. null if none. */
             section_key: string | null;
             /** @description Steps in play order. Empty array, never null. */
@@ -15386,11 +15396,11 @@ export interface components {
             save_key: string | null;
             /** @description The choice or action as the source writes it. null for a save step. Free text; never use it as a decision input. */
             step_text: string | null;
-            /** @description choice picks step_text; action is a non-choice step; save creates save_key here. */
+            /** @description choice picks step_text; action is a non-choice step; save creates save_key here; heading groups the steps after it (a date, day, chapter or floor) up to the next heading; note is an instruction for the reader. heading and note are never numbered as choices. */
             step_type: components["schemas"]["WalkthroughStepType"];
         };
         /** @enum {string} */
-        WalkthroughStepType: "choice" | "action" | "save";
+        WalkthroughStepType: "choice" | "action" | "save" | "heading" | "note";
         WallComment: {
             /** @description The user the comment is addressed to: the parent comment's author for a reply, the rating's author for a top-level comment on a rating wall, null otherwise. */
             addressee: components["schemas"]["UserRef"] | null;

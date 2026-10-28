@@ -25467,6 +25467,13 @@
             "maxLength": 256,
             "type": "string"
           },
+          "localized": {
+            "additionalProperties": {
+              "$ref": "#/components/schemas/LocalizedName"
+            },
+            "description": "Translations of label by BCP-47 tag. Empty object when none.",
+            "type": "object"
+          },
           "unlocked_by_ending_key": {
             "description": "chart_endings[].key whose completion unlocks this entry. null if open from the start.",
             "maxLength": 32,
@@ -25481,6 +25488,7 @@
         "required": [
           "key",
           "label",
+          "localized",
           "unlocked_by_ending_key"
         ],
         "type": "object"
@@ -25601,11 +25609,19 @@
             "description": "The save point as the source labels it. Free text; never use it as a decision input.",
             "maxLength": 256,
             "type": "string"
+          },
+          "localized": {
+            "additionalProperties": {
+              "$ref": "#/components/schemas/LocalizedName"
+            },
+            "description": "Translations of label by BCP-47 tag, such as 存档12 for セーブ１２. Empty object when none.",
+            "type": "object"
           }
         },
         "required": [
           "key",
-          "label"
+          "label",
+          "localized"
         ],
         "type": "object"
       },
@@ -25677,6 +25693,16 @@
             "pattern": "^[A-Za-z0-9_]+$",
             "type": "string"
           },
+          "requires_ending_keys": {
+            "description": "chart_endings[].key the player must have seen before this segment. Filled only when every ending the condition names resolved, so a condition with this empty is an unresolved prerequisite. Empty array, never null.",
+            "items": {
+              "maxLength": 32,
+              "minLength": 1,
+              "pattern": "^[A-Za-z0-9_]+$",
+              "type": "string"
+            },
+            "type": "array"
+          },
           "section_key": {
             "description": "route_sections[].key this segment is listed under. null if none.",
             "maxLength": 32,
@@ -25705,6 +25731,7 @@
           "from_node",
           "condition",
           "condition_localized",
+          "requires_ending_keys",
           "steps",
           "to_node"
         ],
@@ -25760,7 +25787,7 @@
           },
           "step_type": {
             "$ref": "#/components/schemas/WalkthroughStepType",
-            "description": "choice picks step_text; action is a non-choice step; save creates save_key here."
+            "description": "choice picks step_text; action is a non-choice step; save creates save_key here; heading groups the steps after it (a date, day, chapter or floor) up to the next heading; note is an instruction for the reader. heading and note are never numbered as choices."
           }
         },
         "required": [
@@ -25777,9 +25804,11 @@
         "enum": [
           "choice",
           "action",
-          "save"
+          "save",
+          "heading",
+          "note"
         ],
-        "maxLength": 6,
+        "maxLength": 7,
         "type": "string",
         "x-vocabulary-closed": true
       },
