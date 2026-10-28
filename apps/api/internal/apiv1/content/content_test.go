@@ -43,9 +43,19 @@ func everyConstructor() []any {
 	}
 }
 
+func entityConstructors() []any {
+	ref := EntityRef{Type: EntityTopic, ID: 1}
+	link := NewLink("https://example.com", nil)
+	return []any{
+		NewEntityCard(UnavailableTarget(ref), link),
+		NewEntityLink(UnavailableTarget(ref), link),
+		NewUnavailableEntity(ref),
+	}
+}
+
 func TestConstructorsSetTheirOwnDiscriminant(t *testing.T) {
 	seen := map[reflect.Type]bool{}
-	for _, n := range everyConstructor() {
+	for _, n := range append(everyConstructor(), entityConstructors()...) {
 		v := reflect.ValueOf(n)
 		want := Discriminant(v.Type())
 		if want == "" {

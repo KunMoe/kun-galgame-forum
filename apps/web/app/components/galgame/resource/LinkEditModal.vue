@@ -425,6 +425,7 @@ const typeOptions = computed(() => {
             注意事项 / 介绍 / 作者信息，支持 Markdown 与图片
           </p>
           <KunMilkdownDualEditorProvider
+            entities
             :key="editorKey"
             :value-markdown="form.content_markdown"
             @set-markdown="(v) => (form.content_markdown = v)"

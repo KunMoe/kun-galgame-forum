@@ -21,6 +21,7 @@ const _blockTokens: Equal<
   | 'math'
   | 'table'
   | 'spoiler'
+  | 'entity_card'
 > = true
 void _blockTokens
 
@@ -39,6 +40,7 @@ const _inlineTokens: Equal<
   | 'inline_spoiler'
   | 'mention'
   | 'reply_reference'
+  | 'entity_link'
 > = true
 void _inlineTokens
 

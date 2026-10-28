@@ -3,6 +3,8 @@ package apiv1
 import (
 	"testing"
 	"time"
+
+	"kun-galgame-api/internal/topic/ai"
 )
 
 func TestEditDrift(t *testing.T) {
@@ -26,9 +28,13 @@ func TestEditDrift(t *testing.T) {
 func TestClassificationTokenBindsUserTextAndExpiry(t *testing.T) {
 	a := NewTopicAI(nil, nil, nil)
 	future := time.Now().Add(time.Minute)
-	tok := a.Token(7, "title", "body", "tech-help", future)
-	if got, err := a.Verify(tok, 7, "title", "body"); err != nil || got != "tech-help" {
-		t.Fatalf("Verify = %q, %v", got, err)
+	tok := a.Token(7, "title", "body", ai.Verdict{Section: "tech-help"}, future)
+	if got, err := a.Verify(tok, 7, "title", "body"); err != nil || got.Section != "tech-help" || got.IsNSFW {
+		t.Fatalf("Verify = %+v, %v", got, err)
+	}
+	adult := a.Token(7, "title", "body", ai.Verdict{Section: "galgame", IsNSFW: true}, future)
+	if got, err := a.Verify(adult, 7, "title", "body"); err != nil || got.Section != "galgame" || !got.IsNSFW {
+		t.Fatalf("Verify = %+v, %v", got, err)
 	}
 	for name, check := range map[string]func() error{
 		"other user":  func() error { _, err := a.Verify(tok, 8, "title", "body"); return err },
@@ -38,7 +44,7 @@ func TestClassificationTokenBindsUserTextAndExpiry(t *testing.T) {
 			return err
 		},
 		"expired": func() error {
-			old := a.Token(7, "title", "body", "tech-help", time.Now().Add(-time.Second))
+			old := a.Token(7, "title", "body", ai.Verdict{Section: "tech-help"}, time.Now().Add(-time.Second))
 			_, err := a.Verify(old, 7, "title", "body")
 			return err
 		},

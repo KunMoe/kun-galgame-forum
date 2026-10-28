@@ -17,9 +17,6 @@ export interface TopicTocSource {
   getTargetFloor?: () => number
 }
 
-export const TOPIC_TOC_SOURCE: InjectionKey<TopicTocSource> =
-  Symbol('topicTocSource')
-
 const TOP_BAR_OFFSET = 88
 
 export const useTopicTOC = (source: TopicTocSource) => {
@@ -129,3 +126,6 @@ export const useTopicTOC = (source: TopicTocSource) => {
     refreshTOC
   }
 }
+
+export const TOPIC_TOC: InjectionKey<ReturnType<typeof useTopicTOC>> =
+  Symbol('topicToc')

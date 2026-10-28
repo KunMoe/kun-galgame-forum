@@ -1,8 +1,6 @@
 package app
 
 import (
-	"kun-galgame-api/internal/apiv1"
-	"kun-galgame-api/internal/apiv1/content"
 	"kun-galgame-api/internal/moemoepoint"
 	toolsetapiv1 "kun-galgame-api/internal/toolset/apiv1"
 	toolsetRepo "kun-galgame-api/internal/toolset/repository"
@@ -16,12 +14,7 @@ func (a *App) newToolsetV1() *toolsetapiv1.Service {
 	if a.Config != nil {
 		cdn = a.Config.NextMoeAPI.ImageCDNBase
 	}
-	convert := &content.Converter{
-		CDNBase:  cdn,
-		SiteBase: apiv1.SiteOrigin,
-		Images:   a.ImageMeta,
-		Users:    a.UserClient.Users,
-	}
+	convert := a.contentConverter(cdn)
 	var award toolsetapiv1.AwardFunc
 	if a.TopicAward != nil {
 		award = toolsetapiv1.AwardFunc(a.TopicAward)

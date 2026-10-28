@@ -2,10 +2,14 @@
 import { useMediaQuery } from '@vueuse/core'
 import type { KunEditorExpose, KunHeading } from '@kungal/editor-vue'
 import { useTopicEditorStore } from '~/composables/topic/useTopicEditorStore'
-import { KUN_EDITOR_TOOLBAR_ITEMS } from '~/constants/editor'
+import {
+  KUN_EDITOR_ENTITY_VIEW,
+  KUN_EDITOR_TOOLBAR_ITEMS,
+  KUN_EDITOR_TOOLBAR_OVERRIDES
+} from '~/constants/editor'
 const tempStore = useTempEditStore()
 const { content, polls, lotteries } = useTopicEditorStore()
-const adapters = useKunEditorAdapters()
+const adapters = useKunEditorAdapters({ entities: true })
 
 const headings = ref<KunHeading[]>([])
 const editorRef = ref<KunEditorExpose | null>(null)
@@ -93,14 +97,19 @@ onBeforeRouteLeave(async () => {
           v-if="!tempStore.isTopicRewriting"
           variant="light"
           color="primary"
+          class-name="whitespace-nowrap"
           @click="isDraftOpen = true"
         >
           <KunIcon name="lucide:notebook-pen" class="mr-1 h-4 w-4" />
           草稿
         </KunButton>
-        <KunButton color="primary" @click="openPublish">
+        <KunButton
+          color="primary"
+          class-name="whitespace-nowrap"
+          @click="openPublish"
+        >
           <KunIcon name="lucide:send" class="mr-1 h-4 w-4" />
-          发布话题
+          发布
         </KunButton>
       </div>
     </div>
@@ -111,8 +120,8 @@ onBeforeRouteLeave(async () => {
     >
       <KunIcon name="lucide:info" class="mt-0.5 h-4 w-4 shrink-0" />
       <span>
-        写完正文后点击「发布话题」, 会先弹出设置窗口: 在那里确认分区,
-        设置封面图, 添加投票与抽奖。确认之前话题不会发出
+        写完正文后点击「发布」, 会先弹出设置窗口: 在那里确认分区, 设置封面图,
+        添加投票与抽奖。确认之前话题不会发出
         <span v-if="attachedText" class="text-primary-500">
           · 已添加 {{ attachedText }}, 发布时一并创建
         </span>
@@ -154,6 +163,7 @@ onBeforeRouteLeave(async () => {
                 ref="editorRef"
                 v-model="content"
                 :adapters="adapters"
+                :entity-view="KUN_EDITOR_ENTITY_VIEW"
                 :views="editorViews"
                 placeholder="在此输入您的话题正文..."
                 class="kun-doc-editor"
@@ -173,6 +183,7 @@ onBeforeRouteLeave(async () => {
                       <KunEditorToolbar
                         v-bind="api"
                         :items="KUN_EDITOR_TOOLBAR_ITEMS"
+                        :item-overrides="KUN_EDITOR_TOOLBAR_OVERRIDES"
                       />
                       <span
                         class="bg-default-200 mx-1 h-5 w-px"

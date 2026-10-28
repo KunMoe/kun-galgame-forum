@@ -9,9 +9,11 @@ import { imageToken, uploadImage as uploadSiteImage } from '~/utils/uploadImage'
 
 export const useKunEditorAdapters = (opts?: {
   image?: boolean
+  entities?: boolean
 }): KunEditorAdapters => {
   const allowImage = opts?.image !== false
   const api = useApiClient()
+  const entity = useEntityEditorAdapters()
 
   const uploadImage = async (file: File) => {
     const image = await uploadSiteImage(file, 'content', file.name)
@@ -47,7 +49,15 @@ export const useKunEditorAdapters = (opts?: {
     useMessage(message, level)
   }
 
+  const entityAdapters = opts?.entities ? entity : {}
+
   return allowImage
-    ? { uploadImage, searchMentionUsers, stickerSource, notify }
-    : { searchMentionUsers, notify }
+    ? {
+        uploadImage,
+        searchMentionUsers,
+        stickerSource,
+        notify,
+        ...entityAdapters
+      }
+    : { searchMentionUsers, notify, ...entityAdapters }
 }

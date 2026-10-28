@@ -110,8 +110,15 @@ func (w *Writes) updateTopic(ctx context.Context, in *updateTopicInput) (*update
 	bodyChanged := patch.ContentMarkdown != nil && body != topic.Content
 	textChanged := titleChanged || bodyChanged
 	categoryChanged := category != topic.Category
-	nsfwChanged := patch.IsNSFW != nil && nsfw != topic.IsNSFW
 	coversChanged := patch.CoverImageHashes != nil && !coversEqual(covers, topic.CoverImages)
+	if textChanged || coversChanged || (topic.IsNSFW && !nsfw) {
+		judged, ok := w.judgeNSFW(ctx, title, body, covers)
+		if !ok {
+			judged = topic.IsNSFW
+		}
+		nsfw = nsfw || judged
+	}
+	nsfwChanged := nsfw != topic.IsNSFW
 	scopeChanged := access.scope != topic.AccessScope
 	grantsTouched := patch.AccessScope != nil || patch.AccessRoles != nil || patch.AccessUserIDs != nil
 	sectionChanged := section != storedSection

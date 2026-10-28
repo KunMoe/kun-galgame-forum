@@ -20,6 +20,7 @@ type TopicClassifyRequest struct {
 type TopicClassification struct {
 	Object              string          `json:"object" enum:"topic_classification" maxLength:"20" doc:"Type discriminant. Always topic_classification."`
 	Section             TopicSectionKey `json:"section" doc:"The section the topic will be published in."`
+	IsNSFW              bool            `json:"is_nsfw" doc:"Whether the model judges the title and body adult content. When true the topic is published NSFW whatever createTopic's is_nsfw says."`
 	Reason              string          `json:"reason" maxLength:"120" doc:"The model's reason, for the author. Free text; never use it as a decision input."`
 	ClassificationToken string          `json:"classification_token" maxLength:"256" pattern:"^[A-Za-z0-9_-]+$" doc:"Send as createTopic's classification_token with the same title and body to publish in this section without classifying again."`
 	TokenExpiresAt      repr.DateTime   `json:"token_expires_at" doc:"When the token stops being accepted."`
@@ -94,14 +95,16 @@ func (w *Writes) classifyTopic(ctx context.Context, in *classifyTopicInput) (*cl
 	return &classifyTopicOutput{Body: TopicClassification{
 		Object:              "topic_classification",
 		Section:             TopicSectionKey(verdict.Section),
+		IsNSFW:              verdict.IsNSFW,
 		Reason:              verdict.Reason,
-		ClassificationToken: w.ai.Token(user.ID, title, body, verdict.Section, expires),
+		ClassificationToken: w.ai.Token(user.ID, title, body, verdict, expires),
 		TokenExpiresAt:      repr.Timestamp(expires),
 	}}, nil
 }
 
 type sectionDecision struct {
 	section string
+	isNSFW  bool
 	source  string
 	reason  string
 }
@@ -113,8 +116,8 @@ func (w *Writes) decideSection(ctx context.Context, userID int, title, body, tok
 		return sectionDecision{section: requested}
 	}
 	if token != "" {
-		if section, err := w.ai.Verify(token, userID, title, body); err == nil {
-			return sectionDecision{section: section, source: "model"}
+		if verdict, err := w.ai.Verify(token, userID, title, body); err == nil {
+			return sectionDecision{section: verdict.Section, isNSFW: verdict.IsNSFW, source: "model"}
 		}
 	}
 	verdict, err := w.ai.Classify(ctx, title, body)
@@ -122,5 +125,5 @@ func (w *Writes) decideSection(ctx context.Context, userID int, title, body, tok
 		slog.Warn("topic create: model failed, filing under the author's section", "user_id", userID, "error", err)
 		return sectionDecision{section: requested, source: "fallback"}
 	}
-	return sectionDecision{section: verdict.Section, source: "model", reason: verdict.Reason}
+	return sectionDecision{section: verdict.Section, isNSFW: verdict.IsNSFW, source: "model", reason: verdict.Reason}
 }

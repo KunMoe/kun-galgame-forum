@@ -1,5 +1,9 @@
 <script setup lang="ts">
-import { useTopicTOC, TOPIC_TOC_SOURCE } from '~/composables/topic/useTopicTOC'
+import { TOPIC_TOC } from '~/composables/topic/useTopicTOC'
+import {
+  useCenterActiveToc,
+  useTopicRailPhase
+} from '~/composables/topic/useTopicRail'
 
 const props = defineProps<{
   user: {
@@ -14,8 +18,7 @@ const user = computed(() => props.user)
 const { id: currentUserId } = storeToRefs(usePersistUserStore())
 const isSelf = computed(() => currentUserId.value === user.value.id)
 
-const source = inject(TOPIC_TOC_SOURCE)!
-const { headings, activeIds } = useTopicTOC(source)
+const { headings, activeIds } = inject(TOPIC_TOC)!
 
 const headingItems = computed(() =>
   headings.value.filter((h) => h.type === 'heading')
@@ -24,97 +27,10 @@ const replyItems = computed(() =>
   headings.value.filter((h) => h.type === 'reply')
 )
 
-const TOP_BAR_OFFSET = 88
-const isPastPoll = ref(false)
-const isPastReplyTool = ref(false)
-let ticking = false
-
-const updatePhase = () => {
-  ticking = false
-  const anchor = document.getElementById('comments-anchor')
-  if (!anchor) {
-    isPastPoll.value = false
-    isPastReplyTool.value = false
-    return
-  }
-  const rect = anchor.getBoundingClientRect()
-  isPastPoll.value = rect.top <= TOP_BAR_OFFSET
-  isPastReplyTool.value = rect.bottom <= TOP_BAR_OFFSET
-}
-
-const onScroll = () => {
-  if (ticking) {
-    return
-  }
-  ticking = true
-  requestAnimationFrame(updatePhase)
-}
-
-const scrollToReplyTool = () => {
-  document
-    .getElementById('comments-anchor')
-    ?.scrollIntoView({ behavior: 'smooth' })
-}
+const { isPastPoll, isPastReplyTool, scrollToReplyTool } = useTopicRailPhase()
 
 const railRef = ref<HTMLElement | null>(null)
-
-const getScrollParent = (el: HTMLElement): HTMLElement | null => {
-  let p = el.parentElement
-  while (p) {
-    const oy = getComputedStyle(p).overflowY
-    if (oy === 'auto' || oy === 'scroll') {
-      return p
-    }
-    p = p.parentElement
-  }
-  return null
-}
-
-const centerActiveRun = () => {
-  const rail = railRef.value
-  const ids = activeIds.value
-  if (!rail || !ids.length) {
-    return
-  }
-  let firstEl: HTMLElement | null = null
-  let top = Infinity
-  let bottom = -Infinity
-  rail.querySelectorAll<HTMLElement>('a[data-toc-id]').forEach((el) => {
-    if (!ids.includes(el.dataset.tocId ?? '')) {
-      return
-    }
-    firstEl ??= el
-    const r = el.getBoundingClientRect()
-    top = Math.min(top, r.top)
-    bottom = Math.max(bottom, r.bottom)
-  })
-  if (!firstEl) {
-    return
-  }
-  const container = getScrollParent(firstEl)
-  if (!container) {
-    return
-  }
-  const base = container.getBoundingClientRect().top - container.scrollTop
-  const target = (top + bottom) / 2 - base - container.clientHeight / 2
-  const maxScroll = container.scrollHeight - container.clientHeight
-  container.scrollTo({
-    top: Math.min(maxScroll, Math.max(0, target)),
-    behavior: 'smooth'
-  })
-}
-
-watch(activeIds, () => centerActiveRun(), { flush: 'post' })
-
-onMounted(() => {
-  updatePhase()
-  window.addEventListener('scroll', onScroll, { passive: true })
-  window.addEventListener('resize', onScroll, { passive: true })
-})
-onBeforeUnmount(() => {
-  window.removeEventListener('scroll', onScroll)
-  window.removeEventListener('resize', onScroll)
-})
+useCenterActiveToc(railRef, activeIds)
 </script>
 
 <template>
@@ -129,33 +45,7 @@ onBeforeUnmount(() => {
       "
     >
       <div class="flex min-h-0 flex-col items-center gap-3 overflow-hidden">
-        <div class="flex w-full flex-col items-center gap-3 px-1 pt-3">
-          <KunAvatar
-            :user="user"
-            size="original"
-            class-name="size-22 hover:scale-100"
-            image-class-name="size-22"
-          />
-
-          <div class="flex min-w-0 flex-col items-center gap-1 pt-1">
-            <KunLink
-              underline="hover"
-              color="default"
-              :aria-label="user.name"
-              :to="`/user/${user.id}`"
-              class-name="max-w-full text-center text-lg font-semibold break-normal wrap-anywhere"
-            >
-              {{ user.name }}
-            </KunLink>
-
-            <p class="text-secondary flex items-center gap-1 text-sm">
-              <KunIcon class="text-inherit" name="lucide:lollipop" />
-              {{ user.moemoepoint }}
-            </p>
-          </div>
-
-          <UserFollowButton v-if="!isSelf" :user-id="String(user.id)" block />
-        </div>
+        <TopicDetailAuthorCard :user="user" />
 
         <div
           v-if="headingItems.length"

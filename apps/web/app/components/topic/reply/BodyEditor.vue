@@ -12,6 +12,7 @@ const saveMarkdown = (editorMarkdown: string) => {
 <template>
   <div style="--kun-editor-min-height: 16rem">
     <KunMilkdownDualEditorProvider
+      entities
       :value-markdown="model"
       :pending-quote="pendingQuote"
       @set-markdown="saveMarkdown"

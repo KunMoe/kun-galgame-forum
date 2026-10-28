@@ -252,6 +252,7 @@ const handleUpdatePageLink = (value: string | number) => {
           请在此处具体说明工具是什么, 以及如何使用该工具, 越详细越好
         </p>
         <KunMilkdownDualEditorProvider
+          entities
           :key="source?.toolset_id ?? 'empty'"
           :value-markdown="toolsetUpdateForm.content_markdown"
           @set-markdown="

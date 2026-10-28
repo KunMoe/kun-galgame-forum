@@ -28,6 +28,9 @@ func (c *converter) convertBlock(n ast.Node) Blocks {
 		if len(in) == 0 {
 			return nil
 		}
+		if card, ok := entityCard(in); ok {
+			return Blocks{card}
+		}
 		return Blocks{NewParagraph(in)}
 	case ast.KindHeading:
 		return c.heading(n.(*ast.Heading))

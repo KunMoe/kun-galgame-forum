@@ -133,6 +133,10 @@ onMounted(() => {
 
     <LazyReportModal />
 
+    <LazyContentEntityPickerModal />
+
+    <LazyContentEntityPreviewPanel />
+
     <LazyTopicUpvoteModal />
 
     <KunFloatingBar />

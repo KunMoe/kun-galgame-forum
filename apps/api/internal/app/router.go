@@ -4,6 +4,7 @@ import (
 	activityapiv1 "kun-galgame-api/internal/activity/apiv1"
 	"kun-galgame-api/internal/apiv1"
 	"kun-galgame-api/internal/apiv1/content"
+	"kun-galgame-api/internal/apiv1/entitypreview"
 	appreleaseapiv1 "kun-galgame-api/internal/apprelease/apiv1"
 	authapiv1 "kun-galgame-api/internal/auth/apiv1"
 	"kun-galgame-api/internal/chat"
@@ -63,6 +64,7 @@ func (a *App) setupRoutes() {
 	topicReads := a.newTopicV1()
 	a.APIv1 = apiv1.Setup(a.Fiber, deps,
 		topicapiv1.Register(topicReads),
+		entitypreview.Register(a.previewConverter()),
 		topicapiv1.RegisterWrites(a.newTopicV1Writes(topicReads)),
 		topicapiv1.RegisterInteractions(a.newTopicV1Interactions(topicReads)),
 		topicapiv1.RegisterPolls(a.newTopicV1Polls(topicReads)),
@@ -143,11 +145,23 @@ func (a *App) newTopicV1() *topicapiv1.Service {
 	)
 }
 
+func (a *App) previewConverter() *content.Converter {
+	if a.DB == nil || a.UserClient == nil {
+		return &content.Converter{}
+	}
+	cdn := ""
+	if a.Config != nil {
+		cdn = a.Config.NextMoeAPI.ImageCDNBase
+	}
+	return a.contentConverter(cdn)
+}
+
 func (a *App) contentConverter(cdn string) *content.Converter {
 	return &content.Converter{
 		CDNBase:  cdn,
 		SiteBase: apiv1.SiteOrigin,
 		Images:   a.ImageMeta,
 		Users:    a.UserClient.Users,
+		Entities: a.entityResolver(cdn),
 	}
 }

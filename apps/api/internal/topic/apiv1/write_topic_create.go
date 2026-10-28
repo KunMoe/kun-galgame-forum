@@ -65,6 +65,7 @@ func (w *Writes) createTopic(ctx context.Context, in *createTopicInput) (*create
 		return nil, validationFailed(sectionArchived("/sections/0"))
 	}
 	consume := rule.CostsMoemoepoint
+	nsfw := in.Body.IsNSFW || decision.isNSFW || w.hasExplicitImages(body, covers)
 
 	var awards []pendingAward
 	var topicID int
@@ -89,7 +90,7 @@ func (w *Writes) createTopic(ctx context.Context, in *createTopicInput) (*create
 			Title:       title,
 			Content:     body,
 			Category:    rule.LegacyCategory,
-			IsNSFW:      in.Body.IsNSFW,
+			IsNSFW:      nsfw,
 			UserID:      user.ID,
 			CoverImages: covers,
 		}

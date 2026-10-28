@@ -77,12 +77,15 @@ const replyContent = computed(() =>
   truncateRunes(contentPlainText(props.reply.content), 20)
 )
 
+const MOBILE_FLAT =
+  'max-sm:rounded-none max-sm:border-x-0 max-sm:border-t-0 max-sm:border-b max-sm:bg-transparent max-sm:px-0 max-sm:pt-0 max-sm:pb-4 max-sm:shadow-none max-sm:backdrop-blur-none'
+
 const cardClasses = computed(() => {
   if (props.reply.is_best_answer) {
-    return 'border-l-4 border-success-600 dark:border-success-700'
+    return 'border-l-4 border-success-600 dark:border-success-700 max-sm:border-l-4 max-sm:pl-3'
   }
   if (props.reply.is_pinned) {
-    return 'border-l-4 border-secondary-500 dark:border-secondary-600'
+    return 'border-l-4 border-secondary-500 dark:border-secondary-600 max-sm:border-l-4 max-sm:pl-3'
   }
   return ''
 })
@@ -116,7 +119,9 @@ const handleNewComment = () => {
     <KunCard
       :is-transparent="false"
       :is-hoverable="false"
-      :class-name="cn('w-full min-w-0 relative overflow-visible', cardClasses)"
+      :class-name="
+        cn('w-full min-w-0 relative overflow-visible', MOBILE_FLAT, cardClasses)
+      "
       content-class="gap-3"
     >
       <div

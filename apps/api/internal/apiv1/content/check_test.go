@@ -116,6 +116,16 @@ func checkBlocks(issues *[]string, path string, blocks content.Blocks) {
 			}
 		case content.SpoilerNode:
 			checkBlocks(issues, p+"/children", x.Children)
+		case content.EntityCardNode:
+			para, ok := onlyChild(x.Children).(content.ParagraphNode)
+			if !ok {
+				*issues = append(*issues, p+" entity_card.children")
+				break
+			}
+			if _, ok := onlyChild(para.Children).(content.LinkNode); !ok {
+				*issues = append(*issues, p+" entity_card.children")
+			}
+			checkBlocks(issues, p+"/children", x.Children)
 		default:
 			*issues = append(*issues, p+" unknown block")
 		}
@@ -176,6 +186,12 @@ func checkInlines(issues *[]string, path string, in content.Inlines) {
 			if x.Floor < 1 {
 				*issues = append(*issues, p+" reply_reference.floor")
 			}
+		case content.EntityLinkNode:
+			prevText = false
+			if _, ok := onlyChild(x.Children).(content.LinkNode); !ok {
+				*issues = append(*issues, p+" entity_link.children")
+			}
+			checkInlines(issues, p+"/children", x.Children)
 		default:
 			prevText = false
 			*issues = append(*issues, p+" unknown inline")
@@ -204,4 +220,11 @@ func checkURL(issues *[]string, path, s string) {
 	default:
 		*issues = append(*issues, path+" scheme "+u.Scheme)
 	}
+}
+
+func onlyChild[T any](s []T) any {
+	if len(s) != 1 {
+		return nil
+	}
+	return s[0]
 }

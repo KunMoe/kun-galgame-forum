@@ -60,6 +60,13 @@ func New(repo *repository.ActivityRepository, catalog Catalog, users Users, comm
 	return &Service{repo: repo, catalog: catalog, users: users, community: community, convert: convert, cdn: cdn, works: map[workKey]workEntry{}}
 }
 
+func (s *Service) WithEntities(resolve content.EntityResolver) *Service {
+	if s != nil && s.convert != nil {
+		s.convert.Entities = resolve
+	}
+	return s
+}
+
 func (s *Service) ready() *problem.Problem {
 	if s == nil || s.repo == nil || s.catalog == nil || s.users == nil || s.convert == nil {
 		return problem.Internal(errUnconfigured)

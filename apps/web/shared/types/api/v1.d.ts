@@ -1236,6 +1236,26 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/entity-previews": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Preview linked entities
+         * @description Returns what an entity_card or entity_link would show for each id, resolved exactly as in a content document. It is the same for every reader. At least one id and at most 50 in all. Not paginated.
+         */
+        get: operations["listEntityPreviews"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/friend-links": {
         parameters: {
             query?: never;
@@ -6503,7 +6523,7 @@ export interface components {
             object: "list";
         };
         /** @description A block node. Switch on object; render an unknown type's children, or its value as text. */
-        BlockNode: components["schemas"]["ParagraphNode"] | components["schemas"]["HeadingNode"] | components["schemas"]["ThematicBreakNode"] | components["schemas"]["BlockquoteNode"] | components["schemas"]["ListNode"] | components["schemas"]["CodeNode"] | components["schemas"]["MathNode"] | components["schemas"]["TableNode"] | components["schemas"]["SpoilerNode"];
+        BlockNode: components["schemas"]["ParagraphNode"] | components["schemas"]["HeadingNode"] | components["schemas"]["ThematicBreakNode"] | components["schemas"]["BlockquoteNode"] | components["schemas"]["ListNode"] | components["schemas"]["CodeNode"] | components["schemas"]["MathNode"] | components["schemas"]["TableNode"] | components["schemas"]["SpoilerNode"] | components["schemas"]["EntityCardNode"];
         BlockquoteNode: {
             /** @description Quoted block nodes. */
             children: components["schemas"]["BlockNode"][];
@@ -6616,6 +6636,27 @@ export interface components {
         CharacterGender: "female" | "male" | "other";
         /** @enum {string} */
         CharacterKind: "main" | "secondary" | "appears" | "unknown";
+        CharacterPreview: {
+            /** @description The entity's own name. Never empty. Free text; never use it as a decision input. */
+            display_name: string;
+            /** @description Character id: the catalog character id, which is also the id in the web's /galgame/character/{id}. */
+            id: string;
+            /** @description The character's portrait, only when catalog grades it safe. null otherwise. */
+            image: components["schemas"]["Image"] | null;
+            /** @description Romanization of the name. null when none is recorded. Free text; never use it as a decision input. */
+            latin: string | null;
+            /** @description Names by BCP-47 tag, sparse. Empty object when there are none, never null. */
+            localized: {
+                [key: string]: components["schemas"]["LocalizedName"];
+            };
+            /**
+             * @description Type discriminant. Always character. (enum property replaced by openapi-typescript)
+             * @enum {string}
+             */
+            object: "character";
+            /** @description Up to three works the character appears in, in catalog's order. Empty array, never null. */
+            works: components["schemas"]["WorkRef"][];
+        };
         /** @enum {string} */
         CharacterSort: "popularity_desc" | "relevance_desc" | "id_desc";
         CharacterSummary: {
@@ -7099,6 +7140,32 @@ export interface components {
         };
         /** @enum {string} */
         CompanyKind: "game_brand" | "bunko" | "publisher" | "anime_studio" | "doujin_circle" | "group";
+        CompanyPreview: {
+            /**
+             * Format: int64
+             * @description Works catalog files under it, NSFW ones included.
+             */
+            catalog_work_count: number;
+            /** @description What sort of company it is. */
+            company_kind: components["schemas"]["CompanyKind"];
+            /** @description The entity's own name. Never empty. Free text; never use it as a decision input. */
+            display_name: string;
+            /** @description Company id: the catalog company id, which is also the id in the web's /galgame/official/{id}. */
+            id: string;
+            /** @description Romanization of the name. null when none is recorded. Free text; never use it as a decision input. */
+            latin: string | null;
+            /** @description Names by BCP-47 tag, sparse. Empty object when there are none, never null. */
+            localized: {
+                [key: string]: components["schemas"]["LocalizedName"];
+            };
+            /** @description The company's logo. null when catalog has none. */
+            logo: components["schemas"]["Image"] | null;
+            /**
+             * @description Type discriminant. Always company. (enum property replaced by openapi-typescript)
+             * @enum {string}
+             */
+            object: "company";
+        };
         CompanyRef: {
             /** @description The entity's own name. Never empty. Free text; never use it as a decision input. */
             display_name: string;
@@ -7446,6 +7513,29 @@ export interface components {
             /** @description Other names the same person is credited under. Empty array, never null. */
             siblings: components["schemas"]["CreditNameRef"][];
         };
+        CreditNamePreview: {
+            /** @description The entity's own name. Never empty. Free text; never use it as a decision input. */
+            display_name: string;
+            /** @description Credit name id: the catalog credit name id, which is also the id in the web's /galgame/staff/{id}. */
+            id: string;
+            /** @description Romanization of the name. null when none is recorded. Free text; never use it as a decision input. */
+            latin: string | null;
+            /** @description Names by BCP-47 tag, sparse. Empty object when there are none, never null. */
+            localized: {
+                [key: string]: components["schemas"]["LocalizedName"];
+            };
+            /**
+             * @description Type discriminant. Always credit_name. (enum property replaced by openapi-typescript)
+             * @enum {string}
+             */
+            object: "credit_name";
+            /** @description A photo of the person. null when catalog has none. */
+            photo: components["schemas"]["Image"] | null;
+            /** @description The person's most frequent credited roles as catalog names them, most frequent first. Empty array, never null. */
+            role_names: string[];
+            /** @description Up to three works the person is credited on, in catalog's order. Empty array, never null. */
+            works: components["schemas"]["WorkRef"][];
+        };
         CreditNameRef: {
             /** @description The entity's own name. Never empty. Free text; never use it as a decision input. */
             display_name: string;
@@ -7729,6 +7819,41 @@ export interface components {
         };
         /** @enum {string} */
         EnterBlockedReason: "not_open" | "past_closes_at" | "no_signup" | "own_lottery" | "reply_required" | "moemoepoint_below_minimum" | "account_too_new";
+        EntityCardNode: {
+            /** @description One paragraph holding the plain link the author wrote. Render target instead; the link is for a client that does not know entity_card. */
+            children: components["schemas"]["BlockNode"][];
+            /**
+             * @description Type discriminant. Always entity_card. (enum property replaced by openapi-typescript)
+             * @enum {string}
+             */
+            object: "entity_card";
+            /** @description The entity the card shows, as of this read. */
+            target: components["schemas"]["EntityTarget"];
+        };
+        EntityLinkNode: {
+            /** @description The plain link the author wrote. Render target instead; the link is for a client that does not know entity_link. */
+            children: components["schemas"]["InlineNode"][];
+            /**
+             * @description Type discriminant. Always entity_link. (enum property replaced by openapi-typescript)
+             * @enum {string}
+             */
+            object: "entity_link";
+            /** @description The entity the link points at, as of this read. */
+            target: components["schemas"]["EntityTarget"];
+        };
+        EntityPreviewList: {
+            /** @description One target per requested id, in the order topic_ids, work_ids, galgame_resource_ids, user_ids, character_ids, company_ids, tag_ids, series_ids, credit_name_ids, rating_ids, each in request order. A target this reader may not preview is unavailable_entity; a user who no longer exists has name null. Empty array, never null. */
+            items: components["schemas"]["EntityTarget"][];
+            /**
+             * @description Type discriminant. Always list.
+             * @constant
+             */
+            object: "list";
+        };
+        /** @description What an entity link points at. Switch on object; for an unknown type, render the node's children. */
+        EntityTarget: components["schemas"]["TopicPreview"] | components["schemas"]["WorkPreview"] | components["schemas"]["GalgameResourcePreview"] | components["schemas"]["UserRef"] | components["schemas"]["CharacterPreview"] | components["schemas"]["CompanyPreview"] | components["schemas"]["TagPreview"] | components["schemas"]["SeriesPreview"] | components["schemas"]["CreditNamePreview"] | components["schemas"]["RatingPreview"] | components["schemas"]["UnavailableEntity"];
+        /** @enum {string} */
+        EntityType: "topic" | "work" | "galgame_resource" | "character" | "company" | "tag" | "series" | "credit_name" | "rating";
         /** @enum {string} */
         ExpiryVerdict: "alive" | "dead" | "unchecked";
         FieldError: {
@@ -8193,6 +8318,46 @@ export interface components {
             /** @description New version token. null clears it; leaving the field out keeps the stored one. */
             version_label?: components["schemas"]["VersionLabel"] | null;
         };
+        GalgameResourcePreview: {
+            /** @description Uploader of the resource. */
+            author: components["schemas"]["UserRef"];
+            /**
+             * Format: date-time
+             * @description Creation time.
+             */
+            created_at: string;
+            /**
+             * Format: int64
+             * @description Times download secrets were issued.
+             */
+            download_count: number;
+            /** @description Resource id. */
+            id: string;
+            /**
+             * Format: int64
+             * @description Number of likes.
+             */
+            like_count: number;
+            /**
+             * @description Type discriminant. Always galgame_resource. (enum property replaced by openapi-typescript)
+             * @enum {string}
+             */
+            object: "galgame_resource";
+            /** @description Languages of the resource. Never null. */
+            resource_languages: components["schemas"]["ResourceLanguage"][];
+            /** @description Platforms of the resource. Empty array when only runtimes apply. Never null. */
+            resource_platforms: components["schemas"]["ResourcePlatform"][];
+            /** @description Kind of download. */
+            resource_type: components["schemas"]["ResourceType"];
+            /** @description Size as the uploader wrote it, such as 1.5 GB. Free text; never use it as a decision input. */
+            size: string;
+            /** @description Whether the links are currently treated as working. */
+            state: components["schemas"]["GalgameResourceState"];
+            /** @description Optional title. Empty string when none. Free text; never use it as a decision input. */
+            title: string;
+            /** @description The work this resource belongs to. Never null here; nullable to match WorkRef elsewhere. */
+            work: components["schemas"]["WorkRef"] | null;
+        };
         GalgameResourceRelocation: {
             /**
              * @description Type discriminant. Always galgame_resource_relocation.
@@ -8370,7 +8535,7 @@ export interface components {
             value: string;
         };
         /** @description An inline node. Switch on object; render an unknown type's children, or its value as text. */
-        InlineNode: components["schemas"]["TextNode"] | components["schemas"]["EmphasisNode"] | components["schemas"]["StrongNode"] | components["schemas"]["StrikethroughNode"] | components["schemas"]["InlineCodeNode"] | components["schemas"]["InlineMathNode"] | components["schemas"]["BreakNode"] | components["schemas"]["LinkNode"] | components["schemas"]["ImageNode"] | components["schemas"]["VideoNode"] | components["schemas"]["InlineSpoilerNode"] | components["schemas"]["MentionNode"] | components["schemas"]["ReplyReferenceNode"];
+        InlineNode: components["schemas"]["TextNode"] | components["schemas"]["EmphasisNode"] | components["schemas"]["StrongNode"] | components["schemas"]["StrikethroughNode"] | components["schemas"]["InlineCodeNode"] | components["schemas"]["InlineMathNode"] | components["schemas"]["BreakNode"] | components["schemas"]["LinkNode"] | components["schemas"]["ImageNode"] | components["schemas"]["VideoNode"] | components["schemas"]["InlineSpoilerNode"] | components["schemas"]["MentionNode"] | components["schemas"]["ReplyReferenceNode"] | components["schemas"]["EntityLinkNode"];
         InlineSpoilerNode: {
             /** @description Inline nodes hidden until the reader reveals them. */
             children: components["schemas"]["InlineNode"][];
@@ -11402,6 +11567,33 @@ export interface components {
             /** @description How much the short summary gives away, as its author declared. */
             spoiler_level?: components["schemas"]["SpoilerLevel"];
         };
+        RatingPreview: {
+            /** @description Who wrote the rating. */
+            author: components["schemas"]["UserRef"];
+            /**
+             * Format: date-time
+             * @description When the rating was written.
+             */
+            created_at: string;
+            /** @description Whether the author marked the rating as containing spoilers. Hide short_summary until the reader asks. */
+            has_spoilers: boolean;
+            /** @description Rating id, which is also the id in the web's /galgame-rating/{id}. */
+            id: string;
+            /**
+             * @description Type discriminant. Always rating. (enum property replaced by openapi-typescript)
+             * @enum {string}
+             */
+            object: "rating";
+            /**
+             * Format: int64
+             * @description The overall score.
+             */
+            overall: number;
+            /** @description The author's short review, plain text. Empty string if none. Free text; never use it as a decision input. */
+            short_summary: string;
+            /** @description The rated work. Never null here; nullable to match WorkRef elsewhere. */
+            work: components["schemas"]["WorkRef"] | null;
+        };
         /** @enum {string} */
         RatingRecommend: "strong_yes" | "yes" | "neutral" | "no" | "strong_no";
         /** @enum {string} */
@@ -12309,6 +12501,34 @@ export interface components {
             /** @description Up to five listed works of the series, earliest release first. Empty array, never null. */
             sample_works: components["schemas"]["SeriesSampleWork"][];
         };
+        SeriesPreview: {
+            /**
+             * Format: int64
+             * @description Works catalog files under it, NSFW ones included.
+             */
+            catalog_work_count: number;
+            /** @description Portrait cover of the series' earliest listed work. null when none is listed or it has no cover. */
+            cover: components["schemas"]["Image"] | null;
+            /** @description The entity's own name. Never empty. Free text; never use it as a decision input. */
+            display_name: string;
+            /** @description Whether any work of the series is adult content. null when catalog does not know. */
+            has_nsfw_works: boolean | null;
+            /** @description Series id: the catalog series id, which is also the id in the web's /galgame/series/{id}. */
+            id: string;
+            /** @description Romanization of the name. null when none is recorded. Free text; never use it as a decision input. */
+            latin: string | null;
+            /** @description Names by BCP-47 tag, sparse. Empty object when there are none, never null. */
+            localized: {
+                [key: string]: components["schemas"]["LocalizedName"];
+            };
+            /**
+             * @description Type discriminant. Always series. (enum property replaced by openapi-typescript)
+             * @enum {string}
+             */
+            object: "series";
+            /** @description Up to three listed works of the series, earliest release first. Empty array, never null. */
+            works: components["schemas"]["WorkRef"][];
+        };
         SeriesSampleWork: {
             /** @description The landscape art at its original size, never the 16:9 crop. null when the work has none; clients fall back to cover. */
             banner: components["schemas"]["Image"] | null;
@@ -12929,6 +13149,34 @@ export interface components {
             slug?: string;
             /** @description New group id. null moves the tag out of every group; absent keeps it. */
             website_tag_group_id?: string | null;
+        };
+        TagPreview: {
+            /**
+             * Format: int64
+             * @description Works catalog files under it, NSFW ones included.
+             */
+            catalog_work_count: number;
+            /** @description Start of the tag's introduction, Chinese when catalog has it. Empty string when it has none. Free text; never use it as a decision input. */
+            description: string;
+            /** @description The entity's own name. Never empty. Free text; never use it as a decision input. */
+            display_name: string;
+            /** @description Tag id: the catalog tag id, which is also the id in the web's /galgame/tag/{id}. */
+            id: string;
+            /** @description Whether the tag is adult content. */
+            is_sexual: boolean;
+            /** @description Romanization of the name. null when none is recorded. Free text; never use it as a decision input. */
+            latin: string | null;
+            /** @description Names by BCP-47 tag, sparse. Empty object when there are none, never null. */
+            localized: {
+                [key: string]: components["schemas"]["LocalizedName"];
+            };
+            /**
+             * @description Type discriminant. Always tag. (enum property replaced by openapi-typescript)
+             * @enum {string}
+             */
+            object: "tag";
+            /** @description What the tag describes: content is the story and characters, meta is the game as a product. */
+            tag_kind: components["schemas"]["TagKind"];
         };
         TagRef: {
             /** @description The entity's own name. Never empty. Free text; never use it as a decision input. */
@@ -13626,6 +13874,8 @@ export interface components {
         TopicClassification: {
             /** @description Send as createTopic's classification_token with the same title and body to publish in this section without classifying again. */
             classification_token: string;
+            /** @description Whether the model judges the title and body adult content. When true the topic is published NSFW whatever createTopic's is_nsfw says. */
+            is_nsfw: boolean;
             /**
              * @description Type discriminant. Always topic_classification.
              * @constant
@@ -13662,7 +13912,7 @@ export interface components {
             content_markdown: string;
             /** @description Cover images by image-service hash, in display order. When absent, the covers are the first nine distinct /image/{hash} tokens of the body in body order, stickers skipped; an empty array means no covers. */
             cover_image_hashes?: string[];
-            /** @description Whether the topic is NSFW. */
+            /** @description The author's own NSFW mark. The topic is also NSFW, whatever this says, when the model judges its title and body adult or the image service grades a body or cover image explicit; false never clears that. */
             is_nsfw: boolean;
             /** @description The topic's section as a one-item array. A retired key maps to its successor; items after the first are ignored. An archived section is NOT_ALLOWED_VALUE at /sections/0. */
             sections: components["schemas"]["SectionKey"][];
@@ -13917,7 +14167,7 @@ export interface components {
             content_markdown?: string;
             /** @description New cover images, replacing the stored ones. An empty array removes every cover. Unlike createTopic, nothing is derived from the body. */
             cover_image_hashes?: string[];
-            /** @description New NSFW flag. */
+            /** @description The author's NSFW mark. Setting it true always applies. Setting it false, or changing the title, body or covers, has the system judge the topic again, and the topic stays NSFW when it judges the text or a picture adult. */
             is_nsfw?: boolean;
             /** @description New section as a one-item array, as in createTopic. Moving into an archived section is NOT_ALLOWED_VALUE at /sections/0; a topic already there may stay. */
             sections?: components["schemas"]["SectionKey"][];
@@ -13925,6 +14175,43 @@ export interface components {
             state?: components["schemas"]["TopicPublishState"];
             /** @description New title. Trimmed and checked as in createTopic. Free text; never use it as a decision input. */
             title?: string;
+        };
+        TopicPreview: {
+            /** @description Topic author. */
+            author: components["schemas"]["UserRef"];
+            /** @description Cover images in stored token order, stickers left out. Empty array if none. */
+            cover_images: components["schemas"]["Image"][];
+            /**
+             * Format: date-time
+             * @description Creation time.
+             */
+            created_at: string;
+            /** @description Topic id. JSON string of a decimal integer. */
+            id: string;
+            /** @description Whether the topic is marked NSFW. Mask its covers unless the reader asked for NSFW content. */
+            is_nsfw: boolean;
+            /**
+             * Format: int64
+             * @description Like count.
+             */
+            like_count: number;
+            /**
+             * @description Type discriminant. Always topic. (enum property replaced by openapi-typescript)
+             * @enum {string}
+             */
+            object: "topic";
+            /**
+             * Format: int64
+             * @description Reply count.
+             */
+            reply_count: number;
+            /** @description Topic title as stored. Free text; never use it as a decision input. */
+            title: string;
+            /**
+             * Format: int64
+             * @description Lifetime view count.
+             */
+            view_count: number;
         };
         /** @enum {string} */
         TopicPublishState: "published" | "hidden";
@@ -14286,6 +14573,17 @@ export interface components {
             trait_group: components["schemas"]["CatalogName"];
             /** @description The root group's trait id. */
             trait_group_id: string;
+        };
+        UnavailableEntity: {
+            /** @description Id of the entity the link pointed at. Its page may still open for a reader allowed to see it. */
+            entity_id: string;
+            /** @description What the link pointed at. */
+            entity_type: components["schemas"]["EntityType"];
+            /**
+             * @description Type discriminant. Always unavailable_entity. (enum property replaced by openapi-typescript)
+             * @enum {string}
+             */
+            object: "unavailable_entity";
         };
         UpdateLog: {
             /** @description What kind of change the entry records. Clients map the token to a localized label. */
@@ -14748,8 +15046,8 @@ export interface components {
             /** @description Display name. null when the account no longer exists; show a localized label. Free text; never use it as a decision input. */
             name: string | null;
             /**
-             * @description Type discriminant. Always user.
-             * @constant
+             * @description Type discriminant. Always user. (enum property replaced by openapi-typescript)
+             * @enum {string}
              */
             object: "user";
         };
@@ -16014,6 +16312,38 @@ export interface components {
             total_minutes: number;
             /** @description eq when total is exact, gte when it stopped at the depth limit and there are at least that many. */
             total_relation: components["schemas"]["TotalRelation"];
+        };
+        WorkPreview: {
+            /** @description The portrait cover at its original size, never the 16:9 crop. null when the work has none. */
+            cover: components["schemas"]["Image"] | null;
+            /** @description The entity's own name. Never empty. Free text; never use it as a decision input. */
+            display_name: string;
+            /** @description Work id: the catalog work id, which is also the id in the web's /galgame/{id}. */
+            id: string;
+            /** @description Whether this forum displays the work as adult content: the editorial display axis (the claim's content limit), not the age rating. */
+            is_nsfw: boolean;
+            /** @description Romanization of the name. null when none is recorded. Free text; never use it as a decision input. */
+            latin: string | null;
+            /** @description Names by BCP-47 tag, sparse. Empty object when there are none, never null. */
+            localized: {
+                [key: string]: components["schemas"]["LocalizedName"];
+            };
+            /** @description The credited company a card names as the maker: developer, then circle, then brand, then publisher. null when no credited company has a name. */
+            maker: components["schemas"]["CompanyRef"] | null;
+            /**
+             * @description Type discriminant. Always work. (enum property replaced by openapi-typescript)
+             * @enum {string}
+             */
+            object: "work";
+            /**
+             * Format: date
+             * @description Release date. A month- or year-precise date is the first day of that month or year. null when catalog has none.
+             */
+            release_date: string | null;
+            /** @description How much of release_date is known. null when release_date is null. */
+            release_date_precision: components["schemas"]["ReleaseDatePrecision"] | null;
+            /** @description Up to four of the work's tags, in the order its page lists them, leaving out spoiler and adult tags. Empty array, never null. */
+            top_tags: components["schemas"]["TagRef"][];
         };
         WorkRankingEntry: {
             /** @description Who created the work's page on this forum. null when none is recorded or the account cannot be shown. */
@@ -23238,6 +23568,83 @@ export interface operations {
                 };
             };
             /** @description SERVICE_UNAVAILABLE when catalog cannot be reached. */
+            503: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+        };
+    };
+    listEntityPreviews: {
+        parameters: {
+            query?: {
+                /** @description Topic ids, comma-separated. */
+                topic_ids?: string[];
+                /** @description Work ids, comma-separated. */
+                work_ids?: string[];
+                /** @description Galgame resource ids, comma-separated. */
+                galgame_resource_ids?: string[];
+                /** @description User ids, comma-separated. */
+                user_ids?: string[];
+                /** @description Character ids, comma-separated. */
+                character_ids?: string[];
+                /** @description Company ids, comma-separated. */
+                company_ids?: string[];
+                /** @description Tag ids, comma-separated. */
+                tag_ids?: string[];
+                /** @description Series ids, comma-separated. */
+                series_ids?: string[];
+                /** @description Credit name ids, comma-separated. */
+                credit_name_ids?: string[];
+                /** @description Rating ids, comma-separated. */
+                rating_ids?: string[];
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["EntityPreviewList"];
+                };
+            };
+            /** @description Bad Request */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description VALIDATION_FAILED when no id is given, more than 50 are given in all, or an id is not a positive integer. */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Internal Server Error */
+            500: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description SERVICE_UNAVAILABLE when a lookup the previews need cannot be made. */
             503: {
                 headers: {
                     [name: string]: unknown;

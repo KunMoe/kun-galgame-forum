@@ -1,12 +1,17 @@
 <script setup lang="ts">
 import type { KunEditorExpose } from '@kungal/editor-vue'
-import { KUN_EDITOR_TOOLBAR_ITEMS } from '~/constants/editor'
+import {
+  KUN_EDITOR_ENTITY_VIEW,
+  KUN_EDITOR_TOOLBAR_ITEMS,
+  KUN_EDITOR_TOOLBAR_OVERRIDES
+} from '~/constants/editor'
 import type { ReplyReference } from '~/store/types/topic/reply'
 
 const props = defineProps<{
   valueMarkdown: string
   language?: Language
   disableImage?: boolean
+  entities?: boolean
   pendingQuote?: ReplyReference | null
   placeholder?: string
 }>()
@@ -21,7 +26,10 @@ const model = computed({
   set: (value) => emits('setMarkdown', value)
 })
 
-const adapters = useKunEditorAdapters({ image: props.disableImage !== true })
+const adapters = useKunEditorAdapters({
+  image: props.disableImage !== true,
+  entities: props.entities
+})
 
 const features = { quote: true, sticker: props.disableImage !== true }
 
@@ -56,6 +64,7 @@ const textCount = computed(() => markdownToText(props.valueMarkdown).length)
       v-model="model"
       :adapters="adapters"
       :features="features"
+      :entity-view="KUN_EDITOR_ENTITY_VIEW"
       :locale="language ?? 'zh-cn'"
       :placeholder="placeholder"
       :views="['wysiwyg', 'source']"
@@ -65,7 +74,11 @@ const textCount = computed(() => markdownToText(props.valueMarkdown).length)
       </template>
       <template #toolbar="api">
         <div class="flex flex-wrap items-center gap-1">
-          <KunEditorToolbar v-bind="api" :items="KUN_EDITOR_TOOLBAR_ITEMS" />
+          <KunEditorToolbar
+            v-bind="api"
+            :items="KUN_EDITOR_TOOLBAR_ITEMS"
+            :item-overrides="KUN_EDITOR_TOOLBAR_OVERRIDES"
+          />
           <template v-if="disableImage !== true">
             <span class="bg-default-200 mx-1 h-5 w-px" aria-hidden="true" />
             <KunMilkdownImageDialog v-bind="api" />
