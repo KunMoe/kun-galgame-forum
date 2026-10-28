@@ -1,5 +1,4 @@
 <script setup lang="ts">
-import { useMediaQuery } from '@vueuse/core'
 import type { PageListUserTopicItem } from '#shared/utils/api/schemas'
 
 const props = defineProps<{
@@ -11,9 +10,7 @@ const props = defineProps<{
 const SHOWN = 5
 
 const { allowsNsfw } = useContentStance()
-const isWide = useMediaQuery('(min-width: 1280px)')
-
-const { data, status, refresh } = useKunApi<PageListUserTopicItem>(
+const { data } = useKunApi<PageListUserTopicItem>(
   () =>
     `user-topics:${props.userId}:authored:1:${SHOWN + 1}:${allowsNsfw.value ? 'nsfw' : 'sfw'}`,
   (api, { signal }) =>
@@ -28,18 +25,7 @@ const { data, status, refresh } = useKunApi<PageListUserTopicItem>(
         }
       },
       signal
-    }),
-  { server: false, lazy: true, immediate: false }
-)
-
-watch(
-  isWide,
-  (wide) => {
-    if (wide && status.value === 'idle') {
-      void refresh()
-    }
-  },
-  { immediate: true }
+    })
 )
 
 const topics = computed(() =>

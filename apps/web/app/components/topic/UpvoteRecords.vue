@@ -35,7 +35,8 @@ watch(
 const fetched =
   props.records || !props.topicId
     ? null
-    : (useOptionalTopicPage()?.upvotes ?? useTopicUpvotes(String(props.topicId)))
+    : (useOptionalTopicPage()?.upvotes ??
+      useTopicUpvotes(String(props.topicId)))
 
 type Row = {
   id: string
@@ -84,22 +85,21 @@ const loadMore = () => fetched?.loadMore() ?? Promise.resolve()
     <div
       v-for="r in rows"
       :key="r.id"
-      class="flex items-center justify-between gap-2"
+      class="flex items-start justify-between gap-2"
     >
-      <div class="flex min-w-0 items-center gap-1.5">
+      <div class="flex min-w-0 items-start gap-1.5">
         <UserHoverCard :user-id="r.user.id">
           <KunAvatar :user="r.user" size="sm" />
         </UserHoverCard>
-        <span class="text-default-700 shrink-0 font-medium">
-          {{ r.user.name }}
-        </span>
-        <span class="text-default-500 truncate">
-          推了这个话题，<span class="text-secondary font-bold">{{
+        <p class="min-w-0 py-0.5 wrap-anywhere">
+          <span class="text-default-700 font-medium">{{ r.user.name }}</span>
+          <span class="text-default-500"> 推了这个话题，</span>
+          <span class="text-secondary font-bold whitespace-pre-line">{{
             r.text
           }}</span>
-        </span>
+        </p>
       </div>
-      <span class="text-default-400 shrink-0 whitespace-nowrap">
+      <span class="text-default-400 shrink-0 py-0.5 whitespace-nowrap">
         {{ formatTimeDifference(r.created) }}
       </span>
     </div>
