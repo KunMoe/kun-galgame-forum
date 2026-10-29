@@ -285,6 +285,9 @@ func TestGetTopicFollowsTheDetailPageRules(t *testing.T) {
 	if len(cards) != 1 || cards[0].ID != id(topicPublic) || cards[0].Subtitle == "" {
 		t.Fatalf("one card for the topic: %+v", cards)
 	}
+	if facts := cards[0].Facts; len(facts) != 6 || facts[3].Label != "回复" || facts[4].Value == "" {
+		t.Errorf("card facts: %+v", facts)
+	}
 	best, liked := strings.Index(text, "the best answer"), strings.Index(text, "a liked reply")
 	if !strings.Contains(text, "大家推荐的 猫耳 作品") || best < 0 || liked < best || !strings.Contains(text, "最佳答案") {
 		t.Errorf("plain body, then the best answer before the most liked reply:\n%s", text)

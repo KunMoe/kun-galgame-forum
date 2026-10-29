@@ -41,8 +41,14 @@ type Card struct {
 	Subtitle     string `json:"subtitle,omitempty"`
 	Cover        string `json:"cover,omitempty"`
 	Summary      string `json:"summary,omitempty"`
+	Facts        []Fact `json:"facts"`
 	URL          string `json:"url"`
 	ContentLimit string `json:"content_limit"`
+}
+
+type Fact struct {
+	Label string `json:"label"`
+	Value string `json:"value"`
 }
 
 type Cards struct {
@@ -311,12 +317,22 @@ func topicCard(item topicapiv1.TopicSummary, labels map[string]string, created t
 	if item.Author.Name != nil {
 		author = *item.Author.Name
 	}
+	author = displayName(author)
+	date := created.In(cst).Format("2006-01-02")
 	card := Card{
-		Kind:         cardKind,
-		ID:           string(item.ID),
-		Title:        item.Title,
-		Subtitle:     section + " · " + displayName(author) + " · " + created.In(cst).Format("2006-01-02"),
-		Summary:      summary,
+		Kind:     cardKind,
+		ID:       string(item.ID),
+		Title:    item.Title,
+		Subtitle: section + " · " + author + " · " + date,
+		Summary:  summary,
+		Facts: []Fact{
+			{"版块", section},
+			{"作者", author},
+			{"发布", date},
+			{"回复", strconv.Itoa(item.ReplyCount)},
+			{"浏览", strconv.Itoa(item.ViewCount)},
+			{"点赞", strconv.Itoa(item.LikeCount)},
+		},
 		URL:          "/topic/" + string(item.ID),
 		ContentLimit: "sfw",
 	}
