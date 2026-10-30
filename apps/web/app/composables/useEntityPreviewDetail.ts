@@ -216,7 +216,6 @@ export const useEntityPreviewDetail = (target: () => EntityTarget | null) => {
           })
         )
         out.rating = r.ok ? r.data : null
-        out.intro = t.has_spoilers ? '' : t.short_summary
         out.relatedTitle = '评分的作品'
         out.works = t.work ? [t.work] : []
         break
