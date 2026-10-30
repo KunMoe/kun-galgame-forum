@@ -21,6 +21,8 @@ const choice = (text: string) => ({
   step_text: text,
   localized: {},
   alternatives: [],
+  remark: null,
+  remark_localized: {},
   is_achievement_only: false,
   save_key: null
 })
@@ -29,6 +31,8 @@ const save = (key: string) => ({
   step_text: null,
   localized: {},
   alternatives: [],
+  remark: null,
+  remark_localized: {},
   is_achievement_only: false,
   save_key: key
 })
@@ -39,6 +43,7 @@ const characters: WalkthroughCharacter[] = [
 ]
 
 const chart: WalkthroughChart = {
+  chart_legend: [],
   route_sections: [
     { key: 's1', title: '綾地 寧々', localized: {}, character_keys: ['c1'] },
     { key: 's2', title: '因幡 めぐる', localized: {}, character_keys: ['c2'] }
@@ -233,6 +238,35 @@ describe('hasMachineTranslation', () => {
     })
     expect(hasMachineTranslation(withEnding(human))).toBe(false)
     expect(hasMachineTranslation(withEnding(machine))).toBe(true)
+  })
+
+  it('counts remarks and legend lines', () => {
+    const machine = { 'zh-Hans': { value: '推理正确', is_machine: true } }
+    const [first, ...rest] = chart.chart_segments
+    expect(
+      hasMachineTranslation({
+        ...chart,
+        chart_segments: [
+          {
+            ...first!,
+            steps: [
+              {
+                ...choice('はい'),
+                remark: '推理正解',
+                remark_localized: machine
+              }
+            ]
+          },
+          ...rest
+        ]
+      })
+    ).toBe(true)
+    expect(
+      hasMachineTranslation({
+        ...chart,
+        chart_legend: [{ text: '★の選択肢は…', localized: machine }]
+      })
+    ).toBe(true)
   })
 })
 

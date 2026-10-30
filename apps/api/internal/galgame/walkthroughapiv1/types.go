@@ -66,6 +66,7 @@ type WalkthroughCharacterRef struct {
 
 type WalkthroughChart struct {
 	RouteSections []WalkthroughSection `json:"route_sections" doc:"Headings of the source page that group segments, usually one per route. Empty array, never null."`
+	ChartLegend   []WalkthroughLegend  `json:"chart_legend" doc:"The source page's own definitions of the marks its steps carry, such as ★の選択肢は推理ランクに影響のある選択肢です, one sentence each, in source order. A mark such as ★ or ⇒ means only what these lines say; it differs from page to page. Empty array, never null."`
 	EntryPoints   []WalkthroughEntry   `json:"entry_points" doc:"Places a playthrough starts from. Empty array, never null."`
 	SavePoints    []WalkthroughSave    `json:"save_points" doc:"Save points the chart creates and resumes from. Empty array, never null."`
 	ChartEndings  []WalkthroughEnding  `json:"chart_endings" doc:"Endings, one per occurrence in the source. Empty array, never null."`
@@ -77,6 +78,11 @@ type WalkthroughSection struct {
 	Title         string     `json:"title" maxLength:"512" doc:"The heading as the source writes it. Free text; never use it as a decision input."`
 	Localized     Localized  `json:"localized" doc:"Translations of title by BCP-47 tag. Empty object when none."`
 	CharacterKeys []ChartKey `json:"character_keys" doc:"chart_characters[].key this heading is about. Empty array, never null."`
+}
+
+type WalkthroughLegend struct {
+	Text      string    `json:"text" maxLength:"1024" doc:"The definition as the source page writes it. Free text; never use it as a decision input."`
+	Localized Localized `json:"localized" doc:"Translations of text by BCP-47 tag. Empty object when none."`
 }
 
 type WalkthroughEntry struct {
@@ -121,7 +127,9 @@ type WalkthroughStep struct {
 	StepText          *string                  `json:"step_text" maxLength:"1024" doc:"The choice or action as the source writes it. null for a save step. Free text; never use it as a decision input."`
 	Localized         Localized                `json:"localized" doc:"Translations of step_text by BCP-47 tag. Empty object when none."`
 	Alternatives      []WalkthroughAlternative `json:"alternatives" doc:"Other choices kept for collecting CG differences. Empty array, never null."`
-	IsAchievementOnly bool                     `json:"is_achievement_only" doc:"The source marks this step as needed for an achievement only."`
+	Remark            *string                  `json:"remark" maxLength:"1024" doc:"What the source notes after a choice or action: its result (推理正解, 不正解) or its effect (好感度+1, 雪乃+1). Not part of the in-game text. null if none. Free text; never use it as a decision input."`
+	RemarkLocalized   Localized                `json:"remark_localized" doc:"Translations of remark by BCP-47 tag. Empty object when none."`
+	IsAchievementOnly bool                     `json:"is_achievement_only" doc:"The source says this step earns an achievement or trophy, on the step itself or in a chart_legend line defining its mark. A ★ or ☆ alone does not set it."`
 	SaveKey           *ChartKey                `json:"save_key" doc:"save_points[].key this save step creates. null for other steps."`
 }
 

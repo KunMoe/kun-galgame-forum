@@ -131,6 +131,7 @@ export const choiceCount = (steps: WalkthroughStep[]) =>
 export const hasMachineTranslation = (chart: WalkthroughChart) => {
   const maps: (Localized | undefined)[] = [
     ...chart.route_sections.map((s) => s.localized),
+    ...(chart.chart_legend ?? []).map((l) => l.localized),
     ...chart.entry_points.map((e) => e.localized),
     ...chart.save_points.map((s) => s.localized),
     ...chart.chart_endings.map((e) => e.localized),
@@ -138,6 +139,7 @@ export const hasMachineTranslation = (chart: WalkthroughChart) => {
       s.condition_localized,
       ...s.steps.flatMap((st) => [
         st.localized,
+        st.remark_localized,
         ...st.alternatives.map((a) => a.localized)
       ])
     ])

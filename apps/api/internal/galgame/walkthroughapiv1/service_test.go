@@ -18,11 +18,11 @@ const catalogDetail = `{"object":"walkthrough","id":"7","work_id":"53","work_con
  "characters":[{"key":"c1","name":"寧々","character_id":"2813","display_name":"綾地寧々","localized":{"zh-Hans":{"value":"绫地宁宁","is_machine":false}}},
                {"key":"c2","name":"モブ","character_id":null,"display_name":null,"localized":{}}],
  "ending_count":1,"save_count":1,"segment_count":1,"updated_at":"2026-10-24T00:00:00Z",
- "chart":{"sections":[],"entries":[{"key":"start","label":"START","unlocked_by_ending_key":null}],
+ "chart":{"sections":[],"legend":[{"text":"★の選択肢は推理ランクに影響のある選択肢です","localized":{"zh-Hans":{"value":"★选项会影响推理评级","is_machine":true}}}],"entries":[{"key":"start","label":"START","unlocked_by_ending_key":null}],
   "saves":[{"key":"sv01","label":"セーブ01"}],
   "endings":[{"key":"e1","name":"寧々END1","localized":{"zh-Hans":{"value":"宁宁END1","is_machine":true}},"ending_type":"heroine","character_keys":["c1"]}],
   "segments":[{"key":"g1","section_key":null,"from_node":{"node_type":"entry","key":"start"},"condition":null,"condition_localized":{},
-   "steps":[{"step_type":"choice","text":"はい","localized":{},"alternatives":[{"text":"いいえ","localized":{}}],"achievement":false,"save_key":null},
+   "steps":[{"step_type":"choice","text":"はい","localized":{},"alternatives":[{"text":"いいえ","localized":{}}],"remark":"推理正解","remark_localized":{"zh-Hans":{"value":"推理正确","is_machine":true}},"achievement":false,"save_key":null},
             {"step_type":"save","text":null,"localized":{},"alternatives":[],"achievement":false,"save_key":"sv01"}],
    "to_node":{"node_type":"ending","key":"e1"}}]}}`
 
@@ -83,6 +83,26 @@ func TestGetWalkthroughMapsCharactersAndChart(t *testing.T) {
 	}
 	if k := w.Chart.ChartSegments[0].Steps[1].SaveKey; k == nil || *k != "sv01" {
 		t.Errorf("save step key = %v", k)
+	}
+	choice, save := w.Chart.ChartSegments[0].Steps[0], w.Chart.ChartSegments[0].Steps[1]
+	if choice.Remark == nil || *choice.Remark != "推理正解" || choice.RemarkLocalized["zh-Hans"].Value != "推理正确" {
+		t.Errorf("choice remark = %v %+v", choice.Remark, choice.RemarkLocalized)
+	}
+	if save.Remark != nil || save.RemarkLocalized == nil {
+		t.Errorf("a step without a remark = %v %+v", save.Remark, save.RemarkLocalized)
+	}
+	if l := w.Chart.ChartLegend; len(l) != 1 || l[0].Localized["zh-Hans"].Value != "★选项会影响推理评级" {
+		t.Errorf("legend = %+v", l)
+	}
+}
+
+func TestChartFromACatalogWithoutLegendIsAnEmptyArray(t *testing.T) {
+	b, err := json.Marshal(chartFrom(client.CatalogWalkthroughChart{}))
+	if err != nil {
+		t.Fatal(err)
+	}
+	if !strings.Contains(string(b), `"chart_legend":[]`) {
+		t.Errorf("chart = %s", b)
 	}
 }
 

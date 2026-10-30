@@ -193,6 +193,18 @@ const endingCount = (segments: (typeof routes.value)[number]['segments']) =>
       </div>
     </div>
 
+    <KunInfo v-if="chart.chart_legend?.length" color="info" title="符号说明">
+      <ul class="space-y-1">
+        <li v-for="(line, i) in chart.chart_legend" :key="i">
+          <GalgameWalkthroughStepText
+            :text="line.text"
+            :localized="line.localized"
+            size="sm"
+          />
+        </li>
+      </ul>
+    </KunInfo>
+
     <KunTabPanels v-model="view">
       <KunTabPanel value="list">
         <GalgameWalkthroughRouteList

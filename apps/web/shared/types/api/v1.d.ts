@@ -15275,6 +15275,8 @@ export interface components {
         WalkthroughChart: {
             /** @description Endings, one per occurrence in the source. Empty array, never null. */
             chart_endings: components["schemas"]["WalkthroughEnding"][];
+            /** @description The source page's own definitions of the marks its steps carry, such as ★の選択肢は推理ランクに影響のある選択肢です, one sentence each, in source order. A mark such as ★ or ⇒ means only what these lines say; it differs from page to page. Empty array, never null. */
+            chart_legend: components["schemas"]["WalkthroughLegend"][];
             /** @description Runs of steps from one node to the next, in source order. Empty array, never null. */
             chart_segments: components["schemas"]["WalkthroughSegment"][];
             /** @description Places a playthrough starts from. Empty array, never null. */
@@ -15311,6 +15313,14 @@ export interface components {
             };
             /** @description chart_endings[].key whose completion unlocks this entry. null if open from the start. */
             unlocked_by_ending_key: string | null;
+        };
+        WalkthroughLegend: {
+            /** @description Translations of text by BCP-47 tag. Empty object when none. */
+            localized: {
+                [key: string]: components["schemas"]["LocalizedName"];
+            };
+            /** @description The definition as the source page writes it. Free text; never use it as a decision input. */
+            text: string;
         };
         WalkthroughNode: {
             /** @description entry_points, save_points or chart_endings key for those node types. null for collect and open. */
@@ -15386,10 +15396,16 @@ export interface components {
         WalkthroughStep: {
             /** @description Other choices kept for collecting CG differences. Empty array, never null. */
             alternatives: components["schemas"]["WalkthroughAlternative"][];
-            /** @description The source marks this step as needed for an achievement only. */
+            /** @description The source says this step earns an achievement or trophy, on the step itself or in a chart_legend line defining its mark. A ★ or ☆ alone does not set it. */
             is_achievement_only: boolean;
             /** @description Translations of step_text by BCP-47 tag. Empty object when none. */
             localized: {
+                [key: string]: components["schemas"]["LocalizedName"];
+            };
+            /** @description What the source notes after a choice or action: its result (推理正解, 不正解) or its effect (好感度+1, 雪乃+1). Not part of the in-game text. null if none. Free text; never use it as a decision input. */
+            remark: string | null;
+            /** @description Translations of remark by BCP-47 tag. Empty object when none. */
+            remark_localized: {
                 [key: string]: components["schemas"]["LocalizedName"];
             };
             /** @description save_points[].key this save step creates. null for other steps. */
