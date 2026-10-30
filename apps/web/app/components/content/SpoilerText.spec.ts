@@ -44,6 +44,7 @@ describe('plain text with inline spoilers', () => {
     )
     expect(wrapper.get('.kun-spoiler-hidden').text()).toBe('第一行\n第二行')
     expect(wrapper.get('article').classes()).toContain('whitespace-pre-wrap')
+    expect(wrapper.get('article').classes()).toContain('wrap-anywhere')
   })
 
   it('leaves an unclosed marker as text', async () => {

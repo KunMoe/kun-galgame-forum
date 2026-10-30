@@ -31,7 +31,7 @@ const document = computed<ContentDocument>(() => ({
   <ContentDocument
     :key="content"
     :document="document"
-    :class-name="cn('whitespace-pre-wrap', className)"
+    :class-name="cn('whitespace-pre-wrap wrap-anywhere', className)"
     compact
   />
 </template>
