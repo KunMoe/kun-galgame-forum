@@ -72,7 +72,7 @@ defineProps<{
             class-name="max-h-[110px]"
             class="text-default-700 text-sm"
           >
-            <KunText :content="rating.short_summary" />
+            <ContentSpoilerText :content="rating.short_summary" />
           </KunScrollShadow>
         </div>
 

@@ -122,7 +122,7 @@ const sorted = computed(() =>
             <KunIcon name="lucide:triangle-alert" class="text-warning" />
             {{ KUN_GALGAME_RATING_SPOILER_WARNING }}
           </p>
-          <KunText
+          <ContentSpoilerText
             v-else-if="rating.short_summary"
             :content="rating.short_summary"
           />

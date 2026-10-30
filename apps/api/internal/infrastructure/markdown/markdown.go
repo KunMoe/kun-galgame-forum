@@ -162,6 +162,10 @@ func RenderQuestionPlain(source string) string {
 	return plainSpoilerRegex.ReplaceAllString(escaped, plainSpoilerSpan)
 }
 
+func MaskPlainSpoilers(source string) string {
+	return plainSpoilerRegex.ReplaceAllLiteralString(source, "███")
+}
+
 func Render(source string) string {
 	html, _ := RenderWithTOC(source)
 	return html

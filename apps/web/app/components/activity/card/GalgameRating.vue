@@ -99,12 +99,11 @@ const hasSpoiler = computed(() => props.rating.spoiler_level !== 'none')
             <KunIcon name="lucide:eye-off" class="size-4 shrink-0" />
             {{ KUN_GALGAME_RATING_SPOILER_WARNING }}
           </p>
-          <p
+          <ContentSpoilerText
             v-else-if="rating.short_summary"
+            :content="rating.short_summary"
             class="text-default-700 line-clamp-3 text-base break-all"
-          >
-            {{ rating.short_summary }}
-          </p>
+          />
         </div>
       </div>
 

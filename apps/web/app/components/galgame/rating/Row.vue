@@ -46,7 +46,7 @@ const recommendColor = computed(() => {
 const MAX_SUMMARY = 100
 
 const truncatedSummary = computed(() => {
-  const s = props.rating.short_summary?.trim()
+  const s = maskSpoilers(props.rating.short_summary).trim()
   if (!s) return ''
   if (s.length <= MAX_SUMMARY) return s
   return s.slice(0, MAX_SUMMARY) + '...'

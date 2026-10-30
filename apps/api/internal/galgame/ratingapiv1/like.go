@@ -8,6 +8,7 @@ import (
 	v1 "kun-galgame-api/internal/apiv1"
 	"kun-galgame-api/internal/apiv1/repr"
 	"kun-galgame-api/internal/constants"
+	"kun-galgame-api/internal/infrastructure/markdown"
 	"kun-galgame-api/internal/moemoepoint"
 	"kun-galgame-api/pkg/problem"
 
@@ -51,7 +52,7 @@ func (s *Service) setLike(ctx context.Context, rawID string, want bool) (*engage
 		if err != nil || likeID == 0 || !want || s.Notify == nil {
 			return err
 		}
-		preview := r.ShortSummary
+		preview := markdown.MaskPlainSpoilers(r.ShortSummary)
 		if utf8.RuneCountInString(preview) > constants.TextPreviewLength {
 			preview = string([]rune(preview)[:constants.TextPreviewLength])
 		}

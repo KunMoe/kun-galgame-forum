@@ -295,3 +295,14 @@ func TestMapLiveStripsControlCharacters(t *testing.T) {
 		t.Fatalf("excerpt = %q", item.Excerpt)
 	}
 }
+
+func TestRatingExcerptMasksInlineSpoilers(t *testing.T) {
+	a := &activityapiv1.Activity{
+		GalgameRating: &activityapiv1.ActivityRating{
+			ShortSummary: "音乐很棒||结局\n反转||值得一玩",
+		},
+	}
+	if got := excerptOf("GALGAME_RATING_CREATION", a); got != "音乐很棒███值得一玩" {
+		t.Fatalf("excerpt = %q", got)
+	}
+}
