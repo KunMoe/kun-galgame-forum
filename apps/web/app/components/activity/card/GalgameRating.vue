@@ -99,10 +99,12 @@ const hasSpoiler = computed(() => props.rating.spoiler_level !== 'none')
             <KunIcon name="lucide:eye-off" class="size-4 shrink-0" />
             {{ KUN_GALGAME_RATING_SPOILER_WARNING }}
           </p>
+          <!-- Inline-block spoilers bypass line-clamp, so cap the article at three line heights. -->
           <ContentSpoilerText
             v-else-if="rating.short_summary"
             :content="rating.short_summary"
-            class="text-default-700 line-clamp-3 text-base break-all"
+            class-name="line-clamp-3 max-h-[3lh]"
+            class="text-default-700 text-base break-all"
           />
         </div>
       </div>
