@@ -1,5 +1,19 @@
 import { describe, expect, it } from 'vitest'
-import { feedTabQuery } from './activity'
+import type { Activity } from '#shared/utils/api/schemas'
+import { activitySummaryText, feedTabQuery } from './activity'
+
+describe('activitySummaryText', () => {
+  it('masks inline spoilers in a rating timeline summary', () => {
+    const activity = {
+      activity_type: 'galgame_rating_creation',
+      work: {},
+      galgame_rating: { short_summary: '音乐很棒||结局\n反转||值得一玩' }
+    } as Activity
+    expect(activitySummaryText(activity, () => '游戏')).toBe(
+      '游戏 · 音乐很棒███值得一玩'
+    )
+  })
+})
 
 describe('feedTabQuery', () => {
   it('keeps the bumped order for a topics-only tab', () => {

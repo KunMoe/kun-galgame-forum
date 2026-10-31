@@ -7,6 +7,7 @@ import (
 	"kun-galgame-api/internal/apiv1/content"
 	"kun-galgame-api/internal/apiv1/repr"
 	"kun-galgame-api/internal/galgame/workrepr"
+	"kun-galgame-api/internal/infrastructure/markdown"
 )
 
 const previewSummaryRunes = 200
@@ -53,7 +54,7 @@ func (s *Service) Previews(ctx context.Context, ids []int) (map[int]content.Rati
 			Work:         &ref,
 			Author:       author,
 			Overall:      r.Overall,
-			ShortSummary: truncate(r.ShortSummary, previewSummaryRunes),
+			ShortSummary: truncate(markdown.MaskPlainSpoilers(r.ShortSummary), previewSummaryRunes),
 			HasSpoilers:  r.SpoilerLevel != "none",
 			CreatedAt:    repr.Timestamp(r.Created),
 		}

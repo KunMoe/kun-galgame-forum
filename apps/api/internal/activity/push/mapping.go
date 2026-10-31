@@ -11,6 +11,7 @@ import (
 	"kun-galgame-api/internal/apiv1/content"
 	"kun-galgame-api/internal/apiv1/repr"
 	"kun-galgame-api/internal/galgame/client"
+	"kun-galgame-api/internal/infrastructure/markdown"
 	"kun-galgame-api/pkg/communityclient"
 )
 
@@ -179,7 +180,7 @@ func excerptOf(feedType string, a *activityapiv1.Activity) string {
 		return content.PlainText(a.ExcerptMarkdown, excerptRunes)
 	case "GALGAME_RATING_CREATION":
 		if a.GalgameRating != nil {
-			return a.GalgameRating.ShortSummary
+			return markdown.MaskPlainSpoilers(a.GalgameRating.ShortSummary)
 		}
 	case "GALGAME_RESOURCE_CREATION":
 		if a.Resource != nil && a.Resource.Note != nil {
