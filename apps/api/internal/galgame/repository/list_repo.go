@@ -253,9 +253,9 @@ func RatingPriorMean(db *gorm.DB) (float64, error) {
 	return m, err
 }
 
-// The prior is an AVG over every rating, and rating-sorted lists and the
-// rating ranking ran it on each request: ~7M calls by 2026-10-31, the top
-// forum query by DB time.
+// The prior is an AVG over every rating, and the card scores, rating-sorted
+// lists and the rating ranking ran it on each request: ~7M calls by
+// 2026-10-31, the top forum query by DB time. Every caller must use this.
 const ratingPriorTTL = 5 * time.Minute
 
 var ratingPrior struct {
@@ -318,7 +318,7 @@ func (r *GalgameListRepository) BayesianRatings(ids []int) map[int]RatingInfo {
 	if len(ids) == 0 {
 		return out
 	}
-	m, _ := RatingPriorMean(r.db)
+	m := CachedRatingPriorMean(r.db)
 
 	type aggRow struct {
 		WorkID int     `gorm:"column:work_id"`
