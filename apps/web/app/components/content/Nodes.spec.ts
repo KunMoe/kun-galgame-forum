@@ -362,9 +362,7 @@ describe('ContentNodes markup', () => {
 
   it('renders a block spoiler', async () => {
     expect(await html([{ object: 'spoiler', children: [p(text('s'))] }])).toBe(
-      ssr(
-        '<div class="kun-spoiler text-transparent kun-spoiler-hidden"><p>s</p></div>'
-      )
+      ssr('<div class="kun-spoiler kun-spoiler-hidden"><p>s</p></div>')
     )
   })
 
@@ -514,11 +512,7 @@ describe('ContentNodes markup', () => {
   it('renders an inline spoiler', async () => {
     expect(
       await html([{ object: 'inline_spoiler', children: [text('s')] }])
-    ).toBe(
-      ssr(
-        '<span class="kun-spoiler text-transparent kun-spoiler-hidden">s</span>'
-      )
-    )
+    ).toBe(ssr('<span class="kun-spoiler kun-spoiler-hidden">s</span>'))
   })
 
   it('renders a mention with a name', async () => {

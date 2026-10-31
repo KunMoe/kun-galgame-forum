@@ -323,7 +323,7 @@ const renderNode = (node: ContentNode, ctx: Ctx): Rendered => {
     case 'spoiler':
       return h(
         'div',
-        { class: 'kun-spoiler text-transparent kun-spoiler-hidden' },
+        { class: 'kun-spoiler kun-spoiler-hidden' },
         blocks(node.children, ctx)
       )
     case 'text':
@@ -349,7 +349,7 @@ const renderNode = (node: ContentNode, ctx: Ctx): Rendered => {
     case 'inline_spoiler':
       return h(
         'span',
-        { class: 'kun-spoiler text-transparent kun-spoiler-hidden' },
+        { class: 'kun-spoiler kun-spoiler-hidden' },
         inlines(node.children, ctx)
       )
     case 'mention':
