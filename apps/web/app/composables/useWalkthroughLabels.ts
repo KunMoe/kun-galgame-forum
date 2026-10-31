@@ -53,5 +53,5 @@ export const useWalkthroughLabels = () => {
       : '本段结束'
   }
 
-  return { point, node, start, ending, goal }
+  return { point, short, node, start, ending, goal }
 }

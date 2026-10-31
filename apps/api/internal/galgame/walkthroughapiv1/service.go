@@ -158,6 +158,7 @@ func walkthroughFrom(w client.CatalogWalkthrough) Walkthrough {
 func chartFrom(c client.CatalogWalkthroughChart) *WalkthroughChart {
 	out := &WalkthroughChart{
 		RouteSections: make([]WalkthroughSection, 0, len(c.Sections)),
+		ChartLegend:   make([]WalkthroughLegend, 0, len(c.Legend)),
 		EntryPoints:   make([]WalkthroughEntry, 0, len(c.Entries)),
 		SavePoints:    make([]WalkthroughSave, 0, len(c.Saves)),
 		ChartEndings:  make([]WalkthroughEnding, 0, len(c.Endings)),
@@ -167,6 +168,9 @@ func chartFrom(c client.CatalogWalkthroughChart) *WalkthroughChart {
 		out.RouteSections = append(out.RouteSections, WalkthroughSection{
 			Key: ChartKey(s.Key), Title: s.Title, Localized: localized(client.LocalizedValues(s.Localized)), CharacterKeys: keys(s.CharacterKeys),
 		})
+	}
+	for _, l := range c.Legend {
+		out.ChartLegend = append(out.ChartLegend, WalkthroughLegend{Text: l.Text, Localized: localized(client.LocalizedValues(l.Localized))})
 	}
 	for _, e := range c.Entries {
 		out.EntryPoints = append(out.EntryPoints, WalkthroughEntry{
@@ -198,6 +202,7 @@ func chartFrom(c client.CatalogWalkthroughChart) *WalkthroughChart {
 		for _, st := range s.Steps {
 			step := WalkthroughStep{
 				StepType: st.StepType, StepText: st.Text, Localized: localized(client.LocalizedValues(st.Localized)),
+				Remark: st.Remark, RemarkLocalized: localized(client.LocalizedValues(st.RemarkLocalized)),
 				IsAchievementOnly: st.Achievement, SaveKey: keyPtr(st.SaveKey),
 				Alternatives: make([]WalkthroughAlternative, 0, len(st.Alternatives)),
 			}

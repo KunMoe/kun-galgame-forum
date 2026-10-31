@@ -25356,6 +25356,13 @@
             },
             "type": "array"
           },
+          "chart_legend": {
+            "description": "The source page's own definitions of the marks its steps carry, such as ★の選択肢は推理ランクに影響のある選択肢です, one sentence each, in source order. A mark such as ★ or ⇒ means only what these lines say; it differs from page to page. Empty array, never null.",
+            "items": {
+              "$ref": "#/components/schemas/WalkthroughLegend"
+            },
+            "type": "array"
+          },
           "chart_segments": {
             "description": "Runs of steps from one node to the next, in source order. Empty array, never null.",
             "items": {
@@ -25387,6 +25394,7 @@
         },
         "required": [
           "route_sections",
+          "chart_legend",
           "entry_points",
           "save_points",
           "chart_endings",
@@ -25490,6 +25498,27 @@
           "label",
           "localized",
           "unlocked_by_ending_key"
+        ],
+        "type": "object"
+      },
+      "WalkthroughLegend": {
+        "properties": {
+          "localized": {
+            "additionalProperties": {
+              "$ref": "#/components/schemas/LocalizedName"
+            },
+            "description": "Translations of text by BCP-47 tag. Empty object when none.",
+            "type": "object"
+          },
+          "text": {
+            "description": "The definition as the source page writes it. Free text; never use it as a decision input.",
+            "maxLength": 1024,
+            "type": "string"
+          }
+        },
+        "required": [
+          "text",
+          "localized"
         ],
         "type": "object"
       },
@@ -25757,7 +25786,7 @@
             "type": "array"
           },
           "is_achievement_only": {
-            "description": "The source marks this step as needed for an achievement only.",
+            "description": "The source says this step earns an achievement or trophy, on the step itself or in a chart_legend line defining its mark. A ★ or ☆ alone does not set it.",
             "type": "boolean"
           },
           "localized": {
@@ -25765,6 +25794,21 @@
               "$ref": "#/components/schemas/LocalizedName"
             },
             "description": "Translations of step_text by BCP-47 tag. Empty object when none.",
+            "type": "object"
+          },
+          "remark": {
+            "description": "What the source notes after a choice or action: its result (推理正解, 不正解) or its effect (好感度+1, 雪乃+1). Not part of the in-game text. null if none. Free text; never use it as a decision input.",
+            "maxLength": 1024,
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "remark_localized": {
+            "additionalProperties": {
+              "$ref": "#/components/schemas/LocalizedName"
+            },
+            "description": "Translations of remark by BCP-47 tag. Empty object when none.",
             "type": "object"
           },
           "save_key": {
@@ -25795,6 +25839,8 @@
           "step_text",
           "localized",
           "alternatives",
+          "remark",
+          "remark_localized",
           "is_achievement_only",
           "save_key"
         ],

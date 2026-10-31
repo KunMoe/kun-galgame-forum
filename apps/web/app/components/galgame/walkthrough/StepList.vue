@@ -12,7 +12,7 @@ const props = defineProps<{
   size?: 'sm' | 'md'
 }>()
 
-const { point } = useWalkthroughLabels()
+const { point, short } = useWalkthroughLabels()
 
 const groups = computed(() => groupWalkthroughSteps(props.steps))
 
@@ -91,6 +91,14 @@ const saveLabel = (key: string | null) => {
                   :localized="step.localized"
                   :size="kind === 'note' ? 'sm' : size"
                 />
+                <KunChip
+                  v-if="step.remark"
+                  size="xs"
+                  variant="flat"
+                  color="primary"
+                >
+                  {{ short(step.remark, step.remark_localized) }}
+                </KunChip>
                 <KunChip
                   v-if="step.is_achievement_only"
                   size="xs"

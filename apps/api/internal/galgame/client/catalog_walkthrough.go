@@ -51,6 +51,10 @@ type CatalogWalkthroughChart struct {
 		Localized     map[string]catLocalizedName `json:"localized"`
 		CharacterKeys []string                    `json:"character_keys"`
 	} `json:"sections"`
+	Legend []struct {
+		Text      string                      `json:"text"`
+		Localized map[string]catLocalizedName `json:"localized"`
+	} `json:"legend"`
 	Entries []struct {
 		Key                 string                      `json:"key"`
 		Label               string                      `json:"label"`
@@ -92,8 +96,10 @@ type CatalogWalkthroughSegment struct {
 			Text      string                      `json:"text"`
 			Localized map[string]catLocalizedName `json:"localized"`
 		} `json:"alternatives"`
-		Achievement bool    `json:"achievement"`
-		SaveKey     *string `json:"save_key"`
+		Remark          *string                     `json:"remark"`
+		RemarkLocalized map[string]catLocalizedName `json:"remark_localized"`
+		Achievement     bool                        `json:"achievement"`
+		SaveKey         *string                     `json:"save_key"`
 	} `json:"steps"`
 	ToNode CatalogWalkthroughNode `json:"to_node"`
 }
