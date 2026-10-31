@@ -6,6 +6,8 @@ import (
 	"math"
 	"strconv"
 	"strings"
+	"sync"
+	"time"
 
 	"kun-galgame-api/internal/galgame/model"
 	"kun-galgame-api/internal/galgame/resourcevocab"
@@ -251,8 +253,30 @@ func RatingPriorMean(db *gorm.DB) (float64, error) {
 	return m, err
 }
 
+// The prior is an AVG over every rating, and rating-sorted lists ran it on
+// each request: ~7M calls by 2026-10-31, the top forum query by DB time.
+const ratingPriorTTL = 5 * time.Minute
+
+var ratingPrior struct {
+	sync.Mutex
+	mean float64
+	at   time.Time
+}
+
+func cachedRatingPriorMean(db *gorm.DB) float64 {
+	ratingPrior.Lock()
+	defer ratingPrior.Unlock()
+	if time.Since(ratingPrior.at) < ratingPriorTTL {
+		return ratingPrior.mean
+	}
+	if m, err := RatingPriorMean(db); err == nil {
+		ratingPrior.mean, ratingPrior.at = m, time.Now()
+	}
+	return ratingPrior.mean
+}
+
 func (r *GalgameListRepository) bayesianExpr() string {
-	m, _ := RatingPriorMean(r.db)
+	m := cachedRatingPriorMean(r.db)
 	c := strconv.FormatFloat(bayesianPriorC, 'f', -1, 64)
 	ms := strconv.FormatFloat(m, 'f', 6, 64)
 	return "(" + c + " * " + ms + " + COALESCE(rt.rsum, 0)) / (" +
