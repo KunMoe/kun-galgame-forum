@@ -85,14 +85,11 @@ func (r *RankingRepository) TopWorks(key string, includeNSFW, includeResourceles
 	}
 	var rows []RankedRow
 	if key == "rating" {
-		mean, err := galgameRepo.RatingPriorMean(r.db)
-		if err != nil {
-			return nil, err
-		}
+		mean := galgameRepo.CachedRatingPriorMean(r.db)
 		c := strconv.FormatFloat(rankingBayesianPriorC, 'f', -1, 64)
 		m := strconv.FormatFloat(mean, 'f', 6, 64)
 		bayes := "(" + c + " * " + m + " + rt.rsum) / (" + c + " + rt.rcnt)"
-		err = q.Joins("JOIN (SELECT work_id, SUM(overall) AS rsum, COUNT(*) AS rcnt FROM galgame_rating GROUP BY work_id) rt ON rt.work_id = g.id").
+		err := q.Joins("JOIN (SELECT work_id, SUM(overall) AS rsum, COUNT(*) AS rcnt FROM galgame_rating GROUP BY work_id) rt ON rt.work_id = g.id").
 			Select("g.id, COALESCE(g.creator_user_id, 0) AS owner_id, ROUND((" + bayes + ")::numeric, 2) AS value").
 			Order(bayes + " DESC, g.id DESC").Limit(limit).Scan(&rows).Error
 		return rows, err
