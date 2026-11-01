@@ -5432,6 +5432,28 @@
         ],
         "type": "object"
       },
+      "EntityCount": {
+        "properties": {
+          "id": {
+            "description": "Catalog id of the tag or company.",
+            "maxLength": 20,
+            "minLength": 1,
+            "pattern": "^[0-9]+$",
+            "type": "string"
+          },
+          "work_count": {
+            "description": "Works in the filtered result set that carry it.",
+            "format": "int64",
+            "minimum": 0,
+            "type": "integer"
+          }
+        },
+        "required": [
+          "id",
+          "work_count"
+        ],
+        "type": "object"
+      },
       "EntityLinkNode": {
         "properties": {
           "children": {
@@ -5560,6 +5582,45 @@
         "maxLength": 9,
         "type": "string",
         "x-vocabulary-closed": true
+      },
+      "FacetedWorkPage": {
+        "properties": {
+          "facets": {
+            "$ref": "#/components/schemas/WorkFacets",
+            "description": "The tags and companies most common in the whole filtered result set, not only this page."
+          },
+          "items": {
+            "description": "Members of this page. Empty array, never null.",
+            "items": {
+              "$ref": "#/components/schemas/WorkSummary"
+            },
+            "type": "array"
+          },
+          "object": {
+            "const": "list",
+            "description": "Type discriminant. Always list.",
+            "maxLength": 4,
+            "type": "string"
+          },
+          "total": {
+            "description": "Members matching the filters, under the same predicate as items. Counted up to the depth limit when total_relation is gte.",
+            "format": "int64",
+            "minimum": 0,
+            "type": "integer"
+          },
+          "total_relation": {
+            "$ref": "#/components/schemas/TotalRelation",
+            "description": "eq when total is exact, gte when it stopped at the depth limit and there are at least that many."
+          }
+        },
+        "required": [
+          "object",
+          "items",
+          "total",
+          "total_relation",
+          "facets"
+        ],
+        "type": "object"
       },
       "FieldError": {
         "properties": {
@@ -15003,6 +15064,125 @@
         ],
         "type": "object"
       },
+      "RatedWorkRanking": {
+        "properties": {
+          "facets": {
+            "$ref": "#/components/schemas/WorkFacets",
+            "description": "The tags and companies most common among the ranked works under these filters, not only this page."
+          },
+          "items": {
+            "description": "Members of this page. Empty array, never null.",
+            "items": {
+              "$ref": "#/components/schemas/RatedWorkRankingEntry"
+            },
+            "type": "array"
+          },
+          "model_fitted_at": {
+            "description": "When catalog last fitted the rating model behind every derived number here. It is refitted nightly. null when catalog did not say.",
+            "format": "date-time",
+            "maxLength": 20,
+            "minLength": 20,
+            "pattern": "^[0-9]{4}-[0-9]{2}-[0-9]{2}T[0-9]{2}:[0-9]{2}:[0-9]{2}Z$",
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "object": {
+            "const": "list",
+            "description": "Type discriminant. Always list.",
+            "maxLength": 4,
+            "type": "string"
+          },
+          "total": {
+            "description": "Works the ranking holds under these filters. Counted up to the depth limit when total_relation is gte.",
+            "format": "int64",
+            "minimum": 0,
+            "type": "integer"
+          },
+          "total_relation": {
+            "$ref": "#/components/schemas/TotalRelation",
+            "description": "eq when total is exact, gte when it stopped at the depth limit and there are at least that many."
+          }
+        },
+        "required": [
+          "object",
+          "items",
+          "total",
+          "total_relation",
+          "facets",
+          "model_fitted_at"
+        ],
+        "type": "object"
+      },
+      "RatedWorkRankingEntry": {
+        "properties": {
+          "consensus": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/RatingConsensus"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "The work's standing across every rating site. null when no site that feeds the consensus rated it."
+          },
+          "metric_value": {
+            "description": "The value the list is sorted by. A deviation score for lower, mean and upper without site; the site's own scale for lower, mean, upper, native, median and spread with it; percentile points for divergence; a vote count for votes.",
+            "format": "double",
+            "minimum": 0,
+            "type": "number"
+          },
+          "object": {
+            "const": "rated_work_ranking_entry",
+            "description": "Type discriminant. Always rated_work_ranking_entry.",
+            "maxLength": 24,
+            "type": "string"
+          },
+          "rank": {
+            "description": "1-based place in the whole ranking, not in the page. Equal values keep distinct places. A work this forum cannot show is left out and keeps its place, so a page can skip a number.",
+            "format": "int64",
+            "minimum": 1,
+            "type": "integer"
+          },
+          "site_ratings": {
+            "description": "Every site that rated the work, in a fixed site order. Empty array, never null.",
+            "items": {
+              "$ref": "#/components/schemas/SiteRating"
+            },
+            "type": "array"
+          },
+          "work_summary": {
+            "$ref": "#/components/schemas/WorkSummary",
+            "description": "The ranked work."
+          }
+        },
+        "required": [
+          "object",
+          "rank",
+          "metric_value",
+          "work_summary",
+          "consensus",
+          "site_ratings"
+        ],
+        "type": "object"
+      },
+      "RatedWorkRankingSort": {
+        "enum": [
+          "lower_desc",
+          "mean_desc",
+          "upper_asc",
+          "native_desc",
+          "median_desc",
+          "divergence_desc",
+          "spread_desc",
+          "votes_desc"
+        ],
+        "maxLength": 15,
+        "type": "string",
+        "x-vocabulary-closed": true
+      },
       "Rating": {
         "properties": {
           "aspect_scores": {
@@ -15154,6 +15334,80 @@
           "viewer",
           "work_summary",
           "likers"
+        ],
+        "type": "object"
+      },
+      "RatingCirculation": {
+        "enum": [
+          "commercial",
+          "doujin"
+        ],
+        "maxLength": 10,
+        "type": "string",
+        "x-vocabulary-closed": true
+      },
+      "RatingConsensus": {
+        "properties": {
+          "deviation": {
+            "description": "The consensus as a deviation score: 50 is the typical work two or more sites rated, and every 10 points is one standard deviation.",
+            "format": "double",
+            "maximum": 100,
+            "minimum": 0,
+            "type": "number"
+          },
+          "divergence": {
+            "description": "How far apart the sites place the work, in percentile points between the highest and the lowest. null when fewer than two sites have enough votes to say.",
+            "format": "double",
+            "maximum": 100,
+            "minimum": 0,
+            "type": [
+              "number",
+              "null"
+            ]
+          },
+          "lower": {
+            "description": "Bottom of the 90% interval of deviation. Few votes or a single site widen the interval.",
+            "format": "double",
+            "maximum": 100,
+            "minimum": 0,
+            "type": "number"
+          },
+          "percentile": {
+            "description": "Share of the works with a consensus that score lower, in percent.",
+            "format": "double",
+            "maximum": 100,
+            "minimum": 0,
+            "type": "number"
+          },
+          "site_count": {
+            "description": "Sites that contributed.",
+            "format": "int64",
+            "maximum": 6,
+            "minimum": 0,
+            "type": "integer"
+          },
+          "upper": {
+            "description": "Top of the 90% interval of deviation.",
+            "format": "double",
+            "maximum": 100,
+            "minimum": 0,
+            "type": "number"
+          },
+          "vote_count": {
+            "description": "Votes across the contributing sites.",
+            "format": "int64",
+            "minimum": 0,
+            "type": "integer"
+          }
+        },
+        "required": [
+          "deviation",
+          "lower",
+          "upper",
+          "percentile",
+          "site_count",
+          "vote_count",
+          "divergence"
         ],
         "type": "object"
       },
@@ -15396,6 +15650,19 @@
           "strong_no"
         ],
         "maxLength": 10,
+        "type": "string",
+        "x-vocabulary-closed": true
+      },
+      "RatingSite": {
+        "enum": [
+          "vndb",
+          "bangumi",
+          "dlsite",
+          "erogamescape",
+          "nextmoe",
+          "howlongtobeat"
+        ],
+        "maxLength": 13,
         "type": "string",
         "x-vocabulary-closed": true
       },
@@ -19047,6 +19314,97 @@
         "maxLength": 18,
         "type": "string",
         "x-vocabulary-closed": true
+      },
+      "SiteRating": {
+        "properties": {
+          "estimate": {
+            "description": "Catalog's estimate of the work's true mean on the site's scale: its own mean pulled toward what works with as many votes usually score. Few votes pull hard.",
+            "format": "double",
+            "minimum": 0,
+            "type": "number"
+          },
+          "lower": {
+            "description": "Bottom of the 90% interval of estimate.",
+            "format": "double",
+            "minimum": 0,
+            "type": "number"
+          },
+          "median": {
+            "description": "The median vote with the same pull applied. null when the site publishes no histogram.",
+            "format": "double",
+            "minimum": 0,
+            "type": [
+              "number",
+              "null"
+            ]
+          },
+          "percentile": {
+            "description": "Share of the works this site rated whose estimate is lower, in percent.",
+            "format": "double",
+            "maximum": 100,
+            "minimum": 0,
+            "type": "number"
+          },
+          "published_score": {
+            "description": "The site's own published score, unchanged: vndb's Bayesian rating, bangumi's and dlsite's mean, erogamescape's median, nextmoe's smoothed mean, howlongtobeat's review score.",
+            "format": "double",
+            "minimum": 0,
+            "type": "number"
+          },
+          "scale_max": {
+            "description": "Highest score the site's scale allows.",
+            "format": "double",
+            "minimum": 0,
+            "type": "number"
+          },
+          "scale_min": {
+            "description": "Lowest score the site's scale allows.",
+            "format": "double",
+            "minimum": 0,
+            "type": "number"
+          },
+          "site": {
+            "description": "The rating site, such as vndb or erogamescape. An open vocabulary.",
+            "maxLength": 64,
+            "pattern": "^[a-z0-9][a-z0-9_-]*$",
+            "type": "string"
+          },
+          "spread": {
+            "description": "Standard deviation of the votes on the site's scale; the larger, the more split. null below two votes or when the site publishes neither.",
+            "format": "double",
+            "minimum": 0,
+            "type": [
+              "number",
+              "null"
+            ]
+          },
+          "upper": {
+            "description": "Top of the 90% interval of estimate.",
+            "format": "double",
+            "minimum": 0,
+            "type": "number"
+          },
+          "vote_count": {
+            "description": "Votes behind published_score.",
+            "format": "int64",
+            "minimum": 0,
+            "type": "integer"
+          }
+        },
+        "required": [
+          "site",
+          "published_score",
+          "scale_min",
+          "scale_max",
+          "vote_count",
+          "estimate",
+          "lower",
+          "upper",
+          "median",
+          "spread",
+          "percentile"
+        ],
+        "type": "object"
       },
       "SiteRole": {
         "enum": [
@@ -28120,6 +28478,29 @@
         "required": [
           "site",
           "external_id"
+        ],
+        "type": "object"
+      },
+      "WorkFacets": {
+        "properties": {
+          "company_counts": {
+            "description": "The companies credited on the most works in the filtered result set, most first, at most 30. Empty array, never null.",
+            "items": {
+              "$ref": "#/components/schemas/EntityCount"
+            },
+            "type": "array"
+          },
+          "tag_counts": {
+            "description": "The tags the most works in the filtered result set carry, most first, at most 30. Empty array, never null.",
+            "items": {
+              "$ref": "#/components/schemas/EntityCount"
+            },
+            "type": "array"
+          }
+        },
+        "required": [
+          "tag_counts",
+          "company_counts"
         ],
         "type": "object"
       },
@@ -41348,6 +41729,35 @@
             }
           },
           {
+            "description": "Only works by this catalog company.",
+            "explode": false,
+            "in": "query",
+            "name": "company_id",
+            "schema": {
+              "description": "Only works by this catalog company.",
+              "maxLength": 19,
+              "pattern": "^[1-9][0-9]{0,18}$",
+              "type": "string"
+            }
+          },
+          {
+            "description": "Only works carrying every one of these catalog tags. Comma-separated, at most 10.",
+            "explode": false,
+            "in": "query",
+            "name": "tag_ids",
+            "schema": {
+              "description": "Only works carrying every one of these catalog tags. Comma-separated, at most 10.",
+              "items": {
+                "maxLength": 20,
+                "minLength": 1,
+                "pattern": "^[0-9]+$",
+                "type": "string"
+              },
+              "maxItems": 10,
+              "type": "array"
+            }
+          },
+          {
             "description": "Catalog tag ids. Drops every work carrying any of them, from any source and at any spoiler level. Comma-separated. Omitted means no exclusion.",
             "explode": false,
             "in": "query",
@@ -41387,7 +41797,7 @@
             "content": {
               "application/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/PageListWorkSummary"
+                  "$ref": "#/components/schemas/FacetedWorkPage"
                 }
               }
             },
@@ -54912,6 +55322,318 @@
         ]
       }
     },
+    "/rankings/rated-works": {
+      "get": {
+        "description": "Works ranked by their ratings on every rating site combined, or on one site, as catalog ranks them; each entry carries every site's own published score next to catalog's estimate of it. Catalog rebuilds the ranking nightly. Without include_all_games, only visual novels; without include_all_original_languages, only works whose original language is Japanese or Chinese. A work this forum cannot show is left out and the others keep their places.",
+        "operationId": "listRatedWorkRanking",
+        "parameters": [
+          {
+            "description": "Rank by this rating site alone. Omitted ranks by the consensus of every site.",
+            "explode": false,
+            "in": "query",
+            "name": "site",
+            "schema": {
+              "$ref": "#/components/schemas/RatingSite",
+              "description": "Rank by this rating site alone. Omitted ranks by the consensus of every site."
+            }
+          },
+          {
+            "description": "What the list ranks by. lower: the bottom of the 90% interval, so only works that are good with confidence lead. upper_asc: the top of the interval, worst first, so only works that are bad with confidence lead. mean: the best estimate. native: the site's own published score. median: the shrunk median vote. divergence: how far apart the sites place the work. spread: how split one site's votes are. votes: how many votes. native, median and spread need site; divergence needs it absent.",
+            "explode": false,
+            "in": "query",
+            "name": "sort",
+            "schema": {
+              "$ref": "#/components/schemas/RatedWorkRankingSort",
+              "default": "lower_desc",
+              "description": "What the list ranks by. lower: the bottom of the 90% interval, so only works that are good with confidence lead. upper_asc: the top of the interval, worst first, so only works that are bad with confidence lead. mean: the best estimate. native: the site's own published score. median: the shrunk median vote. divergence: how far apart the sites place the work. spread: how split one site's votes are. votes: how many votes. native, median and spread need site; divergence needs it absent."
+            }
+          },
+          {
+            "description": "1-based page number. page × limit may not exceed 10000.",
+            "explode": false,
+            "in": "query",
+            "name": "page",
+            "schema": {
+              "default": 1,
+              "description": "1-based page number. page × limit may not exceed 10000.",
+              "format": "int64",
+              "minimum": 1,
+              "type": "integer"
+            }
+          },
+          {
+            "description": "Page size. 1–100, default 50. Values above 100 are rejected, not clamped.",
+            "explode": false,
+            "in": "query",
+            "name": "limit",
+            "schema": {
+              "default": 50,
+              "description": "Page size. 1–100, default 50. Values above 100 are rejected, not clamped.",
+              "format": "int64",
+              "maximum": 100,
+              "minimum": 1,
+              "type": "integer"
+            }
+          },
+          {
+            "description": "Released in or after this year (YYYY) or month (YYYY-MM).",
+            "explode": false,
+            "in": "query",
+            "name": "released_from",
+            "schema": {
+              "description": "Released in or after this year (YYYY) or month (YYYY-MM).",
+              "maxLength": 7,
+              "pattern": "^[0-9]{4}(-(0[1-9]|1[0-2]))?$",
+              "type": "string"
+            }
+          },
+          {
+            "description": "Released in or before this year (YYYY) or month (YYYY-MM).",
+            "explode": false,
+            "in": "query",
+            "name": "released_to",
+            "schema": {
+              "description": "Released in or before this year (YYYY) or month (YYYY-MM).",
+              "maxLength": 7,
+              "pattern": "^[0-9]{4}(-(0[1-9]|1[0-2]))?$",
+              "type": "string"
+            }
+          },
+          {
+            "description": "commercial: a game brand made or sold the work. doujin: only a doujin circle did. Omitted means both, and works with neither credit.",
+            "explode": false,
+            "in": "query",
+            "name": "circulation",
+            "schema": {
+              "$ref": "#/components/schemas/RatingCirculation",
+              "description": "commercial: a game brand made or sold the work. doujin: only a doujin circle did. Omitted means both, and works with neither credit."
+            }
+          },
+          {
+            "description": "Only works released on any of these platforms, in the resource platform vocabulary. Comma-separated. Omitted means no filter.",
+            "explode": false,
+            "in": "query",
+            "name": "platforms",
+            "schema": {
+              "description": "Only works released on any of these platforms, in the resource platform vocabulary. Comma-separated. Omitted means no filter.",
+              "items": {
+                "$ref": "#/components/schemas/ResourcePlatform",
+                "description": "A resource platform key."
+              },
+              "maxItems": 48,
+              "type": "array"
+            }
+          },
+          {
+            "description": "Only works whose playtime, the median of the sites' estimates, is at least this many minutes. 0 or omitted means no floor.",
+            "explode": false,
+            "in": "query",
+            "name": "min_playtime_minutes",
+            "schema": {
+              "description": "Only works whose playtime, the median of the sites' estimates, is at least this many minutes. 0 or omitted means no floor.",
+              "format": "int64",
+              "maximum": 100000,
+              "minimum": 0,
+              "type": "integer"
+            }
+          },
+          {
+            "description": "Only works whose playtime is at most this many minutes. 0 or omitted means no ceiling.",
+            "explode": false,
+            "in": "query",
+            "name": "max_playtime_minutes",
+            "schema": {
+              "description": "Only works whose playtime is at most this many minutes. 0 or omitted means no ceiling.",
+              "format": "int64",
+              "maximum": 100000,
+              "minimum": 0,
+              "type": "integer"
+            }
+          },
+          {
+            "description": "Only works with at least this many votes: on site, or over every site without it. 0 or omitted means no floor.",
+            "explode": false,
+            "in": "query",
+            "name": "min_vote_count",
+            "schema": {
+              "description": "Only works with at least this many votes: on site, or over every site without it. 0 or omitted means no floor.",
+              "format": "int64",
+              "maximum": 10000000,
+              "minimum": 0,
+              "type": "integer"
+            }
+          },
+          {
+            "description": "Only works with at most this many votes, counted as min_vote_count counts them. 0 or omitted means no ceiling.",
+            "explode": false,
+            "in": "query",
+            "name": "max_vote_count",
+            "schema": {
+              "description": "Only works with at most this many votes, counted as min_vote_count counts them. 0 or omitted means no ceiling.",
+              "format": "int64",
+              "maximum": 10000000,
+              "minimum": 0,
+              "type": "integer"
+            }
+          },
+          {
+            "description": "Only works at least this many sites rated. Needs site absent. 0 or omitted means no floor.",
+            "explode": false,
+            "in": "query",
+            "name": "min_site_count",
+            "schema": {
+              "description": "Only works at least this many sites rated. Needs site absent. 0 or omitted means no floor.",
+              "format": "int64",
+              "maximum": 6,
+              "minimum": 0,
+              "type": "integer"
+            }
+          },
+          {
+            "description": "When true, games that are not visual novels, such as console action and role-playing games catalog also holds, are ranked too. Default false.",
+            "explode": false,
+            "in": "query",
+            "name": "include_all_games",
+            "schema": {
+              "default": false,
+              "description": "When true, games that are not visual novels, such as console action and role-playing games catalog also holds, are ranked too. Default false.",
+              "type": "boolean"
+            }
+          },
+          {
+            "description": "When true, works this forum displays as adult are ranked too. Default false.",
+            "explode": false,
+            "in": "query",
+            "name": "include_nsfw",
+            "schema": {
+              "default": false,
+              "description": "When true, works this forum displays as adult are ranked too. Default false.",
+              "type": "boolean"
+            }
+          },
+          {
+            "description": "When true, works whose original language is neither Japanese nor Chinese are ranked too. Default false.",
+            "explode": false,
+            "in": "query",
+            "name": "include_all_original_languages",
+            "schema": {
+              "default": false,
+              "description": "When true, works whose original language is neither Japanese nor Chinese are ranked too. Default false.",
+              "type": "boolean"
+            }
+          },
+          {
+            "description": "Only works by this catalog company.",
+            "explode": false,
+            "in": "query",
+            "name": "company_id",
+            "schema": {
+              "description": "Only works by this catalog company.",
+              "maxLength": 19,
+              "pattern": "^[1-9][0-9]{0,18}$",
+              "type": "string"
+            }
+          },
+          {
+            "description": "Only works carrying every one of these catalog tags. Comma-separated, at most 10.",
+            "explode": false,
+            "in": "query",
+            "name": "tag_ids",
+            "schema": {
+              "description": "Only works carrying every one of these catalog tags. Comma-separated, at most 10.",
+              "items": {
+                "maxLength": 20,
+                "minLength": 1,
+                "pattern": "^[0-9]+$",
+                "type": "string"
+              },
+              "maxItems": 10,
+              "type": "array"
+            }
+          },
+          {
+            "description": "Catalog tag ids. Drops every work carrying any of them, from any source and at any spoiler level. Comma-separated. Omitted means no exclusion.",
+            "explode": false,
+            "in": "query",
+            "name": "exclude_tag_ids",
+            "schema": {
+              "description": "Catalog tag ids. Drops every work carrying any of them, from any source and at any spoiler level. Comma-separated. Omitted means no exclusion.",
+              "items": {
+                "maxLength": 20,
+                "minLength": 1,
+                "pattern": "^[0-9]+$",
+                "type": "string"
+              },
+              "maxItems": 100,
+              "type": "array"
+            }
+          },
+          {
+            "description": "Catalog tag ids. Like exclude_tag_ids, and each also drops the works carrying any tag below it in the tag hierarchy. Comma-separated. Omitted means no exclusion.",
+            "explode": false,
+            "in": "query",
+            "name": "exclude_tag_trees",
+            "schema": {
+              "description": "Catalog tag ids. Like exclude_tag_ids, and each also drops the works carrying any tag below it in the tag hierarchy. Comma-separated. Omitted means no exclusion.",
+              "items": {
+                "maxLength": 20,
+                "minLength": 1,
+                "pattern": "^[0-9]+$",
+                "type": "string"
+              },
+              "maxItems": 100,
+              "type": "array"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/RatedWorkRanking"
+                }
+              }
+            },
+            "description": "OK"
+          },
+          "400": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            },
+            "description": "UNKNOWN_SORT or INVALID_PARAMETER, including a sort or min_site_count that does not apply with or without site."
+          },
+          "500": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            },
+            "description": "Internal Server Error"
+          },
+          "503": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            },
+            "description": "SERVICE_UNAVAILABLE when the catalog is unreachable or has not fitted its rating model yet."
+          }
+        },
+        "summary": "Rank works by their ratings",
+        "tags": [
+          "rankings"
+        ]
+      }
+    },
     "/rankings/topics": {
       "get": {
         "description": "A top-N list rather than a paged collection: it has no page, cursor or total. Only topics anonymous visitors can list: not hidden and public. Topics whose author is banned or deleted are dropped and the places renumbered.",
@@ -58518,35 +59240,6 @@
             }
           },
           {
-            "description": "Only works by this catalog company.",
-            "explode": false,
-            "in": "query",
-            "name": "company_id",
-            "schema": {
-              "description": "Only works by this catalog company.",
-              "maxLength": 19,
-              "pattern": "^[1-9][0-9]{0,18}$",
-              "type": "string"
-            }
-          },
-          {
-            "description": "Only works carrying every one of these catalog tags. Comma-separated, at most 10.",
-            "explode": false,
-            "in": "query",
-            "name": "tag_ids",
-            "schema": {
-              "description": "Only works carrying every one of these catalog tags. Comma-separated, at most 10.",
-              "items": {
-                "maxLength": 20,
-                "minLength": 1,
-                "pattern": "^[0-9]+$",
-                "type": "string"
-              },
-              "maxItems": 10,
-              "type": "array"
-            }
-          },
-          {
             "description": "Released in or after this year (YYYY) or month (YYYY-MM).",
             "explode": false,
             "in": "query",
@@ -58579,6 +59272,35 @@
               "$ref": "#/components/schemas/LibraryWorkSort",
               "default": "relevance_desc",
               "description": "Order. relevance: the search index's ranking. popularity: catalog popularity. updated: last catalog edit. released: release date."
+            }
+          },
+          {
+            "description": "Only works by this catalog company.",
+            "explode": false,
+            "in": "query",
+            "name": "company_id",
+            "schema": {
+              "description": "Only works by this catalog company.",
+              "maxLength": 19,
+              "pattern": "^[1-9][0-9]{0,18}$",
+              "type": "string"
+            }
+          },
+          {
+            "description": "Only works carrying every one of these catalog tags. Comma-separated, at most 10.",
+            "explode": false,
+            "in": "query",
+            "name": "tag_ids",
+            "schema": {
+              "description": "Only works carrying every one of these catalog tags. Comma-separated, at most 10.",
+              "items": {
+                "maxLength": 20,
+                "minLength": 1,
+                "pattern": "^[0-9]+$",
+                "type": "string"
+              },
+              "maxItems": 10,
+              "type": "array"
             }
           },
           {
@@ -58621,7 +59343,7 @@
             "content": {
               "application/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/PageListWorkSummary"
+                  "$ref": "#/components/schemas/FacetedWorkPage"
                 }
               }
             },
@@ -73655,6 +74377,35 @@
               "default": false,
               "description": "When true, works whose original language is neither Japanese nor Chinese are included. Default false. A work whose original language has not been synced yet is included either way.",
               "type": "boolean"
+            }
+          },
+          {
+            "description": "Only works by this catalog company.",
+            "explode": false,
+            "in": "query",
+            "name": "company_id",
+            "schema": {
+              "description": "Only works by this catalog company.",
+              "maxLength": 19,
+              "pattern": "^[1-9][0-9]{0,18}$",
+              "type": "string"
+            }
+          },
+          {
+            "description": "Only works carrying every one of these catalog tags. Comma-separated, at most 10.",
+            "explode": false,
+            "in": "query",
+            "name": "tag_ids",
+            "schema": {
+              "description": "Only works carrying every one of these catalog tags. Comma-separated, at most 10.",
+              "items": {
+                "maxLength": 20,
+                "minLength": 1,
+                "pattern": "^[0-9]+$",
+                "type": "string"
+              },
+              "maxItems": 10,
+              "type": "array"
             }
           },
           {

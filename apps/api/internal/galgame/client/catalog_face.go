@@ -357,6 +357,7 @@ type CatalogWorksPage struct {
 	Month      string
 	Year       string
 	Meta       catCalendarMeta
+	Facets     catFacets
 }
 
 func (c *GalgameClient) CatalogWorksList(ctx context.Context, q url.Values) (*CatalogWorksPage, *errors.AppError) {
@@ -445,7 +446,7 @@ func (c *GalgameClient) CatalogWorksSearch(ctx context.Context, q url.Values) (*
 	if err := json.Unmarshal(data, &parsed); err != nil {
 		return nil, errors.ErrInternal("解析 Catalog 搜索响应失败")
 	}
-	return &CatalogWorksPage{Items: parsed.Items, Total: parsed.Total}, nil
+	return &CatalogWorksPage{Items: parsed.Items, Total: parsed.Total, Facets: parsed.Facets}, nil
 }
 
 func (c *GalgameClient) CatalogCalendar(ctx context.Context, bucket string, q url.Values) (*CatalogWorksPage, *errors.AppError) {

@@ -588,10 +588,12 @@ func New(cfg *config.Config) *App {
 
 	app.Fiber = newFiber()
 
-	app.RankingV1 = rankingapiv1.New(rankingRepo.NewRankingRepository(db), uc, gc, app.newTopicV1(), cfg.NextMoeAPI.ImageCDNBase)
+	workHydrator := workrepr.NewHydrator(gc, db, cfg.NextMoeAPI.ImageCDNBase)
+	app.RankingV1 = rankingapiv1.New(rankingRepo.NewRankingRepository(db), uc, gc, app.newTopicV1(), cfg.NextMoeAPI.ImageCDNBase).
+		WithRatedWorks(gc, workHydrator)
 	app.SearchV1 = searchapiv1.New(searchapiv1.Deps{
 		Repo: searchRepo.NewSearchRepository(db), Topics: app.newTopicV1(), Users: uc, Galgame: gc,
-		Works:     workrepr.NewHydrator(gc, db, cfg.NextMoeAPI.ImageCDNBase),
+		Works:     workHydrator,
 		Community: communityCli, Anchors: anchorResolver, CDN: cfg.NextMoeAPI.ImageCDNBase,
 	})
 	app.setupRoutes()

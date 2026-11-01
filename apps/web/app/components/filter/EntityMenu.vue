@@ -12,10 +12,17 @@ const props = withDefaults(
     selectedIds: number[]
     /** Whatever the caller has already resolved names for; listed when idle. */
     selectedItems?: SearchEntityItem[]
+    /** What still narrows the results on screen, most works first; listed when idle. */
+    suggestions?: SearchEntityItem[]
     multiple?: boolean
     max?: number
   }>(),
-  { selectedItems: () => [], multiple: false, max: 0 }
+  {
+    selectedItems: () => [],
+    suggestions: () => [],
+    multiple: false,
+    max: 0
+  }
 )
 
 const emit = defineEmits<{ toggle: [item: SearchEntityItem] }>()
@@ -64,9 +71,13 @@ const full = computed(
   () => props.multiple && !!props.max && props.selectedIds.length >= props.max
 )
 
+const pool = computed(() =>
+  query.value.trim() ? found.value : props.suggestions
+)
+
 const known = computed(() => {
   const map = new Map<number, SearchEntityItem>()
-  for (const item of [...props.selectedItems, ...found.value]) {
+  for (const item of [...pool.value, ...props.selectedItems]) {
     map.set(item.id, item)
   }
   return map
@@ -74,27 +85,39 @@ const known = computed(() => {
 
 // Selected first and always present: a value with no option behind it renders
 // as a bare id in the trigger and cannot be clicked off again.
-const options = computed(() => {
-  const chosen = props.selectedIds
-    .map((id) => known.value.get(id))
-    .filter((item) => !!item)
-  const rest = found.value.filter(
-    (item) => !props.selectedIds.includes(item.id)
-  )
-  return [...chosen, ...rest].map((item) => ({
-    value: item.id,
-    label: item.name,
-    hint: item.work_count ? `${item.work_count} 部` : '',
-    disabled: full.value && !props.selectedIds.includes(item.id)
-  }))
-})
+const options = computed(() => [
+  ...props.selectedIds.map((id) => ({
+    value: id,
+    label: known.value.get(id)?.name ?? `#${id}`,
+    hint: '已选'
+  })),
+  ...pool.value
+    .filter((item) => !props.selectedIds.includes(item.id))
+    .map((item) => ({
+      value: item.id,
+      label: item.name,
+      hint: item.work_count ? `${item.work_count} 部` : '',
+      disabled: full.value
+    }))
+])
 
 const pick = (value: KunSelectValue) => {
-  const item = known.value.get(Number(value))
-  if (item) {
-    emit('toggle', item)
+  const id = Number(value)
+  const item = known.value.get(id) ?? {
+    id,
+    family: props.family,
+    name: `#${id}`
   }
+  emit('toggle', item)
 }
+
+const trigger = computed(() => {
+  const n = props.selectedIds.length
+  return {
+    icon: n ? props.icon : 'lucide:plus',
+    text: props.multiple && n ? `${props.label} ${n}` : `添加${props.label}`
+  }
+})
 
 // The URL owns the selection: @set carries the pick up, the route comes back
 // down as `selectedIds`. This listener only has to exist — Vue's defineModel
@@ -113,14 +136,12 @@ const emptyText = computed(() =>
 
 <template>
   <KunSelect
-    :model-value="multiple ? selectedIds : (selectedIds[0] ?? null)"
+    :model-value="multiple ? null : (selectedIds[0] ?? null)"
     :options="options"
-    :multiple="multiple"
-    :icon="icon"
-    :placeholder="label"
-    :aria-label="label"
+    :icon="trigger.icon"
+    :placeholder="trigger.text"
+    :aria-label="`按${label}筛选`"
     :full-width="false"
-    :max-visible-tags="0"
     :class-names="{ trigger: filterPillClass(selectedIds.length > 0) }"
     :search-placeholder="full ? `最多同时筛选 ${max} 个${label}` : placeholder"
     :no-result-text="emptyText"

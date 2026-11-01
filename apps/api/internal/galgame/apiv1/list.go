@@ -51,6 +51,13 @@ func (s *Service) listWorks(ctx context.Context, in *listWorksInput) (*workSumma
 	if prob != nil {
 		return nil, prob
 	}
+	restrict, restricted, prob := s.entityWorkIDs(ctx, in.EntityFilterInput)
+	if prob != nil {
+		return nil, prob
+	}
+	if restricted && len(restrict) == 0 {
+		return &workSummaryPageOutput{Body: repr.NewPageList([]workrepr.WorkSummary{}, 0, "eq")}, nil
+	}
 	f := model.GalgameListFilter{
 		Type:                 string(in.ResourceType),
 		PlatformAxes:         strKeys(in.ResourcePlatforms),
@@ -73,6 +80,7 @@ func (s *Service) listWorks(ctx context.Context, in *listWorksInput) (*workSumma
 		Indexed:              in.IncludeResourceless,
 		SFWOnly:              !in.IncludeNSFW,
 		JaZhOriginalOnly:     !in.IncludeAllOriginalLanguages,
+		RestrictIDs:          restrict,
 		ExcludeIDs:           excluded,
 		Page:                 pg.Page,
 		Limit:                pg.Limit,

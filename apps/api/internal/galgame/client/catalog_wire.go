@@ -268,10 +268,11 @@ type catCalendarMeta struct {
 }
 
 type catWorksSearchData struct {
-	Total int64                 `json:"total"`
-	Page  int                   `json:"page"`
-	Limit int                   `json:"limit"`
-	Items []CatalogWorkListItem `json:"items"`
+	Facets catFacets             `json:"facets"`
+	Total  int64                 `json:"total"`
+	Page   int                   `json:"page"`
+	Limit  int                   `json:"limit"`
+	Items  []CatalogWorkListItem `json:"items"`
 }
 
 func hashFromURL(u string) string {

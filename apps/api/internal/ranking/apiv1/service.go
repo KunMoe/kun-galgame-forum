@@ -38,6 +38,9 @@ type Service struct {
 	works  Works
 	topics Topics
 	cdn    string
+
+	rated    RatedWorks
+	hydrator WorkHydrator
 }
 
 func New(repo *repository.RankingRepository, users Users, works Works, topics Topics, cdn string) *Service {

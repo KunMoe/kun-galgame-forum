@@ -1,14 +1,16 @@
 <script setup lang="ts">
+import type { WorkFacets } from '#shared/utils/api/schemas'
 import { SEARCH_GALGAME_SORTS, TAG_FILTER_MAX } from './items'
 
-withDefaults(defineProps<{ total?: number; pending?: boolean }>(), {
-  total: 0,
-  pending: false
-})
+const props = withDefaults(
+  defineProps<{ total?: number; pending?: boolean; facets?: WorkFacets }>(),
+  { total: 0, pending: false, facets: undefined }
+)
 
 const { state, set, clear: clearFilters } = useSearchGalgameFilters()
 
 const entityNames = useEntityNames()
+const suggestions = useEntityFacets(() => props.facets, entityNames)
 
 const yearRangeLabel = computed(() => {
   const { released_from: from, released_to: to } = state.value
@@ -40,18 +42,18 @@ const toggleTag = (item: SearchEntityItem) => {
 const chips = computed<FilterChip[]>(() => {
   const f = state.value
   const list: FilterChip[] = []
-  if (f.company_id) {
-    list.push({
-      key: 'company',
-      prefix: '会社',
-      label: entityNames.labelOf('company', f.company_id)
-    })
-  }
   for (const id of f.tag_ids) {
     list.push({
       key: `tag:${id}`,
       prefix: '标签',
       label: entityNames.labelOf('tag', id)
+    })
+  }
+  if (f.company_id) {
+    list.push({
+      key: 'company',
+      prefix: '会社',
+      label: entityNames.labelOf('company', f.company_id)
     })
   }
   if (f.released_from || f.released_to) {
@@ -99,25 +101,29 @@ watch(
     <span class="bg-default-200 h-6 w-px" aria-hidden="true" />
 
     <FilterEntityMenu
-      family="company"
-      icon="lucide:building-2"
-      label="会社"
-      placeholder="搜索会社名, 例如 Key"
-      :selected-ids="state.company_id ? [state.company_id] : []"
-      :selected-items="entityNames.itemsOf('company', [state.company_id])"
-      @toggle="toggleCompany"
-    />
-    <FilterEntityMenu
       family="tag"
       icon="lucide:tag"
       label="标签"
       placeholder="搜索标签, 例如 校园"
       :selected-ids="state.tag_ids"
       :selected-items="entityNames.itemsOf('tag', state.tag_ids)"
+      :suggestions="suggestions.tags.value"
       multiple
       :max="TAG_FILTER_MAX"
       @toggle="toggleTag"
     />
+    <FilterEntityMenu
+      family="company"
+      icon="lucide:building-2"
+      label="会社"
+      placeholder="搜索会社名, 例如 Key"
+      :selected-ids="state.company_id ? [state.company_id] : []"
+      :selected-items="entityNames.itemsOf('company', [state.company_id])"
+      :suggestions="suggestions.companies.value"
+      @toggle="toggleCompany"
+    />
+
+    <span class="bg-default-200 h-6 w-px" aria-hidden="true" />
 
     <FilterYears
       :from="state.released_from"

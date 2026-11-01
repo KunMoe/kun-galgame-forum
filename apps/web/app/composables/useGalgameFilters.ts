@@ -95,7 +95,9 @@ export const GALGAME_FILTER_SCHEMA = {
   includeProviders: providerListField,
   excludeOnlyProviders: providerListField,
   minRatingCount: queryInt(0, 0),
-  minRating: queryInt(0, 0)
+  minRating: queryInt(0, 0),
+  tags: queryIds(),
+  company: queryInt(0, 0)
 }
 
 export const GALGAME_FILTER_QUERY_KEYS = Object.keys(GALGAME_FILTER_SCHEMA)
@@ -162,6 +164,8 @@ export const useBrowseWorksQuery = () => {
         : {}),
       ...(f.minRating > 0 ? { min_rating: f.minRating } : {}),
       ...(f.minRatingCount > 0 ? { min_rating_count: f.minRatingCount } : {}),
+      ...(f.tags.length ? { tag_ids: f.tags.map(String) } : {}),
+      ...(f.company ? { company_id: String(f.company) } : {}),
       include_nsfw: allowsNsfw.value,
       include_all_original_languages: showKUNGalgameAllOriginalLanguages.value,
       ...excludeQuery.value

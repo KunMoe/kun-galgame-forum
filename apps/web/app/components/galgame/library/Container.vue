@@ -1,9 +1,9 @@
 <script setup lang="ts">
-import type { WorkPage } from '#shared/utils/api/schemas'
+import type { FacetedWorkPage } from '#shared/utils/api/schemas'
 
 const { page, limit, query } = useLibraryWorksQuery()
 
-const { data, status, problem, pending } = useKunApi<WorkPage>(
+const { data, status, problem, pending } = useKunApi<FacetedWorkPage>(
   () => `library-works:${JSON.stringify(query.value)}`,
   (api, { signal }) =>
     api.GET('/library-works', { params: { query: query.value }, signal })
@@ -33,6 +33,7 @@ const releaseLabel = (galgame: GalgameCard) => {
           <GalgameLibraryNav
             :total="data ? total : null"
             :pending="status === 'pending'"
+            :facets="data?.facets"
           />
         </template>
 

@@ -122,7 +122,10 @@ const { data: games, status: gamesStatus } = useKunApi<WorkPage>(
             signal
           })
         )
-      : { ok: true, data: { object: 'list', items: [], total: 0, total_relation: 'eq' } }
+      : {
+          ok: true,
+          data: { object: 'list', items: [], total: 0, total_relation: 'eq' }
+        }
 )
 const resultGames = useWorkCards(() => games.value?.items ?? [])
 const totalGameCount = computed(() => games.value?.total ?? 0)
@@ -171,7 +174,7 @@ const isBrowsing = computed(() => !selectedIds.value.length)
       <FilterEntityMenu
         family="tag"
         icon="lucide:tag"
-        label="多标签筛选"
+        label="标签"
         placeholder="搜索标签, 例如 校园"
         :selected-ids="selectedIds"
         :selected-items="entityNames.itemsOf('tag', selectedIds)"

@@ -8,7 +8,6 @@ import (
 	"strings"
 
 	"kun-galgame-api/internal/apiv1/collect"
-	"kun-galgame-api/internal/apiv1/repr"
 	"kun-galgame-api/internal/galgame/client"
 	"kun-galgame-api/internal/galgame/workrepr"
 	legacyErrors "kun-galgame-api/pkg/errors"
@@ -24,7 +23,11 @@ func (s *Service) worksSearch() worksSearch {
 	return w
 }
 
-func (s *Service) listLibraryWorks(ctx context.Context, in *listLibraryWorksInput) (*workSummaryPageOutput, error) {
+type libraryWorkPageOutput struct {
+	Body workrepr.FacetedWorkPage
+}
+
+func (s *Service) listLibraryWorks(ctx context.Context, in *listLibraryWorksInput) (*libraryWorkPageOutput, error) {
 	if s == nil || s.hydrator == nil {
 		return nil, problem.Internal(errUnconfigured)
 	}
@@ -73,7 +76,9 @@ func (s *Service) listLibraryWorks(ctx context.Context, in *listLibraryWorksInpu
 	}
 	client.ApplyWorksGate(params, !in.IncludeNSFW)
 	client.ApplyOriginalLanguageGate(params, !in.IncludeAllOriginalLanguages)
+	in.EntityFilterInput.Apply(params)
 	in.Exclusion().Apply(params)
+	params.Set("facets", client.EntityFacets)
 	res, appErr := search.CatalogWorksSearch(ctx, params)
 	if appErr != nil {
 		return nil, catalogUnavailable(appErr)
@@ -91,5 +96,6 @@ func (s *Service) listLibraryWorks(ctx context.Context, in *listLibraryWorksInpu
 		return nil, p
 	}
 	n, rel := collect.ClampTotal(int(res.Total))
-	return &workSummaryPageOutput{Body: repr.NewPageList(items, n, rel)}, nil
+	facets := workrepr.NewWorkFacets(res.Facets.Tags(), res.Facets.Companies())
+	return &libraryWorkPageOutput{Body: workrepr.NewFacetedWorkPage(items, n, rel, facets)}, nil
 }

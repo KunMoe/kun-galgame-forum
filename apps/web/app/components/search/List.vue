@@ -1,6 +1,10 @@
 <script setup lang="ts">
 import { SEARCH_CATEGORY_MAP } from './items'
-import { fetchLanePage, type GalgameFilterQuery } from '~/utils/search/lanes'
+import {
+  fetchLanePage,
+  type GalgameFilterQuery,
+  type LanePage
+} from '~/utils/search/lanes'
 
 const props = defineProps<{
   keywords: string
@@ -11,6 +15,7 @@ const PAGE_SIZE = 24
 
 const results = ref<SearchResult[]>([])
 const total = ref(0)
+const facets = ref<LanePage['facets']>()
 const atLeast = ref(false)
 const pending = ref(!!props.keywords)
 const failed = ref(false)
@@ -87,6 +92,7 @@ const load = async () => {
   // the request never came back is the one thing this must not do.
   failed.value = !data
   total.value = data?.total ?? 0
+  facets.value = data?.facets
   atLeast.value = data?.atLeast ?? false
 
   // A link outlives the result set it was copied from. ?page=16 against a lane
@@ -123,7 +129,12 @@ watch(
 
 <template>
   <div ref="top" class="scroll-mt-40 space-y-6">
-    <SearchGalgameFilter v-if="isGalgame" :total="total" :pending="pending" />
+    <SearchGalgameFilter
+      v-if="isGalgame"
+      :total="total"
+      :pending="pending"
+      :facets="facets"
+    />
 
     <p v-else class="text-default-500 text-sm">
       <template v-if="pending && !results.length">正在搜索…</template>
