@@ -100,7 +100,7 @@ export default defineNuxtConfig({
     // Without this the retired path falls through to /galgame/[id] and
     // answers "未找到这个 Galgame" instead of 404ing or moving.
     '/galgame/library': { redirect: { to: '/gallib', statusCode: 301 } },
-    '/ranking': { redirect: { to: '/ranking/user', statusCode: 301 } },
+    '/ranking/galgame': { redirect: { to: '/ranking', statusCode: 301 } },
     '/galgame-resource': {
       redirect: { to: '/galgame/resource', statusCode: 301 }
     },

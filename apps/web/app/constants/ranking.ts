@@ -1,8 +1,7 @@
 import type { KunTabItem } from '@kungal/ui-vue'
 import type {
   TopicRankingSort,
-  UserRankingSort,
-  WorkRankingSort
+  UserRankingSort
 } from '#shared/utils/api/schemas'
 
 export interface RankingSortItem<S extends string> {
@@ -20,14 +19,6 @@ export const topicSortItem: RankingSortItem<TopicRankingSort>[] = [
   { icon: 'lucide:heart', label: '收藏数', sort: 'favorites_desc' }
 ]
 
-export const galgameSortItem: RankingSortItem<WorkRankingSort>[] = [
-  { icon: 'lucide:eye', label: '浏览数', sort: 'views_desc' },
-  { icon: 'lucide:thumbs-up', label: '点赞数', sort: 'likes_desc' },
-  { icon: 'lucide:heart', label: '收藏数', sort: 'favorites_desc' },
-  { icon: 'lucide:box', label: '资源数', sort: 'resources_desc' },
-  { icon: 'lucide:star', label: '评分', sort: 'rating_desc' }
-]
-
 export const userSortItem: RankingSortItem<UserRankingSort>[] = [
   { icon: 'lucide:lollipop', label: '萌萌点', sort: 'moemoepoint_desc' },
   { icon: 'lucide:square-gantt-chart', label: '话题数', sort: 'topics_desc' },
@@ -38,14 +29,14 @@ export const userSortItem: RankingSortItem<UserRankingSort>[] = [
 
 export const rankingPageTabs: KunTabItem[] = [
   {
+    textValue: 'Galgame',
+    value: 'galgame',
+    href: '/ranking'
+  },
+  {
     textValue: '话题',
     value: 'topic',
     href: '/ranking/topic'
-  },
-  {
-    textValue: 'Galgame',
-    value: 'galgame',
-    href: '/ranking/galgame'
   },
   {
     textValue: '用户',
@@ -65,11 +56,6 @@ export const rankingPageMetaData: Record<
     title: '话题排行',
     description:
       '查看关于 Galgame 话题的浏览数, 点赞数, 回复数, 评论数排行, 浏览最多人关注的 Galgame 话题'
-  },
-  galgame: {
-    title: 'Galgame 排行',
-    description:
-      '最强大的 Galgame 排行, 根据本站所有用户的历史数据综合得出, 具有良好的参考价值。适合用于 Galgame, Galgame 资源, Galgame 交流'
   },
   user: {
     title: '用户排行',

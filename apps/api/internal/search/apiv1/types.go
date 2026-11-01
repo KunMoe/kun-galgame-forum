@@ -21,14 +21,13 @@ type usersInput struct {
 
 type worksInput struct {
 	collect.PageNumber
-	Q            string           `query:"q" required:"true" minLength:"1" maxLength:"107" doc:"Search keywords. Free text; never use it as a decision input."`
-	IncludeNSFW  bool             `query:"include_nsfw" doc:"When true, works this forum displays as adult are included. Default false."`
-	CompanyID    string           `query:"company_id" pattern:"^[1-9][0-9]{0,18}$" maxLength:"19" doc:"Only works by this catalog company."`
-	TagIDs       []repr.DecimalID `query:"tag_ids" maxItems:"10" doc:"Only works carrying every one of these catalog tags. Comma-separated, at most 10."`
-	ReleasedFrom string           `query:"released_from" pattern:"^[0-9]{4}(-(0[1-9]|1[0-2]))?$" maxLength:"7" doc:"Released in or after this year (YYYY) or month (YYYY-MM)."`
-	ReleasedTo   string           `query:"released_to" pattern:"^[0-9]{4}(-(0[1-9]|1[0-2]))?$" maxLength:"7" doc:"Released in or before this year (YYYY) or month (YYYY-MM)."`
-	Sort         string           `query:"sort" enum:"relevance_desc,popularity_desc,updated_desc,released_desc,released_asc" default:"relevance_desc" maxLength:"15" doc:"Order. relevance: the search index's ranking. popularity: catalog popularity. updated: last catalog edit. released: release date."`
+	Q            string `query:"q" required:"true" minLength:"1" maxLength:"107" doc:"Search keywords. Free text; never use it as a decision input."`
+	IncludeNSFW  bool   `query:"include_nsfw" doc:"When true, works this forum displays as adult are included. Default false."`
+	ReleasedFrom string `query:"released_from" pattern:"^[0-9]{4}(-(0[1-9]|1[0-2]))?$" maxLength:"7" doc:"Released in or after this year (YYYY) or month (YYYY-MM)."`
+	ReleasedTo   string `query:"released_to" pattern:"^[0-9]{4}(-(0[1-9]|1[0-2]))?$" maxLength:"7" doc:"Released in or before this year (YYYY) or month (YYYY-MM)."`
+	Sort         string `query:"sort" enum:"relevance_desc,popularity_desc,updated_desc,released_desc,released_asc" default:"relevance_desc" maxLength:"15" doc:"Order. relevance: the search index's ranking. popularity: catalog popularity. updated: last catalog edit. released: release date."`
 
+	workrepr.EntityFilterInput
 	workrepr.TagExclusionInput
 }
 

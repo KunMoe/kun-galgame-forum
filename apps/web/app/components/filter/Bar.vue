@@ -14,7 +14,7 @@ defineEmits<{ remove: [key: string]; clear: [] }>()
 </script>
 
 <template>
-  <div class="border-default-200 bg-default-50 space-y-2 rounded-xl border p-2">
+  <div class="space-y-2">
     <div class="flex flex-wrap items-center gap-2">
       <slot />
 
@@ -30,17 +30,11 @@ defineEmits<{ remove: [key: string]; clear: [] }>()
       </div>
     </div>
 
-    <div
-      v-if="$slots.more"
-      class="border-default-200 flex flex-wrap items-center gap-2 border-t pt-2"
-    >
+    <div v-if="$slots.more" class="flex flex-wrap items-center gap-2">
       <slot name="more" />
     </div>
 
-    <div
-      v-if="chips.length"
-      class="border-default-200 flex flex-wrap items-center gap-1.5 border-t pt-2"
-    >
+    <div v-if="chips.length" class="flex flex-wrap items-center gap-1.5">
       <KunChip
         v-for="chip in chips"
         :key="chip.key"

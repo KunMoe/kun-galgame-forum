@@ -188,15 +188,16 @@ export const kunLayoutItem: KunLayoutItem[] = [
     isCollapse: true,
     children: [
       {
+        name: 'galgame',
+        router: '/ranking',
+        label: 'Galgame 评分排行',
+        hint: '新'
+      },
+      {
         name: 'ranking',
         router: '/ranking/topic',
         label: '话题排行',
         hint: '优化'
-      },
-      {
-        name: 'galgame',
-        router: '/ranking/galgame',
-        label: 'Galgame 排行'
       },
       {
         name: 'ranking',
@@ -437,14 +438,14 @@ export const kunSidebarRail: KunRailGroup[] = [
         label: '排行榜',
         items: [
           {
+            label: 'Galgame 评分排行',
+            router: '/ranking',
+            icon: 'lucide:gamepad-2'
+          },
+          {
             label: '话题排行',
             router: '/ranking/topic',
             icon: 'lucide:list-ordered'
-          },
-          {
-            label: 'Galgame 排行',
-            router: '/ranking/galgame',
-            icon: 'lucide:gamepad-2'
           },
           { label: '用户排行', router: '/ranking/user', icon: 'lucide:users' }
         ]

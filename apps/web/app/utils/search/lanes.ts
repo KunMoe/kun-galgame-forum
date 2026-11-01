@@ -1,10 +1,12 @@
 import type { ApiClient } from '#shared/utils/api/client'
 import { settle, type ApiResult } from '#shared/utils/api/problem'
+import type { WorkFacets } from '#shared/utils/api/schemas'
 
 export interface LanePage {
   items: SearchResult[]
   total: number
   atLeast?: boolean
+  facets?: WorkFacets
 }
 
 export type GalgameFilterQuery = Partial<
@@ -42,7 +44,12 @@ const worksFilter = (filter: GalgameFilterQuery) => {
 }
 
 const unwrap = <
-  T extends { items: unknown[]; total: number; total_relation: 'eq' | 'gte' }
+  T extends {
+    items: unknown[]
+    total: number
+    total_relation: 'eq' | 'gte'
+    facets?: WorkFacets
+  }
 >(
   result: ApiResult<T>,
   report: boolean
@@ -56,7 +63,8 @@ const unwrap = <
   return {
     items: result.data.items as SearchResult[],
     total: result.data.total,
-    atLeast: result.data.total_relation === 'gte'
+    atLeast: result.data.total_relation === 'gte',
+    facets: result.data.facets
   }
 }
 

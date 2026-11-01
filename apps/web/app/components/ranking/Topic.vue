@@ -6,8 +6,7 @@ import { RANKING_LIMIT, topicRankingPageData, getRankClasses } from './pageData'
 const { allowsNsfw, stanceKey } = useContentStance()
 
 const { data, pending } = useKunApi(
-  () =>
-    `ranking-topics:${topicRankingPageData.sort}:${stanceKey.value}`,
+  () => `ranking-topics:${topicRankingPageData.sort}:${stanceKey.value}`,
   (client, { signal }) =>
     client.GET('/rankings/topics', {
       params: {

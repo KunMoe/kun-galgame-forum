@@ -18,7 +18,10 @@ export const useEntityNames = () => {
     () => ({})
   )
   const resolving: Promise<unknown>[] = []
-  if (import.meta.server && getCurrentInstance()) {
+  // On the client too: a prefetch hook makes the component an async boundary
+  // for useId, and hooking it on the server alone gave every KunSelect in the
+  // /gallib and /galgame filter bars an id the client did not expect.
+  if (getCurrentInstance()) {
     onServerPrefetch(() => Promise.all(resolving))
   }
   const api = useApiClient()

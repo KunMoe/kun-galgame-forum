@@ -8,6 +8,7 @@ import {
   PLATFORM_FILTER_OPTIONS,
   RESOURCE_TYPE_OPTIONS
 } from '#shared/utils/galgameResourceVocab'
+import { TAG_FILTER_MAX } from '~/components/search/items'
 
 const props = withDefaults(
   defineProps<{
@@ -23,6 +24,29 @@ type Filters = QueryValues<typeof GALGAME_FILTER_SCHEMA>
 const { state, set } = useGalgameFilters()
 
 const { open: openSettingPanel } = useSettingPanel()
+
+const entityNames = useEntityNames()
+
+const toggleTag = (item: SearchEntityItem) => {
+  entityNames.remember(item)
+  const tags = state.value.tags
+  set({
+    tags: tags.includes(item.id)
+      ? tags.filter((id) => id !== item.id)
+      : [...tags, item.id].slice(0, TAG_FILTER_MAX)
+  })
+}
+
+const toggleCompany = (item: SearchEntityItem) => {
+  entityNames.remember(item)
+  set({ company: state.value.company === item.id ? 0 : item.id })
+}
+
+watch(
+  [() => state.value.company, () => state.value.tags],
+  ([company, tags]) => entityNames.resolve({ company: [company], tag: tags }),
+  { immediate: true }
+)
 
 const firstOf = (value: string | string[]) =>
   Array.isArray(value) ? (value[0] ?? '') : value
@@ -111,6 +135,20 @@ const labelOf = (options: FilterOption[], value: string) =>
 const chips = computed<FilterChip[]>(() => {
   const f = state.value
   const list: FilterChip[] = []
+  for (const id of f.tags) {
+    list.push({
+      key: `tag:${id}`,
+      prefix: '标签',
+      label: entityNames.labelOf('tag', id)
+    })
+  }
+  if (f.company) {
+    list.push({
+      key: 'company',
+      prefix: '会社',
+      label: entityNames.labelOf('company', f.company)
+    })
+  }
   for (const value of f.platform) {
     list.push({
       key: `platform:${value}`,
@@ -187,7 +225,11 @@ const removeChip = (key: string) => {
   const f = state.value
   const without = <T extends string | number>(values: T[]) =>
     values.filter((item) => String(item) !== value)
-  if (dimension === 'platform') {
+  if (dimension === 'tag') {
+    set({ tags: f.tags.filter((id) => id !== Number(value)) })
+  } else if (dimension === 'company') {
+    set({ company: 0 })
+  } else if (dimension === 'platform') {
     setPlatforms(without(f.platform))
   } else if (dimension === 'runtime') {
     set({ runtime: without(f.runtime) })
@@ -216,6 +258,8 @@ const removeChip = (key: string) => {
 
 const clearFilters = () => {
   set({
+    tags: [],
+    company: 0,
     platform: [],
     runtime: [],
     gameType: '',
@@ -272,6 +316,31 @@ const clearFilters = () => {
     </KunTooltip>
 
     <span class="bg-default-200 h-6 w-px" aria-hidden="true" />
+
+    <template v-if="isShowAdvanced">
+      <FilterEntityMenu
+        family="tag"
+        icon="lucide:tag"
+        label="标签"
+        placeholder="搜索标签, 例如 校园"
+        :selected-ids="state.tags"
+        :selected-items="entityNames.itemsOf('tag', state.tags)"
+        multiple
+        :max="TAG_FILTER_MAX"
+        @toggle="toggleTag"
+      />
+      <FilterEntityMenu
+        family="company"
+        icon="lucide:building-2"
+        label="会社"
+        placeholder="搜索会社名, 例如 Key"
+        :selected-ids="state.company ? [state.company] : []"
+        :selected-items="entityNames.itemsOf('company', [state.company])"
+        @toggle="toggleCompany"
+      />
+
+      <span class="bg-default-200 h-6 w-px" aria-hidden="true" />
+    </template>
 
     <FilterMenu
       icon="lucide:monitor-smartphone"

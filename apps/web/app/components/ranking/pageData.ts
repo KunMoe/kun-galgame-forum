@@ -1,16 +1,11 @@
 import type {
   TopicRankingSort,
-  UserRankingSort,
-  WorkRankingSort
+  UserRankingSort
 } from '#shared/utils/api/schemas'
 
 export const RANKING_LIMIT = 50
 
 export const topicRankingPageData = reactive<{ sort: TopicRankingSort }>({
-  sort: 'views_desc'
-})
-
-export const galgameRankingPageData = reactive<{ sort: WorkRankingSort }>({
   sort: 'views_desc'
 })
 

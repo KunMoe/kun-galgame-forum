@@ -29,7 +29,10 @@ const LIBRARY_FILTER_SCHEMA = {
   sortField: queryString('popularity'),
   sortOrder: queryEnum(['desc', 'asc'] as const, 'desc'),
   releasedFrom: queryString(),
-  releasedTo: queryString()
+  releasedTo: queryString(),
+  q: queryString(),
+  tags: queryIds(),
+  company: queryInt(0, 0)
 }
 
 export const useLibraryFilters = () => ({
@@ -53,6 +56,9 @@ export const useLibraryWorksQuery = () => {
       sort: librarySortToken(f.sortField, f.sortOrder),
       ...(f.releasedFrom ? { released_from: f.releasedFrom } : {}),
       ...(f.releasedTo ? { released_to: f.releasedTo } : {}),
+      ...(f.q ? { q: f.q } : {}),
+      ...(f.tags.length ? { tag_ids: f.tags.map(String) } : {}),
+      ...(f.company ? { company_id: String(f.company) } : {}),
       include_nsfw: allowsNsfw.value,
       include_all_original_languages: showKUNGalgameAllOriginalLanguages.value,
       ...excludeQuery.value

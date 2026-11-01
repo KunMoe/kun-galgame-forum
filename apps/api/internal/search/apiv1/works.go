@@ -7,7 +7,6 @@ import (
 	"strings"
 
 	"kun-galgame-api/internal/apiv1/collect"
-	"kun-galgame-api/internal/apiv1/repr"
 	"kun-galgame-api/internal/galgame/client"
 	"kun-galgame-api/internal/galgame/workrepr"
 	"kun-galgame-api/pkg/problem"
@@ -23,7 +22,7 @@ var worksSort = map[string]string{
 }
 
 type worksOutput struct {
-	Body repr.PageList[workrepr.WorkSummary]
+	Body workrepr.FacetedWorkPage
 }
 
 func (s *Service) searchWorks(ctx context.Context, in *worksInput) (*worksOutput, error) {
@@ -54,16 +53,8 @@ func (s *Service) searchWorks(ctx context.Context, in *worksInput) (*worksOutput
 		"include": {workrepr.RowInclude},
 		"sort":    {worksSort[in.Sort]},
 	}
-	if in.CompanyID != "" {
-		params.Set("company_id", in.CompanyID)
-	}
-	if len(in.TagIDs) > 0 {
-		tags := make([]string, len(in.TagIDs))
-		for i, id := range in.TagIDs {
-			tags[i] = string(id)
-		}
-		params.Set("tag_id", strings.Join(tags, ","))
-	}
+	in.EntityFilterInput.Apply(params)
+	params.Set("facets", client.EntityFacets)
 	if from != "" {
 		params.Set("released_after", from)
 	}
@@ -88,5 +79,6 @@ func (s *Service) searchWorks(ctx context.Context, in *worksInput) (*worksOutput
 		return nil, prob
 	}
 	total, relation := collect.ClampTotal(int(res.Total))
-	return &worksOutput{Body: repr.NewPageList(items, total, relation)}, nil
+	facets := workrepr.NewWorkFacets(res.Facets.Tags(), res.Facets.Companies())
+	return &worksOutput{Body: workrepr.NewFacetedWorkPage(items, total, relation, facets)}, nil
 }

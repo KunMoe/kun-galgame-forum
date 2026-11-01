@@ -267,6 +267,8 @@ export type WorksQuery = Omit<
 > &
   Required<Pick<WorksParams, 'page' | 'limit' | 'sort' | 'include_nsfw'>>
 export type WorkPage = components['schemas']['PageListWorkSummary']
+export type FacetedWorkPage = components['schemas']['FacetedWorkPage']
+export type WorkFacets = components['schemas']['WorkFacets']
 type ListWorksParams = NonNullable<
   operations['listWorks']['parameters']['query']
 >
@@ -340,6 +342,15 @@ export type UserRankingSort = NonNullable<
 export type WorkRankingSort = NonNullable<
   NonNullable<operations['listWorkRanking']['parameters']['query']>['sort']
 >
+export type RatedWorkRanking = components['schemas']['RatedWorkRanking']
+export type RatedWorkRankingEntry =
+  components['schemas']['RatedWorkRankingEntry']
+export type SiteRating = components['schemas']['SiteRating']
+export type RatedWorkRankingQuery = NonNullable<
+  operations['listRatedWorkRanking']['parameters']['query']
+>
+export type RatedWorkRankingSort = NonNullable<RatedWorkRankingQuery['sort']>
+export type RatingSite = NonNullable<RatedWorkRankingQuery['site']>
 export type ReplySearchHit = components['schemas']['ReplySearchHit']
 export type CommentSearchHit = components['schemas']['CommentSearchHit']
 export type UserSearchHit = components['schemas']['UserSearchHit']

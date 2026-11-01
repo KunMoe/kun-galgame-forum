@@ -68,6 +68,7 @@ type listWorksInput struct {
 
 	IncludeAllOriginalLanguages bool `query:"include_all_original_languages" default:"false" doc:"When true, works whose original language is neither Japanese nor Chinese are included. Default false. A work whose original language has not been synced yet is included either way."`
 
+	workrepr.EntityFilterInput
 	workrepr.TagExclusionInput
 }
 
@@ -82,6 +83,7 @@ type listLibraryWorksInput struct {
 
 	IncludeAllOriginalLanguages bool `query:"include_all_original_languages" default:"false" doc:"When true, works whose original language is neither Japanese nor Chinese are included. Default false."`
 
+	workrepr.EntityFilterInput
 	workrepr.TagExclusionInput
 }
 

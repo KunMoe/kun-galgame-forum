@@ -3284,6 +3284,26 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/rankings/rated-works": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Rank works by their ratings
+         * @description Works ranked by their ratings on every rating site combined, or on one site, as catalog ranks them; each entry carries every site's own published score next to catalog's estimate of it. Catalog rebuilds the ranking nightly. Without include_all_games, only visual novels; without include_all_original_languages, only works whose original language is Japanese or Chinese. A work this forum cannot show is left out and the others keep their places.
+         */
+        get: operations["listRatedWorkRanking"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/rankings/topics": {
         parameters: {
             query?: never;
@@ -7830,6 +7850,15 @@ export interface components {
             /** @description The entity the card shows, as of this read. */
             target: components["schemas"]["EntityTarget"];
         };
+        EntityCount: {
+            /** @description Catalog id of the tag or company. */
+            id: string;
+            /**
+             * Format: int64
+             * @description Works in the filtered result set that carry it.
+             */
+            work_count: number;
+        };
         EntityLinkNode: {
             /** @description The plain link the author wrote. Render target instead; the link is for a client that does not know entity_link. */
             children: components["schemas"]["InlineNode"][];
@@ -7856,6 +7885,24 @@ export interface components {
         EntityType: "topic" | "work" | "galgame_resource" | "character" | "company" | "tag" | "series" | "credit_name" | "rating";
         /** @enum {string} */
         ExpiryVerdict: "alive" | "dead" | "unchecked";
+        FacetedWorkPage: {
+            /** @description The tags and companies most common in the whole filtered result set, not only this page. */
+            facets: components["schemas"]["WorkFacets"];
+            /** @description Members of this page. Empty array, never null. */
+            items: components["schemas"]["WorkSummary"][];
+            /**
+             * @description Type discriminant. Always list.
+             * @constant
+             */
+            object: "list";
+            /**
+             * Format: int64
+             * @description Members matching the filters, under the same predicate as items. Counted up to the depth limit when total_relation is gte.
+             */
+            total: number;
+            /** @description eq when total is exact, gte when it stopped at the depth limit and there are at least that many. */
+            total_relation: components["schemas"]["TotalRelation"];
+        };
         FieldError: {
             /** @description English diagnostic for this location. Free text; never use it as a decision input. */
             detail: string;
@@ -11446,6 +11493,54 @@ export interface components {
              */
             floor: number;
         };
+        RatedWorkRanking: {
+            /** @description The tags and companies most common among the ranked works under these filters, not only this page. */
+            facets: components["schemas"]["WorkFacets"];
+            /** @description Members of this page. Empty array, never null. */
+            items: components["schemas"]["RatedWorkRankingEntry"][];
+            /**
+             * Format: date-time
+             * @description When catalog last fitted the rating model behind every derived number here. It is refitted nightly. null when catalog did not say.
+             */
+            model_fitted_at: string | null;
+            /**
+             * @description Type discriminant. Always list.
+             * @constant
+             */
+            object: "list";
+            /**
+             * Format: int64
+             * @description Works the ranking holds under these filters. Counted up to the depth limit when total_relation is gte.
+             */
+            total: number;
+            /** @description eq when total is exact, gte when it stopped at the depth limit and there are at least that many. */
+            total_relation: components["schemas"]["TotalRelation"];
+        };
+        RatedWorkRankingEntry: {
+            /** @description The work's standing across every rating site. null when no site that feeds the consensus rated it. */
+            consensus: components["schemas"]["RatingConsensus"] | null;
+            /**
+             * Format: double
+             * @description The value the list is sorted by. A deviation score for lower, mean and upper without site; the site's own scale for lower, mean, upper, native, median and spread with it; percentile points for divergence; a vote count for votes.
+             */
+            metric_value: number;
+            /**
+             * @description Type discriminant. Always rated_work_ranking_entry.
+             * @constant
+             */
+            object: "rated_work_ranking_entry";
+            /**
+             * Format: int64
+             * @description 1-based place in the whole ranking, not in the page. Equal values keep distinct places. A work this forum cannot show is left out and keeps its place, so a page can skip a number.
+             */
+            rank: number;
+            /** @description Every site that rated the work, in a fixed site order. Empty array, never null. */
+            site_ratings: components["schemas"]["SiteRating"][];
+            /** @description The ranked work. */
+            work_summary: components["schemas"]["WorkSummary"];
+        };
+        /** @enum {string} */
+        RatedWorkRankingSort: "lower_desc" | "mean_desc" | "upper_asc" | "native_desc" | "median_desc" | "divergence_desc" | "spread_desc" | "votes_desc";
         Rating: {
             /** @description Per-aspect scores; each is null when the author skipped it. */
             aspect_scores: components["schemas"]["AspectScores"];
@@ -11506,6 +11601,45 @@ export interface components {
             work: components["schemas"]["WorkRef"] | null;
             /** @description The rated work with the forum's figures for it. */
             work_summary: components["schemas"]["WorkSummary"];
+        };
+        /** @enum {string} */
+        RatingCirculation: "commercial" | "doujin";
+        RatingConsensus: {
+            /**
+             * Format: double
+             * @description The consensus as a deviation score: 50 is the typical work two or more sites rated, and every 10 points is one standard deviation.
+             */
+            deviation: number;
+            /**
+             * Format: double
+             * @description How far apart the sites place the work, in percentile points between the highest and the lowest. null when fewer than two sites have enough votes to say.
+             */
+            divergence: number | null;
+            /**
+             * Format: double
+             * @description Bottom of the 90% interval of deviation. Few votes or a single site widen the interval.
+             */
+            lower: number;
+            /**
+             * Format: double
+             * @description Share of the works with a consensus that score lower, in percent.
+             */
+            percentile: number;
+            /**
+             * Format: int64
+             * @description Sites that contributed.
+             */
+            site_count: number;
+            /**
+             * Format: double
+             * @description Top of the 90% interval of deviation.
+             */
+            upper: number;
+            /**
+             * Format: int64
+             * @description Votes across the contributing sites.
+             */
+            vote_count: number;
         };
         RatingCreate: {
             /** @description Per-aspect scores, all eight keys, null for an aspect not rated. Absent means none rated. */
@@ -11596,6 +11730,8 @@ export interface components {
         };
         /** @enum {string} */
         RatingRecommend: "strong_yes" | "yes" | "neutral" | "no" | "strong_no";
+        /** @enum {string} */
+        RatingSite: "vndb" | "bangumi" | "dlsite" | "erogamescape" | "nextmoe" | "howlongtobeat";
         /** @enum {string} */
         RatingSort: "created_desc" | "created_asc" | "view_desc" | "view_asc" | "overall_desc" | "overall_asc";
         RatingSummary: {
@@ -12877,6 +13013,60 @@ export interface components {
         ShopScope: "everywhere" | "this_site";
         /** @enum {string} */
         ShopSlot: "avatar_frame" | "profile_background";
+        SiteRating: {
+            /**
+             * Format: double
+             * @description Catalog's estimate of the work's true mean on the site's scale: its own mean pulled toward what works with as many votes usually score. Few votes pull hard.
+             */
+            estimate: number;
+            /**
+             * Format: double
+             * @description Bottom of the 90% interval of estimate.
+             */
+            lower: number;
+            /**
+             * Format: double
+             * @description The median vote with the same pull applied. null when the site publishes no histogram.
+             */
+            median: number | null;
+            /**
+             * Format: double
+             * @description Share of the works this site rated whose estimate is lower, in percent.
+             */
+            percentile: number;
+            /**
+             * Format: double
+             * @description The site's own published score, unchanged: vndb's Bayesian rating, bangumi's and dlsite's mean, erogamescape's median, nextmoe's smoothed mean, howlongtobeat's review score.
+             */
+            published_score: number;
+            /**
+             * Format: double
+             * @description Highest score the site's scale allows.
+             */
+            scale_max: number;
+            /**
+             * Format: double
+             * @description Lowest score the site's scale allows.
+             */
+            scale_min: number;
+            /** @description The rating site, such as vndb or erogamescape. An open vocabulary. */
+            site: string;
+            /**
+             * Format: double
+             * @description Standard deviation of the votes on the site's scale; the larger, the more split. null below two votes or when the site publishes neither.
+             */
+            spread: number | null;
+            /**
+             * Format: double
+             * @description Top of the 90% interval of estimate.
+             */
+            upper: number;
+            /**
+             * Format: int64
+             * @description Votes behind published_score.
+             */
+            vote_count: number;
+        };
         /** @enum {string} */
         SiteRole: "creator" | "moderator" | "admin" | "ren";
         /** @enum {string} */
@@ -16214,6 +16404,12 @@ export interface components {
             external_id: string;
             /** @description The other site, such as vndb or bangumi. An open vocabulary. */
             site: string;
+        };
+        WorkFacets: {
+            /** @description The companies credited on the most works in the filtered result set, most first, at most 30. Empty array, never null. */
+            company_counts: components["schemas"]["EntityCount"][];
+            /** @description The tags the most works in the filtered result set carry, most first, at most 30. Empty array, never null. */
+            tag_counts: components["schemas"]["EntityCount"][];
         };
         /** @enum {string} */
         WorkMedium: "galgame" | "manga" | "novel" | "anime" | "asmr" | "doujin_game" | "music";
@@ -24774,6 +24970,10 @@ export interface operations {
                 include_nsfw?: boolean;
                 /** @description When true, works whose original language is neither Japanese nor Chinese are included. Default false. */
                 include_all_original_languages?: boolean;
+                /** @description Only works by this catalog company. */
+                company_id?: string;
+                /** @description Only works carrying every one of these catalog tags. Comma-separated, at most 10. */
+                tag_ids?: string[];
                 /** @description Catalog tag ids. Drops every work carrying any of them, from any source and at any spoiler level. Comma-separated. Omitted means no exclusion. */
                 exclude_tag_ids?: string[];
                 /** @description Catalog tag ids. Like exclude_tag_ids, and each also drops the works carrying any tag below it in the tag hierarchy. Comma-separated. Omitted means no exclusion. */
@@ -24791,7 +24991,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["PageListWorkSummary"];
+                    "application/json": components["schemas"]["FacetedWorkPage"];
                 };
             };
             /** @description UNKNOWN_SORT, LIMIT_TOO_LARGE, or INVALID_PARAMETER when q is blank after trimming, a date is malformed, or page × limit is too deep. */
@@ -34283,6 +34483,94 @@ export interface operations {
             };
         };
     };
+    listRatedWorkRanking: {
+        parameters: {
+            query?: {
+                /** @description Rank by this rating site alone. Omitted ranks by the consensus of every site. */
+                site?: components["schemas"]["RatingSite"];
+                /** @description What the list ranks by. lower: the bottom of the 90% interval, so only works that are good with confidence lead. upper_asc: the top of the interval, worst first, so only works that are bad with confidence lead. mean: the best estimate. native: the site's own published score. median: the shrunk median vote. divergence: how far apart the sites place the work. spread: how split one site's votes are. votes: how many votes. native, median and spread need site; divergence needs it absent. */
+                sort?: components["schemas"]["RatedWorkRankingSort"];
+                /** @description 1-based page number. page × limit may not exceed 10000. */
+                page?: number;
+                /** @description Page size. 1–100, default 50. Values above 100 are rejected, not clamped. */
+                limit?: number;
+                /** @description Released in or after this year (YYYY) or month (YYYY-MM). */
+                released_from?: string;
+                /** @description Released in or before this year (YYYY) or month (YYYY-MM). */
+                released_to?: string;
+                /** @description commercial: a game brand made or sold the work. doujin: only a doujin circle did. Omitted means both, and works with neither credit. */
+                circulation?: components["schemas"]["RatingCirculation"];
+                /** @description Only works released on any of these platforms, in the resource platform vocabulary. Comma-separated. Omitted means no filter. */
+                platforms?: components["schemas"]["ResourcePlatform"][];
+                /** @description Only works whose playtime, the median of the sites' estimates, is at least this many minutes. 0 or omitted means no floor. */
+                min_playtime_minutes?: number;
+                /** @description Only works whose playtime is at most this many minutes. 0 or omitted means no ceiling. */
+                max_playtime_minutes?: number;
+                /** @description Only works with at least this many votes: on site, or over every site without it. 0 or omitted means no floor. */
+                min_vote_count?: number;
+                /** @description Only works with at most this many votes, counted as min_vote_count counts them. 0 or omitted means no ceiling. */
+                max_vote_count?: number;
+                /** @description Only works at least this many sites rated. Needs site absent. 0 or omitted means no floor. */
+                min_site_count?: number;
+                /** @description When true, games that are not visual novels, such as console action and role-playing games catalog also holds, are ranked too. Default false. */
+                include_all_games?: boolean;
+                /** @description When true, works this forum displays as adult are ranked too. Default false. */
+                include_nsfw?: boolean;
+                /** @description When true, works whose original language is neither Japanese nor Chinese are ranked too. Default false. */
+                include_all_original_languages?: boolean;
+                /** @description Only works by this catalog company. */
+                company_id?: string;
+                /** @description Only works carrying every one of these catalog tags. Comma-separated, at most 10. */
+                tag_ids?: string[];
+                /** @description Catalog tag ids. Drops every work carrying any of them, from any source and at any spoiler level. Comma-separated. Omitted means no exclusion. */
+                exclude_tag_ids?: string[];
+                /** @description Catalog tag ids. Like exclude_tag_ids, and each also drops the works carrying any tag below it in the tag hierarchy. Comma-separated. Omitted means no exclusion. */
+                exclude_tag_trees?: string[];
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["RatedWorkRanking"];
+                };
+            };
+            /** @description UNKNOWN_SORT or INVALID_PARAMETER, including a sort or min_site_count that does not apply with or without site. */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Internal Server Error */
+            500: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description SERVICE_UNAVAILABLE when the catalog is unreachable or has not fitted its rating model yet. */
+            503: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+        };
+    };
     listTopicRanking: {
         parameters: {
             query?: {
@@ -36550,16 +36838,16 @@ export interface operations {
                 q: string;
                 /** @description When true, works this forum displays as adult are included. Default false. */
                 include_nsfw?: boolean;
-                /** @description Only works by this catalog company. */
-                company_id?: string;
-                /** @description Only works carrying every one of these catalog tags. Comma-separated, at most 10. */
-                tag_ids?: string[];
                 /** @description Released in or after this year (YYYY) or month (YYYY-MM). */
                 released_from?: string;
                 /** @description Released in or before this year (YYYY) or month (YYYY-MM). */
                 released_to?: string;
                 /** @description Order. relevance: the search index's ranking. popularity: catalog popularity. updated: last catalog edit. released: release date. */
                 sort?: components["schemas"]["LibraryWorkSort"];
+                /** @description Only works by this catalog company. */
+                company_id?: string;
+                /** @description Only works carrying every one of these catalog tags. Comma-separated, at most 10. */
+                tag_ids?: string[];
                 /** @description Catalog tag ids. Drops every work carrying any of them, from any source and at any spoiler level. Comma-separated. Omitted means no exclusion. */
                 exclude_tag_ids?: string[];
                 /** @description Catalog tag ids. Like exclude_tag_ids, and each also drops the works carrying any tag below it in the tag hierarchy. Comma-separated. Omitted means no exclusion. */
@@ -36577,7 +36865,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["PageListWorkSummary"];
+                    "application/json": components["schemas"]["FacetedWorkPage"];
                 };
             };
             /** @description INVALID_PARAMETER when q is blank after trimming, released_from is after released_to, or the page is past the depth limit. */
@@ -46568,6 +46856,10 @@ export interface operations {
                 include_resourceless?: boolean;
                 /** @description When true, works whose original language is neither Japanese nor Chinese are included. Default false. A work whose original language has not been synced yet is included either way. */
                 include_all_original_languages?: boolean;
+                /** @description Only works by this catalog company. */
+                company_id?: string;
+                /** @description Only works carrying every one of these catalog tags. Comma-separated, at most 10. */
+                tag_ids?: string[];
                 /** @description Catalog tag ids. Drops every work carrying any of them, from any source and at any spoiler level. Comma-separated. Omitted means no exclusion. */
                 exclude_tag_ids?: string[];
                 /** @description Catalog tag ids. Like exclude_tag_ids, and each also drops the works carrying any tag below it in the tag hierarchy. Comma-separated. Omitted means no exclusion. */

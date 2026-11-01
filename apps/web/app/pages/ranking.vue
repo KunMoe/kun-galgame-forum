@@ -1,32 +1,27 @@
 <script setup lang="ts">
 import {
   topicSortItem,
-  galgameSortItem,
   userSortItem,
   rankingPageTabs,
   rankingPageMetaData
 } from '~/constants/ranking'
 import {
   topicRankingPageData,
-  galgameRankingPageData,
   userRankingPageData
 } from '~/components/ranking/pageData'
 import type { KunSelectOption } from '@kungal/ui-vue'
 
-const rankingTabs = new Set(rankingPageTabs.map((tab) => tab.value))
+const route = useRoute()
 
 const activeTab = computed(() => {
-  const segment = useRoute().path.split('/').filter(Boolean).pop()
-  return segment && rankingTabs.has(segment) ? segment : 'user'
+  const segment = route.path.split('/').filter(Boolean)[1]
+  return segment === 'topic' || segment === 'user' ? segment : 'galgame'
 })
 
 const currentSortItems = computed(() => {
   switch (activeTab.value) {
     case 'topic':
       return topicSortItem
-    case 'galgame':
-      return galgameSortItem
-    case 'user':
     default:
       return userSortItem
   }
@@ -43,7 +38,7 @@ const sortOptions = computed(() => {
 
 <template>
   <div class="space-y-3">
-    <div class="space-y-3">
+    <div v-if="activeTab !== 'galgame'" class="space-y-3">
       <KunHeader
         :name="rankingPageMetaData[activeTab]!.title"
         :description="rankingPageMetaData[activeTab]!.description"
@@ -63,15 +58,6 @@ const sortOptions = computed(() => {
             v-model="topicRankingPageData.sort"
             :options="
               sortOptions as KunSelectOption<typeof topicRankingPageData.sort>[]
-            "
-          />
-          <KunSelect
-            v-if="activeTab === 'galgame'"
-            v-model="galgameRankingPageData.sort"
-            :options="
-              sortOptions as KunSelectOption<
-                typeof galgameRankingPageData.sort
-              >[]
             "
           />
           <KunSelect

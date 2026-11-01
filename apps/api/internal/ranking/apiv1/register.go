@@ -45,6 +45,22 @@ func Register(s *Service) func(huma.API) {
 		}), s.listWorkRanking)
 
 		huma.Register(api, v1.Public(huma.Operation{
+			OperationID: "listRatedWorkRanking",
+			Method:      http.MethodGet,
+			Path:        "/rankings/rated-works",
+			Summary:     "Rank works by their ratings",
+			Description: "Works ranked by their ratings on every rating site combined, or on one site, as catalog ranks them; " +
+				"each entry carries every site's own published score next to catalog's estimate of it. " +
+				"Catalog rebuilds the ranking nightly. Without include_all_games, only visual novels; without include_all_original_languages, only works whose original language is Japanese or Chinese. " +
+				"A work this forum cannot show is left out and the others keep their places.",
+			Tags: tags,
+			Responses: problemResponses(map[int]string{
+				400: "UNKNOWN_SORT or INVALID_PARAMETER, including a sort or min_site_count that does not apply with or without site.",
+				503: "SERVICE_UNAVAILABLE when the catalog is unreachable or has not fitted its rating model yet.",
+			}),
+		}), s.listRatedWorkRanking)
+
+		huma.Register(api, v1.Public(huma.Operation{
 			OperationID: "listTopicRanking",
 			Method:      http.MethodGet,
 			Path:        "/rankings/topics",
