@@ -5,7 +5,7 @@ import type {
   RatingPage
 } from '#shared/utils/api/schemas'
 
-const RATING_PREVIEW_LIMIT = 6
+export const RATING_PREVIEW_LIMIT = 6
 
 const createGalgamePageRequests = (workId: string) => ({
   ratings: useKunApi<RatingPage>(

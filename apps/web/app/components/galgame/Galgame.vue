@@ -2,7 +2,11 @@
 import type { KunTabItem } from '@kungal/ui-vue'
 import { useElementSize, useWindowSize } from '@vueuse/core'
 import type { Work } from '#shared/utils/api/schemas'
-import { useGalgamePage } from '~/composables/galgame/useGalgamePage'
+import { KUN_GALGAME_LOCAL_RATING_SOURCE } from '~/constants/galgame-rating'
+import {
+  RATING_PREVIEW_LIMIT,
+  useGalgamePage
+} from '~/composables/galgame/useGalgamePage'
 import { ratingSummaryToPageCard } from '~/utils/galgame/ratingCard'
 import { toKunUser } from '~/utils/userRef'
 
@@ -93,6 +97,13 @@ const sortedRatings = computed(() => {
   )
 })
 
+const header = useTemplateRef<{ openRatingDetail: (source: string) => void }>(
+  'header'
+)
+const hasMoreRatings = computed(
+  () => props.galgame.rating_count > RATING_PREVIEW_LIMIT
+)
+
 const handleRatingsChanged = () => {
   void refreshRatings()
 }
@@ -109,6 +120,7 @@ const hasContributorCard = computed(
 <template>
   <div class="flex flex-col gap-3">
     <GalgameHeader
+      ref="header"
       :galgame="galgame"
       :ratings="ratings"
       @on-rating-created="handleRatingsChanged"
@@ -123,6 +135,15 @@ const hasContributorCard = computed(
       class="grid grid-cols-1 gap-3"
     >
       <GalgameRatingRadarCard :ratings="sortedRatings" />
+      <KunButton
+        v-if="hasMoreRatings"
+        variant="flat"
+        size="sm"
+        class-name="justify-self-end"
+        @click="header?.openRatingDetail(KUN_GALGAME_LOCAL_RATING_SOURCE)"
+      >
+        查看全部评分（{{ galgame.rating_count }}）
+      </KunButton>
     </div>
 
     <div class="grid grid-cols-1 gap-3 md:grid-cols-3">
