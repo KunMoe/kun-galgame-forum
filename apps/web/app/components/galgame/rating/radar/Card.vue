@@ -14,6 +14,11 @@ import {
 defineProps<{
   ratings: GalgameRatingCardOnGalgamePage[]
 }>()
+
+const showSpoilerWarning = (rating: GalgameRatingCardOnGalgamePage) =>
+  rating.spoiler_level !== 'none' &&
+  (rating.spoiler_level !== 'portion' ||
+    !/\|\|.*?\|\|/s.test(rating.short_summary))
 </script>
 
 <template>
@@ -56,7 +61,7 @@ defineProps<{
             label-class="text-[10px]"
           />
           <div
-            v-if="rating.short_summary && rating.spoiler_level !== 'none'"
+            v-if="rating.short_summary && showSpoilerWarning(rating)"
             class="text-default-500 flex max-h-[110px] items-center gap-1.5 text-sm"
           >
             <KunIcon
@@ -72,7 +77,7 @@ defineProps<{
             class-name="max-h-[110px]"
             class="text-default-700 text-sm"
           >
-            <KunText :content="rating.short_summary" />
+            <ContentSpoilerText :content="rating.short_summary" />
           </KunScrollShadow>
         </div>
 

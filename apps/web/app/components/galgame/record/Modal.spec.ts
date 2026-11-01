@@ -191,6 +191,30 @@ describe('the rating is the form', () => {
     expect(sent().rating_input).toMatchObject({ overall: 9 })
   })
 
+  it.each([false, true])(
+    'preserves inline spoilers when saving (existing: %s)',
+    async (existing) => {
+      const summary = '音乐很棒，||结局第一行\n第二行||，值得一玩'
+      await mountWith(
+        record('doing', { rating_summary: existing ? rating() : null })
+      )
+      if (!existing) {
+        await emitFrom('KunRating', 8)
+        await emitFrom('KunCheckBox', true)
+      }
+      await emitFrom('KunTextarea', summary)
+
+      expect(
+        document.body.querySelector('.kun-spoiler-hidden')?.textContent
+      ).toBe('结局第一行\n第二行')
+      await save()
+      expect(sent().rating_input).toMatchObject({
+        short_summary: summary,
+        spoiler_level: 'none'
+      })
+    }
+  )
+
   it('deletes only the rating, keeping state and playtime', async () => {
     await mountWith(
       record('done_all', { minutes: 120, rating_summary: rating() })

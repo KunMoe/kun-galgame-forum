@@ -421,6 +421,13 @@ const save = async () => {
           :disabled="isWish"
           auto-grow
         />
+        <p class="text-default-500 text-sm">
+          使用 ||剧透内容|| 标记局部剧透，读者点击后才会显示
+        </p>
+        <div v-if="shortSummary.includes('||')" class="space-y-1">
+          <span class="text-default-500 text-sm">短评预览</span>
+          <ContentSpoilerText :content="shortSummary" />
+        </div>
 
         <div v-if="showAdvanced">
           <GalgameRatingAdvanced v-model="dims" :readonly="isWish" />

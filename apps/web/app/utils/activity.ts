@@ -5,6 +5,7 @@ import type {
   WorkRef
 } from '#shared/utils/api/schemas'
 import { markdownToText } from '#shared/utils/markdownToText'
+import { maskSpoilers } from '#shared/utils/maskSpoilers'
 
 export type ActivityStreamQuery = Omit<ListActivitiesQuery, 'cursor' | 'limit'>
 
@@ -58,7 +59,7 @@ export const activitySummaryText = (
       return `对《${name}》提出了更新请求`
     case 'galgame_rating_creation':
       return a.galgame_rating?.short_summary
-        ? `${name} · ${a.galgame_rating.short_summary}`
+        ? `${name} · ${maskSpoilers(a.galgame_rating.short_summary)}`
         : name
     default:
       return markdownToText(a.excerpt_markdown)

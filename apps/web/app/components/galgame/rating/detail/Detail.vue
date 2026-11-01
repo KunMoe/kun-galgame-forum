@@ -177,7 +177,7 @@ const handleDeleteRating = async () => {
           </div>
 
           <div class="relative">
-            <KunText
+            <ContentSpoilerText
               :content="data.short_summary"
               :class-name="
                 cn('leading-7', isSummaryMasked && 'blur-sm select-none')
