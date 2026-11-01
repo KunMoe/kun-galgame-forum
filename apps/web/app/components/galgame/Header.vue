@@ -130,6 +130,8 @@ const openRatingDetail = (source: string) => {
   isRatingDetailOpen.value = true
 }
 
+defineExpose({ openRatingDetail })
+
 const coversOpen = ref(false)
 const hasMoreCovers = computed(() => props.galgame.covers.length > 1)
 
