@@ -77,7 +77,14 @@ func (s *Service) listWorkResources(ctx context.Context, in *listWorkResourcesIn
 		return nil, problem.Internal(err)
 	}
 	if !visible {
-		return nil, notFound()
+		hidden, err := s.store.WorkHidden(workID)
+		if err != nil {
+			return nil, problem.Internal(err)
+		}
+		if hidden {
+			return nil, notFound()
+		}
+		return &listGalgameResourcesOutput{Body: repr.NewPageList([]GalgameResource{}, 0, "eq")}, nil
 	}
 	pg := pageOf(in.Page, in.Limit)
 	if p := pg.CheckDepth(); p != nil {
