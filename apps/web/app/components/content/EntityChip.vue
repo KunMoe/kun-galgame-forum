@@ -16,8 +16,10 @@ const { showKUNGalgamePreferOriginalName } = storeToRefs(
   usePersistSettingsStore()
 )
 
+// align-bottom sat the chip on the floor of the line box, and a line holding
+// an 80px sticker dropped it a line below its own text.
 const CHIP_CLASS =
-  'kun-content-entity-chip bg-default-100 inline-flex max-w-[min(100%,20em)] items-center gap-1 rounded-md px-1.5 align-bottom text-[0.92em] leading-normal'
+  'kun-content-entity-chip bg-default-100 inline-flex max-w-[min(100%,20em)] items-center gap-1 rounded-md px-1.5 align-middle text-[0.92em] leading-normal'
 
 const kind = computed(() => entityKind(props.target))
 const isUnavailable = computed(
