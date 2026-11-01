@@ -82,7 +82,9 @@ const guideAuthor = computed<KunUser>(() => {
 })
 onMounted(loadGuideAuthor)
 
-const { data, status, refresh, problem, pending } = useKunApi<GalgameResource[]>(
+const { data, status, refresh, problem, pending } = useKunApi<
+  GalgameResource[]
+>(
   () => `work-resources:${workId.value}`,
   async (api, { signal }) => {
     const limit = 100
@@ -191,8 +193,7 @@ const kindTabs = computed(() => [
   {
     value: 'netdisk',
     textValue: `网盘下载 (${netdiskCount.value})`,
-    icon: 'lucide:cloud',
-    disabled: !netdiskCount.value
+    icon: 'lucide:cloud'
   }
 ])
 
@@ -386,7 +387,7 @@ const activeBucket = computed(() =>
 
     <template v-if="!isLoading && hasAnyResource">
       <KunTab
-        v-if="hasDirect"
+        v-if="hasDirect && netdiskCount"
         v-model="activeKind"
         :items="kindTabs"
         variant="solid"

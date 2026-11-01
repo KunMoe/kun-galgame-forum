@@ -186,9 +186,15 @@ func TestV1ListWorkResourcesAndGetWork(t *testing.T) {
 	if resp.StatusCode != http.StatusOK || asInt(body["total"]) < 1 {
 		t.Fatalf("work list %d %+v", resp.StatusCode, body)
 	}
-	resp, body = f.rs(t, http.MethodGet, "/api/v1/works/"+idStr(g3WorkUnpub)+"/resources",
-		"/works/{work_id}/resources", "", "", nil)
-	wantCode(t, resp, body, http.StatusNotFound, problem.CodeNotFound)
+	// The work page renders without a forum resource, and its resource tab
+	// read this 404 as 「内容不存在或已被删除」 above the LetMoe resources.
+	for _, work := range []int{g3WorkUnpub, g3WorkNoLocal} {
+		resp, body = f.rs(t, http.MethodGet, "/api/v1/works/"+idStr(work)+"/resources",
+			"/works/{work_id}/resources", "", "", nil)
+		if resp.StatusCode != http.StatusOK || asInt(body["total"]) != 0 || len(body["items"].([]any)) != 0 {
+			t.Fatalf("work %d without a published resource: %d %+v", work, resp.StatusCode, body)
+		}
+	}
 	resp, body = f.rs(t, http.MethodGet, "/api/v1/works/"+idStr(g3WorkMiss),
 		"/works/{work_id}", "", "", nil)
 	wantCode(t, resp, body, http.StatusNotFound, problem.CodeNotFound)

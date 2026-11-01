@@ -176,6 +176,12 @@ func (s *ResourceV1Store) WorkVisible(workID int) (bool, error) {
 	return n > 0, err
 }
 
+func (s *ResourceV1Store) WorkHidden(workID int) (bool, error) {
+	var n int64
+	err := s.db.Table("galgame").Where("id = ? AND NOT catalog_rendered", workID).Count(&n).Error
+	return n > 0, err
+}
+
 func (s *ResourceV1Store) IsPublishBanned(workID int) (bool, error) {
 	var row struct {
 		Banned bool `gorm:"column:resource_publish_banned"`

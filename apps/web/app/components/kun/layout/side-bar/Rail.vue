@@ -40,5 +40,16 @@ const { hasReleaseToday } = useGalgameReleaseToday()
       <KunIcon name="lucide:library-big" class="text-xl" />
       <span class="text-[11px] leading-none">Gal 题库</span>
     </KunButton>
+
+    <KunButton
+      variant="light"
+      color="primary"
+      href="/ranking"
+      aria-label="Galgame 评分排行"
+      class-name="text-primary-600 h-auto w-full flex-col gap-1 py-2"
+    >
+      <KunIcon name="lucide:trophy" class="text-xl" />
+      <span class="text-[11px] leading-none">Gal 排行</span>
+    </KunButton>
   </nav>
 </template>
