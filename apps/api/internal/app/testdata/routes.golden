@@ -168,6 +168,7 @@ GET    /api/v1/quizzes                                cors.New → v1Headers →
 GET    /api/v1/quizzes/:quiz_id                       cors.New → v1Headers → fiberAdapter.Handle
 GET    /api/v1/quizzes/:quiz_id/answers               cors.New → v1Headers → fiberAdapter.Handle
 GET    /api/v1/quizzes/:quiz_id/source                cors.New → v1Headers → fiberAdapter.Handle
+GET    /api/v1/rankings/rated-works                   cors.New → v1Headers → fiberAdapter.Handle
 GET    /api/v1/rankings/topics                        cors.New → v1Headers → fiberAdapter.Handle
 GET    /api/v1/rankings/users                         cors.New → v1Headers → fiberAdapter.Handle
 GET    /api/v1/rankings/works                         cors.New → v1Headers → fiberAdapter.Handle
