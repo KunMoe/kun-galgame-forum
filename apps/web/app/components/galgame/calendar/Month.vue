@@ -3,12 +3,15 @@ import type { ReleaseCalendarMonth } from '#shared/utils/api/schemas'
 
 const props = defineProps<{
   data: ReleaseCalendarMonth
+  focusDate?: string | null
 }>()
 
 const emit = defineEmits<{
   prev: []
   next: []
   today: []
+  jumpMonth: [month: string]
+  jumpDate: [date: string]
 }>()
 
 const WEEKDAYS = ['日', '一', '二', '三', '四', '五', '六']
@@ -101,6 +104,24 @@ const pickBucket = () => {
   selected.value = 'bucket'
   scrollToRow(`${props.data.calendar_month}-bucket`)
 }
+
+watch(
+  () => [props.data.calendar_month, props.focusDate] as const,
+  ([month, date]) => {
+    if (!date || date.slice(0, 7) !== month) {
+      return
+    }
+    const target = Number(date.slice(8, 10))
+    const days = [...dayGames.value.map.keys()].sort((a, b) => a - b)
+    const day = days.find((d) => d >= target) ?? days.at(-1)
+    if (day !== undefined) {
+      pickDay(day)
+    } else {
+      pickBucket()
+    }
+  },
+  { immediate: true, flush: 'post' }
+)
 </script>
 
 <template>
@@ -135,10 +156,13 @@ const pickBucket = () => {
         </KunButton>
       </div>
 
-      <p
-        v-if="data.is_truncated"
-        class="text-default-400 text-center text-sm"
-      >
+      <GalgameCalendarJump
+        :data="data"
+        @month="emit('jumpMonth', $event)"
+        @date="emit('jumpDate', $event)"
+      />
+
+      <p v-if="data.is_truncated" class="text-default-400 text-center text-sm">
         本月作品过多，未全部列出
       </p>
 

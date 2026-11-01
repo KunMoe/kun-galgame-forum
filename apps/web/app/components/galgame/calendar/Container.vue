@@ -222,18 +222,28 @@ const ymLabel = (m: string) => {
   return `${y} 年 ${Number(mo)} 月`
 }
 
+const focusDate = ref<string | null>(null)
+
+const goMonth = (m: string) => {
+  focusDate.value = null
+  month.value = m === monthData.value?.today_date.slice(0, 7) ? '' : m
+}
+const goDate = (date: string) => {
+  goMonth(date.slice(0, 7))
+  focusDate.value = date
+}
 const goPrevMonth = () => {
   if (monthData.value?.has_prev && monthData.value.prev_month) {
-    month.value = monthData.value.prev_month
+    goMonth(monthData.value.prev_month)
   }
 }
 const goNextMonth = () => {
   if (monthData.value?.has_next && monthData.value.next_month) {
-    month.value = monthData.value.next_month
+    goMonth(monthData.value.next_month)
   }
 }
 const goToday = () => {
-  month.value = ''
+  goMonth('')
 }
 
 const goPrevYear = () => {
@@ -423,9 +433,12 @@ const goNextYear = () => {
           <GalgameCalendarMonth
             v-if="monthData.items.length || !followedOnly"
             :data="monthData"
+            :focus-date="focusDate"
             @prev="goPrevMonth"
             @next="goNextMonth"
             @today="goToday"
+            @jump-month="goMonth"
+            @jump-date="goDate"
           />
           <div v-else class="flex flex-col gap-3">
             <div
@@ -456,6 +469,11 @@ const goNextYear = () => {
                 <KunIcon name="lucide:chevron-right" class="size-5" />
               </KunButton>
             </div>
+            <GalgameCalendarJump
+              :data="monthData"
+              @month="goMonth"
+              @date="goDate"
+            />
             <div
               v-if="
                 monthData.calendar_month !== monthData.today_date.slice(0, 7)
