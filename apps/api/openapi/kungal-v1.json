@@ -15265,13 +15265,17 @@
             "description": "How strongly the author recommends the work."
           },
           "short_summary": {
-            "description": "The author's short review, plain text. Empty string if none. Free text; never use it as a decision input.",
+            "description": "The author's short review as Markdown source. Empty string if none. Free text; never use it as a decision input.",
             "maxLength": 2000,
             "type": "string"
           },
           "spoiler_level": {
             "$ref": "#/components/schemas/SpoilerLevel",
             "description": "How much the short summary gives away, as its author declared."
+          },
+          "summary_content": {
+            "$ref": "#/components/schemas/ContentDocument",
+            "description": "The short review parsed as Markdown, including inline spoilers. Empty document when short_summary is empty."
           },
           "updated_at": {
             "description": "When the rating last changed.",
@@ -15325,6 +15329,7 @@
           "play_status",
           "spoiler_level",
           "short_summary",
+          "summary_content",
           "aspect_scores",
           "view_count",
           "like_count",
@@ -15451,7 +15456,7 @@
             "description": "How strongly the author recommends the work."
           },
           "short_summary": {
-            "description": "Short review, plain text. Absent means none. Free text; never use it as a decision input.",
+            "description": "Short review as Markdown source. Absent means none. Free text; never use it as a decision input.",
             "maxLength": 2000,
             "type": "string"
           },
@@ -15563,7 +15568,7 @@
             "description": "How strongly the author recommends the work."
           },
           "short_summary": {
-            "description": "Short review, plain text; an empty string removes it. Free text; never use it as a decision input.",
+            "description": "Short review as Markdown source; an empty string removes it. Free text; never use it as a decision input.",
             "maxLength": 2000,
             "type": "string"
           },
@@ -15784,13 +15789,17 @@
             "description": "How much of release_date is known. null when release_date is null."
           },
           "short_summary": {
-            "description": "The author's short review, plain text. Empty string if none. Free text; never use it as a decision input.",
+            "description": "The author's short review as Markdown source. Empty string if none. Free text; never use it as a decision input.",
             "maxLength": 2000,
             "type": "string"
           },
           "spoiler_level": {
             "$ref": "#/components/schemas/SpoilerLevel",
             "description": "How much the short summary gives away, as its author declared."
+          },
+          "summary_content": {
+            "$ref": "#/components/schemas/ContentDocument",
+            "description": "The short review parsed as Markdown, including inline spoilers. Empty document when short_summary is empty."
           },
           "top_tags": {
             "description": "Up to five of the work's tags, in the order its page lists them, leaving out spoiler tags, and adult tags unless include_nsfw=true. Empty array when work is null, never null.",
@@ -15852,6 +15861,7 @@
           "play_status",
           "spoiler_level",
           "short_summary",
+          "summary_content",
           "aspect_scores",
           "view_count",
           "like_count",
