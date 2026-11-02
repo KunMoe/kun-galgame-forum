@@ -1,3 +1,5 @@
+import type { ContentDocument } from '../utils/api/schemas'
+
 export interface GalgameRatingCard {
   id: number
   user: KunUser
@@ -7,6 +9,7 @@ export interface GalgameRatingCard {
   galgame_type: string[]
   play_status: string | null
   short_summary: string
+  summary_content: ContentDocument
 
   art: number
   story: number
