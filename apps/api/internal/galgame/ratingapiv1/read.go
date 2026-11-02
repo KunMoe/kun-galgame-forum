@@ -7,6 +7,7 @@ import (
 
 	v1 "kun-galgame-api/internal/apiv1"
 	"kun-galgame-api/internal/apiv1/collect"
+	"kun-galgame-api/internal/apiv1/content"
 	"kun-galgame-api/internal/apiv1/repr"
 	"kun-galgame-api/internal/galgame/client"
 	"kun-galgame-api/internal/galgame/playstate"
@@ -131,6 +132,17 @@ func (s *Service) summaries(ctx context.Context, rows []repository.RatingRecord,
 		item.Viewer = s.viewerOf(ctx, r, liked[r.ID])
 		out = append(out, item)
 	}
+	sources := make([]string, len(out))
+	for i := range out {
+		sources[i] = out[i].ShortSummary
+	}
+	documents, err := (&content.Converter{CDNBase: s.CDN, SiteBase: v1.SiteOrigin}).Convert(ctx, sources)
+	if err != nil {
+		return nil, problem.Internal(err)
+	}
+	for i := range out {
+		out[i].SummaryContent = documents[i]
+	}
 	return out, nil
 }
 
@@ -202,6 +214,10 @@ func (s *Service) detail(ctx context.Context, id int) (*Rating, *problem.Problem
 		}
 	}
 	sum := s.summary(ctx, r, &work, author, false)
+	documents, err := (&content.Converter{CDNBase: s.CDN, SiteBase: v1.SiteOrigin}).Convert(ctx, []string{sum.ShortSummary})
+	if err != nil {
+		return nil, problem.Internal(err)
+	}
 	viewer := v1.User(ctx)
 	if viewer != nil {
 		liked, err := s.Store.LikedSet(viewer.ID, []int{id})
@@ -214,7 +230,8 @@ func (s *Service) detail(ctx context.Context, id int) (*Rating, *problem.Problem
 		Object: sum.Object, ID: sum.ID, Work: sum.Work, Author: sum.Author,
 		Recommend: sum.Recommend, Overall: sum.Overall, GameTypes: sum.GameTypes,
 		PlayStatus: sum.PlayStatus, SpoilerLevel: sum.SpoilerLevel, ShortSummary: sum.ShortSummary,
-		AspectScores: sum.AspectScores, ViewCount: sum.ViewCount, LikeCount: sum.LikeCount,
+		SummaryContent: documents[0],
+		AspectScores:   sum.AspectScores, ViewCount: sum.ViewCount, LikeCount: sum.LikeCount,
 		CommentCount: sum.CommentCount, CreatedAt: sum.CreatedAt, UpdatedAt: sum.UpdatedAt,
 		Viewer: sum.Viewer, WorkSummary: summaries[0], Likers: likers,
 	}, nil

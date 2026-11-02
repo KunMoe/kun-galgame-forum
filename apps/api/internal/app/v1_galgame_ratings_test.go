@@ -216,6 +216,37 @@ func TestV1RatingsDetail(t *testing.T) {
 	}
 }
 
+func TestV1RatingsReturnMarkdownContent(t *testing.T) {
+	f := newGRFix(t)
+	source := "**音乐**，||结局||"
+	f.run(t, `UPDATE galgame_rating SET short_summary = ?, spoiler_level = 'portion' WHERE id = ?`, source, grRatingAlice)
+
+	check := func(body map[string]any) {
+		t.Helper()
+		if body["short_summary"] != source {
+			t.Fatalf("short_summary = %v", body["short_summary"])
+		}
+		doc := body["summary_content"].(map[string]any)
+		blocks := doc["children"].([]any)
+		inlines := blocks[0].(map[string]any)["children"].([]any)
+		if inlines[0].(map[string]any)["object"] != "strong" || inlines[2].(map[string]any)["object"] != "inline_spoiler" {
+			t.Errorf("summary_content = %v", doc)
+		}
+	}
+
+	resp, body := f.list(t, "", fmt.Sprintf("work_id=%d&author_id=%d", grWorkSFW, grAlice))
+	if resp.StatusCode != http.StatusOK {
+		t.Fatalf("list: %d %v", resp.StatusCode, body)
+	}
+	check(body["items"].([]any)[0].(map[string]any))
+
+	resp, body = f.onRating(t, http.MethodGet, "", grRatingAlice, "", nil)
+	if resp.StatusCode != http.StatusOK {
+		t.Fatalf("detail: %d %v", resp.StatusCode, body)
+	}
+	check(body)
+}
+
 func TestV1RatingsCarryMakerAndTopTags(t *testing.T) {
 	f := newGRFix(t)
 	tagIDs := func(item map[string]any) []string {

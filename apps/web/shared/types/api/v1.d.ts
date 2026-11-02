@@ -11581,10 +11581,12 @@ export interface components {
             play_status: components["schemas"]["PlayState"] | null;
             /** @description How strongly the author recommends the work. */
             recommend: components["schemas"]["RatingRecommend"];
-            /** @description The author's short review, plain text. Empty string if none. Free text; never use it as a decision input. */
+            /** @description The author's short review as Markdown source. Empty string if none. Free text; never use it as a decision input. */
             short_summary: string;
             /** @description How much the short summary gives away, as its author declared. */
             spoiler_level: components["schemas"]["SpoilerLevel"];
+            /** @description The short review parsed as Markdown, including inline spoilers. Empty document when short_summary is empty. */
+            summary_content: components["schemas"]["ContentDocument"];
             /**
              * Format: date-time
              * @description When the rating last changed.
@@ -11655,7 +11657,7 @@ export interface components {
             play_status: components["schemas"]["PlayState"] | null;
             /** @description How strongly the author recommends the work. */
             recommend: components["schemas"]["RatingRecommend"];
-            /** @description Short review, plain text. Absent means none. Free text; never use it as a decision input. */
+            /** @description Short review as Markdown source. Absent means none. Free text; never use it as a decision input. */
             short_summary?: string;
             /** @description How much the short summary gives away, as its author declared. */
             spoiler_level: components["schemas"]["SpoilerLevel"];
@@ -11696,7 +11698,7 @@ export interface components {
             play_status?: components["schemas"]["PlayState"] | null;
             /** @description How strongly the author recommends the work. */
             recommend?: components["schemas"]["RatingRecommend"];
-            /** @description Short review, plain text; an empty string removes it. Free text; never use it as a decision input. */
+            /** @description Short review as Markdown source; an empty string removes it. Free text; never use it as a decision input. */
             short_summary?: string;
             /** @description How much the short summary gives away, as its author declared. */
             spoiler_level?: components["schemas"]["SpoilerLevel"];
@@ -11781,10 +11783,12 @@ export interface components {
             release_date: string | null;
             /** @description How much of release_date is known. null when release_date is null. */
             release_date_precision: components["schemas"]["ReleaseDatePrecision"] | null;
-            /** @description The author's short review, plain text. Empty string if none. Free text; never use it as a decision input. */
+            /** @description The author's short review as Markdown source. Empty string if none. Free text; never use it as a decision input. */
             short_summary: string;
             /** @description How much the short summary gives away, as its author declared. */
             spoiler_level: components["schemas"]["SpoilerLevel"];
+            /** @description The short review parsed as Markdown, including inline spoilers. Empty document when short_summary is empty. */
+            summary_content: components["schemas"]["ContentDocument"];
             /** @description Up to five of the work's tags, in the order its page lists them, leaving out spoiler tags, and adult tags unless include_nsfw=true. Empty array when work is null, never null. */
             top_tags: components["schemas"]["TagRef"][];
             /**
