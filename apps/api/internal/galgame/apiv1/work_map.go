@@ -16,7 +16,6 @@ import (
 	"kun-galgame-api/internal/apiv1/repr"
 	"kun-galgame-api/internal/galgame/client"
 	"kun-galgame-api/internal/galgame/entityapiv1"
-	"kun-galgame-api/internal/galgame/model"
 	"kun-galgame-api/internal/galgame/resourcevocab"
 	"kun-galgame-api/internal/galgame/workrepr"
 	"kun-galgame-api/pkg/catalogclient"
@@ -548,23 +547,17 @@ func (s *Service) fillSeriesSamples(ctx context.Context, seriesID int, card *ent
 		return
 	}
 	rows := make([]client.CatalogWorkListItem, 0, len(res.Items))
-	ids := make([]int, 0, len(res.Items))
 	for i := range res.Items {
 		if client.CatalogItemRenderable(&res.Items[i]) && res.Items[i].ID > 0 {
 			rows = append(rows, res.Items[i])
-			ids = append(ids, int(res.Items[i].ID))
 		}
 	}
-	if len(ids) == 0 {
+	if len(rows) == 0 {
 		return
 	}
-	listed, _, _ := s.lists.ListIDs(model.GalgameListFilter{RestrictIDs: ids, Page: 1, Limit: len(ids), SortOrder: "desc"})
-	isListed := map[int]bool{}
-	for _, id := range listed {
-		isListed[id] = true
-	}
+	listed := s.lists.ListedWorkIDs()
 	for i := range rows {
-		if !isListed[int(rows[i].ID)] {
+		if _, ok := listed[int(rows[i].ID)]; !ok {
 			continue
 		}
 		card.ListedWorkCount++

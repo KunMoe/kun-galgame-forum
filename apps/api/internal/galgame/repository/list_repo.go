@@ -22,7 +22,8 @@ const ratingAggJoin = "LEFT JOIN (SELECT work_id, SUM(overall) AS rsum, " +
 	"ON rt.work_id = g.id"
 
 type GalgameListRepository struct {
-	db *gorm.DB
+	db     *gorm.DB
+	listed listedWorks
 }
 
 func NewGalgameListRepository(db *gorm.DB) *GalgameListRepository {
