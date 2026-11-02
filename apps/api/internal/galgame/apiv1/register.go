@@ -171,7 +171,7 @@ func Register(svc *Service) func(huma.API) {
 			Description: "Lists the published download resources www.letmoe.com holds for the work, most recently changed first. " +
 				"The whole set in one response; it is never paged. An empty list means letmoe has nothing for the work. " +
 				"No download link, share code or password is carried; POST /letmoe-resources/{resource_id}/downloads issues them. " +
-				"An answer may be up to 30 minutes old. NOT_FOUND when the work does not exist.",
+				"A change on letmoe shows here within about 15 seconds; a change letmoe's changes feed misses can take up to 2 hours. NOT_FOUND when the work does not exist.",
 			Tags: []string{"works"},
 			Responses: problemResponses(map[int]string{
 				503: "SERVICE_UNAVAILABLE: www.letmoe.com, the catalog or the account service cannot be reached.",

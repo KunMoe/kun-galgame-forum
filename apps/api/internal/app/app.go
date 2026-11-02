@@ -131,6 +131,7 @@ type App struct {
 	RolePermStop           func()
 	StoreLinkStop          func()
 	CommunityNotifyStop    func()
+	LetmoeChangesStop      func()
 	ActivityPushStop       func()
 	AnchorPresentationStop func()
 	APIv1                  huma.API
@@ -577,6 +578,7 @@ func New(cfg *config.Config) *App {
 		StoreLinkStop:       storeLinks.Start(),
 		CommunityNotifyStop: communitynotify.New(communityCli, messageRepository, anchorResolver, rdb).Start(),
 	}
+	app.LetmoeChangesStop = galgameV1.StartLetmoeChanges()
 	app.ActivityV1.WithEntities(app.entityResolver(cfg.NextMoeAPI.ImageCDNBase))
 	app.ActivityPushStop = startActivityPush(db, communityCli, app.ActivityV1, cfg.OAuth.RedirectURI)
 	app.AnchorPresentationStop = startAnchorPresentations(db, communityCli, uc, gc, cfg.NextMoeAPI.ImageCDNBase, cfg.OAuth.RedirectURI)

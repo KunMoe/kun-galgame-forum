@@ -19,6 +19,7 @@ var (
 	ErrNotConfigured = errors.New("letmoeclient: not configured (empty base URL or API key)")
 	ErrNotFound      = errors.New("letmoeclient: not found")
 	ErrUpstream      = errors.New("letmoeclient: letmoe face error")
+	ErrInvalidCursor = errors.New("letmoeclient: changes cursor rejected")
 )
 
 // A game with more resources than this is cut at this many; the reader still
@@ -180,6 +181,34 @@ func (c *Client) Files(ctx context.Context, resourceID string) (*ResourceFiles, 
 	return &files, nil
 }
 
+type WorkChange struct {
+	WorkID    string    `json:"work_id"`
+	ChangedAt time.Time `json:"changed_at"`
+}
+
+type ChangesPage struct {
+	Items      []WorkChange `json:"items"`
+	NextCursor string       `json:"next_cursor"`
+}
+
+// Changes reads the works whose resources changed after cursor; an empty
+// cursor starts the feed at now. ErrInvalidCursor means the cursor is no
+// longer served and the caller must start over.
+func (c *Client) Changes(ctx context.Context, cursor string, limit int) (*ChangesPage, error) {
+	if !c.Configured() {
+		return nil, ErrNotConfigured
+	}
+	q := url.Values{"limit": {strconv.Itoa(limit)}}
+	if cursor != "" {
+		q.Set("cursor", cursor)
+	}
+	var page ChangesPage
+	if err := c.get(ctx, "/v2/letmoe/changes", q, &page); err != nil {
+		return nil, err
+	}
+	return &page, nil
+}
+
 func (c *Client) get(ctx context.Context, path string, q url.Values, out any) error {
 	req, err := http.NewRequestWithContext(ctx, http.MethodGet, c.baseURL+path+"?"+q.Encode(), nil)
 	if err != nil {
@@ -199,7 +228,11 @@ func (c *Client) get(ctx context.Context, path string, q url.Values, out any) er
 	case http.StatusNotFound:
 		return ErrNotFound
 	default:
-		return fmt.Errorf("%w (status %d): %s", ErrUpstream, resp.StatusCode, problemDetail(raw))
+		code, detail := problemOf(raw)
+		if resp.StatusCode == http.StatusBadRequest && code == "INVALID_CURSOR" {
+			return ErrInvalidCursor
+		}
+		return fmt.Errorf("%w (status %d): %s", ErrUpstream, resp.StatusCode, detail)
 	}
 	if err := json.Unmarshal(raw, out); err != nil {
 		return fmt.Errorf("%w: malformed body: %v", ErrUpstream, err)
@@ -207,13 +240,13 @@ func (c *Client) get(ctx context.Context, path string, q url.Values, out any) er
 	return nil
 }
 
-func problemDetail(raw []byte) string {
+func problemOf(raw []byte) (code, detail string) {
 	var p struct {
 		Code   string `json:"code"`
 		Detail string `json:"detail"`
 	}
 	if json.Unmarshal(raw, &p) != nil || p.Code == "" {
-		return "non-problem body"
+		return "", "non-problem body"
 	}
-	return p.Code + ": " + p.Detail
+	return p.Code, p.Code + ": " + p.Detail
 }

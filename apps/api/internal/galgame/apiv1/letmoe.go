@@ -17,8 +17,10 @@ import (
 
 const (
 	letmoeCacheKey = "letmoe:resources:v1:"
-	// The face's own s-maxage: it declares its answers shareable for this long.
-	letmoeCacheTTL = 30 * time.Minute
+	// Only a fallback for StartLetmoeChanges: the feed misses a change committed
+	// in a transaction open longer than its 5s lag, and any outage past its
+	// 7-day retention.
+	letmoeCacheTTL = 2 * time.Hour
 )
 
 func (s *Service) WithLetmoe(c *letmoeclient.Client) *Service {
