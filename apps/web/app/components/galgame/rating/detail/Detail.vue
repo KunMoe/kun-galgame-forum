@@ -177,10 +177,14 @@ const handleDeleteRating = async () => {
           </div>
 
           <div class="relative">
-            <KunText
-              :content="data.short_summary"
+            <ContentDocument
+              :key="data.short_summary"
+              :document="data.summary_content"
               :class-name="
-                cn('leading-7', isSummaryMasked && 'blur-sm select-none')
+                cn(
+                  'leading-7 wrap-anywhere!',
+                  isSummaryMasked && 'blur-sm select-none'
+                )
               "
             />
             <button

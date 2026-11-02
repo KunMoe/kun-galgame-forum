@@ -421,6 +421,9 @@ const save = async () => {
           :disabled="isWish"
           auto-grow
         />
+        <p class="text-default-500 text-sm">
+          支持 Markdown；使用 ||剧透内容|| 标记局部剧透，读者点击后才会显示
+        </p>
 
         <div v-if="showAdvanced">
           <GalgameRatingAdvanced v-model="dims" :readonly="isWish" />
