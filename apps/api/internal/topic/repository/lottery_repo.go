@@ -3,6 +3,7 @@ package repository
 import (
 	"time"
 
+	"kun-galgame-api/internal/infrastructure/database"
 	"kun-galgame-api/internal/topic/model"
 
 	"gorm.io/gorm"
@@ -211,7 +212,7 @@ const drawStaleAfter = 15 * time.Minute
 // would hand out a second set of winners for the same prizes.
 func (r *LotteryRepository) ClaimDue(now time.Time, limit int) ([]model.TopicLottery, error) {
 	var rows []model.TopicLottery
-	err := r.db.Raw(`
+	err := database.Quiet(r.db).Raw(`
 		UPDATE topic_lottery SET status = 'drawing', updated = ?
 		WHERE id IN (
 			SELECT id FROM topic_lottery
@@ -243,7 +244,7 @@ func (r *LotteryRepository) ReleaseDrawing(lotteryID int) error {
 // the every-minute sweep from re-notifying.
 func (r *LotteryRepository) ClaimPollsPastDeadline(now time.Time, limit int) ([]model.TopicPoll, error) {
 	var rows []model.TopicPoll
-	err := r.db.Raw(`
+	err := database.Quiet(r.db).Raw(`
 		UPDATE topic_poll SET notification_sent = true, updated = ?
 		WHERE id IN (
 			SELECT id FROM topic_poll
@@ -262,7 +263,7 @@ func (r *LotteryRepository) ClaimPollsPastDeadline(now time.Time, limit int) ([]
 // the same winner twice.
 func (r *LotteryRepository) ClaimExpiredCodeWins(now time.Time, limit int) ([]model.TopicLotteryEntry, error) {
 	var rows []model.TopicLotteryEntry
-	err := r.db.Raw(`
+	err := database.Quiet(r.db).Raw(`
 		UPDATE topic_lottery_entry SET fulfillment = 'forfeited', updated = ?
 		WHERE id IN (
 			SELECT id FROM topic_lottery_entry

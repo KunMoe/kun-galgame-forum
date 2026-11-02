@@ -1,9 +1,11 @@
 package apiv1
 
 import (
+	"bytes"
 	"context"
 	"fmt"
 	"io"
+	"log/slog"
 	"net/http"
 	"net/http/httptest"
 	"strings"
@@ -87,5 +89,39 @@ func TestRunLetmoeChanges(t *testing.T) {
 	}
 	if !mr.Exists("letmoe:other") {
 		t.Error("only letmoe resource lists are dropped")
+	}
+}
+
+func TestRunLetmoeChangesWarnsOnceWhileTheFaceIsDown(t *testing.T) {
+	down := httptest.NewServer(http.HandlerFunc(func(http.ResponseWriter, *http.Request) {}))
+	downURL := down.URL
+	down.Close()
+
+	mr := miniredis.RunT(t)
+	rdb := redis.NewClient(&redis.Options{Addr: mr.Addr()})
+	t.Cleanup(func() { _ = rdb.Close() })
+	s := New(nil, nil, nil, rdb, "").WithLetmoe(letmoeclient.New(letmoeclient.Config{BaseURL: downURL, APIKey: "nmk_test"}))
+
+	var logs bytes.Buffer
+	prev := slog.Default()
+	slog.SetDefault(slog.New(slog.NewTextHandler(&logs, nil)))
+	t.Cleanup(func() { slog.SetDefault(prev) })
+
+	ctx := context.Background()
+	s.RunLetmoeChanges(ctx)
+	s.RunLetmoeChanges(ctx)
+	if n := strings.Count(logs.String(), "page fetch failed"); n != 1 {
+		t.Fatalf("a down face is one warning, got %d: %s", n, logs.String())
+	}
+
+	up := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		_, _ = io.WriteString(w, `{"object":"list","items":[],"next_cursor":"cur_up","total":null}`)
+	}))
+	t.Cleanup(up.Close)
+	s.WithLetmoe(letmoeclient.New(letmoeclient.Config{BaseURL: up.URL, APIKey: "nmk_test"}))
+	s.RunLetmoeChanges(ctx)
+	s.RunLetmoeChanges(ctx)
+	if n := strings.Count(logs.String(), "page fetch recovered"); n != 1 {
+		t.Fatalf("recovery is one line, got %d: %s", n, logs.String())
 	}
 }

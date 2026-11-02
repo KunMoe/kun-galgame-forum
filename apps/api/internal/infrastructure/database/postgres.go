@@ -62,3 +62,14 @@ func NewPostgres(cfg config.DatabaseConfig, mode string) *gorm.DB {
 	slog.Info("数据库连接成功")
 	return db
 }
+
+// Quiet is a session whose statements stay out of the dev terminal unless they
+// are slow or fail. Dev logs every statement, and an idle `pnpm dev` on
+// 2026-11-02 filled the screen with the rating mirror re-applying an unchanged
+// partial page and the catalog verify window's id list.
+func Quiet(db *gorm.DB) *gorm.DB {
+	if db == nil {
+		return nil
+	}
+	return db.Session(&gorm.Session{Logger: db.Logger.LogMode(logger.Warn)})
+}

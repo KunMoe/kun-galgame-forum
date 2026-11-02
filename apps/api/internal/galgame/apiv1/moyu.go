@@ -106,6 +106,7 @@ type Service struct {
 	works           workCatalog
 	moyu            *moyuclient.Client
 	letmoe          *letmoeclient.Client
+	letmoeFetchErr  string
 	users           userLookup
 	rdb             *redis.Client
 	cdn             string

@@ -443,19 +443,19 @@ func New(cfg *config.Config) *App {
 		}
 		return "", nil
 	}
-	ratingMirror := galgameService.NewRatingMirror(catalogCli, galgameRepo.NewRatingStore(db), rdb,
+	ratingMirror := galgameService.NewRatingMirror(catalogCli, galgameRepo.NewRatingStore(database.Quiet(db)), rdb,
 		append([]string{cfg.OAuth.ClientID}, cfg.Bearer.ClientIDs...)).
 		WithWorkFate(workFate).
 		WithCurrentRating(catalogCli.CurrentRating)
-	heldRatingSweep := galgameService.NewHeldRatingSweep(uc, galgameRepo.NewRatingStore(db)).
+	heldRatingSweep := galgameService.NewHeldRatingSweep(uc, galgameRepo.NewRatingStore(database.Quiet(db))).
 		WithRestoredWorks(workFate, catalogCli.CurrentRating)
 	galgameV1 := galgameapiv1.New(gc, moyuCli, uc, rdb, cfg.NextMoeAPI.ImageCDNBase).WithWork(db, catalogCli, storeLinks, moemoepoint.Award).WithUserPlane(trustCheck, trustScan, galgameCollectionRepo).WithLetmoe(letmoeCli)
 
 	adminOverviewRepo := adminRepo.NewOverviewRepository(db)
 	adminPurgeRepo := adminRepo.NewPurgeRepository(db)
 	adminPurgeSvc := adminService.NewPurgeService(adminPurgeRepo, uc, communityCli, catalogCli)
-	adminRolePermRepo := adminRepo.NewRolePermissionRepository(db)
-	adminUserPermRepo := adminRepo.NewUserPermissionRepository(db)
+	adminRolePermRepo := adminRepo.NewRolePermissionRepository(database.Quiet(db))
+	adminUserPermRepo := adminRepo.NewUserPermissionRepository(database.Quiet(db))
 	adminPermSync := adminService.NewPermissionOverrideSync(adminRolePermRepo, adminUserPermRepo)
 
 	galgameCommentEnforcer := galgameService.NewGalgameCommentEnforcer(communityCli, galgameCommunityPostRepo)

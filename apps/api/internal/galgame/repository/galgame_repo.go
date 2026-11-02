@@ -6,6 +6,7 @@ import (
 	"time"
 
 	"kun-galgame-api/internal/galgame/model"
+	"kun-galgame-api/internal/infrastructure/database"
 
 	"gorm.io/gorm"
 	"gorm.io/gorm/clause"
@@ -85,7 +86,7 @@ func (r *GalgameRepository) CountPublishedByCreatorSince(userID int, since time.
 // row catalog cannot answer moves to the back instead of heading every window.
 func (r *GalgameRepository) MirrorVerifyIDs(limit int) []int {
 	var ids []int
-	r.db.Table("galgame").
+	database.Quiet(r.db).Table("galgame").
 		Order("catalog_checked_at ASC NULLS FIRST, id").
 		Limit(limit).Pluck("id", &ids)
 	return ids
@@ -96,7 +97,7 @@ func (r *GalgameRepository) LocalAmong(ids []int) ([]int, error) {
 	if len(ids) == 0 {
 		return out, nil
 	}
-	err := r.db.Table("galgame").
+	err := database.Quiet(r.db).Table("galgame").
 		Where("id = ANY(?::int[])", intArrayLit(ids)).
 		Order("id").Pluck("id", &out).Error
 	return out, err
@@ -110,7 +111,7 @@ func (r *GalgameRepository) ReferencedWithoutRow(ids []int) ([]int, error) {
 	if len(ids) == 0 {
 		return out, nil
 	}
-	err := r.db.Raw(`SELECT x.id FROM unnest(?::int[]) x(id)
+	err := database.Quiet(r.db).Raw(`SELECT x.id FROM unnest(?::int[]) x(id)
 		WHERE NOT EXISTS (SELECT 1 FROM galgame g WHERE g.id = x.id)
 		  AND (EXISTS (SELECT 1 FROM galgame_quiz_galgame q WHERE q.work_id = x.id)
 		    OR EXISTS (SELECT 1 FROM galgame_rating rt WHERE rt.work_id = x.id)
@@ -123,7 +124,7 @@ func (r *GalgameRepository) AddHidden(ids []int) error {
 	if len(ids) == 0 {
 		return nil
 	}
-	return r.db.Exec(`INSERT INTO galgame (id, updated, catalog_rendered, catalog_checked_at)
+	return database.Quiet(r.db).Exec(`INSERT INTO galgame (id, updated, catalog_rendered, catalog_checked_at)
 		SELECT x, now(), false, now() FROM unnest(?::int[]) x
 		ON CONFLICT (id) DO UPDATE SET catalog_rendered = false, catalog_checked_at = now()`, intArrayLit(ids)).Error
 }
@@ -133,7 +134,7 @@ func (r *GalgameRepository) RenderedAmong(ids []int) ([]int, error) {
 	if len(ids) == 0 {
 		return out, nil
 	}
-	err := r.db.Table("galgame").
+	err := database.Quiet(r.db).Table("galgame").
 		Where("id = ANY(?::int[]) AND catalog_rendered", intArrayLit(ids)).
 		Order("id").Pluck("id", &out).Error
 	return out, err
@@ -143,7 +144,7 @@ func (r *GalgameRepository) MarkCatalogChecked(ids []int, rendered bool) error {
 	if len(ids) == 0 {
 		return nil
 	}
-	return r.db.Exec(
+	return database.Quiet(r.db).Exec(
 		"UPDATE galgame SET catalog_checked_at = now(), catalog_rendered = ? WHERE id = ANY(?::int[])",
 		rendered, intArrayLit(ids),
 	).Error
@@ -163,7 +164,7 @@ func (r *GalgameRepository) SetReleaseDates(dates map[int]string) (int64, error)
 		rows = append(rows, "(?::int, ?::date)")
 		args = append(args, workID, sql.NullString{String: date, Valid: date != ""})
 	}
-	res := r.db.Exec(`UPDATE galgame g SET release_date = v.d, release_date_synced_at = now()
+	res := database.Quiet(r.db).Exec(`UPDATE galgame g SET release_date = v.d, release_date_synced_at = now()
 		FROM (VALUES `+strings.Join(rows, ",")+`) AS v(id, d)
 		WHERE g.id = v.id
 		  AND (g.release_date IS DISTINCT FROM v.d OR g.release_date_synced_at IS NULL)`, args...)
@@ -172,11 +173,12 @@ func (r *GalgameRepository) SetReleaseDates(dates map[int]string) (int64, error)
 
 func (r *GalgameRepository) SetContentLimits(idsByLimit map[string][]int) (int64, error) {
 	var affected int64
+	db := database.Quiet(r.db)
 	for limit, ids := range idsByLimit {
 		if len(ids) == 0 {
 			continue
 		}
-		res := r.db.Exec(
+		res := db.Exec(
 			"UPDATE galgame SET content_limit = ? WHERE id = ANY(?::int[]) AND content_limit IS DISTINCT FROM ?",
 			limit, intArrayLit(ids), limit,
 		)
@@ -198,7 +200,7 @@ func (r *GalgameRepository) SetOriginalLanguages(langs map[int]string) (int64, e
 		rows = append(rows, "(?::int, ?::text)")
 		args = append(args, workID, lang)
 	}
-	res := r.db.Exec(`UPDATE galgame g SET original_language = v.lang
+	res := database.Quiet(r.db).Exec(`UPDATE galgame g SET original_language = v.lang
 		FROM (VALUES `+strings.Join(rows, ",")+`) AS v(id, lang)
 		WHERE g.id = v.id AND g.original_language IS DISTINCT FROM v.lang`, args...)
 	return res.RowsAffected, res.Error

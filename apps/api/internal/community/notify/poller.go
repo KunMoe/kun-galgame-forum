@@ -27,6 +27,7 @@ type Poller struct {
 	messages  *msgRepo.MessageRepository
 	anchors   *anchor.Resolver
 	rdb       *redis.Client
+	fetchErr  string
 }
 
 func New(community *communityclient.Client, messages *msgRepo.MessageRepository, anchors *anchor.Resolver, rdb *redis.Client) *Poller {
@@ -75,8 +76,15 @@ func (p *Poller) RunOnce(ctx context.Context) {
 	for page := 0; page < feedMaxPages; page++ {
 		feed, err := p.community.NotificationFeed(runCtx, after, feedPageLimit)
 		if err != nil {
-			slog.Warn("community notification feed: page fetch failed", "after", after, "error", err)
+			if err.Error() != p.fetchErr {
+				p.fetchErr = err.Error()
+				slog.Warn("community notification feed: page fetch failed", "after", after, "error", err)
+			}
 			return
+		}
+		if p.fetchErr != "" {
+			p.fetchErr = ""
+			slog.Info("community notification feed: page fetch recovered")
 		}
 		if len(feed.Notifications) == 0 {
 			return

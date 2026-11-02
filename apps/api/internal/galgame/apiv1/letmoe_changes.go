@@ -60,13 +60,23 @@ func (s *Service) RunLetmoeChanges(ctx context.Context) {
 	for range letmoeChangesMaxPages {
 		page, err := s.letmoe.Changes(runCtx, cursor, letmoeChangesLimit)
 		if errors.Is(err, letmoeclient.ErrInvalidCursor) {
+			s.letmoeFetchErr = ""
 			slog.Warn("letmoe changes: cursor rejected, dropping every cached letmoe list", "cursor", cursor)
 			s.dropAllLetmoeLists(runCtx)
 			return
 		}
 		if err != nil {
-			slog.Warn("letmoe changes: page fetch failed", "error", err)
+			// 127.0.0.1:9291 refused the connection on every 10s tick (2026-11-02),
+			// and each warning repeated the whole URL.
+			if err.Error() != s.letmoeFetchErr {
+				s.letmoeFetchErr = err.Error()
+				slog.Warn("letmoe changes: page fetch failed", "error", err)
+			}
 			return
+		}
+		if s.letmoeFetchErr != "" {
+			s.letmoeFetchErr = ""
+			slog.Info("letmoe changes: page fetch recovered")
 		}
 		keys := make([]string, 0, len(page.Items))
 		for _, c := range page.Items {
