@@ -11,6 +11,7 @@ import {
   type KunGalgamePlayStateRead
 } from '~/constants/galgame-playtime'
 import { ratingPreview } from '#shared/utils/content/ratingPreview'
+import { ratingSummaryContent } from '#shared/utils/content/ratingSummary'
 
 const props = defineProps<{
   ratings: GalgameRatingCardOnGalgamePage[]
@@ -19,7 +20,7 @@ const props = defineProps<{
 const cards = computed(() =>
   props.ratings.map((rating) => ({
     ...rating,
-    preview: ratingPreview(rating.summary_content)
+    preview: ratingPreview(ratingSummaryContent(rating))
   }))
 )
 
