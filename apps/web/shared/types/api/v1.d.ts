@@ -11863,7 +11863,7 @@ export interface components {
             overall: number;
             /** @description How strongly the author recommends the work. */
             recommend: components["schemas"]["RatingRecommend"];
-            /** @description Short review, plain text, at most 2000 characters. Absent or empty means none. Free text; never use it as a decision input. */
+            /** @description Short review as Markdown source, at most 2000 characters. Absent or empty means none. Free text; never use it as a decision input. */
             short_summary?: string;
             /** @description How much the short summary gives away, as its author declared. */
             spoiler_level: components["schemas"]["SpoilerLevel"];

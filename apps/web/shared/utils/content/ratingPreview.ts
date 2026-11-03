@@ -9,6 +9,7 @@ import type {
 import { documentPlainText } from './plainText'
 
 type Node = BlockNode | InlineNode | ListItemNode | TableCellNode | TableRowNode
+type PreviewInline = Extract<InlineNode, { object: 'text' | 'inline_spoiler' }>
 
 const BLOCK_END = new Set([
   'paragraph',
@@ -22,8 +23,8 @@ const BLOCK_END = new Set([
 
 export const ratingPreview = (
   document: ContentDocument
-): { document: ContentDocument; hasSpoiler: boolean } => {
-  const children: InlineNode[] = []
+): { document: ContentDocument; hasSpoiler: boolean; maskedText: string } => {
+  const children: PreviewInline[] = []
   let hasSpoiler = false
 
   const appendText = (value: string) => {
@@ -88,6 +89,10 @@ export const ratingPreview = (
       object: 'document',
       children: children.length ? [{ object: 'paragraph', children }] : []
     },
-    hasSpoiler
+    hasSpoiler,
+    maskedText: children
+      .map((node) => (node.object === 'inline_spoiler' ? '███' : node.value))
+      .join('')
+      .trim()
   }
 }

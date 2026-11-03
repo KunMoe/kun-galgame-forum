@@ -218,7 +218,7 @@ func TestV1RatingsDetail(t *testing.T) {
 
 func TestV1RatingsReturnMarkdownContent(t *testing.T) {
 	f := newGRFix(t)
-	source := "**音乐**，||结局||"
+	source := "**音乐**，||结局||\n\n:::spoiler\n整段秘密\n:::"
 	f.run(t, `UPDATE galgame_rating SET short_summary = ?, spoiler_level = 'portion' WHERE id = ?`, source, grRatingAlice)
 
 	check := func(body map[string]any) {
@@ -245,6 +245,14 @@ func TestV1RatingsReturnMarkdownContent(t *testing.T) {
 		t.Fatalf("detail: %d %v", resp.StatusCode, body)
 	}
 	check(body)
+
+	previews, err := f.app.GalgameRatingV1.Previews(t.Context(), []int{grRatingAlice})
+	if err != nil {
+		t.Fatal(err)
+	}
+	if got := previews[grRatingAlice].ShortSummary; got != "音乐，███\n███" {
+		t.Errorf("entity preview = %q", got)
+	}
 }
 
 func TestV1RatingsCarryMakerAndTopTags(t *testing.T) {

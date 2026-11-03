@@ -409,7 +409,7 @@ func (s *Service) build(ctx context.Context, r repository.FeedRow, b *batch) *Ac
 		}
 		a.GalgameRating = &ActivityRating{
 			RatingID: repr.ID(r.SourceID), Overall: rt.Overall, PlayStatus: state, Recommend: rt.Recommend,
-			SpoilerLevel: rt.SpoilerLevel, ShortSummary: excerpt(strings.TrimSpace(rt.ShortSummary), 2000), LikeCount: rt.LikeCount,
+			SpoilerLevel: rt.SpoilerLevel, ShortSummary: content.PlainText(rt.ShortSummary, 2000), LikeCount: rt.LikeCount,
 		}
 	case "GALGAME_RESOURCE_CREATION":
 		rs, ok := b.resources[r.SourceID]

@@ -1,4 +1,5 @@
 import type { ContentDocument, InlineNode } from '../api/schemas'
+import { ratingPreview } from './ratingPreview'
 
 type RatingSummarySource = {
   short_summary: string
@@ -19,19 +20,29 @@ export const ratingSummaryContent = (
           children: [{ object: 'text', value: source }]
         }
       ]
-    : source
-        .split(/\|\|(.*?)\|\|/gs)
-        .map((value, index) =>
-          index % 2
-            ? {
-                object: 'inline_spoiler',
-                children: [{ object: 'text', value }]
-              }
-            : { object: 'text', value }
-        )
+    : source.split(/\|\|(.*?)\|\|/gs).map((value, index) =>
+        index % 2
+          ? {
+              object: 'inline_spoiler',
+              children: [{ object: 'text', value }]
+            }
+          : { object: 'text', value }
+      )
 
   return {
     object: 'document',
     children: [{ object: 'paragraph', children }]
   }
+}
+
+export const ratingSummaryExcerpt = (
+  rating: RatingSummarySource & { spoiler_level: string }
+): string => {
+  const preview = ratingPreview(ratingSummaryContent(rating))
+  if (
+    rating.spoiler_level === 'serious' ||
+    (rating.spoiler_level === 'portion' && !preview.hasSpoiler)
+  )
+    return ''
+  return preview.maskedText
 }

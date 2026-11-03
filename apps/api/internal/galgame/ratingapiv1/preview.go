@@ -53,7 +53,7 @@ func (s *Service) Previews(ctx context.Context, ids []int) (map[int]content.Rati
 			Work:         &ref,
 			Author:       author,
 			Overall:      r.Overall,
-			ShortSummary: truncate(r.ShortSummary, previewSummaryRunes),
+			ShortSummary: truncate(content.PlainText(r.ShortSummary, 2000), previewSummaryRunes),
 			HasSpoilers:  r.SpoilerLevel != "none",
 			CreatedAt:    repr.Timestamp(r.Created),
 		}
