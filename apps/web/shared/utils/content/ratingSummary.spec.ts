@@ -110,21 +110,30 @@ describe('public rating excerpts', () => {
     }
   )
 
-  it('withholds the entire excerpt for a serious spoiler', () => {
+  it('replaces the entire excerpt with a notice for a serious spoiler', () => {
     expect(
       ratingSummaryExcerpt({
         short_summary: '秘密',
         summary_content: document,
         spoiler_level: 'serious'
       })
-    ).toBe('')
+    ).toBe('[剧透内容已屏蔽，点击详情查看]')
   })
 
-  it('withholds a partial review without an explicit spoiler mask', () => {
+  it('replaces a partial review without an explicit spoiler mask with a notice', () => {
     expect(
       ratingSummaryExcerpt({
         short_summary: '秘密结局',
         spoiler_level: 'portion'
+      })
+    ).toBe('[剧透内容已屏蔽，点击详情查看]')
+  })
+
+  it('keeps an empty review without spoilers empty', () => {
+    expect(
+      ratingSummaryExcerpt({
+        short_summary: '',
+        spoiler_level: 'none'
       })
     ).toBe('')
   })
