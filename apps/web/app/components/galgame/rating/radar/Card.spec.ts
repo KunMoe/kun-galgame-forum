@@ -14,16 +14,14 @@ const documentOf = (summary: string): ContentDocument => ({
     ? [
         {
           object: 'paragraph',
-          children: summary
-            .split(/\|\|(.*?)\|\|/gs)
-            .map((value, index) =>
-              index % 2
-                ? {
-                    object: 'inline_spoiler',
-                    children: [{ object: 'text', value }]
-                  }
-                : { object: 'text', value }
-            )
+          children: summary.split(/\|\|(.*?)\|\|/gs).map((value, index) =>
+            index % 2
+              ? {
+                  object: 'inline_spoiler',
+                  children: [{ object: 'text', value }]
+                }
+              : { object: 'text', value }
+          )
         }
       ]
     : []
@@ -32,7 +30,7 @@ const documentOf = (summary: string): ContentDocument => ({
 const mountRating = async (
   spoilerLevel: string,
   summary: string,
-  summaryContent: ContentDocument = documentOf(summary)
+  summaryContent: ContentDocument | null = documentOf(summary)
 ) => {
   wrapper = await mountSuspended(Card, {
     props: {
@@ -45,7 +43,7 @@ const mountRating = async (
           play_status: 'done_all',
           spoiler_level: spoilerLevel,
           short_summary: summary,
-          summary_content: summaryContent,
+          summary_content: summaryContent as ContentDocument,
           art: 8,
           story: 8,
           music: 8,
@@ -79,6 +77,14 @@ describe('radar rating card summaries', () => {
 
     expect(card.text()).toContain('音乐很棒，值得一玩')
     expect(card.text()).not.toContain(KUN_GALGAME_RATING_SPOILER_WARNING)
+  })
+
+  it('renders a legacy API response without summary_content', async () => {
+    const card = await mountRating('portion', '音乐很好，||秘密||，推荐', null)
+
+    expect(card.text()).toContain('音乐很好，')
+    expect(card.text()).not.toContain(KUN_GALGAME_RATING_SPOILER_WARNING)
+    expect(card.findAll('.kun-spoiler-hidden')).toHaveLength(1)
   })
 
   it('shows plain text without Markdown formatting or link destinations', async () => {
