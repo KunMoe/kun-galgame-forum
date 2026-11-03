@@ -47,7 +47,7 @@ export const ratingPreview = (
             children: [
               {
                 object: 'text',
-                value: documentPlainText(node.children, '')
+                value: documentPlainText([node], '')
               }
             ]
           })
