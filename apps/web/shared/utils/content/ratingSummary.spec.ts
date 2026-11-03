@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest'
 import type { ContentDocument } from '../api/schemas'
 import { documentPlainText } from './plainText'
-import { ratingSummaryContent } from './ratingSummary'
+import { ratingSummaryContent, ratingSummaryExcerpt } from './ratingSummary'
 
 describe('rating summaries from an older API', () => {
   it('uses literal review text when summary_content is absent', () => {
@@ -64,5 +64,77 @@ describe('rating summaries from an older API', () => {
         summary_content: document
       })
     ).toBe(document)
+  })
+})
+
+describe('public rating excerpts', () => {
+  const document: ContentDocument = {
+    object: 'document',
+    children: [
+      {
+        object: 'paragraph',
+        children: [
+          {
+            object: 'strong',
+            children: [{ object: 'text', value: '音乐很好，' }]
+          },
+          {
+            object: 'inline_spoiler',
+            children: [{ object: 'text', value: '秘密结局' }]
+          }
+        ]
+      },
+      {
+        object: 'spoiler',
+        children: [
+          {
+            object: 'paragraph',
+            children: [{ object: 'text', value: '整段秘密' }]
+          }
+        ]
+      }
+    ]
+  }
+
+  it.each(['none', 'portion'])(
+    'masks inline and block spoilers at level %s',
+    (level) => {
+      expect(
+        ratingSummaryExcerpt({
+          short_summary:
+            '**音乐很好，**||秘密结局||\n\n:::spoiler\n整段秘密\n:::',
+          summary_content: document,
+          spoiler_level: level
+        })
+      ).toBe('音乐很好，███\n███')
+    }
+  )
+
+  it('withholds the entire excerpt for a serious spoiler', () => {
+    expect(
+      ratingSummaryExcerpt({
+        short_summary: '秘密',
+        summary_content: document,
+        spoiler_level: 'serious'
+      })
+    ).toBe('')
+  })
+
+  it('withholds a partial review without an explicit spoiler mask', () => {
+    expect(
+      ratingSummaryExcerpt({
+        short_summary: '秘密结局',
+        spoiler_level: 'portion'
+      })
+    ).toBe('')
+  })
+
+  it('does not leak block spoilers from an older API response', () => {
+    expect(
+      ratingSummaryExcerpt({
+        short_summary: ':::spoiler\n秘密结局\n:::',
+        spoiler_level: 'none'
+      })
+    ).toBe('███')
   })
 })

@@ -3,9 +3,9 @@ package ratingapiv1
 import (
 	"context"
 	"strconv"
-	"unicode/utf8"
 
 	v1 "kun-galgame-api/internal/apiv1"
+	"kun-galgame-api/internal/apiv1/content"
 	"kun-galgame-api/internal/apiv1/repr"
 	"kun-galgame-api/internal/constants"
 	"kun-galgame-api/internal/moemoepoint"
@@ -51,10 +51,7 @@ func (s *Service) setLike(ctx context.Context, rawID string, want bool) (*engage
 		if err != nil || likeID == 0 || !want || s.Notify == nil {
 			return err
 		}
-		preview := r.ShortSummary
-		if utf8.RuneCountInString(preview) > constants.TextPreviewLength {
-			preview = string([]rune(preview)[:constants.TextPreviewLength])
-		}
+		preview := content.PlainText(r.ShortSummary, constants.TextPreviewLength)
 		return s.Notify(tx, viewer.ID, r.UserID, preview, r.WorkID, r.ID)
 	})
 	if err != nil {

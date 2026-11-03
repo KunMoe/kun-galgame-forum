@@ -16064,7 +16064,7 @@
             "description": "How strongly the author recommends the work."
           },
           "short_summary": {
-            "description": "Short review, plain text, at most 2000 characters. Absent or empty means none. Free text; never use it as a decision input.",
+            "description": "Short review as Markdown source, at most 2000 characters. Absent or empty means none. Free text; never use it as a decision input.",
             "maxLength": 2000,
             "type": "string"
           },

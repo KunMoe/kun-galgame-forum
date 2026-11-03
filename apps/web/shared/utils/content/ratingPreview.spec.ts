@@ -58,6 +58,7 @@ describe('rating spoiler preview text', () => {
     const preview = ratingPreview({ object: 'document', children: [node] })
 
     expect(preview.hasSpoiler).toBe(true)
+    expect(preview.maskedText).toBe('███')
     expect(documentPlainText(preview.document, '')).toBe(expected)
     const paragraph = preview.document.children[0]
     expect(paragraph?.object).toBe('paragraph')
