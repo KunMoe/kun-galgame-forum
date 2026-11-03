@@ -43,6 +43,6 @@ export const ratingSummaryExcerpt = (
     rating.spoiler_level === 'serious' ||
     (rating.spoiler_level === 'portion' && !preview.hasSpoiler)
   )
-    return ''
+    return '[剧透内容已屏蔽，点击详情查看]'
   return preview.maskedText
 }
