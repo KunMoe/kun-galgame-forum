@@ -68,6 +68,7 @@ const topic = (over: Partial<Topic> = {}): Topic => ({
   favorite_count: 1,
   hidden_by: null,
   is_nsfw: false,
+  is_entity_cover_blurred: false,
   like_count: 0,
   mini_apps: [],
   pinned_reply: null,

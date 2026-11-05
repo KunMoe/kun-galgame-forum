@@ -11,6 +11,7 @@ export const usePersistEditTopicStore = defineStore(
     const content = ref<EditStorePersist['content']>('')
     const section = ref<EditStorePersist['section']>([])
     const isNSFW = ref<EditStorePersist['isNSFW']>(false)
+    const isEntityCoverBlurred = ref<EditStorePersist['isEntityCoverBlurred']>(false)
     const coverImages = ref<EditStorePersist['coverImages']>([])
     const accessScope = ref<EditStorePersist['accessScope']>('public')
     const accessRoles = ref<EditStorePersist['accessRoles']>([])
@@ -23,6 +24,7 @@ export const usePersistEditTopicStore = defineStore(
       content.value = ''
       section.value = []
       isNSFW.value = false
+      isEntityCoverBlurred.value = false
       coverImages.value = []
       accessScope.value = 'public'
       accessRoles.value = []
@@ -37,6 +39,7 @@ export const usePersistEditTopicStore = defineStore(
       content,
       section,
       isNSFW,
+      isEntityCoverBlurred,
       coverImages,
       accessScope,
       accessRoles,

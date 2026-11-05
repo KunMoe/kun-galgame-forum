@@ -21908,6 +21908,10 @@
             "pattern": "^[0-9]+$",
             "type": "string"
           },
+          "is_entity_cover_blurred": {
+            "description": "Whether the author asked that every entity card cover on the topic page, replies included, and every cover in the preview those cards open, be shown blurred. A reader whose stance hides NSFW still hides it.",
+            "type": "boolean"
+          },
           "is_nsfw": {
             "description": "Whether the author marked the topic NSFW. The body is returned either way; a client that hides NSFW content gates it.",
             "type": "boolean"
@@ -22028,6 +22032,7 @@
           "ai_summary",
           "cover_images",
           "is_nsfw",
+          "is_entity_cover_blurred",
           "author",
           "author_moemoepoint",
           "content",
@@ -22185,6 +22190,10 @@
             "maxItems": 9,
             "type": "array",
             "uniqueItems": true
+          },
+          "is_entity_cover_blurred": {
+            "description": "Ask that every entity card cover on the topic page, replies included, and every cover in the preview those cards open, be shown blurred. A reader whose stance hides NSFW still hides it. Defaults to false.",
+            "type": "boolean"
           },
           "is_nsfw": {
             "description": "The author's own NSFW mark. The topic is also NSFW, whatever this says, when the model judges its title and body adult or the image service grades a body or cover image explicit; false never clears that.",
@@ -22363,6 +22372,10 @@
             "pattern": "^[0-9]+$",
             "type": "string"
           },
+          "is_entity_cover_blurred": {
+            "description": "Whether the author asked to blur entity card covers; see createTopic.",
+            "type": "boolean"
+          },
           "is_nsfw": {
             "description": "Whether the author marked the draft NSFW.",
             "type": "boolean"
@@ -22420,6 +22433,7 @@
           "category",
           "sections",
           "is_nsfw",
+          "is_entity_cover_blurred",
           "cover_image_hashes",
           "polls",
           "lotteries",
@@ -22451,6 +22465,10 @@
             "maxItems": 9,
             "type": "array",
             "uniqueItems": true
+          },
+          "is_entity_cover_blurred": {
+            "description": "Whether to ask that entity card covers be blurred; see createTopic. Defaults to false.",
+            "type": "boolean"
           },
           "is_nsfw": {
             "description": "Whether to mark the draft NSFW. Defaults to false.",
@@ -22939,6 +22957,10 @@
             "type": "array",
             "uniqueItems": true
           },
+          "is_entity_cover_blurred": {
+            "description": "New value of the author's is_entity_cover_blurred choice; see createTopic.",
+            "type": "boolean"
+          },
           "is_nsfw": {
             "description": "The author's NSFW mark. Setting it true always applies. Setting it false, or changing the title, body or covers, has the system judge the topic again, and the topic stays NSFW when it judges the text or a picture adult.",
             "type": "boolean"
@@ -23314,6 +23336,10 @@
             "maxItems": 9,
             "type": "array"
           },
+          "is_entity_cover_blurred": {
+            "description": "Whether the author asked that every entity card cover on the topic page, replies included, and every cover in the preview those cards open, be shown blurred. A reader whose stance hides NSFW still hides it.",
+            "type": "boolean"
+          },
           "is_nsfw": {
             "description": "Whether the topic is NSFW.",
             "type": "boolean"
@@ -23359,6 +23385,7 @@
           "section",
           "sections",
           "is_nsfw",
+          "is_entity_cover_blurred",
           "cover_images",
           "access_scope",
           "access_grants"

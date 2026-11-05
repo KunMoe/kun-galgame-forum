@@ -14,13 +14,15 @@ const { showKUNGalgamePreferOriginalName } = storeToRefs(
   usePersistSettingsStore()
 )
 const { stance } = useContentStance()
+const blurAll = useEntityCoverBlur()
 const { detail, status } = useEntityPreviewDetail(() => props.target)
 
 const card = computed(() =>
   entityCardModel(
     props.target,
     showKUNGalgamePreferOriginalName.value,
-    stance.value
+    stance.value,
+    blurAll.value
   )
 )
 

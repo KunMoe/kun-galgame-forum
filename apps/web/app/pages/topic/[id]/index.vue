@@ -51,6 +51,7 @@ watch(data, () => {
 })
 const topic = computed(() => replaced.value ?? data.value)
 const { gated, reveal } = useKunNsfwGate(() => topic.value?.is_nsfw)
+provideEntityCoverBlur(() => !!topic.value?.is_entity_cover_blurred)
 provide('refreshTopic', refresh)
 provide('replaceTopic', (next: Topic) => {
   replaced.value = next

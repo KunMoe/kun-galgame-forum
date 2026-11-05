@@ -53,6 +53,7 @@ const topic = (over: Partial<Topic> = {}): Topic => ({
   favorite_count: 0,
   hidden_by: null,
   is_nsfw: false,
+  is_entity_cover_blurred: false,
   like_count: 0,
   mini_apps: [],
   pinned_reply: null,
@@ -150,6 +151,7 @@ describe('useTopicSubmitter', () => {
       content_markdown: 'Body of the topic',
       sections: ['galgame-discussion'],
       is_nsfw: true,
+      is_entity_cover_blurred: false,
       access_scope: 'public'
     })
     expect(captured[0]!.body).not.toHaveProperty('cover_image_hashes')
@@ -229,6 +231,7 @@ describe('useTopicSubmitter', () => {
       content_markdown: 'New body',
       sections: ['development'],
       is_nsfw: false,
+      is_entity_cover_blurred: false,
       cover_image_hashes: [],
       access_scope: 'public'
     })
@@ -390,6 +393,7 @@ describe('applyTopicSource', () => {
       section: 'daily',
       sections: ['daily'],
       is_nsfw: true,
+      is_entity_cover_blurred: true,
       access_scope: 'users',
       cover_images: [
         {
@@ -416,6 +420,7 @@ describe('applyTopicSource', () => {
     expect(temp.content).toBe('Source body')
     expect(temp.section).toEqual(['daily'])
     expect(temp.isNSFW).toBe(true)
+    expect(temp.isEntityCoverBlurred).toBe(true)
     expect(temp.coverImages).toEqual([`/image/${HASH}`])
     expect(temp.accessScope).toBe('users')
     expect(temp.accessRoles).toEqual(['ren'])

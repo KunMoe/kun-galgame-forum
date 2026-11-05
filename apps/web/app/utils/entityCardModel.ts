@@ -204,7 +204,11 @@ const badgesOf = (t: EntityTarget): EntityCardBadge[] => {
   return out
 }
 
-const mediaOf = (t: EntityTarget, stance: Stance): EntityCardMedia => {
+const mediaOf = (
+  t: EntityTarget,
+  stance: Stance,
+  blurAll: boolean
+): EntityCardMedia => {
   if (t.object === 'user') {
     return { kind: 'avatar', user: toKunUser(t) }
   }
@@ -212,7 +216,12 @@ const mediaOf = (t: EntityTarget, stance: Stance): EntityCardMedia => {
     const images = t.works.flatMap((w) => {
       const sensitive = w.is_nsfw || sensitiveImage(w.cover)
       return w.cover && !(sensitive && stance === 'hide')
-        ? [{ image: w.cover, isBlurred: sensitive && stance === 'blur' }]
+        ? [
+            {
+              image: w.cover,
+              isBlurred: blurAll || (sensitive && stance === 'blur')
+            }
+          ]
         : []
     })
     if (images.length) {
@@ -225,7 +234,8 @@ const mediaOf = (t: EntityTarget, stance: Stance): EntityCardMedia => {
     return {
       kind: 'image',
       ...cover,
-      isBlurred: sensitive && stance === 'blur'
+      isBlurred:
+        (blurAll && cover.shape !== 'logo') || (sensitive && stance === 'blur')
     }
   }
   return {
@@ -240,10 +250,11 @@ const mediaOf = (t: EntityTarget, stance: Stance): EntityCardMedia => {
 export const entityCardModel = (
   t: EntityTarget,
   preferOriginal: boolean,
-  stance: Stance
+  stance: Stance,
+  blurAll = false
 ): EntityCardModel => {
   const kind = entityKind(t)
-  const media = mediaOf(t, stance)
+  const media = mediaOf(t, stance, blurAll)
   const layout: EntityCardLayout =
     t.object === 'tag' || t.object === 'company'
       ? 'pill'

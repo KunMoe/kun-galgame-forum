@@ -25,7 +25,7 @@ func (w *Writes) updateTopic(ctx context.Context, in *updateTopicInput) (*update
 	caps := capsForTopic(topic, user)
 	patch := in.Body
 	needEdit := patch.Title != nil || patch.ContentMarkdown != nil || patch.Category != nil ||
-		patch.Sections != nil || patch.IsNSFW != nil || patch.CoverImageHashes != nil ||
+		patch.Sections != nil || patch.IsNSFW != nil || patch.IsEntityCoverBlurred != nil || patch.CoverImageHashes != nil ||
 		patch.AccessScope != nil || patch.AccessRoles != nil || patch.AccessUserIDs != nil
 	needHide := false
 	needUnhide := false
@@ -119,6 +119,7 @@ func (w *Writes) updateTopic(ctx context.Context, in *updateTopicInput) (*update
 		nsfw = nsfw || judged
 	}
 	nsfwChanged := nsfw != topic.IsNSFW
+	blurChanged := patch.IsEntityCoverBlurred != nil && *patch.IsEntityCoverBlurred != topic.IsEntityCoverBlurred
 	scopeChanged := access.scope != topic.AccessScope
 	grantsTouched := patch.AccessScope != nil || patch.AccessRoles != nil || patch.AccessUserIDs != nil
 	sectionChanged := section != storedSection
@@ -127,7 +128,7 @@ func (w *Writes) updateTopic(ctx context.Context, in *updateTopicInput) (*update
 	newConsume := rule.CostsMoemoepoint
 	footprintDelta := topicSectionFootprint(newConsume) - topicSectionFootprint(oldConsume)
 
-	if !titleChanged && !bodyChanged && !categoryChanged && !nsfwChanged && !coversChanged &&
+	if !titleChanged && !bodyChanged && !categoryChanged && !nsfwChanged && !blurChanged && !coversChanged &&
 		!scopeChanged && !grantsTouched && !sectionChanged && !stateChanged {
 		out, p := w.reads.buildTopic(ctx, topic, user)
 		if p != nil {
@@ -164,6 +165,9 @@ func (w *Writes) updateTopic(ctx context.Context, in *updateTopicInput) (*update
 		}
 		if nsfwChanged {
 			updates["is_nsfw"] = nsfw
+		}
+		if blurChanged {
+			updates["is_entity_cover_blurred"] = *patch.IsEntityCoverBlurred
 		}
 		if coversChanged {
 			updates["cover_images"] = covers

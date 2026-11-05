@@ -9,6 +9,7 @@ export interface EditStorePersist {
   content: string
   section: string[]
   isNSFW: boolean
+  isEntityCoverBlurred: boolean
   coverImages: string[]
   accessScope: TopicAccessScope
   accessRoles: TopicAccessRole[]
@@ -23,6 +24,7 @@ export interface EditStoreTemp {
   content: string
   section: string[]
   isNSFW: boolean
+  isEntityCoverBlurred: boolean
   coverImages: string[]
   accessScope: TopicAccessScope
   accessRoles: TopicAccessRole[]

@@ -25,6 +25,7 @@ export const useTopicSubmitter = () => {
     title,
     content,
     isNSFW,
+    isEntityCoverBlurred,
     coverImages,
     accessScope,
     accessRoles,
@@ -84,6 +85,7 @@ export const useTopicSubmitter = () => {
       content_markdown: content.value,
       sections: section.value as TopicCreate['sections'],
       is_nsfw: isNSFW.value,
+      is_entity_cover_blurred: isEntityCoverBlurred.value,
       access_scope: accessScope.value
     }
     if (mode === 'rewrite') {

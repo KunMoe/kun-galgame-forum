@@ -36,6 +36,13 @@ export const useTopicEditorStore = () => {
     }
   })
 
+  const isEntityCoverBlurred = computed<boolean>({
+    get: () => activeStore.value.isEntityCoverBlurred,
+    set: (value) => {
+      activeStore.value.isEntityCoverBlurred = value
+    }
+  })
+
   const coverImages = computed<string[]>({
     get: () => activeStore.value.coverImages,
     set: (value) => {
@@ -72,6 +79,7 @@ export const useTopicEditorStore = () => {
     title,
     content,
     isNSFW,
+    isEntityCoverBlurred,
     coverImages,
     accessScope,
     accessRoles,

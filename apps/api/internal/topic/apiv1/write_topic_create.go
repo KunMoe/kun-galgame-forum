@@ -86,13 +86,14 @@ func (w *Writes) createTopic(ctx context.Context, in *createTopicInput) (*create
 			return txFail{p: moemoepointInsufficient(constants.CostConsumeSection)}
 		}
 		topic := &model.Topic{
-			AccessScope: in.Body.AccessScope,
-			Title:       title,
-			Content:     body,
-			Category:    rule.LegacyCategory,
-			IsNSFW:      nsfw,
-			UserID:      user.ID,
-			CoverImages: covers,
+			AccessScope:          in.Body.AccessScope,
+			Title:                title,
+			Content:              body,
+			Category:             rule.LegacyCategory,
+			IsNSFW:               nsfw,
+			IsEntityCoverBlurred: in.Body.IsEntityCoverBlurred,
+			UserID:               user.ID,
+			CoverImages:          covers,
 		}
 		if err := w.reads.topics.CreateTopic(tx, topic); err != nil {
 			return err

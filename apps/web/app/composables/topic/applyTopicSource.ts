@@ -18,6 +18,7 @@ export const applyTopicSource = (source: TopicSource) => {
   temp.content = source.content_markdown
   temp.section = [source.section]
   temp.isNSFW = source.is_nsfw
+  temp.isEntityCoverBlurred = source.is_entity_cover_blurred
   temp.coverImages = source.cover_images.map((image) =>
     coverTokenFromHash(image.hash)
   )

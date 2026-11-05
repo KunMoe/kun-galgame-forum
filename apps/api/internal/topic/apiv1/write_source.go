@@ -68,17 +68,18 @@ func (w *Writes) getTopicSource(ctx context.Context, in *getTopicSourceInput) (*
 	}
 
 	return &getTopicSourceOutput{Body: TopicSource{
-		Object:          "topic_source",
-		TopicID:         repr.ID(topic.ID),
-		Title:           topic.Title,
-		ContentMarkdown: topic.Content,
-		Category:        topic.Category,
-		Section:         firstSection(sections),
-		Sections:        toSectionSlugs(sections),
-		IsNSFW:          topic.IsNSFW,
-		CoverImages:     coverImagesWithMeta(w.reads.cdn, topic.CoverImages, coverMeta),
-		AccessScope:     topic.AccessScope,
-		AccessGrants:    access,
+		Object:               "topic_source",
+		TopicID:              repr.ID(topic.ID),
+		Title:                topic.Title,
+		ContentMarkdown:      topic.Content,
+		Category:             topic.Category,
+		Section:              firstSection(sections),
+		Sections:             toSectionSlugs(sections),
+		IsNSFW:               topic.IsNSFW,
+		IsEntityCoverBlurred: topic.IsEntityCoverBlurred,
+		CoverImages:          coverImagesWithMeta(w.reads.cdn, topic.CoverImages, coverMeta),
+		AccessScope:          topic.AccessScope,
+		AccessGrants:         access,
 	}}, nil
 }
 

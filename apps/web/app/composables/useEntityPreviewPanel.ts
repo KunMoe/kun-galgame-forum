@@ -3,11 +3,12 @@ import type { EntityTarget } from '#shared/utils/api/schemas'
 export const useEntityPreviewPanel = () => {
   const state = useState('kun-entity-preview-panel', () => ({
     isOpen: false,
-    target: null as EntityTarget | null
+    target: null as EntityTarget | null,
+    blurCovers: false
   }))
 
-  const open = (target: EntityTarget) => {
-    state.value = { isOpen: true, target }
+  const open = (target: EntityTarget, blurCovers = false) => {
+    state.value = { isOpen: true, target, blurCovers }
   }
 
   const close = () => {

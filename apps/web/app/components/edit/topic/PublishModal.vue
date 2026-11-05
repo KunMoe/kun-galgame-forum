@@ -4,7 +4,7 @@ import { useTopicSubmitter } from '~/composables/topic/useTopicSubmitter'
 
 const open = defineModel<boolean>({ required: true })
 
-const { isNSFW } = useTopicEditorStore()
+const { isNSFW, isEntityCoverBlurred } = useTopicEditorStore()
 const {
   rules,
   submit,
@@ -97,6 +97,17 @@ const confirmText = computed(() => {
               看起来不能在公司报告大会上放在 PPT 里展示的话题都是 NSFW
             </p>
           </template>
+          <KunCheckBox
+            v-model="isEntityCoverBlurred"
+            type="single"
+            label="模糊帖内条目卡片的封面"
+            color="primary"
+          />
+          <p class="text-default-500 text-sm">
+            开启后, 话题页 (含回复) 里所有条目卡片的封面,
+            以及点开卡片后预览中的封面都会以模糊形式显示,
+            适合引用封面较为暴露的作品
+          </p>
         </section>
 
         <EditTopicAccessScope />

@@ -57,6 +57,29 @@ describe('entityCardModel', () => {
     })
   })
 
+  it('blurs every cover when the author asks, but leaves hide and logos alone', () => {
+    const safe: EntityTarget = workPreview()
+    expect(entityCardModel(safe, false, 'show', true).media).toMatchObject({
+      kind: 'image',
+      isBlurred: true
+    })
+    const nsfw: EntityTarget = workPreview({ is_nsfw: true })
+    expect(entityCardModel(nsfw, false, 'hide', true).media.kind).toBe('icon')
+    const company: EntityTarget = {
+      object: 'company',
+      id: '5',
+      display_name: 'propeller',
+      latin: null,
+      localized: {},
+      company_kind: 'game_brand',
+      logo: image()
+    } as EntityTarget
+    expect(entityCardModel(company, false, 'show', true).media).toMatchObject({
+      kind: 'image',
+      isBlurred: false
+    })
+  })
+
   it('treats a cover graded suggestive as sensitive even on a safe work', () => {
     const t: EntityTarget = workPreview({ cover: image('suggestive') })
     expect(entityCardModel(t, false, 'hide').media.kind).toBe('icon')

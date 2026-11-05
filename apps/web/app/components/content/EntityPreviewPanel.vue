@@ -2,6 +2,7 @@
 import { ENTITY_KINDS, entityHref, entityKind } from '~/utils/entityTarget'
 
 const { state, close } = useEntityPreviewPanel()
+provideEntityCoverBlur(() => state.value.blurCovers)
 const route = useRoute()
 
 const isOpen = computed({

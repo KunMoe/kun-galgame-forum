@@ -197,16 +197,17 @@ func (d *Drafts) createTopicDraft(ctx context.Context, in *createTopicDraftInput
 		return nil, problem.Internal(err)
 	}
 	draft := &model.TopicDraft{
-		UserID:           user.ID,
-		Title:            in.Body.Title,
-		Content:          content,
-		Category:         category,
-		Sections:         sections,
-		CoverImages:      coversFromHashes(in.Body.CoverImageHashes),
-		IsNSFW:           in.Body.IsNSFW,
-		Polls:            miniApps.polls,
-		Lotteries:        miniApps.lotteries,
-		PrizeImageHashes: miniApps.prizeImages,
+		UserID:               user.ID,
+		Title:                in.Body.Title,
+		Content:              content,
+		Category:             category,
+		Sections:             sections,
+		CoverImages:          coversFromHashes(in.Body.CoverImageHashes),
+		IsNSFW:               in.Body.IsNSFW,
+		IsEntityCoverBlurred: in.Body.IsEntityCoverBlurred,
+		Polls:                miniApps.polls,
+		Lotteries:            miniApps.lotteries,
+		PrizeImageHashes:     miniApps.prizeImages,
 	}
 	if err := d.drafts.Create(draft); err != nil {
 		return nil, problem.Internal(err)
@@ -290,17 +291,18 @@ func mapDraft(d *model.TopicDraft) (TopicDraft, error) {
 		return TopicDraft{}, err
 	}
 	return TopicDraft{
-		Object:           "topic_draft",
-		ID:               repr.ID(d.ID),
-		Title:            d.Title,
-		ContentMarkdown:  d.Content,
-		Category:         category,
-		Sections:         sections,
-		IsNSFW:           d.IsNSFW,
-		CoverImageHashes: hashes,
-		Polls:            polls,
-		Lotteries:        lotteries,
-		CreatedAt:        repr.Timestamp(d.CreatedAt),
-		UpdatedAt:        repr.Timestamp(d.UpdatedAt),
+		Object:               "topic_draft",
+		ID:                   repr.ID(d.ID),
+		Title:                d.Title,
+		ContentMarkdown:      d.Content,
+		Category:             category,
+		Sections:             sections,
+		IsNSFW:               d.IsNSFW,
+		IsEntityCoverBlurred: d.IsEntityCoverBlurred,
+		CoverImageHashes:     hashes,
+		Polls:                polls,
+		Lotteries:            lotteries,
+		CreatedAt:            repr.Timestamp(d.CreatedAt),
+		UpdatedAt:            repr.Timestamp(d.UpdatedAt),
 	}, nil
 }

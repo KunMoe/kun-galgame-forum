@@ -20,6 +20,7 @@ export const useTopicDraft = () => {
     content,
     section,
     isNSFW,
+    isEntityCoverBlurred,
     coverImages,
     polls,
     lotteries
@@ -52,6 +53,7 @@ export const useTopicDraft = () => {
       content_markdown: content.value,
       sections: section.value as TopicDraftCreate['sections'],
       is_nsfw: isNSFW.value,
+      is_entity_cover_blurred: isEntityCoverBlurred.value,
       cover_image_hashes: coverImages.value.map(coverHashFromToken),
       polls: polls.value.map(pollFormToDraft),
       lotteries: lotteries.value.map(lotteryFormToDraft)
@@ -89,6 +91,7 @@ export const useTopicDraft = () => {
     content.value = d.content_markdown
     section.value = d.sections.slice(0, 1)
     isNSFW.value = d.is_nsfw
+    isEntityCoverBlurred.value = d.is_entity_cover_blurred
     coverImages.value = d.cover_image_hashes.map(coverTokenFromHash)
     polls.value = d.polls.map(pollFormFromDraft)
     lotteries.value = d.lotteries.map(lotteryFormFromDraft)

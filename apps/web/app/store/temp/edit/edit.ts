@@ -10,6 +10,7 @@ export const useTempEditStore = defineStore(
     const content = ref<EditStoreTemp['content']>('')
     const section = ref<EditStoreTemp['section']>([])
     const isNSFW = ref<EditStoreTemp['isNSFW']>(false)
+    const isEntityCoverBlurred = ref<EditStoreTemp['isEntityCoverBlurred']>(false)
     const coverImages = ref<EditStoreTemp['coverImages']>([])
     const accessScope = ref<EditStoreTemp['accessScope']>('public')
     const accessRoles = ref<EditStoreTemp['accessRoles']>([])
@@ -23,6 +24,7 @@ export const useTempEditStore = defineStore(
       content.value = ''
       section.value = []
       isNSFW.value = false
+      isEntityCoverBlurred.value = false
       coverImages.value = []
       accessScope.value = 'public'
       accessRoles.value = []
@@ -37,6 +39,7 @@ export const useTempEditStore = defineStore(
       content,
       section,
       isNSFW,
+      isEntityCoverBlurred,
       coverImages,
       accessScope,
       accessRoles,

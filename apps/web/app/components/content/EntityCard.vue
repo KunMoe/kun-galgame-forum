@@ -13,12 +13,14 @@ const { showKUNGalgamePreferOriginalName } = storeToRefs(
 )
 const { stance } = useContentStance()
 const { open } = useEntityPreviewPanel()
+const blurAll = useEntityCoverBlur()
 
 const card = computed(() =>
   entityCardModel(
     props.target,
     showKUNGalgamePreferOriginalName.value,
-    stance.value
+    stance.value,
+    blurAll.value
   )
 )
 
@@ -57,7 +59,7 @@ const preview = (e: MouseEvent) => {
     return
   }
   e.preventDefault()
-  open(props.target)
+  open(props.target, blurAll.value)
 }
 </script>
 

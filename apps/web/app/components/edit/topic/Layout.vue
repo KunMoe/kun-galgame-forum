@@ -8,7 +8,8 @@ import {
   KUN_EDITOR_TOOLBAR_OVERRIDES
 } from '~/constants/editor'
 const tempStore = useTempEditStore()
-const { content, polls, lotteries } = useTopicEditorStore()
+const { content, polls, lotteries, isEntityCoverBlurred } = useTopicEditorStore()
+provideEntityCoverBlur(isEntityCoverBlurred)
 const adapters = useKunEditorAdapters({ entities: true })
 
 const headings = ref<KunHeading[]>([])

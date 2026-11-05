@@ -9,6 +9,7 @@ const { showKUNGalgamePreferOriginalName } = storeToRefs(
   usePersistSettingsStore()
 )
 const { stance } = useContentStance()
+const blurAll = useEntityCoverBlur()
 
 const name = computed(() =>
   catalogNameText(props.work, showKUNGalgamePreferOriginalName.value)
@@ -21,6 +22,9 @@ const sensitive = computed(
 )
 const showCover = computed(
   () => props.work.cover && !(sensitive.value && stance.value === 'hide')
+)
+const isBlurred = computed(
+  () => blurAll.value || (sensitive.value && stance.value === 'blur')
 )
 </script>
 
@@ -46,7 +50,7 @@ const showCover = computed(
         :image-class-name="
           cn(
             'size-full transition-transform group-hover:scale-105',
-            sensitive && stance === 'blur' && 'blur-lg'
+            isBlurred && 'blur-lg'
           )
         "
       />

@@ -14014,6 +14014,8 @@ export interface components {
             hidden_by: components["schemas"]["HiddenBy"] | null;
             /** @description Topic id. JSON string of a decimal integer. */
             id: string;
+            /** @description Whether the author asked that every entity card cover on the topic page, replies included, and every cover in the preview those cards open, be shown blurred. A reader whose stance hides NSFW still hides it. */
+            is_entity_cover_blurred: boolean;
             /** @description Whether the author marked the topic NSFW. The body is returned either way; a client that hides NSFW content gates it. */
             is_nsfw: boolean;
             /**
@@ -14106,6 +14108,8 @@ export interface components {
             content_markdown: string;
             /** @description Cover images by image-service hash, in display order. When absent, the covers are the first nine distinct /image/{hash} tokens of the body in body order, stickers skipped; an empty array means no covers. */
             cover_image_hashes?: string[];
+            /** @description Ask that every entity card cover on the topic page, replies included, and every cover in the preview those cards open, be shown blurred. A reader whose stance hides NSFW still hides it. Defaults to false. */
+            is_entity_cover_blurred?: boolean;
             /** @description The author's own NSFW mark. The topic is also NSFW, whatever this says, when the model judges its title and body adult or the image service grades a body or cover image explicit; false never clears that. */
             is_nsfw: boolean;
             /** @description The topic's section as a one-item array. A retired key maps to its successor; items after the first are ignored. An archived section is NOT_ALLOWED_VALUE at /sections/0. */
@@ -14153,6 +14157,8 @@ export interface components {
             created_at: string;
             /** @description Draft id. JSON string of a decimal integer. */
             id: string;
+            /** @description Whether the author asked to blur entity card covers; see createTopic. */
+            is_entity_cover_blurred: boolean;
             /** @description Whether the author marked the draft NSFW. */
             is_nsfw: boolean;
             /** @description Lotteries the author attached, in order, without redemption codes. The web creates them on the topic right after createTopic. Empty array if none. */
@@ -14181,6 +14187,8 @@ export interface components {
             content_markdown?: string;
             /** @description Cover images by image-service hash, in display order. Unlike createTopic, nothing is derived from the body. */
             cover_image_hashes?: string[];
+            /** @description Whether to ask that entity card covers be blurred; see createTopic. Defaults to false. */
+            is_entity_cover_blurred?: boolean;
             /** @description Whether to mark the draft NSFW. Defaults to false. */
             is_nsfw?: boolean;
             /** @description Lotteries attached to the draft, in order. Stored as sent; nothing is created and no moemoepoint is held. Redemption codes are not accepted: a draft has no field for them. */
@@ -14361,6 +14369,8 @@ export interface components {
             content_markdown?: string;
             /** @description New cover images, replacing the stored ones. An empty array removes every cover. Unlike createTopic, nothing is derived from the body. */
             cover_image_hashes?: string[];
+            /** @description New value of the author's is_entity_cover_blurred choice; see createTopic. */
+            is_entity_cover_blurred?: boolean;
             /** @description The author's NSFW mark. Setting it true always applies. Setting it false, or changing the title, body or covers, has the system judge the topic again, and the topic stays NSFW when it judges the text or a picture adult. */
             is_nsfw?: boolean;
             /** @description New section as a one-item array, as in createTopic. Moving into an archived section is NOT_ALLOWED_VALUE at /sections/0; a topic already there may stay. */
@@ -14495,6 +14505,8 @@ export interface components {
             content_markdown: string;
             /** @description Cover images in stored token order. Tokens that do not parse are skipped, and so are stickers: a sticker is never a cover. Empty array if none. */
             cover_images: components["schemas"]["Image"][];
+            /** @description Whether the author asked that every entity card cover on the topic page, replies included, and every cover in the preview those cards open, be shown blurred. A reader whose stance hides NSFW still hides it. */
+            is_entity_cover_blurred: boolean;
             /** @description Whether the topic is NSFW. */
             is_nsfw: boolean;
             /**

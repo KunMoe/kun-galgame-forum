@@ -3,18 +3,19 @@ package model
 import "time"
 
 type Topic struct {
-	AccessScope      string     `gorm:"column:access_scope;not null;default:public" json:"access_scope"`
-	ID               int        `gorm:"primaryKey;autoIncrement" json:"id"`
-	Title            string     `gorm:"type:varchar(233);not null" json:"title"`
-	Content          string     `gorm:"type:text;not null" json:"content"`
-	View             int        `gorm:"default:0" json:"view"`
-	IsNSFW           bool       `gorm:"column:is_nsfw;default:false" json:"is_nsfw"`
-	Status           int        `gorm:"default:0" json:"status"`
-	HiddenBy         string     `gorm:"column:hidden_by;default:''" json:"hidden_by"`
-	Category         string     `gorm:"not null" json:"category"`
-	StatusUpdateTime time.Time  `gorm:"column:status_update_time;autoCreateTime" json:"status_update_time"`
-	Edited           *time.Time `gorm:"" json:"edited"`
-	UpvoteTime       *time.Time `gorm:"column:upvote_time" json:"upvote_time"`
+	AccessScope          string     `gorm:"column:access_scope;not null;default:public" json:"access_scope"`
+	ID                   int        `gorm:"primaryKey;autoIncrement" json:"id"`
+	Title                string     `gorm:"type:varchar(233);not null" json:"title"`
+	Content              string     `gorm:"type:text;not null" json:"content"`
+	View                 int        `gorm:"default:0" json:"view"`
+	IsNSFW               bool       `gorm:"column:is_nsfw;default:false" json:"is_nsfw"`
+	IsEntityCoverBlurred bool       `gorm:"column:is_entity_cover_blurred;not null;default:false" json:"is_entity_cover_blurred"`
+	Status               int        `gorm:"default:0" json:"status"`
+	HiddenBy             string     `gorm:"column:hidden_by;default:''" json:"hidden_by"`
+	Category             string     `gorm:"not null" json:"category"`
+	StatusUpdateTime     time.Time  `gorm:"column:status_update_time;autoCreateTime" json:"status_update_time"`
+	Edited               *time.Time `gorm:"" json:"edited"`
+	UpvoteTime           *time.Time `gorm:"column:upvote_time" json:"upvote_time"`
 
 	UserID int `gorm:"column:user_id;not null" json:"user_id"`
 
