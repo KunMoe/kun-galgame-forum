@@ -480,6 +480,8 @@ const handleClaim = async () => {
           查看兑换码
         </KunButton>
 
+        <TopicLotteryReturnedCodes :lottery="lottery" />
+
         <KunButton
           v-if="canViewEntries && !isFloor && lottery.entry_count > 0"
           variant="light"

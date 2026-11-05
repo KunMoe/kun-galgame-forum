@@ -192,3 +192,7 @@ type lotteryWinnerOutput struct {
 type lotteryCodeRevealOutput struct {
 	Body LotteryCodeReveal
 }
+
+type lotteryReturnedCodesOutput struct {
+	Body repr.List[LotteryReturnedCode]
+}

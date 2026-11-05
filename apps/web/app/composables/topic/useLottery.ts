@@ -203,7 +203,7 @@ export const useLottery = (topicId: MaybeRefOrGetter<string>) => {
   const cancel = (lotteryId: string) =>
     confirmThen(
       '确定要取消这个抽奖吗？',
-      '取消后将不再开奖, 已参与的用户不会获得任何奖品。萌萌点奖池会全额退回给发起人。',
+      '取消后将不再开奖, 已参与的用户不会获得任何奖品。萌萌点奖池会全额退回给发起人, 托管的兑换码也会退回, 可在抽奖中查看。',
       () => updateLottery(lotteryId, { state: 'cancelled' })
     )
 
@@ -240,6 +240,13 @@ export const useLottery = (topicId: MaybeRefOrGetter<string>) => {
       })
     )
 
+  const revealReturnedCodes = (lotteryId: string) =>
+    settle(
+      api.POST('/lotteries/{lottery_id}/returned-code-reveals', {
+        params: { path: { lottery_id: lotteryId } }
+      })
+    )
+
   const setFulfillment = (
     lotteryId: string,
     winnerId: string,
@@ -262,6 +269,7 @@ export const useLottery = (topicId: MaybeRefOrGetter<string>) => {
     withdraw,
     listEntries,
     revealCode,
+    revealReturnedCodes,
     setFulfillment
   }
 }

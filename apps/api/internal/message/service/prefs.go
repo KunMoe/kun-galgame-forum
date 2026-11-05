@@ -11,7 +11,7 @@ var LocalNotificationTypes = []string{
 	string(NotifySolution), string(NotifyPinReply), string(NotifyExpired),
 	string(NotifyRequested), string(NotifyMerged), string(NotifyDeclined),
 	string(NotifyLotteryWon), string(NotifyLotteryClosed),
-	string(NotifyLotteryExpired), string(NotifyPollClosed),
+	string(NotifyLotteryExpired), string(NotifyLotteryReturned), string(NotifyPollClosed),
 	"quiz-answered",
 	string(NotifyUserFollowed), string(NotifyFolloweeTopic), string(NotifyFolloweeActivity),
 	string(NotifySubscribedTopic),

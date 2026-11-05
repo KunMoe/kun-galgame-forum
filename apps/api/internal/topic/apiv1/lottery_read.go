@@ -23,8 +23,10 @@ type lotteryBundle struct {
 	winners map[int][]model.TopicLotteryEntry
 	codes   map[int]int
 	mine    map[int]model.TopicLotteryEntry
-	users   map[int]userclient.User
-	meta    map[string]imageclient.ImageMeta
+	// returned is filled only for lotteries the viewer wrote.
+	returned map[int]int
+	users    map[int]userclient.User
+	meta     map[string]imageclient.ImageMeta
 }
 
 func (l *Lotteries) loadBundle(ctx context.Context, lotteries []model.TopicLottery, viewer *middleware.UserInfo) (*lotteryBundle, *problem.Problem) {
@@ -52,6 +54,16 @@ func (l *Lotteries) loadBundle(ctx context.Context, lotteries []model.TopicLotte
 	}
 	if viewer != nil {
 		b.mine, err = l.lots.FindEntriesForUser(ids, viewer.ID)
+		if err != nil {
+			return nil, problem.Internal(err)
+		}
+		var authored []int
+		for _, row := range lotteries {
+			if row.UserID == viewer.ID && settled(row.Status) {
+				authored = append(authored, row.ID)
+			}
+		}
+		b.returned, err = l.lots.CountReturnedCodes(authored)
 		if err != nil {
 			return nil, problem.Internal(err)
 		}
@@ -219,6 +231,7 @@ func (l *Lotteries) mapLottery(ctx context.Context, row *model.TopicLottery, b *
 		if prob != nil {
 			return Lottery{}, prob
 		}
+		v.ReturnedCodeCount = b.returned[row.ID]
 		out.Viewer = v
 	}
 	return out, nil
@@ -262,6 +275,10 @@ func capsForLottery(row *model.TopicLottery, user *middleware.UserInfo) lotteryC
 		Staff:       staff,
 		ViewEntries: row.ShowEntrants || author || user.Can(perm.LotteryViewRestricted),
 	}
+}
+
+func settled(state string) bool {
+	return state == model.LotteryStatusDrawn || state == model.LotteryStatusCancelled
 }
 
 func (c lotteryCaps) canDelete(state string) bool {

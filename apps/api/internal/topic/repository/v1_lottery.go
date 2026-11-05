@@ -125,3 +125,46 @@ func (r *LotteryRepository) TouchTopic(tx *gorm.DB, topicID int, now time.Time) 
 		Where("id = ? AND created > ?", topicID, model.BumpCutoff(now)).
 		Updates(map[string]any{"status_update_time": now}).Error
 }
+
+// ReturnedCode is a code that went back to the lottery's author: no winner was
+// drawn for its slot, or its winner let the claim deadline pass.
+type ReturnedCode struct {
+	ID        int
+	PrizeID   int
+	Secret    string
+	Forfeited bool
+}
+
+const returnedCodeFilter = `(c.claimed_by = 0 OR EXISTS (
+	SELECT 1 FROM topic_lottery_entry e WHERE e.code_id = c.id AND e.fulfillment = 'forfeited'))`
+
+func (r *LotteryRepository) FindReturnedCodes(lotteryID int) ([]ReturnedCode, error) {
+	var rows []ReturnedCode
+	err := r.db.Raw(`
+		SELECT c.id, c.prize_id, c.secret, c.claimed_by <> 0 AS forfeited
+		FROM topic_lottery_code c
+		JOIN topic_lottery_prize p ON p.id = c.prize_id
+		WHERE c.lottery_id = ? AND `+returnedCodeFilter+`
+		ORDER BY p.sort_order ASC, p.id ASC, c.id ASC`, lotteryID).Scan(&rows).Error
+	return rows, err
+}
+
+func (r *LotteryRepository) CountReturnedCodes(lotteryIDs []int) (map[int]int, error) {
+	out := make(map[int]int, len(lotteryIDs))
+	if len(lotteryIDs) == 0 {
+		return out, nil
+	}
+	var rows []struct {
+		LotteryID int
+		Total     int
+	}
+	err := r.db.Raw(`
+		SELECT c.lottery_id, COUNT(*) AS total
+		FROM topic_lottery_code c
+		WHERE c.lottery_id IN ? AND `+returnedCodeFilter+`
+		GROUP BY c.lottery_id`, lotteryIDs).Scan(&rows).Error
+	for _, row := range rows {
+		out[row.LotteryID] = row.Total
+	}
+	return out, err
+}

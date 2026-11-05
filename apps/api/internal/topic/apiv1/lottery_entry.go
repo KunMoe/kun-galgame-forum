@@ -184,6 +184,9 @@ func (l *Lotteries) updateLotteryWinner(ctx context.Context, in *updateLotteryWi
 			return nil, invalidStateTransition("The winner's fulfillment changed while this request was made.")
 		}
 		entry.Fulfillment = target
+		if isWinner && target == model.LotteryFulfillForfeited {
+			l.svc.NotifyPrizeGivenUp(lottery, prize, entry.UserID)
+		}
 	}
 	return l.winnerOut(ctx, entry)
 }
@@ -242,4 +245,46 @@ func (l *Lotteries) revealLotteryCode(ctx context.Context, in *lotteryInput) (*l
 		LotteryID:      repr.DecimalID(strconv.Itoa(lottery.ID)),
 		RedemptionCode: plain,
 	}}, nil
+}
+
+// The author alone, not staff: managing a lottery is no reason to read the
+// author's codes.
+func (l *Lotteries) revealLotteryReturnedCodes(ctx context.Context, in *lotteryInput) (*lotteryReturnedCodesOutput, error) {
+	if prob := l.ready(); prob != nil {
+		return nil, prob
+	}
+	user := v1.User(ctx)
+	lottery, prob := l.findLottery(in.LotteryID)
+	if prob != nil {
+		return nil, prob
+	}
+	if lottery.UserID != user.ID {
+		return nil, notFound()
+	}
+	items := []LotteryReturnedCode{}
+	if !settled(lottery.Status) {
+		return &lotteryReturnedCodesOutput{Body: repr.NewList(items, nil)}, nil
+	}
+	rows, err := l.lots.FindReturnedCodes(lottery.ID)
+	if err != nil {
+		return nil, problem.Internal(err)
+	}
+	for _, row := range rows {
+		plain, err := l.svc.OpenCode(row.Secret)
+		if err != nil {
+			slog.Error("lottery redemption code failed to open", "lottery_id", lottery.ID, "code_id", row.ID, "error", err)
+			return nil, problem.Internal(err)
+		}
+		reason := "unassigned"
+		if row.Forfeited {
+			reason = "forfeited"
+		}
+		items = append(items, LotteryReturnedCode{
+			Object:         "lottery_returned_code",
+			PrizeID:        repr.ID(row.PrizeID),
+			ReturnReason:   reason,
+			RedemptionCode: plain,
+		})
+	}
+	return &lotteryReturnedCodesOutput{Body: repr.NewList(items, nil)}, nil
 }

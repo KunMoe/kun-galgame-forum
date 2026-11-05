@@ -17,7 +17,7 @@ type putNotificationPreferencesInput struct {
 }
 
 type putNotificationPreferencesBody struct {
-	MutedTypes []MutedType `json:"muted_types" maxItems:"25" uniqueItems:"true" doc:"Notification types to mute, replacing the stored set. Empty array mutes nothing."`
+	MutedTypes []MutedType `json:"muted_types" maxItems:"26" uniqueItems:"true" doc:"Notification types to mute, replacing the stored set. Empty array mutes nothing."`
 }
 
 type putNotificationPreferencesOutput struct {
