@@ -21,6 +21,7 @@ const ALL_TYPES = {
   lottery_won: true,
   lottery_drawn: true,
   lottery_code_expired: true,
+  lottery_prizes_returned: true,
   poll_closed: true,
   user_followed: true,
   followee_topic_created: true,

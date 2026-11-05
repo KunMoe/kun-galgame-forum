@@ -1600,6 +1600,26 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/lotteries/{lottery_id}/returned-code-reveals": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Reveal the redemption codes returned to the author
+         * @description Returns, to the lottery's author, every redemption code that came back to them once the lottery is drawn or cancelled: codes whose slot no winner was drawn for, and codes their winner did not reveal before claim_expires_at. Such a code is never drawn again for someone else. The list is not paginated, ordered by prize, and empty while the lottery is open or being drawn. It answers the author alone, not staff. **It is a POST so no page load can fetch it**, and it takes no Idempotency-Key, because a stored response would keep the codes at rest. The author reads them even when they can no longer read the topic. NOT_FOUND when the lottery does not exist or the caller is not its author.
+         */
+        post: operations["revealLotteryReturnedCodes"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/lotteries/{lottery_id}/winners/{winner_id}": {
         parameters: {
             query?: never;
@@ -4508,7 +4528,7 @@ export interface paths {
         put?: never;
         /**
          * Create a lottery
-         * @description Creates a lottery on the topic and returns it. It needs the topic's author, or staff holding the create permission, and the topic must be one the caller can read. Anyone but staff also needs an account at least 30 days old or at least 100 moemoepoint. **The point prizes are paid for by the caller**: their budget is taken from the caller's balance now, and whatever is not paid out comes back when the lottery is cancelled, deleted before the draw, or drawn with slots left over. Codes of a code prize are sealed at rest and never returned by a read. Creating a lottery bumps the topic. NOT_FOUND under the same conditions as getTopic.
+         * @description Creates a lottery on the topic and returns it. It needs the topic's author, or staff holding the create permission, and the topic must be one the caller can read. Anyone but staff also needs an account at least 30 days old or at least 100 moemoepoint. **The point prizes are paid for by the caller**: their budget is taken from the caller's balance now, and whatever is not paid out comes back when the lottery is cancelled, deleted before the draw, or drawn with slots left over. Codes of a code prize are sealed at rest and never returned by a read; the ones no winner ends up with go back to the caller through revealLotteryReturnedCodes. Creating a lottery bumps the topic. NOT_FOUND under the same conditions as getTopic.
          */
         post: operations["createLottery"];
         delete?: never;
@@ -8885,6 +8905,17 @@ export interface components {
              */
             object: "list";
         };
+        ListLotteryReturnedCode: {
+            /** @description Members of this page. Empty array, never null. */
+            items: components["schemas"]["LotteryReturnedCode"][];
+            /** @description Opaque keyset cursor. Omitted on the last page. */
+            next_cursor?: string;
+            /**
+             * @description Type discriminant. Always list.
+             * @constant
+             */
+            object: "list";
+        };
         ListMoemoepointEntry: {
             /** @description Members of this page. Empty array, never null. */
             items: components["schemas"]["MoemoepointEntry"][];
@@ -9607,6 +9638,21 @@ export interface components {
             /** @description Whether the lottery's author marked this image adult. */
             is_marked_adult: boolean;
         };
+        LotteryReturnedCode: {
+            /**
+             * @description Type discriminant. Always lottery_returned_code.
+             * @constant
+             */
+            object: "lottery_returned_code";
+            /** @description Id of the prize the code belongs to. */
+            prize_id: string;
+            /** @description The redemption code in plain text. Never keep it anywhere a page load could read it back. Free text; never use it as a decision input. */
+            redemption_code: string;
+            /** @description unassigned when no winner was drawn for its slot, or the lottery was cancelled; forfeited when its winner did not reveal it before claim_expires_at. */
+            return_reason: components["schemas"]["LotteryReturnedCodeReason"];
+        };
+        /** @enum {string} */
+        LotteryReturnedCodeReason: "unassigned" | "forfeited";
         /** @enum {string} */
         LotteryState: "open" | "drawing" | "drawn" | "cancelled";
         /** @enum {string} */
@@ -9632,6 +9678,11 @@ export interface components {
             enter_blocked_reason: components["schemas"]["EnterBlockedReason"] | null;
             /** @description Whether the caller has entered. */
             has_entered: boolean;
+            /**
+             * Format: int64
+             * @description For the lottery's author once it is drawn or cancelled: how many redemption codes came back to them, because no winner was drawn for the slot or the winner let claim_expires_at pass. revealLotteryReturnedCodes returns them. 0 for everyone else, staff included.
+             */
+            returned_code_count: number;
             /** @description Id of the caller's own entry in winners when they won. null otherwise. */
             winner_id: string | null;
         };
@@ -9821,7 +9872,7 @@ export interface components {
             web_url: string;
         };
         /** @enum {string} */
-        MutedType: "upvoted" | "liked" | "favorited" | "replied" | "commented" | "mentioned" | "followed_thread_activity" | "best_answer_chosen" | "reply_pinned" | "quiz_answered" | "resource_link_reported" | "edit_requested" | "edit_merged" | "edit_declined" | "lottery_won" | "lottery_drawn" | "lottery_code_expired" | "poll_closed" | "user_followed" | "followee_topic_created" | "followee_activity_published" | "subscribed_topic_replied" | "resource_relocated" | "system_notice" | "chat";
+        MutedType: "upvoted" | "liked" | "favorited" | "replied" | "commented" | "mentioned" | "followed_thread_activity" | "best_answer_chosen" | "reply_pinned" | "quiz_answered" | "resource_link_reported" | "edit_requested" | "edit_merged" | "edit_declined" | "lottery_won" | "lottery_drawn" | "lottery_code_expired" | "lottery_prizes_returned" | "poll_closed" | "user_followed" | "followee_topic_created" | "followee_activity_published" | "subscribed_topic_replied" | "resource_relocated" | "system_notice" | "chat";
         MyCoverVote: {
             /**
              * @description Type discriminant. Always my_cover_vote.
@@ -10143,7 +10194,7 @@ export interface components {
             unread_count: number;
         };
         /** @enum {string} */
-        NotificationType: "upvoted" | "liked" | "favorited" | "replied" | "commented" | "mentioned" | "followed_thread_activity" | "best_answer_chosen" | "reply_pinned" | "quiz_answered" | "resource_link_reported" | "edit_requested" | "edit_merged" | "edit_declined" | "lottery_won" | "lottery_drawn" | "lottery_code_expired" | "poll_closed" | "user_followed" | "followee_topic_created" | "followee_activity_published" | "subscribed_topic_replied" | "resource_relocated" | "system_notice";
+        NotificationType: "upvoted" | "liked" | "favorited" | "replied" | "commented" | "mentioned" | "followed_thread_activity" | "best_answer_chosen" | "reply_pinned" | "quiz_answered" | "resource_link_reported" | "edit_requested" | "edit_merged" | "edit_declined" | "lottery_won" | "lottery_drawn" | "lottery_code_expired" | "lottery_prizes_returned" | "poll_closed" | "user_followed" | "followee_topic_created" | "followee_activity_published" | "subscribed_topic_replied" | "resource_relocated" | "system_notice";
         NsfwDisplay: {
             /** @description How adult content is shown: hide, blur, or show. */
             nsfw_display: components["schemas"]["NsfwDisplayMode"];
@@ -25641,6 +25692,83 @@ export interface operations {
             };
             /** @description LOTTERY_CLOSED when the lottery is not open, is past closes_at, or the caller has already won. */
             409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Internal Server Error */
+            500: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Service Unavailable */
+            503: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+        };
+    };
+    revealLotteryReturnedCodes: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description Lottery id. */
+                lottery_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ListLotteryReturnedCode"];
+                };
+            };
+            /** @description Bad Request */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Unauthorized */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Forbidden */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Not Found */
+            404: {
                 headers: {
                     [name: string]: unknown;
                 };

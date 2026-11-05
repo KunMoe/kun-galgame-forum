@@ -18,8 +18,12 @@ const api = useApiClient()
 const actorName = computed(
   () => props.notification.actor.name ?? deletedUserName
 )
-const isSystemNotice = computed(
-  () => props.notification.notification_type === 'system_notice'
+const systemVoicedTypes = new Set<Notification['notification_type']>([
+  'system_notice',
+  'lottery_prizes_returned'
+])
+const isSystemNotice = computed(() =>
+  systemVoicedTypes.has(props.notification.notification_type)
 )
 const actorUser = computed<KunUser>(() =>
   isSystemNotice.value

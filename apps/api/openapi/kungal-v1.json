@@ -8345,6 +8345,34 @@
         ],
         "type": "object"
       },
+      "ListLotteryReturnedCode": {
+        "properties": {
+          "items": {
+            "description": "Members of this page. Empty array, never null.",
+            "items": {
+              "$ref": "#/components/schemas/LotteryReturnedCode"
+            },
+            "type": "array"
+          },
+          "next_cursor": {
+            "description": "Opaque keyset cursor. Omitted on the last page.",
+            "maxLength": 512,
+            "pattern": "^cur_[A-Za-z0-9_-]+$",
+            "type": "string"
+          },
+          "object": {
+            "const": "list",
+            "description": "Type discriminant. Always list.",
+            "maxLength": 4,
+            "type": "string"
+          }
+        },
+        "required": [
+          "object",
+          "items"
+        ],
+        "type": "object"
+      },
       "ListMoemoepointEntry": {
         "properties": {
           "items": {
@@ -10244,6 +10272,48 @@
         ],
         "type": "object"
       },
+      "LotteryReturnedCode": {
+        "properties": {
+          "object": {
+            "const": "lottery_returned_code",
+            "description": "Type discriminant. Always lottery_returned_code.",
+            "maxLength": 21,
+            "type": "string"
+          },
+          "prize_id": {
+            "description": "Id of the prize the code belongs to.",
+            "maxLength": 20,
+            "minLength": 1,
+            "pattern": "^[0-9]+$",
+            "type": "string"
+          },
+          "redemption_code": {
+            "description": "The redemption code in plain text. Never keep it anywhere a page load could read it back. Free text; never use it as a decision input.",
+            "maxLength": 200,
+            "type": "string"
+          },
+          "return_reason": {
+            "$ref": "#/components/schemas/LotteryReturnedCodeReason",
+            "description": "unassigned when no winner was drawn for its slot, or the lottery was cancelled; forfeited when its winner did not reveal it before claim_expires_at."
+          }
+        },
+        "required": [
+          "object",
+          "prize_id",
+          "return_reason",
+          "redemption_code"
+        ],
+        "type": "object"
+      },
+      "LotteryReturnedCodeReason": {
+        "enum": [
+          "unassigned",
+          "forfeited"
+        ],
+        "maxLength": 10,
+        "type": "string",
+        "x-vocabulary-closed": true
+      },
       "LotteryState": {
         "enum": [
           "open",
@@ -10313,6 +10383,13 @@
             "description": "Whether the caller has entered.",
             "type": "boolean"
           },
+          "returned_code_count": {
+            "description": "For the lottery's author once it is drawn or cancelled: how many redemption codes came back to them, because no winner was drawn for the slot or the winner let claim_expires_at pass. revealLotteryReturnedCodes returns them. 0 for everyone else, staff included.",
+            "format": "int64",
+            "maximum": 500,
+            "minimum": 0,
+            "type": "integer"
+          },
           "winner_id": {
             "description": "Id of the caller's own entry in winners when they won. null otherwise.",
             "maxLength": 20,
@@ -10335,7 +10412,8 @@
           "can_view_entries",
           "can_manage_fulfillment",
           "winner_id",
-          "can_reveal_code"
+          "can_reveal_code",
+          "returned_code_count"
         ],
         "type": "object"
       },
@@ -10825,6 +10903,7 @@
           "lottery_won",
           "lottery_drawn",
           "lottery_code_expired",
+          "lottery_prizes_returned",
           "poll_closed",
           "user_followed",
           "followee_topic_created",
@@ -11595,7 +11674,7 @@
               "$ref": "#/components/schemas/MutedType",
               "description": "Notification type the caller has muted. Closed vocabulary of v1 tokens plus chat for private messages."
             },
-            "maxItems": 25,
+            "maxItems": 26,
             "type": "array",
             "uniqueItems": true
           },
@@ -11730,6 +11809,7 @@
           "lottery_won",
           "lottery_drawn",
           "lottery_code_expired",
+          "lottery_prizes_returned",
           "poll_closed",
           "user_followed",
           "followee_topic_created",
@@ -13920,7 +14000,7 @@
               "$ref": "#/components/schemas/MutedType",
               "description": "Notification type the caller has muted. Closed vocabulary of v1 tokens plus chat for private messages."
             },
-            "maxItems": 25,
+            "maxItems": 26,
             "type": "array",
             "uniqueItems": true
           }
@@ -42745,6 +42825,110 @@
         ]
       }
     },
+    "/lotteries/{lottery_id}/returned-code-reveals": {
+      "post": {
+        "description": "Returns, to the lottery's author, every redemption code that came back to them once the lottery is drawn or cancelled: codes whose slot no winner was drawn for, and codes their winner did not reveal before claim_expires_at. Such a code is never drawn again for someone else. The list is not paginated, ordered by prize, and empty while the lottery is open or being drawn. It answers the author alone, not staff. **It is a POST so no page load can fetch it**, and it takes no Idempotency-Key, because a stored response would keep the codes at rest. The author reads them even when they can no longer read the topic. NOT_FOUND when the lottery does not exist or the caller is not its author.",
+        "operationId": "revealLotteryReturnedCodes",
+        "parameters": [
+          {
+            "description": "Lottery id.",
+            "in": "path",
+            "name": "lottery_id",
+            "required": true,
+            "schema": {
+              "description": "Lottery id.",
+              "maxLength": 19,
+              "pattern": "^[1-9][0-9]{0,18}$",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ListLotteryReturnedCode"
+                }
+              }
+            },
+            "description": "OK"
+          },
+          "400": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            },
+            "description": "Bad Request"
+          },
+          "401": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            },
+            "description": "Unauthorized"
+          },
+          "403": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            },
+            "description": "Forbidden"
+          },
+          "404": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            },
+            "description": "Not Found"
+          },
+          "500": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            },
+            "description": "Internal Server Error"
+          },
+          "503": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            },
+            "description": "Service Unavailable"
+          }
+        },
+        "security": [
+          {
+            "session": []
+          },
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "Reveal the redemption codes returned to the author",
+        "tags": [
+          "topics"
+        ]
+      }
+    },
     "/lotteries/{lottery_id}/winners/{winner_id}": {
       "get": {
         "description": "Returns one winner, as in winners of getLottery. NOT_FOUND when the winner is banned, or under the same conditions as getLottery.",
@@ -65413,7 +65597,7 @@
         ]
       },
       "post": {
-        "description": "Creates a lottery on the topic and returns it. It needs the topic's author, or staff holding the create permission, and the topic must be one the caller can read. Anyone but staff also needs an account at least 30 days old or at least 100 moemoepoint. **The point prizes are paid for by the caller**: their budget is taken from the caller's balance now, and whatever is not paid out comes back when the lottery is cancelled, deleted before the draw, or drawn with slots left over. Codes of a code prize are sealed at rest and never returned by a read. Creating a lottery bumps the topic. NOT_FOUND under the same conditions as getTopic.",
+        "description": "Creates a lottery on the topic and returns it. It needs the topic's author, or staff holding the create permission, and the topic must be one the caller can read. Anyone but staff also needs an account at least 30 days old or at least 100 moemoepoint. **The point prizes are paid for by the caller**: their budget is taken from the caller's balance now, and whatever is not paid out comes back when the lottery is cancelled, deleted before the draw, or drawn with slots left over. Codes of a code prize are sealed at rest and never returned by a read; the ones no winner ends up with go back to the caller through revealLotteryReturnedCodes. Creating a lottery bumps the topic. NOT_FOUND under the same conditions as getTopic.",
         "operationId": "createLottery",
         "parameters": [
           {

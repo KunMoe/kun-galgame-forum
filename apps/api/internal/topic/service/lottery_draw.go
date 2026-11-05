@@ -480,6 +480,9 @@ func (s *LotteryService) afterDraw(
 		s.award(lottery.UserID, refund, moemoepoint.ReasonContentApproved,
 			moemoepoint.Ref("topic_lottery_escrow", lottery.ID), EscrowRefundKey(lottery.ID))
 	}
+	if spec, ok := drawLeftovers(lottery, slots, len(winners), refund); ok {
+		specs = append(specs, spec)
+	}
 	if err := s.notifier.EmitMany(nil, specs); err != nil {
 		slog.Warn("开奖通知发送失败", "lottery_id", lottery.ID, "error", err)
 	}
@@ -525,9 +528,9 @@ func (s *LotteryService) sweepClosedPolls() int {
 	return len(polls)
 }
 
-// sweepExpiredClaims voids a code prize the winner never revealed. The code
-// stays sealed and stays attached to the entry: nothing on the site can read it
-// back out, so handing it to someone else is not something this can offer.
+// sweepExpiredClaims voids a code prize the winner never revealed. The code goes
+// back to the lottery's author, who reads it with revealLotteryReturnedCodes;
+// it is never drawn again for someone else.
 func (s *LotteryService) sweepExpiredClaims() int {
 	expired, err := s.lotteryRepo.ClaimExpiredCodeWins(time.Now(), drawSweepBatch)
 	if err != nil {
@@ -551,7 +554,7 @@ func (s *LotteryService) sweepExpiredClaims() int {
 				lottery.Title),
 			TopicID: lottery.TopicID,
 			Ref:     msgModel.LotteryRef(lottery.ID, lottery.TopicID),
-		})
+		}, expiredCodeReturned(lottery, entry.UserID))
 	}
 	if err := s.notifier.EmitMany(nil, specs); err != nil {
 		slog.Warn("兑换码过期通知发送失败", "error", err)

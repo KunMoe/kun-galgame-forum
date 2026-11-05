@@ -28,10 +28,11 @@ const (
 	NotifyMerged    NotifyKind = "merged"
 	NotifyDeclined  NotifyKind = "declined"
 
-	NotifyLotteryWon     NotifyKind = "lottery-won"
-	NotifyLotteryClosed  NotifyKind = "lottery-closed"
-	NotifyLotteryExpired NotifyKind = "lottery-expired"
-	NotifyPollClosed     NotifyKind = "poll-closed"
+	NotifyLotteryWon      NotifyKind = "lottery-won"
+	NotifyLotteryClosed   NotifyKind = "lottery-closed"
+	NotifyLotteryExpired  NotifyKind = "lottery-expired"
+	NotifyLotteryReturned NotifyKind = "lottery-returned"
+	NotifyPollClosed      NotifyKind = "poll-closed"
 
 	NotifyUserFollowed     NotifyKind = "user-followed"
 	NotifyFolloweeTopic    NotifyKind = "followee-topic"

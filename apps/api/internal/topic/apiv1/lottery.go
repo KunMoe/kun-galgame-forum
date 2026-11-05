@@ -66,6 +66,7 @@ type LotteryViewer struct {
 	CanManageFulfillment bool            `json:"can_manage_fulfillment" doc:"Whether the caller may move any winner's fulfillment: the author or staff holding the manage permission, after the draw."`
 	WinnerID             *repr.DecimalID `json:"winner_id" doc:"Id of the caller's own entry in winners when they won. null otherwise."`
 	CanRevealCode        bool            `json:"can_reveal_code" doc:"Whether the caller won a code prize that has not been forfeited, so revealLotteryCode would return it."`
+	ReturnedCodeCount    int             `json:"returned_code_count" minimum:"0" maximum:"500" doc:"For the lottery's author once it is drawn or cancelled: how many redemption codes came back to them, because no winner was drawn for the slot or the winner let claim_expires_at pass. revealLotteryReturnedCodes returns them. 0 for everyone else, staff included."`
 }
 
 type Lottery struct {
@@ -106,6 +107,13 @@ type LotteryEntry struct {
 type LotteryCodeReveal struct {
 	Object         string         `json:"object" enum:"lottery_code_reveal" maxLength:"19" doc:"Type discriminant. Always lottery_code_reveal."`
 	LotteryID      repr.DecimalID `json:"lottery_id" doc:"Id of the lottery the code was won in."`
+	RedemptionCode string         `json:"redemption_code" maxLength:"200" doc:"The redemption code in plain text. Never keep it anywhere a page load could read it back. Free text; never use it as a decision input."`
+}
+
+type LotteryReturnedCode struct {
+	Object         string         `json:"object" enum:"lottery_returned_code" maxLength:"21" doc:"Type discriminant. Always lottery_returned_code."`
+	PrizeID        repr.DecimalID `json:"prize_id" doc:"Id of the prize the code belongs to."`
+	ReturnReason   string         `json:"return_reason" enum:"unassigned,forfeited" maxLength:"10" doc:"unassigned when no winner was drawn for its slot, or the lottery was cancelled; forfeited when its winner did not reveal it before claim_expires_at."`
 	RedemptionCode string         `json:"redemption_code" maxLength:"200" doc:"The redemption code in plain text. Never keep it anywhere a page load could read it back. Free text; never use it as a decision input."`
 }
 

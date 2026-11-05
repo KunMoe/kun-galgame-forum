@@ -42,7 +42,7 @@ func RegisterLotteries(l *Lotteries) func(huma.API) {
 				"and the topic must be one the caller can read. Anyone but staff also needs an account at least 30 days old or at least 100 moemoepoint. " +
 				"**The point prizes are paid for by the caller**: their budget is taken from the caller's balance now, " +
 				"and whatever is not paid out comes back when the lottery is cancelled, deleted before the draw, or drawn with slots left over. " +
-				"Codes of a code prize are sealed at rest and never returned by a read. Creating a lottery bumps the topic. " +
+				"Codes of a code prize are sealed at rest and never returned by a read; the ones no winner ends up with go back to the caller through revealLotteryReturnedCodes. Creating a lottery bumps the topic. " +
 				"NOT_FOUND under the same conditions as getTopic.",
 			Tags: []string{"topics"},
 			Responses: problemResponses(map[int]string{
@@ -164,5 +164,20 @@ func RegisterLotteries(l *Lotteries) func(huma.API) {
 				409: "REDEMPTION_CODE_FORFEITED when the code was given up or not revealed before claim_expires_at.",
 			}),
 		}), l.revealLotteryCode)
+
+		huma.Register(api, v1.Required(huma.Operation{
+			OperationID: "revealLotteryReturnedCodes",
+			Method:      http.MethodPost,
+			Path:        "/lotteries/{lottery_id}/returned-code-reveals",
+			Summary:     "Reveal the redemption codes returned to the author",
+			Description: "Returns, to the lottery's author, every redemption code that came back to them once the lottery is drawn or cancelled: " +
+				"codes whose slot no winner was drawn for, and codes their winner did not reveal before claim_expires_at. " +
+				"Such a code is never drawn again for someone else. The list is not paginated, ordered by prize, and empty while the lottery is open or being drawn. " +
+				"It answers the author alone, not staff. " +
+				"**It is a POST so no page load can fetch it**, and it takes no Idempotency-Key, because a stored response would keep the codes at rest. " +
+				"The author reads them even when they can no longer read the topic. " +
+				"NOT_FOUND when the lottery does not exist or the caller is not its author.",
+			Tags: []string{"topics"},
+		}), l.revealLotteryReturnedCodes)
 	}
 }

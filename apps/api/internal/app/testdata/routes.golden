@@ -312,6 +312,7 @@ POST   /api/v1/galgame-resources/:resource_id/expiry-reports cors.New → v1Head
 POST   /api/v1/images                                 cors.New → v1Headers → fiberAdapter.Handle
 POST   /api/v1/letmoe-resources/:resource_id/downloads cors.New → v1Headers → fiberAdapter.Handle
 POST   /api/v1/lotteries/:lottery_id/code-reveals     cors.New → v1Headers → fiberAdapter.Handle
+POST   /api/v1/lotteries/:lottery_id/returned-code-reveals cors.New → v1Headers → fiberAdapter.Handle
 POST   /api/v1/me/check-ins                           cors.New → v1Headers → fiberAdapter.Handle
 POST   /api/v1/me/conversations/:user_id/messages     cors.New → v1Headers → fiberAdapter.Handle
 POST   /api/v1/me/creator-applications                cors.New → v1Headers → fiberAdapter.Handle

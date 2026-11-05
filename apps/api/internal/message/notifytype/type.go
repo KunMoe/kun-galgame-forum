@@ -24,6 +24,7 @@ const (
 	LotteryWon                Type = "lottery_won"
 	LotteryDrawn              Type = "lottery_drawn"
 	LotteryCodeExpired        Type = "lottery_code_expired"
+	LotteryPrizesReturned     Type = "lottery_prizes_returned"
 	PollClosed                Type = "poll_closed"
 	UserFollowed              Type = "user_followed"
 	FolloweeTopicCreated      Type = "followee_topic_created"
@@ -53,6 +54,7 @@ var all = []Type{
 	LotteryWon,
 	LotteryDrawn,
 	LotteryCodeExpired,
+	LotteryPrizesReturned,
 	PollClosed,
 	UserFollowed,
 	FolloweeTopicCreated,
@@ -80,6 +82,7 @@ var toDB = map[Type]string{
 	LotteryWon:                "lottery-won",
 	LotteryDrawn:              "lottery-closed",
 	LotteryCodeExpired:        "lottery-expired",
+	LotteryPrizesReturned:     "lottery-returned",
 	PollClosed:                "poll-closed",
 	UserFollowed:              "user-followed",
 	FolloweeTopicCreated:      "followee-topic",
