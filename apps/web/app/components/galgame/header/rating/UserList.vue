@@ -12,7 +12,6 @@ import {
   KUN_GALGAME_PLAY_STATE_MAP,
   type KunGalgamePlayStateRead
 } from '~/constants/galgame-playtime'
-import { ratingSummaryExcerpt } from '#shared/utils/content/ratingSummary'
 
 const props = defineProps<{
   ratings: GalgameRatingCardOnGalgamePage[]
@@ -125,7 +124,7 @@ const sorted = computed(() =>
           </p>
           <KunText
             v-else-if="rating.short_summary"
-            :content="ratingSummaryExcerpt(rating)"
+            :content="rating.short_summary"
           />
 
           <KunLink :to="`/galgame-rating/${rating.id}`" size="sm">

@@ -10,23 +10,10 @@ import {
   KUN_GALGAME_PLAY_STATE_MAP,
   type KunGalgamePlayStateRead
 } from '~/constants/galgame-playtime'
-import { ratingPreview } from '#shared/utils/content/ratingPreview'
-import { ratingSummaryContent } from '#shared/utils/content/ratingSummary'
 
-const props = defineProps<{
+defineProps<{
   ratings: GalgameRatingCardOnGalgamePage[]
 }>()
-
-const cards = computed(() =>
-  props.ratings.map((rating) => ({
-    ...rating,
-    preview: ratingPreview(ratingSummaryContent(rating))
-  }))
-)
-
-const showSpoilerWarning = (rating: (typeof cards.value)[number]) =>
-  rating.spoiler_level !== 'none' &&
-  (rating.spoiler_level !== 'portion' || !rating.preview.hasSpoiler)
 </script>
 
 <template>
@@ -37,7 +24,7 @@ const showSpoilerWarning = (rating: (typeof cards.value)[number]) =>
     draggable
     scrollbar="thin"
   >
-    <div class="flex" v-for="rating in cards" :key="rating.id">
+    <div class="flex" v-for="rating in ratings" :key="rating.id">
       <KunCard
         :is-transparent="false"
         :is-hoverable="false"
@@ -69,7 +56,7 @@ const showSpoilerWarning = (rating: (typeof cards.value)[number]) =>
             label-class="text-[10px]"
           />
           <div
-            v-if="rating.short_summary && showSpoilerWarning(rating)"
+            v-if="rating.short_summary && rating.spoiler_level !== 'none'"
             class="text-default-500 flex max-h-[110px] items-center gap-1.5 text-sm"
           >
             <KunIcon
@@ -85,12 +72,7 @@ const showSpoilerWarning = (rating: (typeof cards.value)[number]) =>
             class-name="max-h-[110px]"
             class="text-default-700 text-sm"
           >
-            <ContentDocument
-              :key="rating.short_summary"
-              :document="rating.preview.document"
-              class-name="whitespace-pre-wrap wrap-anywhere!"
-              compact
-            />
+            <KunText :content="rating.short_summary" />
           </KunScrollShadow>
         </div>
 

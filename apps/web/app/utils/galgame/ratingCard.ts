@@ -46,7 +46,6 @@ export const ratingToCard = (
   galgame_type: [...r.game_types],
   play_status: r.play_status,
   short_summary: r.short_summary,
-  summary_content: r.summary_content,
   ...aspectDims(r.aspect_scores),
   spoiler_level: r.spoiler_level,
   like_count: r.like_count,

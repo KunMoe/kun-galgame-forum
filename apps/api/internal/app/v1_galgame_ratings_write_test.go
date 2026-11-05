@@ -301,8 +301,6 @@ func TestV1RatingsDelete(t *testing.T) {
 
 func TestV1RatingsLike(t *testing.T) {
 	f := newGRFix(t)
-	f.run(t, `UPDATE galgame_rating SET short_summary = ? WHERE id = ?`,
-		"**音乐**，||秘密结局||\n\n:::spoiler\n整段秘密\n:::", grRatingAlice)
 	like := func(method, session string, id int) (*http.Response, map[string]any) {
 		t.Helper()
 		return f.onRating(t, method, session, id, "/like", nil)
@@ -327,13 +325,6 @@ func TestV1RatingsLike(t *testing.T) {
 	}
 	if n := f.count(t, `SELECT count(*) FROM message WHERE sender_id = ? AND receiver_id = ? AND type = 'liked'`, grBob, grAlice); n != 1 {
 		t.Errorf("%d like notifications, want 1", n)
-	}
-	var notification string
-	if err := f.db.Raw(`SELECT content FROM message WHERE sender_id = ? AND receiver_id = ? AND type = 'liked'`, grBob, grAlice).Scan(&notification).Error; err != nil {
-		t.Fatal(err)
-	}
-	if notification != "音乐，███\n███" {
-		t.Errorf("like notification = %q", notification)
 	}
 	wantNotifRefs(t, f.db, []string{notifRef("liked", "rating", grRatingAlice, "work", grWorkSFW)},
 		"sender_id = ? AND receiver_id = ? AND type = 'liked'", grBob, grAlice)

@@ -16,7 +16,6 @@ import type { Rating, WorkRecord } from '#shared/utils/api/schemas'
 import { settle } from '#shared/utils/api/problem'
 import { calcGalgameRating } from '~~/algorithms/GalgameRatingAlg'
 import { aspectDims } from '~/utils/galgame/ratingCard'
-import { ratingSummaryContent } from '#shared/utils/content/ratingSummary'
 
 const props = defineProps<{
   data: Rating
@@ -28,7 +27,6 @@ const api = useApiClient()
 const author = computed(() => toKunUser(props.data.author))
 const dims = computed(() => aspectDims(props.data.aspect_scores))
 const likers = computed(() => props.data.likers.map(toKunUser))
-const summaryContent = computed(() => ratingSummaryContent(props.data))
 
 const spoilerRevealed = ref(false)
 const isSummaryMasked = computed(
@@ -179,14 +177,10 @@ const handleDeleteRating = async () => {
           </div>
 
           <div class="relative">
-            <ContentDocument
-              :key="data.short_summary"
-              :document="summaryContent"
+            <KunText
+              :content="data.short_summary"
               :class-name="
-                cn(
-                  'leading-7 wrap-anywhere!',
-                  isSummaryMasked && 'blur-sm select-none'
-                )
+                cn('leading-7', isSummaryMasked && 'blur-sm select-none')
               "
             />
             <button

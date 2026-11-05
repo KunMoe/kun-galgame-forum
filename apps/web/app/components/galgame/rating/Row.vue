@@ -8,7 +8,6 @@ import {
   KUN_GALGAME_RATING_RECOMMEND_COLOR_MAP,
   KUN_GALGAME_RATING_SPOILER_WARNING
 } from '~/constants/galgame-rating'
-import { ratingSummaryExcerpt } from '#shared/utils/content/ratingSummary'
 
 const props = defineProps<{
   rating: GalgameRatingCardOnGalgamePage
@@ -47,7 +46,7 @@ const recommendColor = computed(() => {
 const MAX_SUMMARY = 100
 
 const truncatedSummary = computed(() => {
-  const s = ratingSummaryExcerpt(props.rating)
+  const s = props.rating.short_summary?.trim()
   if (!s) return ''
   if (s.length <= MAX_SUMMARY) return s
   return s.slice(0, MAX_SUMMARY) + '...'

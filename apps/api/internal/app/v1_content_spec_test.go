@@ -44,11 +44,6 @@ func TestV1SpecPublishesTheContentNodeVocabulary(t *testing.T) {
 	if _, ok := spec.Components.Schemas["ContentDocument"]; !ok {
 		t.Fatal("ContentDocument is not in the published spec")
 	}
-	for _, name := range []string{"Rating", "RatingSummary"} {
-		if got := spec.Components.Schemas[name].Properties["summary_content"].Ref; got != "#/components/schemas/ContentDocument" {
-			t.Errorf("%s.summary_content $ref = %q", name, got)
-		}
-	}
 	unions := map[string][]string{
 		"BlockNode": {"blockquote", "code", "entity_card", "heading", "list", "math", "paragraph", "spoiler", "table", "thematic_break"},
 		"InlineNode": {"break", "emphasis", "entity_link", "image", "inline_code", "inline_math", "inline_spoiler", "link",

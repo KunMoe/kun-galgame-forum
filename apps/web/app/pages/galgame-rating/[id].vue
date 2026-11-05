@@ -10,7 +10,6 @@ import type {
   PropertyValue
 } from 'schema-dts'
 import { aspectDims } from '~/utils/galgame/ratingCard'
-import { ratingSummaryExcerpt } from '#shared/utils/content/ratingSummary'
 
 definePageMeta({ key: (route) => route.path })
 
@@ -29,9 +28,6 @@ const { data, problem, pending, refresh } = await useKunApi(
 )
 useKunNotFound(() => isMissingProblem(problem.value), '未找到这条评价')
 const { gated, reveal } = useKunNsfwGate(() => data.value?.work?.is_nsfw)
-const summaryExcerpt = computed(() =>
-  data.value ? ratingSummaryExcerpt(data.value) : ''
-)
 
 const jsonLd = computed<WithContext<Review> | null>(() => {
   if (!data.value) {
@@ -101,7 +97,7 @@ const jsonLd = computed<WithContext<Review> | null>(() => {
     publisher: publisherSchema,
     itemReviewed: itemReviewedSchema,
     reviewRating: reviewRatingSchema,
-    reviewBody: truncateRunes(summaryExcerpt.value, 250),
+    reviewBody: truncateRunes(markdownToText(rating.short_summary || ''), 250),
     interactionStatistic: [
       {
         '@type': 'InteractionCounter',
@@ -151,8 +147,9 @@ useKunSeoMeta(() => {
       : `${author.name} 对 ${titleBase} 的评价`
 
   const description = truncateRunes(
-    summaryExcerpt.value ||
-      `${author.name} 对 ${titleBase} 的评分 ${rating.overall}/10`,
+    rating.short_summary
+      ? markdownToText(rating.short_summary)
+      : `${author.name} 对 ${titleBase} 的评分 ${rating.overall}/10`,
     175
   )
 

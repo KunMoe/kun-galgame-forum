@@ -97,11 +97,6 @@ func blockCases() []convertCase {
 		{name: "R6 block math", src: "$$\ne=mc^2\n$$", want: docJSON(`{"object":"math","value":"e=mc^2"}`)},
 		{name: "R8 inline spoiler", src: "||secret||", want: docJSON(paraJSON(
 			`{"object":"inline_spoiler","children":[` + textJSON("secret") + `]}`))},
-		{name: "R8 formatted inline spoiler", src: "**music** ||*ending*||", want: docJSON(paraJSON(
-			`{"object":"strong","children":[` + textJSON("music") + `]},` + textJSON(" ") + `,` +
-				`{"object":"inline_spoiler","children":[{"object":"emphasis","children":[` + textJSON("ending") + `]}]}`))},
-		{name: "R8 pipes in code", src: "`||secret||`", want: docJSON(paraJSON(
-			`{"object":"inline_code","value":"||secret||"}`))},
 		{name: "R8 block spoiler", src: ":::spoiler\nhidden\n:::", want: docJSON(
 			`{"object":"spoiler","children":[` + paraJSON(textJSON("hidden")) + `]}`)},
 		{name: "R7 table alignments and br", src: "" +
