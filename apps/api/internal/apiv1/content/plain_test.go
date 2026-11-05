@@ -36,3 +36,13 @@ func TestPlainText(t *testing.T) {
 		t.Fatalf("cut to 3 runes: %q", got)
 	}
 }
+
+func TestPlainTextRevealedKeepsSpoilerText(t *testing.T) {
+	in := "前||剧透||后\n\n:::spoiler\n整段剧透\n:::"
+	if got := content.PlainTextRevealed(in, 1000); got != "前剧透后\n整段剧透" {
+		t.Fatalf("PlainTextRevealed = %q", got)
+	}
+	if got := content.PlainText(in, 1000); got != "前███后\n███" {
+		t.Fatalf("PlainText still masks: %q", got)
+	}
+}

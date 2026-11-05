@@ -49,7 +49,9 @@ const recommendColor = computed(() => {
   }
 })
 const overall = computed(() => props.rating.overall.toFixed(1))
-const hasSpoiler = computed(() => props.rating.spoiler_level !== 'none')
+const hasSpoiler = computed(
+  () => !props.rating.short_summary && props.rating.spoiler_level !== 'none'
+)
 </script>
 
 <template>
@@ -101,7 +103,7 @@ const hasSpoiler = computed(() => props.rating.spoiler_level !== 'none')
           </p>
           <p
             v-else-if="rating.short_summary"
-            class="text-default-700 line-clamp-3 text-base break-all"
+            class="text-default-700 line-clamp-3 text-base break-all whitespace-pre-line"
           >
             {{ rating.short_summary }}
           </p>

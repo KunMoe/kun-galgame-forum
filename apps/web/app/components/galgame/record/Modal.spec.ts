@@ -2,6 +2,7 @@
 import { afterEach, describe, expect, it, vi } from 'vitest'
 import { mountSuspended, mockNuxtImport } from '@nuxt/test-utils/runtime'
 import { flushPromises, type VueWrapper } from '@vue/test-utils'
+import { defineComponent, h } from 'vue'
 import type {
   RatingSummary,
   WorkRecord,
@@ -61,6 +62,25 @@ const record = (
 
 let wrapper: VueWrapper | undefined
 
+const SummaryEditor = defineComponent({
+  name: 'SummaryEditor',
+  props: { valueMarkdown: String, readonly: Boolean, variant: String },
+  emits: ['setMarkdown'],
+  setup: () => () => h('div')
+})
+
+const writeSummary = async (value: string) => {
+  wrapper!.findComponent(SummaryEditor).vm.$emit('setMarkdown', value)
+  await flushPromises()
+}
+
+const summaryProps = () =>
+  wrapper!.findComponent(SummaryEditor).props() as {
+    valueMarkdown: string
+    readonly: boolean
+    variant: string
+  }
+
 const mountWith = async (loaded: WorkRecord) => {
   api.GET.mockResolvedValue(ok(loaded))
   api.PUT.mockImplementation(async (_path: string, init: PutInit) =>
@@ -68,7 +88,8 @@ const mountWith = async (loaded: WorkRecord) => {
   )
   alert.mockResolvedValue(true)
   wrapper = await mountSuspended(RecordModal, {
-    props: { workId: 7, modelValue: false }
+    props: { workId: 7, modelValue: false },
+    global: { stubs: { KunMilkdownDualEditorProvider: SummaryEditor } }
   })
   await wrapper.setProps({ modelValue: true })
   await flushPromises()
@@ -172,7 +193,7 @@ describe('the rating is the form', () => {
 
   it('asks for the overall score before saving a short review without one', async () => {
     await mountWith(record('doing'))
-    await emitFrom('KunTextarea', '还没打分的短评')
+    await writeSummary('还没打分的短评')
 
     await save()
     expect(api.PUT).not.toHaveBeenCalled()
@@ -196,7 +217,8 @@ describe('the rating is the form', () => {
       record('done_all', { minutes: 120, rating_summary: rating() })
     )
     expect(ratingProps('KunRating').modelValue).toBe(8)
-    expect(ratingProps('KunTextarea').modelValue).toBe('好玩')
+    expect(summaryProps().valueMarkdown).toBe('好玩')
+    expect(summaryProps().variant).toBe('review')
 
     await click('删除评分')
     expect(ratingProps('KunRating').modelValue).toBe(0)
@@ -229,7 +251,7 @@ describe('the rating is the form', () => {
 
     expect(ratingProps('KunRating').modelValue).toBe(8)
     expect(ratingProps('KunRating').disabled).toBe(true)
-    expect(ratingProps('KunTextarea').disabled).toBe(true)
+    expect(summaryProps().readonly).toBe(true)
     expect(document.body.textContent).toContain('想玩的作品还不能评分')
 
     await save()

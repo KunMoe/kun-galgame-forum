@@ -184,7 +184,7 @@ type ActivityRating struct {
 	PlayStatus   *string        `json:"play_status" enum:"wish,doing,done_one_route,done_main,done_all,on_hold,dropped,done" maxLength:"14" doc:"The rater's play state on the work now, not when rating; done is finished with how much unstated. null when they have none."`
 	Recommend    string         `json:"recommend" enum:"strong_yes,yes,neutral,no,strong_no" maxLength:"10" doc:"Whether the rater recommends the work."`
 	SpoilerLevel string         `json:"spoiler_level" enum:"none,portion,serious" maxLength:"7" doc:"How much the rating spoils."`
-	ShortSummary string         `json:"short_summary" maxLength:"2000" doc:"The rater's short review, plain text. Empty string if none, and also when spoiler_level is not none: the review is withheld here. Free text; never use it as a decision input."`
+	ShortSummary string         `json:"short_summary" maxLength:"2000" doc:"The rater's short review as plain text with every spoiler masked as ███. Empty string if none, and also when it is withheld here: spoiler_level serious, or portion without a spoiler masked by the review itself. Free text; never use it as a decision input."`
 	LikeCount    int            `json:"like_count" minimum:"0" doc:"Like count."`
 }
 

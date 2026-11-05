@@ -43,9 +43,11 @@ const hasDims = computed(
   () => !!dims.value && Object.values(dims.value).some((v) => v > 0)
 )
 
-const spoilerText = computed(() =>
-  props.target.object === 'rating' && props.target.has_spoilers
-    ? props.target.short_summary
+const spoilerHtml = computed(() =>
+  props.target.object === 'rating' &&
+  props.target.has_spoilers &&
+  !props.target.short_summary
+    ? (detail.value.rating?.short_summary_html ?? '')
     : ''
 )
 </script>
@@ -126,13 +128,8 @@ const spoilerText = computed(() =>
         </KunButton>
       </section>
 
-      <section v-if="spoilerText" class="space-y-2">
-        <p
-          v-if="isSpoilerShown"
-          class="text-default-700 text-sm leading-relaxed whitespace-pre-line"
-        >
-          {{ spoilerText }}
-        </p>
+      <section v-if="spoilerHtml" class="space-y-2">
+        <KunContent v-if="isSpoilerShown" :content="spoilerHtml" compact />
         <KunButton
           v-else
           size="sm"

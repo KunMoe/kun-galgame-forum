@@ -406,3 +406,5 @@ export const KUN_GALGAME_DIM_DESCRIPTIONS: Record<KunGalgameDim, string[]> = {
     '神作, 一周不看混身难受'
   ]
 }
+
+export const KUN_GALGAME_RATING_SUMMARY_MAX_RUNES = 2000

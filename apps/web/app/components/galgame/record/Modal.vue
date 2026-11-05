@@ -15,6 +15,7 @@ import {
   KUN_GALGAME_RATING_GAME_TYPE_CONST,
   KUN_GALGAME_RATING_GAME_TYPE_MAP,
   KUN_GALGAME_RATING_GAME_TYPE_DESCRIPTION_MAP,
+  KUN_GALGAME_RATING_SUMMARY_MAX_RUNES,
   type KunGalgameDim
 } from '~/constants/galgame-rating'
 import type {
@@ -60,6 +61,7 @@ const overall = ref(0)
 const recommend = ref<Recommend>('neutral')
 const spoilerLevel = ref<Spoiler>('none')
 const shortSummary = ref('')
+const summaryRunes = computed(() => [...shortSummary.value].length)
 const gameTypes = ref<GameType[]>([])
 const showAdvanced = ref(false)
 const aspectsOn = ref(false)
@@ -412,15 +414,31 @@ const save = async () => {
           />
         </div>
 
-        <KunTextarea
-          v-model="shortSummary"
-          label="短评 (可选, 请勿包含 R18 内容, 新评分的短评会自动保存在本地, 关掉面板不会丢失)"
-          :rows="4"
-          :maxlength="2000"
-          :show-char-count="true"
-          :disabled="isWish"
-          auto-grow
-        />
+        <div class="space-y-2">
+          <p class="text-default-700 text-sm font-medium">
+            短评 (可选, 请勿包含 R18 内容, 新评分的短评会自动保存在本地,
+            关掉面板不会丢失)
+          </p>
+          <KunMilkdownDualEditorProvider
+            :value-markdown="shortSummary"
+            variant="review"
+            :readonly="isWish"
+            placeholder="写下你对这部作品的看法"
+            @set-markdown="(value) => (shortSummary = value)"
+          >
+            <span
+              :class="
+                cn(
+                  'text-default-500',
+                  summaryRunes > KUN_GALGAME_RATING_SUMMARY_MAX_RUNES &&
+                    'text-danger'
+                )
+              "
+            >
+              {{ summaryRunes }} / {{ KUN_GALGAME_RATING_SUMMARY_MAX_RUNES }}
+            </span>
+          </KunMilkdownDualEditorProvider>
+        </div>
 
         <div v-if="showAdvanced">
           <GalgameRatingAdvanced v-model="dims" :readonly="isWish" />

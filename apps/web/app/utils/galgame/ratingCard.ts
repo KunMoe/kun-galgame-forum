@@ -8,6 +8,13 @@ import type { KunGalgameDim } from '~/constants/galgame-rating'
 
 type NameOf = (n: CatalogName) => { name: string; original: string }
 
+export const isRatingSummaryShown = (r: {
+  spoiler_level: string
+  has_short_summary_spoiler: boolean
+}) =>
+  r.spoiler_level === 'none' ||
+  (r.spoiler_level === 'portion' && r.has_short_summary_spoiler)
+
 export const aspectDims = (s: AspectScores): Record<KunGalgameDim, number> => ({
   art: s.art ?? 0,
   story: s.story ?? 0,
@@ -46,6 +53,9 @@ export const ratingToCard = (
   galgame_type: [...r.game_types],
   play_status: r.play_status,
   short_summary: r.short_summary,
+  short_summary_html: r.short_summary_html,
+  short_summary_text: r.short_summary_text,
+  has_short_summary_spoiler: r.has_short_summary_spoiler,
   ...aspectDims(r.aspect_scores),
   spoiler_level: r.spoiler_level,
   like_count: r.like_count,

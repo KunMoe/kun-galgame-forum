@@ -12,6 +12,7 @@ import {
   KUN_GALGAME_PLAY_STATE_MAP,
   type KunGalgamePlayStateRead
 } from '~/constants/galgame-playtime'
+import { isRatingSummaryShown } from '~/utils/galgame/ratingCard'
 
 const props = defineProps<{
   ratings: GalgameRatingCardOnGalgamePage[]
@@ -116,15 +117,16 @@ const sorted = computed(() =>
           </div>
 
           <p
-            v-if="rating.short_summary && rating.spoiler_level !== 'none'"
+            v-if="rating.short_summary_html && !isRatingSummaryShown(rating)"
             class="text-default-500 flex items-center gap-1.5"
           >
             <KunIcon name="lucide:triangle-alert" class="text-warning" />
             {{ KUN_GALGAME_RATING_SPOILER_WARNING }}
           </p>
-          <KunText
-            v-else-if="rating.short_summary"
-            :content="rating.short_summary"
+          <KunContent
+            v-else-if="rating.short_summary_html"
+            :content="rating.short_summary_html"
+            compact
           />
 
           <KunLink :to="`/galgame-rating/${rating.id}`" size="sm">

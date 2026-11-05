@@ -2,6 +2,7 @@ package repository
 
 import (
 	"encoding/json"
+	galgameModel "kun-galgame-api/internal/galgame/model"
 	"kun-galgame-api/internal/galgame/playstate"
 	"kun-galgame-api/internal/galgame/resourcevocab"
 	"kun-galgame-api/pkg/miniapp"
@@ -193,21 +194,23 @@ func (r *ActivityRepository) FetchRatingActivityData(ratingIDs []int) (map[int]R
 		AuthorState      *string `gorm:"column:author_state"`
 		AuthorCompletion *string `gorm:"column:author_completion"`
 		Recommend        string  `gorm:"column:recommend"`
-		ShortSummary     string  `gorm:"column:short_summary"`
+		ShortSummaryText string  `gorm:"column:short_summary_text"`
+		HasSpoilerMask   bool    `gorm:"column:short_summary_has_spoiler"`
 		SpoilerLevel     string  `gorm:"column:spoiler_level"`
 		LikeCount        int     `gorm:"column:like_count"`
 		UserID           int     `gorm:"column:user_id"`
 	}
 	if err := r.db.Raw(`
-		SELECT id, overall, author_state, author_completion, recommend, short_summary, spoiler_level, like_count, user_id
+		SELECT id, overall, author_state, author_completion, recommend, short_summary_text,
+			short_summary_has_spoiler, spoiler_level, like_count, user_id
 		FROM galgame_rating
 		WHERE id IN ?`, ratingIDs).Scan(&rows).Error; err != nil {
 		return out, err
 	}
 	for _, row := range rows {
-		summary := row.ShortSummary
-		if row.SpoilerLevel != "none" {
-			summary = ""
+		summary := ""
+		if galgameModel.SummaryShown(row.SpoilerLevel, row.HasSpoilerMask) {
+			summary = galgameModel.SummaryExcerpt(row.ShortSummaryText)
 		}
 		state := ""
 		if row.AuthorState != nil {

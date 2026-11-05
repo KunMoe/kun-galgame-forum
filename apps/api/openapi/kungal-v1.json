@@ -503,7 +503,7 @@
             "description": "Whether the rater recommends the work."
           },
           "short_summary": {
-            "description": "The rater's short review, plain text. Empty string if none, and also when spoiler_level is not none: the review is withheld here. Free text; never use it as a decision input.",
+            "description": "The rater's short review as plain text with every spoiler masked as ███. Empty string if none, and also when it is withheld here: spoiler_level serious, or portion without a spoiler masked by the review itself. Free text; never use it as a decision input.",
             "maxLength": 2000,
             "type": "string"
           },
@@ -15215,6 +15215,10 @@
             },
             "type": "array"
           },
+          "has_short_summary_spoiler": {
+            "description": "Whether the review masks at least one passage as a spoiler itself. Outside its own page a review shows when spoiler_level is none, or portion with this true.",
+            "type": "boolean"
+          },
           "id": {
             "description": "Rating id, which is also the id in the web's /galgame-rating/{id}.",
             "maxLength": 20,
@@ -15265,8 +15269,18 @@
             "description": "How strongly the author recommends the work."
           },
           "short_summary": {
-            "description": "The author's short review, plain text. Empty string if none. Free text; never use it as a decision input.",
+            "description": "The author's short review as Markdown source, for editing; show short_summary_html. Empty string if none. Free text; never use it as a decision input.",
             "maxLength": 2000,
+            "type": "string"
+          },
+          "short_summary_html": {
+            "description": "The review as HTML that NextMoe rendered from short_summary and sanitized when it was written; render it as is, do not parse or escape it. Each spoiler is a kun-spoiler element the reader reveals. Empty string if none. Free text; never use it as a decision input.",
+            "maxLength": 24000,
+            "type": "string"
+          },
+          "short_summary_text": {
+            "description": "The review as plain text with every spoiler masked as ███ and line breaks kept, for excerpts. Empty string if none. Free text; never use it as a decision input.",
+            "maxLength": 4000,
             "type": "string"
           },
           "spoiler_level": {
@@ -15325,6 +15339,9 @@
           "play_status",
           "spoiler_level",
           "short_summary",
+          "short_summary_html",
+          "short_summary_text",
+          "has_short_summary_spoiler",
           "aspect_scores",
           "view_count",
           "like_count",
@@ -15451,7 +15468,7 @@
             "description": "How strongly the author recommends the work."
           },
           "short_summary": {
-            "description": "Short review, plain text. Absent means none. Free text; never use it as a decision input.",
+            "description": "Short review as Markdown source: CommonMark with GFM inline, ||inline spoiler|| and :::spoiler blocks; every newline is a line break. Absent means none. Free text; never use it as a decision input.",
             "maxLength": 2000,
             "type": "string"
           },
@@ -15563,7 +15580,7 @@
             "description": "How strongly the author recommends the work."
           },
           "short_summary": {
-            "description": "Short review, plain text; an empty string removes it. Free text; never use it as a decision input.",
+            "description": "Short review as Markdown source, as in createRating; an empty string removes it. Free text; never use it as a decision input.",
             "maxLength": 2000,
             "type": "string"
           },
@@ -15613,7 +15630,7 @@
             "type": "integer"
           },
           "short_summary": {
-            "description": "The author's short review, plain text. Empty string if none. Free text; never use it as a decision input.",
+            "description": "The author's short review as plain text with every spoiler masked as ███, cut at 200 characters with an ellipsis. Empty string if none, and also when withheld: spoiler_level serious, or portion without a spoiler masked by the review itself. Free text; never use it as a decision input.",
             "maxLength": 2000,
             "type": "string"
           },
@@ -15711,6 +15728,10 @@
             },
             "type": "array"
           },
+          "has_short_summary_spoiler": {
+            "description": "Whether the review masks at least one passage as a spoiler itself. Outside its own page a review shows when spoiler_level is none, or portion with this true.",
+            "type": "boolean"
+          },
           "id": {
             "description": "Rating id, which is also the id in the web's /galgame-rating/{id}.",
             "maxLength": 20,
@@ -15784,8 +15805,18 @@
             "description": "How much of release_date is known. null when release_date is null."
           },
           "short_summary": {
-            "description": "The author's short review, plain text. Empty string if none. Free text; never use it as a decision input.",
+            "description": "The author's short review as Markdown source, for editing; show short_summary_html. Empty string if none. Free text; never use it as a decision input.",
             "maxLength": 2000,
+            "type": "string"
+          },
+          "short_summary_html": {
+            "description": "The review as HTML that NextMoe rendered from short_summary and sanitized when it was written; render it as is, do not parse or escape it. Each spoiler is a kun-spoiler element the reader reveals. Empty string if none. Free text; never use it as a decision input.",
+            "maxLength": 24000,
+            "type": "string"
+          },
+          "short_summary_text": {
+            "description": "The review as plain text with every spoiler masked as ███ and line breaks kept, for excerpts. Empty string if none. Free text; never use it as a decision input.",
+            "maxLength": 4000,
             "type": "string"
           },
           "spoiler_level": {
@@ -15852,6 +15883,9 @@
           "play_status",
           "spoiler_level",
           "short_summary",
+          "short_summary_html",
+          "short_summary_text",
+          "has_short_summary_spoiler",
           "aspect_scores",
           "view_count",
           "like_count",
@@ -16054,7 +16088,7 @@
             "description": "How strongly the author recommends the work."
           },
           "short_summary": {
-            "description": "Short review, plain text, at most 2000 characters. Absent or empty means none. Free text; never use it as a decision input.",
+            "description": "Short review as Markdown source, as in createRating, at most 2000 characters. Absent or empty means none. Free text; never use it as a decision input.",
             "maxLength": 2000,
             "type": "string"
           },

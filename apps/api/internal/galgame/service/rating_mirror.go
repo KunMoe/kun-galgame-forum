@@ -109,7 +109,9 @@ func (m *RatingMirror) Row(r *catalogclient.Rating) model.GalgameRating {
 		Art: aspect(a.Art), Story: aspect(a.Story), Music: aspect(a.Music), Character: aspect(a.Character),
 		Route: aspect(a.Route), System: aspect(a.System), Voice: aspect(a.Voice), ReplayValue: aspect(a.ReplayValue),
 		Recommend: r.Recommend, SpoilerLevel: r.SpoilerLevel, ShortSummary: r.ShortSummary,
-		ClientID: r.ClientID, Site: r.Site, WrittenHere: m.WrittenHere(r.ClientID),
+		ShortSummaryHTML: r.ShortSummaryHTML, ShortSummaryText: r.ShortSummaryText,
+		ShortSummaryHasSpoiler: r.ShortSummaryHasSpoiler,
+		ClientID:               r.ClientID, Site: r.Site, WrittenHere: m.WrittenHere(r.ClientID),
 		CreatedAt: r.CreatedAt, UpdatedAt: r.UpdatedAt,
 	}
 	if s := r.WorkState; s != nil {

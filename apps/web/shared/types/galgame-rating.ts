@@ -7,6 +7,9 @@ export interface GalgameRatingCard {
   galgame_type: string[]
   play_status: string | null
   short_summary: string
+  short_summary_html: string
+  short_summary_text: string
+  has_short_summary_spoiler: boolean
 
   art: number
   story: number

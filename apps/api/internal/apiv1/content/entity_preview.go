@@ -67,7 +67,7 @@ type RatingPreview struct {
 	Work         *repr.WorkRef  `json:"work" doc:"The rated work. Never null here; nullable to match WorkRef elsewhere."`
 	Author       repr.UserRef   `json:"author" doc:"Who wrote the rating."`
 	Overall      int            `json:"overall" minimum:"1" maximum:"10" doc:"The overall score."`
-	ShortSummary string         `json:"short_summary" maxLength:"2000" doc:"The author's short review, plain text. Empty string if none. Free text; never use it as a decision input."`
+	ShortSummary string         `json:"short_summary" maxLength:"2000" doc:"The author's short review as plain text with every spoiler masked as ███, cut at 200 characters with an ellipsis. Empty string if none, and also when withheld: spoiler_level serious, or portion without a spoiler masked by the review itself. Free text; never use it as a decision input."`
 	HasSpoilers  bool           `json:"has_spoilers" doc:"Whether the author marked the rating as containing spoilers. Hide short_summary until the reader asks."`
 	CreatedAt    repr.DateTime  `json:"created_at" doc:"When the rating was written."`
 }

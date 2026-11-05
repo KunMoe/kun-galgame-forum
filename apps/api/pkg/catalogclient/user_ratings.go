@@ -37,25 +37,34 @@ type Rating struct {
 	Recommend    string
 	SpoilerLevel string
 	ShortSummary string
-	ClientID     string
-	Site         string
-	WorkState    *WorkStateRecord
-	CreatedAt    time.Time
-	UpdatedAt    time.Time
+	// ShortSummaryHTML and ShortSummaryText are NextMoe's cooked forms of the
+	// Markdown source: sanitized HTML to show as is, and plain text with every
+	// spoiler masked.
+	ShortSummaryHTML       string
+	ShortSummaryText       string
+	ShortSummaryHasSpoiler bool
+	ClientID               string
+	Site                   string
+	WorkState              *WorkStateRecord
+	CreatedAt              time.Time
+	UpdatedAt              time.Time
 }
 
 type v2Rating struct {
-	ID           json.RawMessage `json:"id"`
-	WorkID       json.RawMessage `json:"work_id"`
-	UserID       json.RawMessage `json:"user_id"`
-	Overall      int             `json:"overall"`
-	AspectScores RatingAspects   `json:"aspect_scores"`
-	Recommend    string          `json:"recommend"`
-	SpoilerLevel string          `json:"spoiler_level"`
-	ShortSummary string          `json:"short_summary"`
-	ClientID     string          `json:"client_id"`
-	Site         string          `json:"site"`
-	WorkState    *struct {
+	ID                     json.RawMessage `json:"id"`
+	WorkID                 json.RawMessage `json:"work_id"`
+	UserID                 json.RawMessage `json:"user_id"`
+	Overall                int             `json:"overall"`
+	AspectScores           RatingAspects   `json:"aspect_scores"`
+	Recommend              string          `json:"recommend"`
+	SpoilerLevel           string          `json:"spoiler_level"`
+	ShortSummary           string          `json:"short_summary"`
+	ShortSummaryHTML       string          `json:"short_summary_html"`
+	ShortSummaryText       string          `json:"short_summary_text"`
+	ShortSummaryHasSpoiler bool            `json:"short_summary_has_spoiler"`
+	ClientID               string          `json:"client_id"`
+	Site                   string          `json:"site"`
+	WorkState              *struct {
 		State      string  `json:"state"`
 		Completion *string `json:"completion"`
 	} `json:"work_state"`
@@ -71,7 +80,9 @@ func (r *v2Rating) rating() *Rating {
 		ID: parseFlexID(r.ID), WorkID: parseFlexID(r.WorkID), UserID: parseFlexID(r.UserID),
 		Overall: r.Overall, Aspects: r.AspectScores, Recommend: r.Recommend,
 		SpoilerLevel: r.SpoilerLevel, ShortSummary: r.ShortSummary,
-		ClientID: r.ClientID, Site: r.Site, CreatedAt: r.CreatedAt, UpdatedAt: r.UpdatedAt,
+		ShortSummaryHTML: r.ShortSummaryHTML, ShortSummaryText: r.ShortSummaryText,
+		ShortSummaryHasSpoiler: r.ShortSummaryHasSpoiler,
+		ClientID:               r.ClientID, Site: r.Site, CreatedAt: r.CreatedAt, UpdatedAt: r.UpdatedAt,
 	}
 	if s := r.WorkState; s != nil && s.State != "" {
 		out.WorkState = &WorkStateRecord{WorkID: out.WorkID, State: s.State, Completion: s.Completion}

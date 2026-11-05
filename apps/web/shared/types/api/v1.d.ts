@@ -6005,7 +6005,7 @@ export interface components {
             rating_id: string;
             /** @description Whether the rater recommends the work. */
             recommend: components["schemas"]["RatingRecommend"];
-            /** @description The rater's short review, plain text. Empty string if none, and also when spoiler_level is not none: the review is withheld here. Free text; never use it as a decision input. */
+            /** @description The rater's short review as plain text with every spoiler masked as ███. Empty string if none, and also when it is withheld here: spoiler_level serious, or portion without a spoiler masked by the review itself. Free text; never use it as a decision input. */
             short_summary: string;
             /** @description How much the rating spoils. */
             spoiler_level: components["schemas"]["SpoilerLevel"];
@@ -11558,6 +11558,8 @@ export interface components {
             created_at: string;
             /** @description Game types the author files the work under. Empty when the rating was written on another NextMoe site, which does not ask. */
             game_types: components["schemas"]["GameType"][];
+            /** @description Whether the review masks at least one passage as a spoiler itself. Outside its own page a review shows when spoiler_level is none, or portion with this true. */
+            has_short_summary_spoiler: boolean;
             /** @description Rating id, which is also the id in the web's /galgame-rating/{id}. */
             id: string;
             /**
@@ -11581,8 +11583,12 @@ export interface components {
             play_status: components["schemas"]["PlayState"] | null;
             /** @description How strongly the author recommends the work. */
             recommend: components["schemas"]["RatingRecommend"];
-            /** @description The author's short review, plain text. Empty string if none. Free text; never use it as a decision input. */
+            /** @description The author's short review as Markdown source, for editing; show short_summary_html. Empty string if none. Free text; never use it as a decision input. */
             short_summary: string;
+            /** @description The review as HTML that NextMoe rendered from short_summary and sanitized when it was written; render it as is, do not parse or escape it. Each spoiler is a kun-spoiler element the reader reveals. Empty string if none. Free text; never use it as a decision input. */
+            short_summary_html: string;
+            /** @description The review as plain text with every spoiler masked as ███ and line breaks kept, for excerpts. Empty string if none. Free text; never use it as a decision input. */
+            short_summary_text: string;
             /** @description How much the short summary gives away, as its author declared. */
             spoiler_level: components["schemas"]["SpoilerLevel"];
             /**
@@ -11655,7 +11661,7 @@ export interface components {
             play_status: components["schemas"]["PlayState"] | null;
             /** @description How strongly the author recommends the work. */
             recommend: components["schemas"]["RatingRecommend"];
-            /** @description Short review, plain text. Absent means none. Free text; never use it as a decision input. */
+            /** @description Short review as Markdown source: CommonMark with GFM inline, ||inline spoiler|| and :::spoiler blocks; every newline is a line break. Absent means none. Free text; never use it as a decision input. */
             short_summary?: string;
             /** @description How much the short summary gives away, as its author declared. */
             spoiler_level: components["schemas"]["SpoilerLevel"];
@@ -11696,7 +11702,7 @@ export interface components {
             play_status?: components["schemas"]["PlayState"] | null;
             /** @description How strongly the author recommends the work. */
             recommend?: components["schemas"]["RatingRecommend"];
-            /** @description Short review, plain text; an empty string removes it. Free text; never use it as a decision input. */
+            /** @description Short review as Markdown source, as in createRating; an empty string removes it. Free text; never use it as a decision input. */
             short_summary?: string;
             /** @description How much the short summary gives away, as its author declared. */
             spoiler_level?: components["schemas"]["SpoilerLevel"];
@@ -11723,7 +11729,7 @@ export interface components {
              * @description The overall score.
              */
             overall: number;
-            /** @description The author's short review, plain text. Empty string if none. Free text; never use it as a decision input. */
+            /** @description The author's short review as plain text with every spoiler masked as ███, cut at 200 characters with an ellipsis. Empty string if none, and also when withheld: spoiler_level serious, or portion without a spoiler masked by the review itself. Free text; never use it as a decision input. */
             short_summary: string;
             /** @description The rated work. Never null here; nullable to match WorkRef elsewhere. */
             work: components["schemas"]["WorkRef"] | null;
@@ -11751,6 +11757,8 @@ export interface components {
             created_at: string;
             /** @description Game types the author files the work under. Empty when the rating was written on another NextMoe site, which does not ask. */
             game_types: components["schemas"]["GameType"][];
+            /** @description Whether the review masks at least one passage as a spoiler itself. Outside its own page a review shows when spoiler_level is none, or portion with this true. */
+            has_short_summary_spoiler: boolean;
             /** @description Rating id, which is also the id in the web's /galgame-rating/{id}. */
             id: string;
             /**
@@ -11781,8 +11789,12 @@ export interface components {
             release_date: string | null;
             /** @description How much of release_date is known. null when release_date is null. */
             release_date_precision: components["schemas"]["ReleaseDatePrecision"] | null;
-            /** @description The author's short review, plain text. Empty string if none. Free text; never use it as a decision input. */
+            /** @description The author's short review as Markdown source, for editing; show short_summary_html. Empty string if none. Free text; never use it as a decision input. */
             short_summary: string;
+            /** @description The review as HTML that NextMoe rendered from short_summary and sanitized when it was written; render it as is, do not parse or escape it. Each spoiler is a kun-spoiler element the reader reveals. Empty string if none. Free text; never use it as a decision input. */
+            short_summary_html: string;
+            /** @description The review as plain text with every spoiler masked as ███ and line breaks kept, for excerpts. Empty string if none. Free text; never use it as a decision input. */
+            short_summary_text: string;
             /** @description How much the short summary gives away, as its author declared. */
             spoiler_level: components["schemas"]["SpoilerLevel"];
             /** @description Up to five of the work's tags, in the order its page lists them, leaving out spoiler tags, and adult tags unless include_nsfw=true. Empty array when work is null, never null. */
@@ -11859,7 +11871,7 @@ export interface components {
             overall: number;
             /** @description How strongly the author recommends the work. */
             recommend: components["schemas"]["RatingRecommend"];
-            /** @description Short review, plain text, at most 2000 characters. Absent or empty means none. Free text; never use it as a decision input. */
+            /** @description Short review as Markdown source, as in createRating, at most 2000 characters. Absent or empty means none. Free text; never use it as a decision input. */
             short_summary?: string;
             /** @description How much the short summary gives away, as its author declared. */
             spoiler_level: components["schemas"]["SpoilerLevel"];

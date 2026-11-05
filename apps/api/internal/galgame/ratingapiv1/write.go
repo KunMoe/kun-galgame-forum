@@ -10,6 +10,7 @@ import (
 	"unicode/utf8"
 
 	v1 "kun-galgame-api/internal/apiv1"
+	"kun-galgame-api/internal/apiv1/content"
 	"kun-galgame-api/internal/apiv1/repr"
 	"kun-galgame-api/internal/constants"
 	"kun-galgame-api/internal/galgame/repository"
@@ -46,7 +47,7 @@ func requireToken(ctx context.Context) (string, *problem.Problem) {
 }
 
 func ratingReward(summary string) int {
-	n := len(summary)
+	n := len(content.PlainTextRevealed(summary, len(summary)))
 	switch {
 	case n >= constants.RatingLenThresholdHigh:
 		return constants.RatingRewardHigh

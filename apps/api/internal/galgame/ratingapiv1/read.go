@@ -214,7 +214,9 @@ func (s *Service) detail(ctx context.Context, id int) (*Rating, *problem.Problem
 		Object: sum.Object, ID: sum.ID, Work: sum.Work, Author: sum.Author,
 		Recommend: sum.Recommend, Overall: sum.Overall, GameTypes: sum.GameTypes,
 		PlayStatus: sum.PlayStatus, SpoilerLevel: sum.SpoilerLevel, ShortSummary: sum.ShortSummary,
-		AspectScores: sum.AspectScores, ViewCount: sum.ViewCount, LikeCount: sum.LikeCount,
+		ShortSummaryHTML: sum.ShortSummaryHTML, ShortSummaryText: sum.ShortSummaryText,
+		HasShortSummarySpoiler: sum.HasShortSummarySpoiler,
+		AspectScores:           sum.AspectScores, ViewCount: sum.ViewCount, LikeCount: sum.LikeCount,
 		CommentCount: sum.CommentCount, CreatedAt: sum.CreatedAt, UpdatedAt: sum.UpdatedAt,
 		Viewer: sum.Viewer, WorkSummary: summaries[0], Likers: likers,
 	}, nil

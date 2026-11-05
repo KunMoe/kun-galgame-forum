@@ -15,6 +15,16 @@ const spoilerMask = "███"
 // PlainText is stored Markdown as the text a reader sees, at most maxLen
 // runes: images and tags dropped, links as their text, spoilers masked.
 func PlainText(source string, maxLen int) string {
+	return plainText(source, maxLen, true)
+}
+
+// PlainTextRevealed is PlainText with every spoiler's text in place of its
+// mask, for measuring what an author wrote rather than showing it.
+func PlainTextRevealed(source string, maxLen int) string {
+	return plainText(source, maxLen, false)
+}
+
+func plainText(source string, maxLen int, mask bool) string {
 	root, src := markdown.ParseStored(source)
 	c := &converter{src: src}
 	var b strings.Builder
@@ -55,6 +65,9 @@ func PlainText(source string, maxLen int) string {
 				b.WriteByte('\n')
 			}
 		case markdown.KindSpoilerInline, markdown.KindSpoilerBlock:
+			if !mask {
+				return ast.WalkContinue, nil
+			}
 			b.WriteString(spoilerMask)
 		case ast.KindImage:
 		default:

@@ -176,17 +176,15 @@ const handleDeleteRating = async () => {
             </KunChip>
           </div>
 
-          <div class="relative">
-            <KunText
-              :content="data.short_summary"
-              :class-name="
-                cn('leading-7', isSummaryMasked && 'blur-sm select-none')
-              "
+          <div v-if="data.short_summary_html">
+            <KunContent
+              v-if="!isSummaryMasked"
+              :content="data.short_summary_html"
             />
             <button
-              v-if="isSummaryMasked"
+              v-else
               type="button"
-              class="bg-background/40 hover:bg-background/20 absolute inset-0 flex flex-col items-center justify-center gap-1 rounded-md backdrop-blur-[2px] transition-colors"
+              class="bg-default-100 hover:bg-default-200 flex w-full flex-col items-center justify-center gap-1 rounded-md py-8 transition-colors"
               @click="spoilerRevealed = true"
             >
               <KunIcon name="lucide:eye" class="text-danger size-6" />

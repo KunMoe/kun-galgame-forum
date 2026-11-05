@@ -161,9 +161,9 @@ const bodyOf = (t: EntityTarget, preferOriginal: boolean): Body => {
       break
     case 'rating':
       body.title = t.work ? name(t.work) : '评分'
-      body.description = t.has_spoilers
-        ? '这篇评分含有剧透，打开后查看'
-        : t.short_summary || '作者没有写短评'
+      body.description =
+        t.short_summary ||
+        (t.has_spoilers ? '这篇评分含有剧透，打开后查看' : '作者没有写短评')
       body.person = toKunUser(t.author)
       body.score = t.overall
       break

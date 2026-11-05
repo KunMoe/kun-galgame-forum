@@ -26,27 +26,30 @@ func NewRatingStore(db *gorm.DB) *RatingStore {
 func (s *RatingStore) DB() *gorm.DB { return s.db }
 
 type RatingRecord struct {
-	ID           int             `gorm:"column:id"`
-	WorkID       int             `gorm:"column:work_id"`
-	UserID       int             `gorm:"column:user_id"`
-	Recommend    string          `gorm:"column:recommend"`
-	Overall      int             `gorm:"column:overall"`
-	View         int             `gorm:"column:view"`
-	GalgameType  json.RawMessage `gorm:"column:galgame_type"`
-	ShortSummary string          `gorm:"column:short_summary"`
-	SpoilerLevel string          `gorm:"column:spoiler_level"`
-	Art          int             `gorm:"column:art"`
-	Story        int             `gorm:"column:story"`
-	Music        int             `gorm:"column:music"`
-	Character    int             `gorm:"column:character"`
-	Route        int             `gorm:"column:route"`
-	System       int             `gorm:"column:system"`
-	Voice        int             `gorm:"column:voice"`
-	ReplayValue  int             `gorm:"column:replay_value"`
-	LikeCount    int             `gorm:"column:like_count"`
-	CommentCount int             `gorm:"column:comment_count"`
-	Created      time.Time       `gorm:"column:created"`
-	Updated      time.Time       `gorm:"column:updated"`
+	ID                     int             `gorm:"column:id"`
+	WorkID                 int             `gorm:"column:work_id"`
+	UserID                 int             `gorm:"column:user_id"`
+	Recommend              string          `gorm:"column:recommend"`
+	Overall                int             `gorm:"column:overall"`
+	View                   int             `gorm:"column:view"`
+	GalgameType            json.RawMessage `gorm:"column:galgame_type"`
+	ShortSummary           string          `gorm:"column:short_summary"`
+	ShortSummaryHTML       string          `gorm:"column:short_summary_html"`
+	ShortSummaryText       string          `gorm:"column:short_summary_text"`
+	ShortSummaryHasSpoiler bool            `gorm:"column:short_summary_has_spoiler"`
+	SpoilerLevel           string          `gorm:"column:spoiler_level"`
+	Art                    int             `gorm:"column:art"`
+	Story                  int             `gorm:"column:story"`
+	Music                  int             `gorm:"column:music"`
+	Character              int             `gorm:"column:character"`
+	Route                  int             `gorm:"column:route"`
+	System                 int             `gorm:"column:system"`
+	Voice                  int             `gorm:"column:voice"`
+	ReplayValue            int             `gorm:"column:replay_value"`
+	LikeCount              int             `gorm:"column:like_count"`
+	CommentCount           int             `gorm:"column:comment_count"`
+	Created                time.Time       `gorm:"column:created"`
+	Updated                time.Time       `gorm:"column:updated"`
 
 	AuthorState      *string `gorm:"column:author_state"`
 	AuthorCompletion *string `gorm:"column:author_completion"`
@@ -190,32 +193,37 @@ func (s *RatingStore) MirrorRating(r model.GalgameRating) error {
 		}
 		if err := tx.Exec(`INSERT INTO galgame_rating
 			(id, work_id, user_id, overall, art, story, music, character, route, system, voice, replay_value,
-			 recommend, spoiler_level, short_summary, author_state, author_completion, client_id, site, written_here,
-			 created, updated)
-			VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+			 recommend, spoiler_level, short_summary, short_summary_html, short_summary_text, short_summary_has_spoiler,
+			 author_state, author_completion, client_id, site, written_here, created, updated)
+			VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
 			ON CONFLICT (id) DO UPDATE SET
 			  work_id = EXCLUDED.work_id, user_id = EXCLUDED.user_id, overall = EXCLUDED.overall,
 			  art = EXCLUDED.art, story = EXCLUDED.story, music = EXCLUDED.music, character = EXCLUDED.character,
 			  route = EXCLUDED.route, system = EXCLUDED.system, voice = EXCLUDED.voice,
 			  replay_value = EXCLUDED.replay_value, recommend = EXCLUDED.recommend,
 			  spoiler_level = EXCLUDED.spoiler_level, short_summary = EXCLUDED.short_summary,
+			  short_summary_html = EXCLUDED.short_summary_html, short_summary_text = EXCLUDED.short_summary_text,
+			  short_summary_has_spoiler = EXCLUDED.short_summary_has_spoiler,
 			  author_state = EXCLUDED.author_state, author_completion = EXCLUDED.author_completion,
 			  client_id = EXCLUDED.client_id, site = EXCLUDED.site, written_here = EXCLUDED.written_here,
 			  created = EXCLUDED.created, updated = EXCLUDED.updated
 			WHERE (galgame_rating.work_id, galgame_rating.user_id, galgame_rating.overall, galgame_rating.art,
 			       galgame_rating.story, galgame_rating.music, galgame_rating.character, galgame_rating.route,
 			       galgame_rating.system, galgame_rating.voice, galgame_rating.replay_value, galgame_rating.recommend,
-			       galgame_rating.spoiler_level, galgame_rating.short_summary, galgame_rating.author_state,
+			       galgame_rating.spoiler_level, galgame_rating.short_summary, galgame_rating.short_summary_html,
+			       galgame_rating.short_summary_text, galgame_rating.short_summary_has_spoiler, galgame_rating.author_state,
 			       galgame_rating.author_completion, galgame_rating.client_id, galgame_rating.site,
 			       galgame_rating.written_here, galgame_rating.created, galgame_rating.updated)
 			  IS DISTINCT FROM
 			      (EXCLUDED.work_id, EXCLUDED.user_id, EXCLUDED.overall, EXCLUDED.art, EXCLUDED.story, EXCLUDED.music,
 			       EXCLUDED.character, EXCLUDED.route, EXCLUDED.system, EXCLUDED.voice, EXCLUDED.replay_value,
-			       EXCLUDED.recommend, EXCLUDED.spoiler_level, EXCLUDED.short_summary, EXCLUDED.author_state,
+			       EXCLUDED.recommend, EXCLUDED.spoiler_level, EXCLUDED.short_summary, EXCLUDED.short_summary_html,
+			       EXCLUDED.short_summary_text, EXCLUDED.short_summary_has_spoiler, EXCLUDED.author_state,
 			       EXCLUDED.author_completion, EXCLUDED.client_id, EXCLUDED.site, EXCLUDED.written_here,
 			       EXCLUDED.created, EXCLUDED.updated)`,
 			r.ID, r.WorkID, r.UserID, r.Overall, r.Art, r.Story, r.Music, r.Character, r.Route, r.System,
-			r.Voice, r.ReplayValue, r.Recommend, r.SpoilerLevel, r.ShortSummary, r.AuthorState,
+			r.Voice, r.ReplayValue, r.Recommend, r.SpoilerLevel, r.ShortSummary, r.ShortSummaryHTML,
+			r.ShortSummaryText, r.ShortSummaryHasSpoiler, r.AuthorState,
 			r.AuthorCompletion, r.ClientID, r.Site, r.WrittenHere, r.CreatedAt, r.UpdatedAt).Error; err != nil {
 			return err
 		}

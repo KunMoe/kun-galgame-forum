@@ -8,6 +8,7 @@ import {
   KUN_GALGAME_RATING_RECOMMEND_COLOR_MAP,
   KUN_GALGAME_RATING_SPOILER_WARNING
 } from '~/constants/galgame-rating'
+import { isRatingSummaryShown } from '~/utils/galgame/ratingCard'
 
 const props = defineProps<{
   rating: GalgameRatingCardOnGalgamePage
@@ -46,7 +47,7 @@ const recommendColor = computed(() => {
 const MAX_SUMMARY = 100
 
 const truncatedSummary = computed(() => {
-  const s = props.rating.short_summary?.trim()
+  const s = props.rating.short_summary_text.trim()
   if (!s) return ''
   if (s.length <= MAX_SUMMARY) return s
   return s.slice(0, MAX_SUMMARY) + '...'
@@ -81,7 +82,7 @@ const overall = computed(() => props.rating.overall.toFixed(1))
     </div>
 
     <p
-      v-if="rating.short_summary && rating.spoiler_level !== 'none'"
+      v-if="rating.short_summary_html && !isRatingSummaryShown(rating)"
       class="text-default-500 mt-1 ml-8 flex items-center gap-1 text-sm"
     >
       <KunIcon name="lucide:triangle-alert" class="text-warning shrink-0" />

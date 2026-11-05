@@ -1,6 +1,7 @@
 package catalogclient
 
 import (
+	"encoding/json"
 	"net/http"
 	"net/http/httptest"
 	"net/url"
@@ -28,5 +29,20 @@ func TestCurrentRatingAsksForTheOnePersonAndWork(t *testing.T) {
 	body = `{"object":"list","items":[]}`
 	if _, found, err := c.CurrentRating(t.Context(), 5, 9); err != nil || found {
 		t.Errorf("an empty list = found %v err %v, want none", found, err)
+	}
+}
+
+func TestRatingCarriesTheCookedSummary(t *testing.T) {
+	var v v2Rating
+	raw := `{"id":"1","work_id":"2","user_id":"3","overall":7,"short_summary":"a ||b||",
+		"short_summary_html":"<p>a <span class=\"kun-spoiler kun-spoiler-hidden\">b</span></p>",
+		"short_summary_text":"a ███","short_summary_has_spoiler":true}`
+	if err := json.Unmarshal([]byte(raw), &v); err != nil {
+		t.Fatal(err)
+	}
+	r := v.rating()
+	if r.ShortSummary != "a ||b||" || r.ShortSummaryText != "a ███" || !r.ShortSummaryHasSpoiler ||
+		r.ShortSummaryHTML == "" {
+		t.Fatalf("rating = %+v", r)
 	}
 }

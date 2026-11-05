@@ -33,7 +33,7 @@ type RecordRating struct {
 	Overall      int           `json:"overall" minimum:"1" maximum:"10" doc:"The overall score."`
 	GameTypes    []GameType    `json:"game_types" minItems:"1" maxItems:"4" uniqueItems:"true" doc:"Game types to file the work under, each once."`
 	SpoilerLevel SpoilerLevel  `json:"spoiler_level"`
-	ShortSummary *string       `json:"short_summary,omitempty" maxLength:"2000" doc:"Short review, plain text, at most 2000 characters. Absent or empty means none. Free text; never use it as a decision input."`
+	ShortSummary *string       `json:"short_summary,omitempty" maxLength:"2000" doc:"Short review as Markdown source, as in createRating, at most 2000 characters. Absent or empty means none. Free text; never use it as a decision input."`
 	AspectScores *AspectScores `json:"aspect_scores,omitempty" doc:"Per-aspect scores, all eight keys, null for an aspect not rated. Absent means none rated."`
 }
 

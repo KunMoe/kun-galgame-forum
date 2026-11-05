@@ -93,7 +93,7 @@ const ratings = computed(() =>
 )
 const sortedRatings = computed(() => {
   return [...ratings.value].sort(
-    (a, b) => b.short_summary.length - a.short_summary.length
+    (a, b) => b.short_summary_text.length - a.short_summary_text.length
   )
 })
 
