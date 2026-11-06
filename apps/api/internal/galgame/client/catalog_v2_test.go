@@ -64,6 +64,29 @@ func TestRewriteV2JSON_SlotsKeepTheSexualGrade(t *testing.T) {
 	}
 }
 
+func TestRewriteV2JSON_CoverSFWBecomesTheSFWPortraitSlot(t *testing.T) {
+	raw := []byte(`{"object":"work","id":"1","display_name":"Kun","cover":{"url":"https://cdn.example/p.webp","sexual":"explicit"},"cover_sfw":{"url":"https://cdn.example/g.webp","width":240,"height":336,"thumbhash":"G","sexual":"safe","origin":"censored"}}`)
+	var got struct {
+		CoverSlots catCoverSlots `json:"cover_slots"`
+	}
+	if err := json.Unmarshal(rewriteV2JSON(raw, ""), &got); err != nil {
+		t.Fatalf("slots did not decode: %v", err)
+	}
+	s := got.CoverSlots.PortraitSFW
+	if s == nil || s.URL != "https://cdn.example/g.webp" || s.Width != 240 || s.Thumbhash != "G" || s.Sexual == nil || *s.Sexual != 0 {
+		t.Fatalf("portrait_sfw = %+v", s)
+	}
+
+	without := []byte(`{"object":"work","id":"2","display_name":"Kun","cover":{"url":"https://cdn.example/p.webp","sexual":"explicit"}}`)
+	got.CoverSlots = catCoverSlots{}
+	if err := json.Unmarshal(rewriteV2JSON(without, ""), &got); err != nil {
+		t.Fatalf("slots did not decode: %v", err)
+	}
+	if got.CoverSlots.PortraitSFW != nil {
+		t.Fatalf("an absent cover_sfw must stay absent: %+v", got.CoverSlots.PortraitSFW)
+	}
+}
+
 func TestV2CatalogQuery_EmptySearchGetsFacets(t *testing.T) {
 	q := v2CatalogQuery("/catalog/works/search", url.Values{"limit": {"24"}})
 	if q.Get("facets") != "olang,tag_id" {

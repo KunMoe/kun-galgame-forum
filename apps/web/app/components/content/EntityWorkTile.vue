@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import type { WorkRef } from '#shared/utils/api/schemas'
 import { catalogNameText } from '~/utils/catalogName'
+import { maskCover, sensitiveImage } from '~/utils/entityCardModel'
 
 const props = defineProps<{ work: WorkRef }>()
 const emit = defineEmits<{ navigate: [] }>()
@@ -15,16 +16,21 @@ const name = computed(() =>
   catalogNameText(props.work, showKUNGalgamePreferOriginalName.value)
 )
 const sensitive = computed(
-  () =>
-    props.work.is_nsfw ||
-    props.work.cover?.sexual === 'suggestive' ||
-    props.work.cover?.sexual === 'explicit'
+  () => props.work.is_nsfw || sensitiveImage(props.work.cover)
 )
 const showCover = computed(
   () => props.work.cover && !(sensitive.value && stance.value === 'hide')
 )
-const isBlurred = computed(
-  () => blurAll.value || (sensitive.value && stance.value === 'blur')
+const cover = computed(() =>
+  props.work.cover
+    ? maskCover(
+        props.work.cover,
+        props.work.cover_sfw,
+        sensitive.value,
+        stance.value,
+        blurAll.value
+      )
+    : null
 )
 </script>
 
@@ -40,17 +46,17 @@ const isBlurred = computed(
       class="bg-default-100 relative aspect-[5/7] w-full overflow-hidden rounded-lg"
     >
       <KunImage
-        v-if="showCover"
-        :src="work.cover!.url"
+        v-if="showCover && cover"
+        :src="cover.image.url"
         :alt="name"
         loading="lazy"
-        :thumbhash="work.cover!.thumbhash ?? undefined"
+        :thumbhash="cover.image.thumbhash ?? undefined"
         object-fit="cover"
         class-name="size-full"
         :image-class-name="
           cn(
             'size-full transition-transform group-hover:scale-105',
-            isBlurred && 'blur-lg'
+            cover.isBlurred && 'blur-lg'
           )
         "
       />

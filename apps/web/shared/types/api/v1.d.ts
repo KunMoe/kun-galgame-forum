@@ -11930,6 +11930,8 @@ export interface components {
         RelatedWork: {
             /** @description The portrait cover at its original size, never the 16:9 crop. null when the work has none. */
             cover: components["schemas"]["Image"] | null;
+            /** @description The portrait catalog elects with sexual art disallowed: real safe art, else a blurred stand-in derived from the explicit art. Equal to cover when cover is not sexual. Show it in place of cover wherever cover would be masked. null when there is none, or where this embedding is not read from catalog. */
+            cover_sfw: components["schemas"]["Image"] | null;
             /** @description The entity's own name. Never empty. Free text; never use it as a decision input. */
             display_name: string;
             /** @description Work id: the catalog work id, which is also the id in the web's /galgame/{id}. */
@@ -12733,6 +12735,8 @@ export interface components {
             banner: components["schemas"]["Image"] | null;
             /** @description The portrait cover at its original size, never the 16:9 crop. null when the work has none. */
             cover: components["schemas"]["Image"] | null;
+            /** @description The portrait catalog elects with sexual art disallowed: real safe art, else a blurred stand-in derived from the explicit art. Equal to cover when cover is not sexual. Show it in place of cover wherever cover would be masked. null when there is none, or where this embedding is not read from catalog. */
+            cover_sfw: components["schemas"]["Image"] | null;
             /** @description The entity's own name. Never empty. Free text; never use it as a decision input. */
             display_name: string;
             /** @description Work id: the catalog work id, which is also the id in the web's /galgame/{id}. */
@@ -14073,7 +14077,7 @@ export interface components {
             hidden_by: components["schemas"]["HiddenBy"] | null;
             /** @description Topic id. JSON string of a decimal integer. */
             id: string;
-            /** @description Whether the author asked that every entity card cover on the topic page, replies included, and every cover in the preview those cards open, be shown blurred. A reader whose stance hides NSFW still hides it. */
+            /** @description Whether the author asked that the adult-content covers of entity cards on the topic page, replies included, and in the preview those cards open, be masked for every reader, as if the reader blurred NSFW. A reader whose stance hides NSFW still hides them; other covers are not affected. */
             is_entity_cover_blurred: boolean;
             /** @description Whether the author marked the topic NSFW. The body is returned either way; a client that hides NSFW content gates it. */
             is_nsfw: boolean;
@@ -14167,7 +14171,7 @@ export interface components {
             content_markdown: string;
             /** @description Cover images by image-service hash, in display order. When absent, the covers are the first nine distinct /image/{hash} tokens of the body in body order, stickers skipped; an empty array means no covers. */
             cover_image_hashes?: string[];
-            /** @description Ask that every entity card cover on the topic page, replies included, and every cover in the preview those cards open, be shown blurred. A reader whose stance hides NSFW still hides it. Defaults to false. */
+            /** @description Ask that the adult-content covers of entity cards on the topic page, replies included, and in the preview those cards open, be masked for every reader, as if the reader blurred NSFW. A reader whose stance hides NSFW still hides them; other covers are not affected. Defaults to false. */
             is_entity_cover_blurred?: boolean;
             /** @description The author's own NSFW mark. The topic is also NSFW, whatever this says, when the model judges its title and body adult or the image service grades a body or cover image explicit; false never clears that. */
             is_nsfw: boolean;
@@ -14564,7 +14568,7 @@ export interface components {
             content_markdown: string;
             /** @description Cover images in stored token order. Tokens that do not parse are skipped, and so are stickers: a sticker is never a cover. Empty array if none. */
             cover_images: components["schemas"]["Image"][];
-            /** @description Whether the author asked that every entity card cover on the topic page, replies included, and every cover in the preview those cards open, be shown blurred. A reader whose stance hides NSFW still hides it. */
+            /** @description Whether the author asked that the adult-content covers of entity cards on the topic page, replies included, and in the preview those cards open, be masked for every reader, as if the reader blurred NSFW. A reader whose stance hides NSFW still hides them; other covers are not affected. */
             is_entity_cover_blurred: boolean;
             /** @description Whether the topic is NSFW. */
             is_nsfw: boolean;
@@ -16113,6 +16117,8 @@ export interface components {
             contributors: components["schemas"]["UserRef"][];
             /** @description The portrait cover at its original size, never the 16:9 crop. null when the work has none. */
             cover: components["schemas"]["Image"] | null;
+            /** @description The portrait catalog elects with sexual art disallowed: real safe art, else a blurred stand-in derived from the explicit art. Equal to cover when cover is not sexual. Show it in place of cover wherever cover would be masked. null when there is none, or where this embedding is not read from catalog. */
+            cover_sfw: components["schemas"]["Image"] | null;
             /** @description Cover images. Empty array, never null. */
             covers: components["schemas"]["WorkCover"][];
             /**
@@ -16613,6 +16619,8 @@ export interface components {
         WorkPreview: {
             /** @description The portrait cover at its original size, never the 16:9 crop. null when the work has none. */
             cover: components["schemas"]["Image"] | null;
+            /** @description The portrait catalog elects with sexual art disallowed: real safe art, else a blurred stand-in derived from the explicit art. Equal to cover when cover is not sexual. Show it in place of cover wherever cover would be masked. null when there is none, or where this embedding is not read from catalog. */
+            cover_sfw: components["schemas"]["Image"] | null;
             /** @description The entity's own name. Never empty. Free text; never use it as a decision input. */
             display_name: string;
             /** @description Work id: the catalog work id, which is also the id in the web's /galgame/{id}. */
@@ -16706,6 +16714,8 @@ export interface components {
         WorkRef: {
             /** @description The portrait cover at its original size, never the 16:9 crop. null when the work has none. */
             cover: components["schemas"]["Image"] | null;
+            /** @description The portrait catalog elects with sexual art disallowed: real safe art, else a blurred stand-in derived from the explicit art. Equal to cover when cover is not sexual. Show it in place of cover wherever cover would be masked. null when there is none, or where this embedding is not read from catalog. */
+            cover_sfw: components["schemas"]["Image"] | null;
             /** @description The entity's own name. Never empty. Free text; never use it as a decision input. */
             display_name: string;
             /** @description Work id: the catalog work id, which is also the id in the web's /galgame/{id}. */
@@ -16983,6 +16993,8 @@ export interface components {
             banner: components["schemas"]["Image"] | null;
             /** @description The portrait cover at its original size, never the 16:9 crop. null when the work has none. */
             cover: components["schemas"]["Image"] | null;
+            /** @description The portrait catalog elects with sexual art disallowed: real safe art, else a blurred stand-in derived from the explicit art. Equal to cover when cover is not sexual. Show it in place of cover wherever cover would be masked. null when there is none, or where this embedding is not read from catalog. */
+            cover_sfw: components["schemas"]["Image"] | null;
             /** @description The entity's own name. Never empty. Free text; never use it as a decision input. */
             display_name: string;
             /** @description Work id: the catalog work id, which is also the id in the web's /galgame/{id}. */

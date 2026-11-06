@@ -29,7 +29,7 @@ type Topic struct {
 	AISummary            *string                 `json:"ai_summary" maxLength:"200" doc:"Summary the model wrote for a long body, shown as AI generated. null when the topic has none. Free text; never use it as a decision input."`
 	CoverImages          []repr.Image            `json:"cover_images" maxItems:"9" doc:"Cover images in stored token order. Tokens that do not parse are skipped, and so are stickers: a sticker is never a cover. Empty array if none."`
 	IsNSFW               bool                    `json:"is_nsfw" doc:"Whether the author marked the topic NSFW. The body is returned either way; a client that hides NSFW content gates it."`
-	IsEntityCoverBlurred bool                    `json:"is_entity_cover_blurred" doc:"Whether the author asked that every entity card cover on the topic page, replies included, and every cover in the preview those cards open, be shown blurred. A reader whose stance hides NSFW still hides it."`
+	IsEntityCoverBlurred bool                    `json:"is_entity_cover_blurred" doc:"Whether the author asked that the adult-content covers of entity cards on the topic page, replies included, and in the preview those cards open, be masked for every reader, as if the reader blurred NSFW. A reader whose stance hides NSFW still hides them; other covers are not affected."`
 	Author               repr.UserRef            `json:"author" doc:"Topic author."`
 	AuthorMoemoepoint    int                     `json:"author_moemoepoint" minimum:"-2147483648" doc:"The author's moemoepoint balance as this forum last cached it. It can be negative."`
 	Content              content.ContentDocument `json:"content" doc:"Topic body as a node tree."`

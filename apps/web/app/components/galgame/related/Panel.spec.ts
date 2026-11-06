@@ -17,6 +17,7 @@ const work = (
   latin: null,
   localized: {},
   cover: null,
+  cover_sfw: null,
   is_nsfw: false,
   medium,
   release_date: null,

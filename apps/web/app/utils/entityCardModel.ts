@@ -52,8 +52,23 @@ export interface EntityCardModel {
 type Stance = 'hide' | 'blur' | 'show'
 type Named = Parameters<typeof catalogNameText>[0]
 
-const sensitiveImage = (image: Image | null | undefined) =>
+export const sensitiveImage = (image: Image | null | undefined) =>
   image?.sexual === 'suggestive' || image?.sexual === 'explicit'
+
+export const maskCover = (
+  image: Image,
+  sfw: Image | null | undefined,
+  sensitive: boolean,
+  stance: Stance,
+  blurAll: boolean
+): { image: Image; isBlurred: boolean } => {
+  if (!sensitive || !(blurAll || stance === 'blur')) {
+    return { image, isBlurred: false }
+  }
+  return sfw
+    ? { image: sfw, isBlurred: sensitiveImage(sfw) }
+    : { image, isBlurred: true }
+}
 
 const isNsfw = (t: EntityTarget): boolean => {
   switch (t.object) {
@@ -73,23 +88,25 @@ const isNsfw = (t: EntityTarget): boolean => {
 const isLandscape = (image: Image) =>
   !!image.width && !!image.height && image.width > image.height * 1.15
 
-const coverOf = (t: EntityTarget): { image: Image; shape: Shape } | null => {
-  const pick = (image: Image | null | undefined, shape: Shape) =>
-    image
-      ? {
-          image,
-          shape:
-            shape === 'portrait' && isLandscape(image) ? 'landscape' : shape
-        }
-      : null
+const shapeOf = (image: Image, shape: Shape): Shape =>
+  shape === 'portrait' && isLandscape(image) ? 'landscape' : shape
+
+const coverOf = (
+  t: EntityTarget
+): { image: Image; sfw: Image | null; shape: Shape } | null => {
+  const pick = (
+    image: Image | null | undefined,
+    shape: Shape,
+    sfw: Image | null = null
+  ) => (image ? { image, sfw, shape } : null)
   switch (t.object) {
     case 'topic':
       return pick(t.cover_images[0], 'landscape')
     case 'work':
-      return pick(t.cover, 'portrait')
+      return pick(t.cover, 'portrait', t.cover_sfw)
     case 'galgame_resource':
     case 'rating':
-      return pick(t.work?.cover, 'portrait')
+      return pick(t.work?.cover, 'portrait', t.work?.cover_sfw)
     case 'character':
       return pick(t.image, 'portrait')
     case 'company':
@@ -216,12 +233,7 @@ const mediaOf = (
     const images = t.works.flatMap((w) => {
       const sensitive = w.is_nsfw || sensitiveImage(w.cover)
       return w.cover && !(sensitive && stance === 'hide')
-        ? [
-            {
-              image: w.cover,
-              isBlurred: blurAll || (sensitive && stance === 'blur')
-            }
-          ]
+        ? [maskCover(w.cover, w.cover_sfw, sensitive, stance, blurAll)]
         : []
     })
     if (images.length) {
@@ -231,11 +243,11 @@ const mediaOf = (
   const cover = coverOf(t)
   const sensitive = isNsfw(t) || sensitiveImage(cover?.image)
   if (cover && !(sensitive && stance === 'hide')) {
+    const shown = maskCover(cover.image, cover.sfw, sensitive, stance, blurAll)
     return {
       kind: 'image',
-      ...cover,
-      isBlurred:
-        (blurAll && cover.shape !== 'logo') || (sensitive && stance === 'blur')
+      ...shown,
+      shape: shapeOf(shown.image, cover.shape)
     }
   }
   return {
