@@ -33,6 +33,11 @@ const galgame = inject<Work>('galgame')
 const isHostedElsewhere = computed(
   () => galgame?.is_resource_hosted_elsewhere ?? false
 )
+const hasVndbEntry = computed(
+  () =>
+    galgame?.links.some((link) => link.site === 'vndb' && link.is_identity) ??
+    false
+)
 const letmoeHref = computed(() => `https://www.letmoe.com/game/${workId.value}`)
 
 const isShowPublish = ref(false)
@@ -292,7 +297,11 @@ const activeBucket = computed(() =>
         </KunButton>
       </div>
     </KunInfo>
-    <KunInfo v-else color="warning" title="鲲 Galgame 论坛只提供 Galgame">
+    <KunInfo
+      v-else-if="!hasVndbEntry"
+      color="warning"
+      title="鲲 Galgame 论坛只提供 Galgame"
+    >
       <p class="text-sm">
         如果要获取或发布 SLG / RPG 等同人游戏、3D 游戏, 请前往
         <GalgameResourceLetmoeLink />
