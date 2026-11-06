@@ -120,6 +120,11 @@ run_migrate -only 092
 #    names.
 run_migrate -dir up
 
+# 8b. 223 is excluded only to order production's deploy (it waits for the API
+#     that filters on feed_activity.access_scope); the tests run that API. A
+#     no-op once 223 leaves the exclude list.
+run_migrate -only 223
+
 # 9. 120 put the purge-archive trigger on every table that existed when it ran;
 #    step 7 recreated galgame_contributor after that, without it.
 psql "${TEST_DATABASE_DSN}" -v ON_ERROR_STOP=1 -Atqc "SELECT user_purge_archive_attach();" >/dev/null

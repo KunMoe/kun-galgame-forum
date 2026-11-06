@@ -77,7 +77,7 @@ services:
   # 012/015 are deferred and must run AFTER oauth's migrate-users). For a fresh
   # cross-repo bootstrap follow nextmoe-docs docs/shared/user-migration; routine deploys run the default
   # set:
-  #   docker compose run --rm migrate                 # default (excludes 005/006/007/012/015)
+  #   docker compose run --rm migrate                 # default (excludes 005/006/007/012/015/223)
   #   docker compose run --rm migrate --only=015      # e.g. after 007 exists
   migrate:
     build:

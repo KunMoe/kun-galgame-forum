@@ -33,7 +33,7 @@ export interface paths {
         };
         /**
          * List activities
-         * @description The site's activity stream, newest first: topics, replies, comments, upvotes, best answers, works and their resources, ratings, edits and quizzes, toolsets, websites, todos and update logs. occurred_desc sorts by occurred_at with ties broken on kind and subject; bumped_desc lists topics by bump time and is allowed only when activity_types is exactly topic_creation. An activity whose actor is banned, whose work catalog does not show under include_nsfw, or that is about a work catalog does not render, directly or through its resource, rating or quiz, is left out, so a page can be short; only an absent next_cursor means the end. The cursor is bound to the sort and to every filter.
+         * @description The site's activity stream, newest first: topics, replies, comments, upvotes, best answers, works and their resources, ratings, edits and quizzes, toolsets, websites, todos and update logs. Activities of login-scoped topics are listed for a signed-in caller only; those of role- and user-scoped topics and of hidden topics never appear. occurred_desc sorts by occurred_at with ties broken on kind and subject; bumped_desc lists topics by bump time and is allowed only when activity_types is exactly topic_creation. An activity whose actor is banned, whose work catalog does not show under include_nsfw, or that is about a work catalog does not render, directly or through its resource, rating or quiz, is left out, so a page can be short; only an absent next_cursor means the end. The cursor is bound to the sort and to every filter.
          */
         get: operations["listActivities"];
         put?: never;
@@ -17169,6 +17169,24 @@ export interface operations {
             };
             /** @description INVALID_PARAMETER when sort bumped_desc comes with any activity_types but exactly topic_creation, or a parameter is malformed; INVALID_CURSOR, LIMIT_TOO_LARGE, UNKNOWN_SORT or UNKNOWN_ENUM_VALUE. */
             400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Unauthorized */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Forbidden */
+            403: {
                 headers: {
                     [name: string]: unknown;
                 };

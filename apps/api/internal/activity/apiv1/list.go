@@ -8,6 +8,7 @@ import (
 	"time"
 
 	"kun-galgame-api/internal/activity/repository"
+	v1 "kun-galgame-api/internal/apiv1"
 	"kun-galgame-api/internal/apiv1/collect"
 	"kun-galgame-api/internal/apiv1/repr"
 	"kun-galgame-api/pkg/problem"
@@ -60,6 +61,7 @@ func (s *Service) listActivities(ctx context.Context, in *listInput) (*listOutpu
 		return nil, problem.New(problem.CodeInvalidParameter, "sort bumped_desc lists topics only.",
 			problem.AtParameter("sort", problem.ReasonInconsistentWith, "activity_types", nil))
 	}
+	authenticated := v1.User(ctx) != nil
 	fp := collect.Fingerprint(strings.Join(types, ","), in.TopicSections,
 		strconv.FormatBool(in.IncludeNSFW), strconv.FormatBool(in.IncludeUnresourced))
 	items, next, prob := s.collectPage(ctx, feedPage{
@@ -67,12 +69,13 @@ func (s *Service) listActivities(ctx context.Context, in *listInput) (*listOutpu
 		fetch: func(feedPos *repository.FeedPos, topicPos *repository.TopicFeedPos) ([]repository.FeedRow, error) {
 			if in.Sort == "bumped_desc" {
 				return s.repo.TopicFeedPage(repository.TopicFeedQuery{
-					TopicSections: in.TopicSections, IncludeNSFW: in.IncludeNSFW, Limit: in.Limit, After: topicPos,
+					TopicSections: in.TopicSections, IncludeNSFW: in.IncludeNSFW, Authenticated: authenticated,
+					Limit: in.Limit, After: topicPos,
 				})
 			}
 			return s.repo.FeedPage(repository.FeedQuery{
 				Types: types, TopicSections: in.TopicSections, IncludeNSFW: in.IncludeNSFW,
-				IncludeUnresourced: in.IncludeUnresourced, Limit: in.Limit, After: feedPos,
+				IncludeUnresourced: in.IncludeUnresourced, Authenticated: authenticated, Limit: in.Limit, After: feedPos,
 			})
 		},
 	})

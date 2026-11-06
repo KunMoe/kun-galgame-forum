@@ -108,6 +108,7 @@ type activityFix struct {
 	spec    *specConformance
 	catalog *fakeActivityCatalog
 	failOA  atomic.Bool
+	session string
 }
 
 func newActivityFix(t *testing.T) *activityFix {
@@ -257,6 +258,9 @@ func (f *activityFix) seed(t *testing.T) {
 func (f *activityFix) call(t *testing.T, q url.Values) (*http.Response, map[string]any) {
 	t.Helper()
 	req := httptest.NewRequest(http.MethodGet, "/api/v1/activities?"+q.Encode(), nil)
+	if f.session != "" {
+		req.AddCookie(&http.Cookie{Name: middleware.SessionCookieName, Value: f.session})
+	}
 	resp, err := f.app.Fiber.Test(req, fiber.TestConfig{Timeout: 30 * time.Second})
 	if err != nil {
 		t.Fatal(err)

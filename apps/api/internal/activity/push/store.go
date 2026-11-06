@@ -4,6 +4,7 @@ import (
 	"time"
 
 	"kun-galgame-api/internal/activity/repository"
+	topicRepo "kun-galgame-api/internal/topic/repository"
 )
 
 type Key struct {
@@ -41,6 +42,11 @@ func (p *Pusher) claim(limit int) ([]Claim, error) {
 	return rows, err
 }
 
+// Community shows a pushed activity to everyone on every site, so only what an
+// anonymous reader may see here is sent; a row outside it reads as absent and
+// is tombstoned if it was sent before.
+var communityAudience = topicRepo.SharedListPredicate("fa", false)
+
 func (p *Pusher) feedByKeys(keys []Key) (map[Key]feedRecord, error) {
 	out := map[Key]feedRecord{}
 	if len(keys) == 0 {
@@ -55,7 +61,7 @@ func (p *Pusher) feedByKeys(keys []Key) (map[Key]feedRecord, error) {
 		SELECT fa.id AS row_id, fa.type AS type_str, fa.source_id, fa.user_id, fa.work_id,
 			fa.content, fa.link, fa.created, fa.is_nsfw
 		FROM feed_activity fa
-		WHERE (fa.type, fa.source_id) IN ?`, pairs).Scan(&rows).Error
+		WHERE (fa.type, fa.source_id) IN ? AND `+communityAudience, pairs).Scan(&rows).Error
 	if err != nil {
 		return nil, err
 	}
@@ -132,7 +138,7 @@ func (p *Pusher) pageLocal(after *Key, limit int) ([]feedRecord, error) {
 		SELECT fa.id AS row_id, fa.type AS type_str, fa.source_id, fa.user_id, fa.work_id,
 			fa.content, fa.link, fa.created, fa.is_nsfw
 		FROM feed_activity fa
-		WHERE fa.type IN ?
+		WHERE fa.type IN ? AND ` + communityAudience + `
 	`
 	args := []any{types}
 	if after != nil {

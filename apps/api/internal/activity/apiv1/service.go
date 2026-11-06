@@ -149,13 +149,14 @@ func (s *Service) lookupUsers(ctx context.Context, ids []int) (map[int]userclien
 
 func Register(s *Service) func(huma.API) {
 	return func(api huma.API) {
-		huma.Register(api, v1.Public(huma.Operation{
+		huma.Register(api, v1.Optional(huma.Operation{
 			OperationID: "listActivities",
 			Method:      "GET",
 			Path:        "/activities",
 			Summary:     "List activities",
 			Description: "The site's activity stream, newest first: topics, replies, comments, upvotes, best answers, works and their resources, ratings, " +
-				"edits and quizzes, toolsets, websites, todos and update logs. occurred_desc sorts by occurred_at with ties broken on kind and subject; " +
+				"edits and quizzes, toolsets, websites, todos and update logs. Activities of login-scoped topics are listed for a signed-in caller only; " +
+				"those of role- and user-scoped topics and of hidden topics never appear. occurred_desc sorts by occurred_at with ties broken on kind and subject; " +
 				"bumped_desc lists topics by bump time and is allowed only when activity_types is exactly topic_creation. " +
 				"An activity whose actor is banned, whose work catalog does not show under include_nsfw, or that is about a work catalog does not render, " +
 				"directly or through its resource, rating or quiz, is left out, so a page can be short; " +
