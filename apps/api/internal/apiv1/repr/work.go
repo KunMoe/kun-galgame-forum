@@ -30,8 +30,9 @@ type WorkRef struct {
 	Object string    `json:"object" enum:"work" maxLength:"4" doc:"Type discriminant. Always work."`
 	ID     DecimalID `json:"id" doc:"Work id: the catalog work id, which is also the id in the web's /galgame/{id}."`
 	CatalogName
-	Cover  *Image `json:"cover" doc:"The portrait cover at its original size, never the 16:9 crop. null when the work has none."`
-	IsNSFW bool   `json:"is_nsfw" doc:"Whether this forum displays the work as adult content: the editorial display axis (the claim's content limit), not the age rating."`
+	Cover    *Image `json:"cover" doc:"The portrait cover at its original size, never the 16:9 crop. null when the work has none."`
+	CoverSFW *Image `json:"cover_sfw" doc:"The portrait catalog elects with sexual art disallowed: real safe art, else a blurred stand-in derived from the explicit art. Equal to cover when cover is not sexual. Show it in place of cover wherever cover would be masked. null when there is none, or where this embedding is not read from catalog."`
+	IsNSFW   bool   `json:"is_nsfw" doc:"Whether this forum displays the work as adult content: the editorial display axis (the claim's content limit), not the age rating."`
 }
 
 func NewWorkRef(workID int, name CatalogName, cover *Image, isNSFW bool) WorkRef {

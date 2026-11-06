@@ -16198,6 +16198,17 @@
             ],
             "description": "The portrait cover at its original size, never the 16:9 crop. null when the work has none."
           },
+          "cover_sfw": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/Image"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "The portrait catalog elects with sexual art disallowed: real safe art, else a blurred stand-in derived from the explicit art. Equal to cover when cover is not sexual. Show it in place of cover wherever cover would be masked. null when there is none, or where this embedding is not read from catalog."
+          },
           "display_name": {
             "description": "The entity's own name. Never empty. Free text; never use it as a decision input.",
             "maxLength": 512,
@@ -16276,6 +16287,7 @@
           "object",
           "id",
           "cover",
+          "cover_sfw",
           "is_nsfw",
           "display_name",
           "latin",
@@ -18551,6 +18563,17 @@
             ],
             "description": "The portrait cover at its original size, never the 16:9 crop. null when the work has none."
           },
+          "cover_sfw": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/Image"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "The portrait catalog elects with sexual art disallowed: real safe art, else a blurred stand-in derived from the explicit art. Equal to cover when cover is not sexual. Show it in place of cover wherever cover would be masked. null when there is none, or where this embedding is not read from catalog."
+          },
           "display_name": {
             "description": "The entity's own name. Never empty. Free text; never use it as a decision input.",
             "maxLength": 512,
@@ -18594,6 +18617,7 @@
           "object",
           "id",
           "cover",
+          "cover_sfw",
           "is_nsfw",
           "display_name",
           "latin",
@@ -22013,7 +22037,7 @@
             "type": "string"
           },
           "is_entity_cover_blurred": {
-            "description": "Whether the author asked that every entity card cover on the topic page, replies included, and every cover in the preview those cards open, be shown blurred. A reader whose stance hides NSFW still hides it.",
+            "description": "Whether the author asked that the adult-content covers of entity cards on the topic page, replies included, and in the preview those cards open, be masked for every reader, as if the reader blurred NSFW. A reader whose stance hides NSFW still hides them; other covers are not affected.",
             "type": "boolean"
           },
           "is_nsfw": {
@@ -22296,7 +22320,7 @@
             "uniqueItems": true
           },
           "is_entity_cover_blurred": {
-            "description": "Ask that every entity card cover on the topic page, replies included, and every cover in the preview those cards open, be shown blurred. A reader whose stance hides NSFW still hides it. Defaults to false.",
+            "description": "Ask that the adult-content covers of entity cards on the topic page, replies included, and in the preview those cards open, be masked for every reader, as if the reader blurred NSFW. A reader whose stance hides NSFW still hides them; other covers are not affected. Defaults to false.",
             "type": "boolean"
           },
           "is_nsfw": {
@@ -23441,7 +23465,7 @@
             "type": "array"
           },
           "is_entity_cover_blurred": {
-            "description": "Whether the author asked that every entity card cover on the topic page, replies included, and every cover in the preview those cards open, be shown blurred. A reader whose stance hides NSFW still hides it.",
+            "description": "Whether the author asked that the adult-content covers of entity cards on the topic page, replies included, and in the preview those cards open, be masked for every reader, as if the reader blurred NSFW. A reader whose stance hides NSFW still hides them; other covers are not affected.",
             "type": "boolean"
           },
           "is_nsfw": {
@@ -27576,6 +27600,17 @@
             ],
             "description": "The portrait cover at its original size, never the 16:9 crop. null when the work has none."
           },
+          "cover_sfw": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/Image"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "The portrait catalog elects with sexual art disallowed: real safe art, else a blurred stand-in derived from the explicit art. Equal to cover when cover is not sexual. Show it in place of cover wherever cover would be masked. null when there is none, or where this embedding is not read from catalog."
+          },
           "covers": {
             "description": "Cover images. Empty array, never null.",
             "items": {
@@ -27918,6 +27953,7 @@
           "object",
           "id",
           "cover",
+          "cover_sfw",
           "is_nsfw",
           "display_name",
           "latin",
@@ -28960,6 +28996,17 @@
             ],
             "description": "The portrait cover at its original size, never the 16:9 crop. null when the work has none."
           },
+          "cover_sfw": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/Image"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "The portrait catalog elects with sexual art disallowed: real safe art, else a blurred stand-in derived from the explicit art. Equal to cover when cover is not sexual. Show it in place of cover wherever cover would be masked. null when there is none, or where this embedding is not read from catalog."
+          },
           "display_name": {
             "description": "The entity's own name. Never empty. Free text; never use it as a decision input.",
             "maxLength": 512,
@@ -29045,6 +29092,7 @@
           "object",
           "id",
           "cover",
+          "cover_sfw",
           "is_nsfw",
           "display_name",
           "latin",
@@ -29234,6 +29282,17 @@
             ],
             "description": "The portrait cover at its original size, never the 16:9 crop. null when the work has none."
           },
+          "cover_sfw": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/Image"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "The portrait catalog elects with sexual art disallowed: real safe art, else a blurred stand-in derived from the explicit art. Equal to cover when cover is not sexual. Show it in place of cover wherever cover would be masked. null when there is none, or where this embedding is not read from catalog."
+          },
           "display_name": {
             "description": "The entity's own name. Never empty. Free text; never use it as a decision input.",
             "maxLength": 512,
@@ -29276,6 +29335,7 @@
           "object",
           "id",
           "cover",
+          "cover_sfw",
           "is_nsfw",
           "display_name",
           "latin",
@@ -30040,6 +30100,17 @@
             ],
             "description": "The portrait cover at its original size, never the 16:9 crop. null when the work has none."
           },
+          "cover_sfw": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/Image"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "The portrait catalog elects with sexual art disallowed: real safe art, else a blurred stand-in derived from the explicit art. Equal to cover when cover is not sexual. Show it in place of cover wherever cover would be masked. null when there is none, or where this embedding is not read from catalog."
+          },
           "display_name": {
             "description": "The entity's own name. Never empty. Free text; never use it as a decision input.",
             "maxLength": 512,
@@ -30184,6 +30255,7 @@
           "object",
           "id",
           "cover",
+          "cover_sfw",
           "is_nsfw",
           "display_name",
           "latin",

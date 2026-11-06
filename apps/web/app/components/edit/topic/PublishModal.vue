@@ -100,13 +100,14 @@ const confirmText = computed(() => {
           <KunCheckBox
             v-model="isEntityCoverBlurred"
             type="single"
-            label="模糊帖内条目卡片的封面"
+            label="模糊帖内条目卡片的 NSFW 封面"
             color="primary"
           />
           <p class="text-default-500 text-sm">
-            开启后, 话题页 (含回复) 里所有条目卡片的封面,
-            以及点开卡片后预览中的封面都会以模糊形式显示,
-            适合引用封面较为暴露的作品
+            开启后, 话题页 (含回复) 里条目卡片上的 NSFW 封面,
+            以及点开卡片后预览中的这些封面, 对所有读者都换成全年龄封面,
+            没有全年龄封面时以模糊形式显示, 即使读者设置了显示 NSFW。 不含 NSFW
+            内容的封面不受影响
           </p>
         </section>
 

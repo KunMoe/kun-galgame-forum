@@ -732,7 +732,7 @@ func coverSlotsFromImages(v map[string]any, cdnBase string) map[string]any {
 	if portrait == nil && banner == nil {
 		return nil
 	}
-	return map[string]any{"portrait": portrait, "banner": banner}
+	return map[string]any{"portrait": portrait, "portrait_sfw": imageToSlot(v["cover_sfw"], cdnBase), "banner": banner}
 }
 
 func looksLikeV2Image(v any) bool {

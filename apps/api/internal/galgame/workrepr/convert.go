@@ -50,7 +50,11 @@ func Ref(ctx context.Context, it *client.CatalogWorkListItem, cdn string) repr.W
 	cover := ImageFromURL(cdn, brief.EffectivePortraitURL, brief.EffectivePortraitWidth,
 		brief.EffectivePortraitHeight, brief.EffectivePortraitThumbhash, sexual)
 	name := Name(it.DisplayName, it.Latin, client.LocalizedValues(it.Localized))
-	return repr.NewWorkRef(int(it.ID), name, cover, brief.ContentLimit == "nsfw")
+	ref := repr.NewWorkRef(int(it.ID), name, cover, brief.ContentLimit == "nsfw")
+	if s := portraitSFWSlot(it); s != nil {
+		ref.CoverSFW = ImageFromURL(cdn, s.URL, s.Width, s.Height, s.Thumbhash, s.Sexual)
+	}
+	return ref
 }
 
 func Banner(it *client.CatalogWorkListItem, cdn string) *repr.Image {
@@ -74,6 +78,17 @@ func portraitSlot(it *client.CatalogWorkListItem) *client.CoverSlot {
 		return nil
 	}
 	return slots.Portrait
+}
+
+func portraitSFWSlot(it *client.CatalogWorkListItem) *client.CoverSlot {
+	slots := it.CoverSlots
+	if slots == nil {
+		slots = it.Covers
+	}
+	if slots == nil {
+		return nil
+	}
+	return slots.PortraitSFW
 }
 
 func Maker(it *client.CatalogWorkListItem) *CompanyRef {

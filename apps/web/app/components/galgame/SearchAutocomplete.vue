@@ -59,6 +59,7 @@ const onSelect = (opt: AutoOption) => {
     latin: opt.latin,
     localized: opt.localized,
     cover: opt.cover,
+    cover_sfw: null,
     is_nsfw: opt.is_nsfw
   })
   query.value = ''

@@ -24,9 +24,16 @@ const work = (over: Partial<WorkRef> = {}): WorkRef => ({
   latin: null,
   localized: { 'zh-Hans': { value: '星辰恋曲的白色永恒', is_machine: false } },
   cover: image(),
+  cover_sfw: null,
   is_nsfw: false,
   ...over
 })
+
+const ghost: Image = {
+  ...image(),
+  url: 'https://cdn.example/g.webp',
+  hash: 'g'
+}
 
 const workPreview = (over: Partial<WorkRef> = {}): WorkPreview => ({
   ...work(over),
@@ -57,13 +64,22 @@ describe('entityCardModel', () => {
     })
   })
 
-  it('blurs every cover when the author asks, but leaves hide and logos alone', () => {
+  it('blurs only sensitive covers when the author asks, whatever the reader shows', () => {
     const safe: EntityTarget = workPreview()
     expect(entityCardModel(safe, false, 'show', true).media).toMatchObject({
       kind: 'image',
-      isBlurred: true
+      isBlurred: false
     })
     const nsfw: EntityTarget = workPreview({ is_nsfw: true })
+    expect(entityCardModel(nsfw, false, 'show', true).media).toMatchObject({
+      kind: 'image',
+      isBlurred: true
+    })
+    const graded: EntityTarget = workPreview({ cover: image('suggestive') })
+    expect(entityCardModel(graded, false, 'show', true).media).toMatchObject({
+      kind: 'image',
+      isBlurred: true
+    })
     expect(entityCardModel(nsfw, false, 'hide', true).media.kind).toBe('icon')
     const company: EntityTarget = {
       object: 'company',
@@ -76,6 +92,80 @@ describe('entityCardModel', () => {
     } as EntityTarget
     expect(entityCardModel(company, false, 'show', true).media).toMatchObject({
       kind: 'image',
+      isBlurred: false
+    })
+  })
+
+  it('blurs only the sensitive covers of a series stack when the author asks', () => {
+    const t: EntityTarget = {
+      object: 'series',
+      id: '8',
+      display_name: 'series',
+      latin: null,
+      localized: {},
+      cover: image(),
+      works: [
+        work(),
+        work({ id: '4', is_nsfw: true }),
+        work({ id: '5', is_nsfw: true, cover_sfw: ghost })
+      ],
+      has_nsfw_works: true,
+      catalog_work_count: 3
+    }
+    const media = entityCardModel(t, false, 'show', true).media
+    expect(
+      media.kind === 'stack' &&
+        media.images.map((i) => [i.image.url === ghost.url, i.isBlurred])
+    ).toEqual([
+      [false, false],
+      [false, true],
+      [true, false]
+    ])
+  })
+
+  it('shows the SFW cover in place of a masked one, sharp unless it is graded sensitive', () => {
+    const t: EntityTarget = workPreview({
+      is_nsfw: true,
+      cover: image('explicit'),
+      cover_sfw: ghost
+    })
+    for (const [stance, blurAll] of [
+      ['blur', false],
+      ['show', true]
+    ] as const) {
+      expect(entityCardModel(t, false, stance, blurAll).media).toMatchObject({
+        kind: 'image',
+        image: { url: ghost.url },
+        isBlurred: false
+      })
+    }
+    expect(entityCardModel(t, false, 'show').media).toMatchObject({
+      image: { url: 'https://cdn.example/c.webp' },
+      isBlurred: false
+    })
+    const suggestive: EntityTarget = workPreview({
+      is_nsfw: true,
+      cover_sfw: { ...ghost, sexual: 'suggestive' }
+    })
+    expect(entityCardModel(suggestive, false, 'blur').media).toMatchObject({
+      image: { url: ghost.url },
+      isBlurred: true
+    })
+  })
+
+  it('reads the SFW cover of the work a resource or rating belongs to', () => {
+    const t: EntityTarget = {
+      object: 'rating',
+      id: '1',
+      work: work({ is_nsfw: true, cover_sfw: ghost }),
+      author,
+      overall: 7,
+      short_summary: '',
+      has_spoilers: false,
+      created_at: '2026-10-01T00:00:00Z'
+    }
+    expect(entityCardModel(t, false, 'blur').media).toMatchObject({
+      image: { url: ghost.url },
       isBlurred: false
     })
   })

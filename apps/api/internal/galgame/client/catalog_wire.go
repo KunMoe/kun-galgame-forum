@@ -41,8 +41,9 @@ type CoverSlot struct {
 }
 
 type catCoverSlots struct {
-	Portrait *CoverSlot `json:"portrait"`
-	Banner   *CoverSlot `json:"banner"`
+	Portrait    *CoverSlot `json:"portrait"`
+	PortraitSFW *CoverSlot `json:"portrait_sfw"`
+	Banner      *CoverSlot `json:"banner"`
 }
 
 // catIntros is the works-list brief's intro block, held in the [{lang, intro,
