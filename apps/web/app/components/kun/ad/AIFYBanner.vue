@@ -15,7 +15,7 @@ const showAd = useAdVisible()
 
 <template>
   <KunLink
-    :class-name="cn(props.className)"
+    :class-name="cn('block', props.className)"
     target="_blank"
     :to="kungal.ad[0]!.link"
     v-if="showAd"
