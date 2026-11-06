@@ -12,9 +12,20 @@ import {
 } from '~/constants/galgame-playtime'
 import { isRatingSummaryShown } from '~/utils/galgame/ratingCard'
 
-defineProps<{
-  ratings: GalgameRatingCardOnGalgamePage[]
+const props = withDefaults(
+  defineProps<{
+    ratings: GalgameRatingCardOnGalgamePage[]
+    moreCount?: number
+  }>(),
+  { moreCount: 0 }
+)
+
+const emit = defineEmits<{
+  more: []
 }>()
+
+const isMoreTeaser = (index: number) =>
+  props.moreCount > 0 && index === props.ratings.length - 1
 </script>
 
 <template>
@@ -25,7 +36,7 @@ defineProps<{
     draggable
     scrollbar="thin"
   >
-    <div class="flex" v-for="rating in ratings" :key="rating.id">
+    <div class="flex" v-for="(rating, index) in ratings" :key="rating.id">
       <KunCard
         :is-transparent="false"
         :is-hoverable="false"
@@ -115,6 +126,21 @@ defineProps<{
             阅读详情 >
           </KunLink>
         </div>
+
+        <!-- 铁律 #1 sanctioned exception (e): the last preview rating fades
+             into the card so it reads as "more behind this". Listed in
+             CLAUDE.md; do NOT remove it in a no-gradient sweep. -->
+        <button
+          v-if="isMoreTeaser(index)"
+          type="button"
+          class="text-primary absolute inset-0 z-10 flex cursor-pointer items-center justify-end rounded-[inherit] bg-gradient-to-r from-transparent from-10% to-[oklch(var(--content1))] to-70% pr-6 text-sm font-medium"
+          @click="emit('more')"
+        >
+          <span class="flex items-center gap-1">
+            查看全部 {{ moreCount }} 条评分
+            <KunIcon name="lucide:chevron-right" />
+          </span>
+        </button>
       </KunCard>
     </div>
   </KunScrollShadow>

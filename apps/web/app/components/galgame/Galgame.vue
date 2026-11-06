@@ -130,21 +130,12 @@ const hasContributorCard = computed(
       <GalgameTag :tags="galgame.tags" variant="mobile" />
     </div>
 
-    <div
+    <GalgameRatingRadarCard
       v-if="sortedRatings.length && sortedRatings.length >= 3"
-      class="grid grid-cols-1 gap-3"
-    >
-      <GalgameRatingRadarCard :ratings="sortedRatings" />
-      <KunButton
-        v-if="hasMoreRatings"
-        variant="flat"
-        size="sm"
-        class-name="justify-self-end"
-        @click="header?.openRatingDetail(KUN_GALGAME_LOCAL_RATING_SOURCE)"
-      >
-        查看全部评分（{{ galgame.rating_count }}）
-      </KunButton>
-    </div>
+      :ratings="sortedRatings"
+      :more-count="hasMoreRatings ? galgame.rating_count : 0"
+      @more="header?.openRatingDetail(KUN_GALGAME_LOCAL_RATING_SOURCE)"
+    />
 
     <div class="grid grid-cols-1 gap-3 md:grid-cols-3">
       <!-- Explicit md placement, NOT auto-placement + md:order-*. The sidebar
