@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import type { WorkRef } from '#shared/utils/api/schemas'
 import { catalogNameText } from '~/utils/catalogName'
-import { maskCover, sensitiveImage } from '~/utils/entityCardModel'
+import { explicitImage, maskCover } from '~/utils/entityCardModel'
 
 const props = defineProps<{ work: WorkRef }>()
 const emit = defineEmits<{ navigate: [] }>()
@@ -16,7 +16,7 @@ const name = computed(() =>
   catalogNameText(props.work, showKUNGalgamePreferOriginalName.value)
 )
 const sensitive = computed(
-  () => props.work.is_nsfw || sensitiveImage(props.work.cover)
+  () => props.work.is_nsfw || explicitImage(props.work.cover)
 )
 const showCover = computed(
   () => props.work.cover && !(sensitive.value && stance.value === 'hide')

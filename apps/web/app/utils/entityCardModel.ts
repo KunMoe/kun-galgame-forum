@@ -52,8 +52,8 @@ export interface EntityCardModel {
 type Stance = 'hide' | 'blur' | 'show'
 type Named = Parameters<typeof catalogNameText>[0]
 
-export const sensitiveImage = (image: Image | null | undefined) =>
-  image?.sexual === 'suggestive' || image?.sexual === 'explicit'
+export const explicitImage = (image: Image | null | undefined) =>
+  image?.sexual === 'explicit'
 
 export const maskCover = (
   image: Image,
@@ -66,7 +66,7 @@ export const maskCover = (
     return { image, isBlurred: false }
   }
   return sfw
-    ? { image: sfw, isBlurred: sensitiveImage(sfw) }
+    ? { image: sfw, isBlurred: explicitImage(sfw) }
     : { image, isBlurred: true }
 }
 
@@ -231,7 +231,7 @@ const mediaOf = (
   }
   if (t.object === 'series') {
     const images = t.works.flatMap((w) => {
-      const sensitive = w.is_nsfw || sensitiveImage(w.cover)
+      const sensitive = w.is_nsfw || explicitImage(w.cover)
       return w.cover && !(sensitive && stance === 'hide')
         ? [maskCover(w.cover, w.cover_sfw, sensitive, stance, blurAll)]
         : []
@@ -241,7 +241,7 @@ const mediaOf = (
     }
   }
   const cover = coverOf(t)
-  const sensitive = isNsfw(t) || sensitiveImage(cover?.image)
+  const sensitive = isNsfw(t) || explicitImage(cover?.image)
   if (cover && !(sensitive && stance === 'hide')) {
     const shown = maskCover(cover.image, cover.sfw, sensitive, stance, blurAll)
     return {

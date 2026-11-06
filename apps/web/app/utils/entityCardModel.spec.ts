@@ -75,10 +75,17 @@ describe('entityCardModel', () => {
       kind: 'image',
       isBlurred: true
     })
-    const graded: EntityTarget = workPreview({ cover: image('suggestive') })
+    const graded: EntityTarget = workPreview({ cover: image('explicit') })
     expect(entityCardModel(graded, false, 'show', true).media).toMatchObject({
       kind: 'image',
       isBlurred: true
+    })
+    const suggestive: EntityTarget = workPreview({ cover: image('suggestive') })
+    expect(
+      entityCardModel(suggestive, false, 'show', true).media
+    ).toMatchObject({
+      kind: 'image',
+      isBlurred: false
     })
     expect(entityCardModel(nsfw, false, 'hide', true).media.kind).toBe('icon')
     const company: EntityTarget = {
@@ -149,7 +156,7 @@ describe('entityCardModel', () => {
     })
     expect(entityCardModel(suggestive, false, 'blur').media).toMatchObject({
       image: { url: ghost.url },
-      isBlurred: true
+      isBlurred: false
     })
   })
 
@@ -170,9 +177,19 @@ describe('entityCardModel', () => {
     })
   })
 
-  it('treats a cover graded suggestive as sensitive even on a safe work', () => {
-    const t: EntityTarget = workPreview({ cover: image('suggestive') })
+  it('treats a cover graded explicit as sensitive even on a safe work', () => {
+    const t: EntityTarget = workPreview({ cover: image('explicit') })
     expect(entityCardModel(t, false, 'hide').media.kind).toBe('icon')
+  })
+
+  it('shows a suggestive cover of a safe work to every stance, as the catalog SFW face does', () => {
+    const t: EntityTarget = workPreview({ cover: image('suggestive') })
+    for (const stance of ['hide', 'blur', 'show'] as const) {
+      expect(entityCardModel(t, false, stance, true).media).toMatchObject({
+        kind: 'image',
+        isBlurred: false
+      })
+    }
   })
 
   it('never shows a spoiler summary', () => {
