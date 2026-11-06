@@ -22,7 +22,7 @@
 # first (kungal-api depends_on it: service_completed_successfully) so pending
 # migrations auto-apply and the API never serves an un-migrated schema. Deferred
 # / cross-repo-ordered migrations are still held back by the migrate binary's
-# default `-exclude` list (005/006/007/012/015 today); to add a FUTURE cross-repo
+# default `-exclude` list (005/006/007/012/015/223 today); to add a FUTURE cross-repo
 # migration, append its prefix to that default in cmd/migrate/main.go, then run
 # it manually with `--only=NNN` at the right moment (nextmoe-docs docs/shared/user-migration + 16-data-cutover.md).
 name: kungal
@@ -308,7 +308,7 @@ services:
   # ───────────────────────── schema migrations (auto on `up`) ────────────────
   # Runs on a plain `up` (kungal-api depends_on it) → pending migrations apply
   # before the API starts. The binary's default `-exclude` still holds back the
-  # deferred/cross-repo migrations (005/006/007/012/015); run those manually with
+  # deferred/cross-repo migrations (005/006/007/012/015/223); run those manually with
   # `--only=NNN` at the right moment. See nextmoe-docs docs/shared/user-migration + 16-data-cutover.md.
   migrate:
     image: ghcr.io/kunmoe/kungal-migrate:latest

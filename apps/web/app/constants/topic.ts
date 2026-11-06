@@ -96,9 +96,9 @@ export const KUN_TOPIC_ACCESS_SCOPE: Record<string, TopicAccessScopeMeta> = {
   login: {
     label: '登录用户可见',
     icon: 'lucide:log-in',
-    hint: '未登录的访客打不开这个话题。它仍然会出现在已登录用户的列表与搜索中, 但不会进入首页动态, 排行榜与 RSS',
+    hint: '未登录的访客打不开这个话题。已登录用户仍然能在列表, 搜索与首页动态中看到它, 但它不会进入排行榜, RSS 与关注动态',
     notice: '本话题仅登录用户可见',
-    description: '未登录的访客打不开它, 它也不会出现在首页动态, 排行榜与 RSS 中'
+    description: '未登录的访客打不开它, 它也不会出现在排行榜, RSS 与关注动态中'
   },
   role: {
     label: '指定角色可见',

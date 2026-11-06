@@ -87,6 +87,10 @@ add `CREATE DATABASE kungalgame;` to infra's `docker/initdb.d/`.
 running them early would backfill cursors / state against pre-remap user IDs.
 `015` ALTERs `kungal_user_state`, which `007` creates, so it must run after `007`.
 
+`223` is excluded too, for a different reason: it puts login-scoped topics into
+`feed_activity`, and only an API that filters on `feed_activity.access_scope`
+may read them. Run `$C run --rm migrate --only=223` once that API is live.
+
 ```bash
 # 1) routine first pass (everything except the deferred five)
 $C run --rm migrate

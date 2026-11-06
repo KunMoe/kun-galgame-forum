@@ -25,6 +25,7 @@ type FeedQuery struct {
 	TopicSections      string
 	IncludeNSFW        bool
 	IncludeUnresourced bool
+	Authenticated      bool
 	Limit              int
 	After              *FeedPos
 }
@@ -38,6 +39,7 @@ type FeedPos struct {
 type TopicFeedQuery struct {
 	TopicSections string
 	IncludeNSFW   bool
+	Authenticated bool
 	Limit         int
 	After         *TopicFeedPos
 }
@@ -93,7 +95,7 @@ const workRendered = `NOT EXISTS (
 	WHERE NOT g.catalog_rendered)`
 
 func feedConds(q FeedQuery) ([]string, []any) {
-	conds := []string{"fa.type IN ?", workRendered}
+	conds := []string{"fa.type IN ?", topicRepo.SharedListPredicate("fa", q.Authenticated), workRendered}
 	args := []any{q.Types}
 	if !q.IncludeNSFW {
 		conds = append(conds, "NOT fa.is_nsfw")
@@ -123,7 +125,7 @@ func (r *ActivityRepository) FeedPage(q FeedQuery) ([]FeedRow, error) {
 }
 
 func (r *ActivityRepository) TopicFeedPage(q TopicFeedQuery) ([]FeedRow, error) {
-	conds := []string{"t.status = 0", topicRepo.SharedListPredicate("t", false)}
+	conds := []string{"t.status = 0", topicRepo.SharedListPredicate("t", q.Authenticated)}
 	args := []any{}
 	if !q.IncludeNSFW {
 		conds = append(conds, "NOT t.is_nsfw")
