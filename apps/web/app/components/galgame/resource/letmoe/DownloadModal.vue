@@ -151,91 +151,90 @@ useResizeObserver(noteRef, () => {
           <KunLoading />
         </div>
 
-        <KunAdAIFYBanner v-if="!isFetching && download" />
+        <template v-else-if="download">
+          <KunAdAIFYBanner />
 
-        <div
-          v-else-if="download"
-          :class="
-            cn(
-              'flex gap-5',
-              mode === 'direct' ? 'flex-col' : 'flex-col-reverse'
-            )
-          "
-        >
-          <div v-if="hasDirect" class="space-y-3">
-            <KunHeader name="直链下载" scale="h3" />
-            <GalgameResourceLetmoeDirectPicker
-              :hosted="hosted"
-              :composites="composites"
-              :base-languages="resource.languages"
-              :base-size="resource.size"
+          <div
+            :class="
+              cn(
+                'flex gap-5',
+                mode === 'direct' ? 'flex-col' : 'flex-col-reverse'
+              )
+            "
+          >
+            <div v-if="hasDirect" class="space-y-3">
+              <KunHeader name="直链下载" scale="h3" />
+              <GalgameResourceLetmoeDirectPicker
+                :hosted="hosted"
+                :composites="composites"
+                :base-languages="resource.languages"
+                :base-size="resource.size"
+              />
+            </div>
+
+            <div v-if="external.length" class="space-y-3">
+              <KunHeader name="网盘下载" scale="h3" />
+              <KunInfo
+                v-for="mirror in external"
+                :key="mirror.id"
+                color="success"
+                variant="flat"
+                :title="
+                  mirror.provider
+                    ? (LETMOE_PROVIDER_LABEL_MAP[mirror.provider] ??
+                      mirror.provider)
+                    : '网盘下载'
+                "
+              >
+                <div class="space-y-2">
+                  <div class="flex items-start gap-2">
+                    <KunIcon
+                      name="lucide:external-link"
+                      class="text-success mt-1 shrink-0"
+                    />
+                    <KunLink
+                      :to="mirror.url"
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      size="sm"
+                      class-name="break-all"
+                    >
+                      {{ mirror.url }}
+                    </KunLink>
+                  </div>
+                  <p v-if="mirror.note" class="text-default-500 text-xs">
+                    {{ mirror.note }}
+                  </p>
+                  <div
+                    v-if="mirror.extraction_code || mirror.archive_password"
+                    class="flex flex-wrap items-center gap-2"
+                  >
+                    <KunCopy
+                      v-if="mirror.extraction_code"
+                      variant="solid"
+                      color="success"
+                      :name="`提取码 ${mirror.extraction_code}`"
+                      :text="mirror.extraction_code"
+                    />
+                    <KunCopy
+                      v-if="mirror.archive_password"
+                      variant="solid"
+                      color="success"
+                      :name="`解压码 ${mirror.archive_password}`"
+                      :text="mirror.archive_password"
+                    />
+                  </div>
+                </div>
+              </KunInfo>
+            </div>
+
+            <KunNull
+              v-if="isEmpty"
+              description="这个资源暂时没有可用的下载方式, 请前往 LetMoe 页面查看"
             />
           </div>
 
-          <div v-if="external.length" class="space-y-3">
-            <KunHeader name="网盘下载" scale="h3" />
-            <KunInfo
-              v-for="mirror in external"
-              :key="mirror.id"
-              color="success"
-              variant="flat"
-              :title="
-                mirror.provider
-                  ? (LETMOE_PROVIDER_LABEL_MAP[mirror.provider] ??
-                    mirror.provider)
-                  : '网盘下载'
-              "
-            >
-              <div class="space-y-2">
-                <div class="flex items-start gap-2">
-                  <KunIcon
-                    name="lucide:external-link"
-                    class="text-success mt-1 shrink-0"
-                  />
-                  <KunLink
-                    :to="mirror.url"
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    size="sm"
-                    class-name="break-all"
-                  >
-                    {{ mirror.url }}
-                  </KunLink>
-                </div>
-                <p v-if="mirror.note" class="text-default-500 text-xs">
-                  {{ mirror.note }}
-                </p>
-                <div
-                  v-if="mirror.extraction_code || mirror.archive_password"
-                  class="flex flex-wrap items-center gap-2"
-                >
-                  <KunCopy
-                    v-if="mirror.extraction_code"
-                    variant="solid"
-                    color="success"
-                    :name="`提取码 ${mirror.extraction_code}`"
-                    :text="mirror.extraction_code"
-                  />
-                  <KunCopy
-                    v-if="mirror.archive_password"
-                    variant="solid"
-                    color="success"
-                    :name="`解压码 ${mirror.archive_password}`"
-                    :text="mirror.archive_password"
-                  />
-                </div>
-              </div>
-            </KunInfo>
-          </div>
-
-          <KunNull
-            v-if="isEmpty"
-            description="这个资源暂时没有可用的下载方式, 请前往 LetMoe 页面查看"
-          />
-        </div>
-
-        <template v-if="!isFetching && download && galgame">
-          <KunInfo title="鲲的小请求">
+          <KunInfo v-if="galgame" title="鲲的小请求">
             <p>
               在您下载这部 Galgame 并游玩之后, 可否请您在本网站的
               <KunLink size="sm" :to="`/galgame/${galgame.id}`">
@@ -247,6 +246,7 @@ useResizeObserver(noteRef, () => {
           </KunInfo>
 
           <GalgameResourceBuyLegitNotice
+            v-if="galgame"
             :work-id="galgame.id"
             :purchase-url="galgame.dlsite?.purchase_url"
             :coupon-url="galgame.dlsite?.coupon_url ?? undefined"
