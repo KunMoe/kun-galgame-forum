@@ -1,12 +1,7 @@
-export const imageHashUrl = (
-  base: string,
-  hash: string,
-  variant?: string
-): string => {
-  const b = (base || '').replace(/\/+$/, '')
-  const file = variant ? `${hash}_${variant}.webp` : `${hash}.webp`
-  return `${b}/${hash.slice(0, 2)}/${hash.slice(2, 4)}/${file}`
-}
+import {
+  DEFAULT_IMAGE_CDN_BASE,
+  imageHashUrl
+} from '#shared/utils/imageService'
 
 export const imageCdnBase = (): string => {
   try {
@@ -14,9 +9,9 @@ export const imageCdnBase = (): string => {
     if (v) return v.replace(/\/+$/, '')
   } catch {
     // useRuntimeConfig throws outside a Nuxt context (plain unit tests, module
-    // scope). Fall through to the hardcoded default.
+    // scope). Fall through to the shared default.
   }
-  return 'https://image.kungal.iloveren.link'
+  return DEFAULT_IMAGE_CDN_BASE
 }
 
 export const imageTokenUrl = (tokenOrHash: string): string => {

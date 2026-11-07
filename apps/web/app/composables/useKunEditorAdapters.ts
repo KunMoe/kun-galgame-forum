@@ -38,11 +38,9 @@ export const useKunEditorAdapters = (opts?: {
     return result.data.items.map(toKunUser)
   }
 
-  // The packs come from sticker.kungal.com through our own cached server
-  // route. The URLs it hands back are content-addressed, and they are what
-  // gets written into the post -- the previous scheme wrote a path that named
-  // a position in a mutable collection, which is why years of posts now
-  // render broken images.
+  // The sticker URLs are content-addressed, and they are what gets written
+  // into the post -- the previous scheme wrote a path that named a position in
+  // a mutable collection, which is why years of posts now render broken images.
   const stickerSource = (): Promise<StickerPack[]> => useStickerPacks().load()
 
   const notify: KunEditorAdapters['notify'] = (message, level) => {

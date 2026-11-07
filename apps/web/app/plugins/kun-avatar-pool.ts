@@ -1,5 +1,10 @@
 import { installKunUIConfig } from '@kungal/ui-vue'
-import { AVATAR_POOL_FALLBACK, fetchAvatarPool } from '~/utils/avatarPool'
+import {
+  AVATAR_POOL_FALLBACK_HASHES,
+  avatarPoolUrls,
+  fetchAvatarPoolHashes
+} from '~/utils/avatarPool'
+import { imageCdnBase } from '~/utils/imageSrc'
 
 // Hands KunUI the images it picks a default avatar from. Without this the pool
 // is `[]` and every avatar-less account on the site renders one identical
@@ -15,7 +20,12 @@ import { AVATAR_POOL_FALLBACK, fetchAvatarPool } from '~/utils/avatarPool'
 // plugin and the @kungal/ui-nuxt layer's own config plugin may run in either
 // order.
 export default defineNuxtPlugin(async (nuxtApp) => {
-  const pool = useState<string[]>('kun-avatar-pool', () => AVATAR_POOL_FALLBACK)
-  if (import.meta.server) pool.value = await fetchAvatarPool()
+  const base = imageCdnBase()
+  const pool = useState<string[]>('kun-avatar-pool', () =>
+    avatarPoolUrls(base, AVATAR_POOL_FALLBACK_HASHES)
+  )
+  if (import.meta.server) {
+    pool.value = avatarPoolUrls(base, await fetchAvatarPoolHashes())
+  }
   installKunUIConfig(nuxtApp.vueApp, { avatarFallbackPool: pool.value })
 })

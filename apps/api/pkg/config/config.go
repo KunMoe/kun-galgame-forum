@@ -8,6 +8,8 @@ import (
 	"slices"
 	"strconv"
 	"strings"
+
+	"kun-galgame-api/pkg/imageclient"
 )
 
 type Config struct {
@@ -321,7 +323,7 @@ func Load() (*Config, error) {
 		NextMoeAPI: NextMoeAPIConfig{
 			BaseURL:      nextMoeBase,
 			APIKey:       nextMoeKey,
-			ImageCDNBase: envOrDefault("KUN_IMAGE_PUBLIC_BASE_URL", "https://image.kungal.iloveren.link"),
+			ImageCDNBase: envOrDefault("KUN_IMAGE_PUBLIC_BASE_URL", imageclient.DefaultPublicBase),
 		},
 		NewsAPI: NewsAPIConfig{
 			BaseURL: envOrDefault("KUN_NEWS_API_BASE", nextMoeBase),

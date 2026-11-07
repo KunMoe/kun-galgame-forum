@@ -27,6 +27,12 @@
 # it manually with `--only=NNN` at the right moment (nextmoe-docs docs/shared/user-migration + 16-data-cutover.md).
 name: kungal
 
+# The shared NextMoe image service's public domain (== infra KUN_IMAGE_PUBLIC_BASE_URL).
+# The one line to change when infra moves it: the API's KUN_IMAGE_PUBLIC_BASE_URL and
+# the web's NUXT_PUBLIC_IMAGE_CDN_BASE both read it. The old domain stays in
+# imageclient.KnownHosts so text naming it keeps folding into /image/<hash> tokens.
+x-image-public-base: &image-public-base https://image.kungal.iloveren.link
+
 x-svc-health: &svc-health
   interval: 10s
   timeout: 5s
@@ -138,8 +144,8 @@ x-kungal-api-env: &kungal-api-env
   # catalog read proxy (step 36): credits / entity reverse-lookups. Reuses the
   # OAuth client pair for S2S Basic auth; unset → those routes degrade to 503.
   KUN_CATALOG_API_BASE: http://catalog:9281
-  # image_service (shared CDN domain == infra KUN_IMAGE_PUBLIC_BASE_URL)
-  KUN_IMAGE_PUBLIC_BASE_URL: https://image.kungal.iloveren.link
+  # image_service; the domain is x-image-public-base above
+  KUN_IMAGE_PUBLIC_BASE_URL: *image-public-base
   KUN_IMAGE_CLIENT_BASE_URL: http://image:9278
   # kungal's image_service client IS its own OAuth client (same id/secret as the
   # login client above): image_service authenticates uploads via HTTP Basic
@@ -275,6 +281,7 @@ services:
       NUXT_PUBLIC_OAUTH_CLIENT_ID: 4ed9bc99ec0a789a4796b83e22bd84c5
       NUXT_PUBLIC_OAUTH_REDIRECT_URI: https://www.kungal.com/auth/callback
       NUXT_PUBLIC_KUN_GALGAME_URL: https://www.kungal.com
+      NUXT_PUBLIC_IMAGE_CDN_BASE: *image-public-base
       # Social cards from nextmoe-og. NUXT_OG_SITE_KEY is the forum's own HMAC key; without it
       # the /og/* routes serve the static kungalgame.webp and the flag below must stay false,
       # or every page advertises a 1200x630 og:image that cannot be produced.

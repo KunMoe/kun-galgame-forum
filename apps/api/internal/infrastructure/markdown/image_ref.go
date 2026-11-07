@@ -6,6 +6,8 @@ import (
 	"regexp"
 	"strconv"
 	"strings"
+
+	"kun-galgame-api/pkg/imageclient"
 )
 
 //go:embed legacy_sticker_refs.tsv
@@ -22,10 +24,7 @@ var (
 	absoluteImageURLRe = regexp.MustCompile(`https?://([A-Za-z0-9.\-]+)/([0-9a-f]{2})/([0-9a-f]{2})/([0-9a-f]{64})(_[a-z0-9]+)?\.webp`)
 	legacyHashRe       = regexp.MustCompile(`^[0-9a-f]{64}$`)
 
-	imageServiceHosts = map[string]struct{}{
-		"image.kungal.iloveren.link": {},
-		"image.kungal.com":           {},
-	}
+	imageServiceHosts = knownImageServiceHosts()
 )
 
 func mustParseLegacyStickerRefs(tsv string) map[stickerKey]string {
@@ -65,6 +64,14 @@ func mustParseLegacyStickerRefs(tsv string) map[stickerKey]string {
 func LegacyStickerHash(pack, position int) (string, bool) {
 	h, ok := legacyStickerHashByKey[stickerKey{pack: pack, position: position}]
 	return h, ok
+}
+
+func knownImageServiceHosts() map[string]struct{} {
+	out := make(map[string]struct{}, len(imageclient.KnownHosts))
+	for _, h := range imageclient.KnownHosts {
+		out[h] = struct{}{}
+	}
+	return out
 }
 
 func addImageServiceHost(host string) {

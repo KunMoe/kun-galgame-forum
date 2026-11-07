@@ -1,6 +1,6 @@
 import { describe, it, expect } from 'vitest'
 import { galgameImageSrc } from './galgameImageSrc'
-import { imageHashUrl } from './imageSrc'
+import { imageHashUrl } from '#shared/utils/imageService'
 
 describe('galgameImageSrc', () => {
   it('prefers the server-injected cdn_url when present', () => {
@@ -25,7 +25,7 @@ describe('galgameImageSrc', () => {
   })
 })
 
-describe('imageHashUrl', () => {
+describe('imageHashUrl via galgameImageSrc', () => {
   it('builds {base}/<aa>/<bb>/<hash>.webp (trailing slash trimmed)', () => {
     expect(imageHashUrl('https://cdn.test/', 'deadbeef')).toBe(
       'https://cdn.test/de/ad/deadbeef.webp'

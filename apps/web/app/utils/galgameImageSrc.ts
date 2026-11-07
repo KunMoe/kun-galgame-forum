@@ -1,4 +1,5 @@
-import { imageCdnBase, imageHashUrl } from './imageSrc'
+import { imageHashUrl } from '#shared/utils/imageService'
+import { imageCdnBase } from './imageSrc'
 
 export const galgameImageSrc = (row: {
   cdn_url?: string

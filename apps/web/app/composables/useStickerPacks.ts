@@ -1,4 +1,7 @@
 import type { StickerPack } from '@kungal/editor-core'
+import { settle } from '#shared/utils/api/problem'
+import { imageHashUrl } from '#shared/utils/imageService'
+import { imageCdnBase } from '~/utils/imageSrc'
 
 /**
  * The official sticker packs, fetched once per page and shared by every
@@ -15,8 +18,28 @@ export const useStickerPacks = () => {
     if (packs.value.length) {
       return packs.value
     }
-    const res = await $fetch<{ packs: StickerPack[] }>('/_sticker-packs')
-    packs.value = res.packs
+    const result = await settle(useApiClient().GET('/sticker-packs'))
+    if (!result.ok) {
+      throw new Error('sticker packs unavailable')
+    }
+    // The picker loads and inserts the same src. It must be the CDN itself:
+    // an /image/<hash> token here made every sticker a redirect through
+    // kungal.com, and opening the picker tripped Cloudflare's rate limit
+    // (1015). The API folds this URL back into the token on every write.
+    const base = imageCdnBase()
+    packs.value = result.data.items.map((pack) => ({
+      name: pack.display_name,
+      stickers: pack.stickers.flatMap((sticker) =>
+        sticker.image
+          ? [
+              {
+                name: sticker.display_name,
+                src: imageHashUrl(base, sticker.image.hash, '320')
+              }
+            ]
+          : []
+      )
+    }))
     return packs.value
   }
 

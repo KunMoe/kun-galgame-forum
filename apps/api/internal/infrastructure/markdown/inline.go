@@ -4,7 +4,10 @@ import (
 	"bytes"
 	"os"
 	"regexp"
+	"slices"
 	"strings"
+
+	"kun-galgame-api/pkg/imageclient"
 
 	"github.com/microcosm-cc/bluemonday"
 	"github.com/yuin/goldmark"
@@ -33,11 +36,7 @@ func resolveAllowedImageHosts() []string {
 			return hosts
 		}
 	}
-	return []string{
-		"image.kungal.iloveren.link",
-		"image.kungal.com",
-		"sticker.kungal.com",
-	}
+	return append(slices.Clone(imageclient.KnownHosts), "sticker.kungal.com")
 }
 
 var messageImageSrcPattern = buildImageSrcPattern(allowedImageHosts)

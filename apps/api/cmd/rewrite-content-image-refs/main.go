@@ -13,6 +13,7 @@ import (
 	"kun-galgame-api/internal/infrastructure/database"
 	"kun-galgame-api/internal/infrastructure/markdown"
 	"kun-galgame-api/pkg/config"
+	"kun-galgame-api/pkg/imageclient"
 	"kun-galgame-api/pkg/logger"
 
 	"github.com/joho/godotenv"
@@ -79,8 +80,9 @@ func main() {
 	likes := []string{
 		"%" + base + "%",
 		"%sticker.kungal.com/stickers/KUNgal%",
-		"%image.kungal.com/%",
-		"%image.kungal.iloveren.link/%",
+	}
+	for _, h := range imageclient.KnownHosts {
+		likes = append(likes, "%"+h+"/%")
 	}
 
 	limits := map[string]map[string]int{}

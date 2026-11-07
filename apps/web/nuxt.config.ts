@@ -1,5 +1,6 @@
 import tailwindcss from '@tailwindcss/vite'
 import { ICON_COLLECTIONS, ICON_NAMES } from './lib/icon'
+import { DEFAULT_IMAGE_CDN_BASE } from './shared/utils/imageService'
 import type { TSConfig } from 'pkg-types'
 
 const sharedTsConfig: TSConfig = {
@@ -46,14 +47,6 @@ export default defineNuxtConfig({
   runtimeConfig: {
     apiBaseUrl: process.env.API_BASE_URL || 'http://127.0.0.1:2334',
 
-    imageCdnBase:
-      process.env.IMAGE_CDN_BASE || 'https://image.kungal.iloveren.link',
-
-    // Where /api/sticker-packs proxies from. Server-side only: the browser
-    // never reaches across to the sticker site.
-    stickerBaseUrl:
-      process.env.STICKER_BASE_URL || 'https://sticker.kungal.com',
-
     // The og renderer's per-site HMAC key. Set at runtime as NUXT_OG_SITE_KEY — the image
     // is built by CI without build args, so a process.env default here is empty in prod.
     ogSiteKey: '',
@@ -90,8 +83,9 @@ export default defineNuxtConfig({
       oauthRedirectUri:
         process.env.OAUTH_REDIRECT_URI || 'http://127.0.0.1:2333/auth/callback',
 
-      imageCdnBase:
-        process.env.IMAGE_CDN_BASE || 'https://image.kungal.iloveren.link'
+      // NUXT_PUBLIC_IMAGE_CDN_BASE at runtime; production feeds it from the
+      // same compose value as the API's KUN_IMAGE_PUBLIC_BASE_URL.
+      imageCdnBase: process.env.IMAGE_CDN_BASE || DEFAULT_IMAGE_CDN_BASE
     }
   },
 
