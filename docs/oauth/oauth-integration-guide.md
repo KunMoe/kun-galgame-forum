@@ -126,9 +126,13 @@ const codeVerifier = generateCodeVerifier()
 const codeChallenge = await generateCodeChallenge(codeVerifier)
 const state = generateState()
 
-// 保存到 session（回调时需要验证）
-sessionStorage.setItem('oauth_code_verifier', codeVerifier)
-sessionStorage.setItem('oauth_state', state)
+// 暂存到 10 分钟的 cookie（回调时需要验证）。不要用 sessionStorage，见下方警告
+const stash = (name: string, value: string) => {
+  const secure = location.protocol === 'https:' ? '; secure' : ''
+  document.cookie = `${name}=${encodeURIComponent(value)}; max-age=600; path=/; samesite=lax${secure}`
+}
+stash('oauth_code_verifier', codeVerifier)
+stash('oauth_state', state)
 
 // 构建授权 URL
 const params = new URLSearchParams({
@@ -149,6 +153,13 @@ window.location.href = `https://account.nextmoe.com/api/v1/oauth/authorize?${par
 
 **注意**：用户在此时会被重定向到 OAuth Server。如果用户未登录，OAuth Server 会先要求用户登录，登录成功后自动重定向回你的 `redirect_uri`。
 
+> **⚠️ `state` / `code_verifier` 不能放 sessionStorage**
+>
+> sessionStorage 按标签页隔离。Via 这类轻量浏览器、各种应用内 WebView 在跳去 `account.nextmoe.com` 再跳回来时不会保留它，回调读到的是 `null`，state 校验失败，用户无论试几次都登录不上。kungal（2026-06）、letmoe（2026-10）、开发者平台与管理后台（2026-11）都因此出过事故。
+>
+> - 纯前端：像上面这样用 10 分钟、`SameSite=Lax`、https 下 `Secure` 的 cookie，回调读到后立即清除。
+> - 有服务端（推荐）：由服务端生成 verifier 与 state，存进**以 state 命名**的 `HttpOnly` cookie，再 302 去授权端点（见 [§8](#8-nuxt-34-完整接入示例)）。verifier 不经过浏览器 JS，也不依赖 `crypto.subtle`；同一浏览器里同时发起两次登录也不会互相覆盖。
+
 ### 步骤 3：处理回调
 
 用户授权后，浏览器会被重定向到：
@@ -164,18 +175,22 @@ https://www.kungal.com/auth/callback?code=abc123...&state=xyz789...
 const urlParams = new URLSearchParams(window.location.search)
 const code = urlParams.get('code')
 const returnedState = urlParams.get('state')
-const savedState = sessionStorage.getItem('oauth_state')
 
-if (returnedState !== savedState) {
+// 读出即清除步骤 2 暂存的 cookie
+const take = (name: string): string | null => {
+  const hit = document.cookie.split('; ').find((p) => p.startsWith(`${name}=`))
+  document.cookie = `${name}=; max-age=0; path=/`
+  return hit ? decodeURIComponent(hit.slice(name.length + 1)) : null
+}
+const savedState = take('oauth_state')
+
+// state 缺失也要拒绝：两边都是 null 时 `!==` 会放行
+if (!savedState || returnedState !== savedState) {
   throw new Error('State mismatch — possible CSRF attack')
 }
 
 // 2. 取出 code_verifier
-const codeVerifier = sessionStorage.getItem('oauth_code_verifier')
-
-// 3. 清理
-sessionStorage.removeItem('oauth_state')
-sessionStorage.removeItem('oauth_code_verifier')
+const codeVerifier = take('oauth_code_verifier')
 ```
 
 ### 步骤 4：用授权码换取令牌（服务端执行）
@@ -605,21 +620,27 @@ OAUTH_CLIENT_SECRET=your-client-secret
 OAUTH_REDIRECT_URI=https://www.kungal.com/auth/callback
 ```
 
-### 8.2 登录按钮组件
+### 8.2 发起登录（服务端路由）
 
-```vue
-<!-- components/OAuthLoginButton.vue -->
-<script setup lang="ts">
-const config = useRuntimeConfig()
+verifier 与 state 都由服务端生成，存进以 state 命名的 `HttpOnly` cookie（`path=/auth`，10 分钟），浏览器只负责跳转。原因见[步骤 2 的警告](#步骤-2重定向到授权端点)。
 
-const handleLogin = async () => {
-  const codeVerifier = generateCodeVerifier()
-  const codeChallenge = await generateCodeChallenge(codeVerifier)
-  const state = generateState()
+```typescript
+// server/routes/auth/login.get.ts
+import { createHash, randomBytes } from 'node:crypto'
 
-  // 保存到 session
-  sessionStorage.setItem('oauth_code_verifier', codeVerifier)
-  sessionStorage.setItem('oauth_state', state)
+export default defineEventHandler((event) => {
+  const config = useRuntimeConfig(event)
+  const verifier = randomBytes(32).toString('base64url')
+  const state = randomBytes(16).toString('hex')
+
+  setCookie(event, `oauth_login_${state}`, verifier, {
+    httpOnly: true,
+    secure: !import.meta.dev,
+    sameSite: 'lax',
+    path: '/auth',
+    maxAge: 600,
+  })
+  setResponseHeader(event, 'cache-control', 'no-store')
 
   const params = new URLSearchParams({
     client_id: config.public.oauthClientId,
@@ -627,18 +648,21 @@ const handleLogin = async () => {
     response_type: 'code',
     scope: 'openid profile email',
     state,
-    code_challenge: codeChallenge,
+    code_challenge: createHash('sha256').update(verifier).digest('base64url'),
     code_challenge_method: 'S256',
   })
+  return sendRedirect(event, `${config.public.oauthServerUrl}/oauth/authorize?${params}`, 302)
+})
+```
 
-  window.location.href = `${config.public.oauthServerUrl}/oauth/authorize?${params}`
-}
-</script>
-
+```vue
+<!-- components/OAuthLoginButton.vue -->
 <template>
-  <button @click="handleLogin">使用 NextMoe·未萌 账号登录</button>
+  <a href="/auth/login">使用 NextMoe·未萌 账号登录</a>
 </template>
 ```
+
+要登录后回到原页面，就把目标路径（只接受站内 `/` 开头的路径）一并写进这个 cookie，回调时取出。
 
 ### 8.3 回调页面
 
@@ -651,23 +675,17 @@ const router = useRouter()
 onMounted(async () => {
   const code = route.query.code as string
   const state = route.query.state as string
-  const savedState = sessionStorage.getItem('oauth_state')
-  const codeVerifier = sessionStorage.getItem('oauth_code_verifier')
 
-  // 清理
-  sessionStorage.removeItem('oauth_state')
-  sessionStorage.removeItem('oauth_code_verifier')
-
-  if (!code || state !== savedState) {
+  if (!code || !state) {
     router.push('/auth/login?error=invalid_state')
     return
   }
 
   try {
-    // 调用自己的服务端 API 来换取 token
-    const result = await $fetch('/api/auth/oauth-callback', {
+    // 只带 code 与 state；verifier 在服务端 cookie 里
+    await $fetch('/auth/exchange', {
       method: 'POST',
-      body: { code, code_verifier: codeVerifier },
+      body: { code, state },
     })
 
     // 服务端已设置了 session cookie，跳转到首页
@@ -686,10 +704,18 @@ onMounted(async () => {
 ### 8.4 服务端回调处理
 
 ```typescript
-// server/api/auth/oauth-callback.post.ts
+// server/routes/auth/exchange.post.ts（与 8.2 同在 /auth 下，才收得到那个 cookie）
 export default defineEventHandler(async (event) => {
-  const { code, code_verifier } = await readBody(event)
+  const { code, state } = await readBody(event)
   const config = useRuntimeConfig()
+
+  // 0. 按 state 取出并清除 verifier；取不到就是 state 不匹配或已过期
+  const cookieName = /^[0-9a-f]{32}$/.test(state) ? `oauth_login_${state}` : null
+  const code_verifier = cookieName ? getCookie(event, cookieName) : undefined
+  if (cookieName) deleteCookie(event, cookieName, { path: '/auth' })
+  if (!code_verifier) {
+    throw createError({ statusCode: 400, statusMessage: 'invalid_state' })
+  }
 
   // 1. 用授权码换取 token
   const tokenResponse = await $fetch(`${config.oauthServerUrl}/oauth/token`, {
@@ -731,7 +757,7 @@ export default defineEventHandler(async (event) => {
 
 1. **client_secret 只能在服务端使用**，绝不能暴露到前端代码
 2. **始终使用 PKCE**（S256 方法），即使你有 client_secret
-3. **始终验证 state 参数**，防止 CSRF 攻击
+3. **始终验证 state 参数**，防止 CSRF 攻击；state 与 code_verifier 存 cookie，不要存 sessionStorage（见步骤 2）
 4. **存储 refresh_token** 时使用 httpOnly cookie 或加密存储
 5. **令牌轮换**：每次刷新后用新的 refresh_token 替换旧的
 6. **CORS**：生产环境已配置 `kungal.com` 和 `moyu.moe`，其他域名需要在 OAuth Server 管理后台添加
