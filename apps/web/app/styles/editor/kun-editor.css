@@ -66,6 +66,32 @@
   border-radius: 0;
 }
 
+/* Split mode: the reference sheet's fixed 60vh panes sat inside a page that
+   still scrolled around them, so the writer had two scrollbars. edit/topic
+   height-locks the page in split mode; the editor fills what is left and each
+   pane is the only scroller. */
+.kun-doc-editor[data-mode='split'] {
+  --kun-editor-split-height: 100%;
+  flex: 1;
+  min-height: 0;
+}
+
+.kun-doc-editor[data-mode='split'] .kun-editor__panes {
+  flex: 1;
+  min-height: 0;
+}
+
+.kun-doc-editor[data-mode='split'] .kun-editor__wysiwyg .ProseMirror {
+  min-height: 0;
+}
+
+/* The preview pane scrolls but was not a containing block, so the hidden
+   absolute widgets inside .milkdown (.kun-entity-menu, .kun-editor__bubble)
+   sat at the end of the full preview and stretched the page to 4763px. */
+.kun-doc-editor[data-mode='split'] .kun-editor__wysiwyg {
+  position: relative;
+}
+
 /* The forum's 透明度 slider makes --color-content1 translucent for in-page
  * glass, and the editor's floating panels (the `/` menu, the paste popover, the
  * mention dropdown) paint with it: on 2026-10-27 the `/` menu showed the text

@@ -1,11 +1,23 @@
 @import 'katex/dist/katex.min.css';
 
+/* Display math never line-breaks in KaTeX, so a long $$…$$ ran past the topic
+   card on 2026-11-07; it scrolls inside its own box instead. The block padding
+   keeps tall glyphs (\overbrace, stacked fractions) out of overflow-y's clip. */
+.katex-display {
+  overflow-x: auto;
+  overflow-y: hidden;
+  padding-block: 0.25em;
+}
+
 .milkdown {
   --crepe-color-primary: var(--color-foreground);
 
   span[data-type='math_inline'] {
     padding: 0 4px;
     display: inline-block;
+    max-width: 100%;
+    overflow-x: auto;
+    overflow-y: hidden;
     vertical-align: bottom;
     color: var(--crepe-color-primary);
   }

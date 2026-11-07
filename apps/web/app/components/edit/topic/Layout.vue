@@ -8,7 +8,8 @@ import {
   KUN_EDITOR_TOOLBAR_OVERRIDES
 } from '~/constants/editor'
 const tempStore = useTempEditStore()
-const { content, polls, lotteries, isEntityCoverBlurred } = useTopicEditorStore()
+const { content, polls, lotteries, isEntityCoverBlurred } =
+  useTopicEditorStore()
 provideEntityCoverBlur(isEntityCoverBlurred)
 const adapters = useKunEditorAdapters({ entities: true })
 
@@ -33,6 +34,7 @@ const attachedText = computed(() =>
 
 type EditorViewMode = 'wysiwyg' | 'source' | 'split'
 const editorMode = ref<EditorViewMode>('wysiwyg')
+const isSplit = computed(() => editorMode.value === 'split')
 const onSetMode = (
   mode: EditorViewMode,
   apply: (mode: EditorViewMode) => void
@@ -75,9 +77,11 @@ onBeforeRouteLeave(async () => {
 </script>
 
 <template>
-  <div>
+  <div
+    :class="cn(isSplit && 'flex h-[calc(100dvh-112px)] min-h-[480px] flex-col')"
+  >
     <div
-      class="et-topbar border-default-200 bg-background/90 sticky top-[72px] z-20 mb-4 flex flex-wrap items-center gap-x-3 gap-y-2 rounded-lg border px-3 py-2 backdrop-blur"
+      class="et-topbar border-default-200 bg-background/90 sticky top-[72px] z-20 mb-4 flex shrink-0 flex-wrap items-center gap-x-3 gap-y-2 rounded-lg border px-3 py-2 backdrop-blur"
     >
       <div id="et-viewswitch" class="shrink-0" />
       <span class="bg-default-200 hidden h-5 w-px shrink-0 sm:block" />
@@ -117,7 +121,7 @@ onBeforeRouteLeave(async () => {
 
     <p
       v-if="!tempStore.isTopicRewriting"
-      class="text-default-500 mb-4 flex items-start gap-1.5 px-1 text-sm"
+      class="text-default-500 mb-4 flex shrink-0 items-start gap-1.5 px-1 text-sm"
     >
       <KunIcon name="lucide:info" class="mt-0.5 h-4 w-4 shrink-0" />
       <span>
@@ -129,9 +133,14 @@ onBeforeRouteLeave(async () => {
       </span>
     </p>
 
-    <div class="flex justify-center gap-6">
-      <aside v-if="headings.length" class="hidden w-48 shrink-0 lg:block">
-        <nav class="sticky top-32 space-y-1 py-1 text-sm">
+    <div :class="cn('flex justify-center gap-6', isSplit && 'min-h-0 flex-1')">
+      <aside
+        v-if="headings.length"
+        :class="
+          cn('hidden w-48 shrink-0 lg:block', isSplit && 'overflow-y-auto')
+        "
+      >
+        <nav :class="cn('space-y-1 py-1 text-sm', !isSplit && 'sticky top-32')">
           <button
             v-for="(h, i) in headings"
             :key="i"
@@ -148,17 +157,35 @@ onBeforeRouteLeave(async () => {
 
       <div
         :class="
-          cn('min-w-0', editorMode === 'split' ? 'flex-1' : 'w-full max-w-3xl')
+          cn('min-w-0', isSplit ? 'flex flex-1 flex-col' : 'w-full max-w-3xl')
         "
       >
-        <div class="bg-content1 shadow-kun-md px-6 sm:px-16">
+        <div
+          :class="
+            cn(
+              'bg-content1 shadow-kun-md',
+              isSplit ? 'flex min-h-0 flex-1 flex-col px-6' : 'px-6 sm:px-16'
+            )
+          "
+        >
           <div
-            class="border-default-200/60 border-b pt-8 pb-4 sm:pt-14 sm:pb-5"
+            :class="
+              cn(
+                'border-default-200/60 border-b',
+                isSplit ? 'shrink-0 pt-6 pb-4' : 'pt-8 pb-4 sm:pt-14 sm:pb-5'
+              )
+            "
           >
             <EditTopicTitle />
           </div>
 
-          <div class="pt-5 pb-10 sm:pt-7 sm:pb-20">
+          <div
+            :class="
+              isSplit
+                ? 'flex min-h-0 flex-1 flex-col pt-4 pb-6'
+                : 'pt-5 pb-10 sm:pt-7 sm:pb-20'
+            "
+          >
             <ClientOnly>
               <KunEditor
                 ref="editorRef"
