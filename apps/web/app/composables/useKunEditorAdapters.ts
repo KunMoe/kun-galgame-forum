@@ -41,7 +41,8 @@ export const useKunEditorAdapters = (opts?: {
   // The sticker URLs are content-addressed, and they are what gets written
   // into the post -- the previous scheme wrote a path that named a position in
   // a mutable collection, which is why years of posts now render broken images.
-  const stickerSource = (): Promise<StickerPack[]> => useStickerPacks().load()
+  const stickers = useStickerPacks()
+  const stickerSource = (): Promise<StickerPack[]> => stickers.load()
 
   const notify: KunEditorAdapters['notify'] = (message, level) => {
     useMessage(message, level)
@@ -54,6 +55,7 @@ export const useKunEditorAdapters = (opts?: {
         uploadImage,
         searchMentionUsers,
         stickerSource,
+        isSticker: stickers.isSticker,
         notify,
         ...entityAdapters
       }

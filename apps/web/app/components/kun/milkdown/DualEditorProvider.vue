@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import type { KunEditorExpose } from '@kungal/editor-vue'
+import { until } from '@vueuse/core'
 import {
   KUN_EDITOR_ENTITY_VIEW,
   KUN_EDITOR_TOOLBAR_ITEMS,
@@ -65,6 +66,18 @@ const consumePendingQuote = () => {
 
 watch(() => props.pendingQuote, consumePendingQuote)
 onMounted(consumePendingQuote)
+
+onMounted(async () => {
+  if (!allowImage) {
+    return
+  }
+  await until(() => props.valueMarkdown.includes('![')).toBe(true)
+  const stickers = useStickerPacks()
+  if (!stickers.packs.value.length) {
+    await stickers.load().catch(() => undefined)
+    editorRef.value?.refreshStickers()
+  }
+})
 
 const textCount = computed(() => markdownToText(props.valueMarkdown).length)
 </script>

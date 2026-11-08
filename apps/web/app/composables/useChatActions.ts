@@ -54,7 +54,10 @@ export const useChatActions = () => {
       }
     }
     if (pending.media) {
-      body.media = { type: 'photo', image_hash: pending.media.image_hash }
+      body.media = {
+        type: pending.media.type,
+        image_hash: pending.media.image_hash
+      }
     }
     const r = settled(
       await api.post<WithUsers<ChatMessage>>(

@@ -3,6 +3,8 @@ import { settle } from '#shared/utils/api/problem'
 import { imageHashUrl } from '#shared/utils/imageService'
 import { imageCdnBase } from '~/utils/imageSrc'
 
+const stickerHash = (src: string) => src.match(/[0-9a-f]{64}/)?.[0]
+
 /**
  * The official sticker packs, fetched once per page and shared by every
  * picker (the editor's and the private-message composer's).
@@ -43,5 +45,19 @@ export const useStickerPacks = () => {
     return packs.value
   }
 
-  return { packs, load }
+  const hashes = computed(
+    () =>
+      new Set(
+        packs.value.flatMap((pack) =>
+          pack.stickers.flatMap((sticker) => stickerHash(sticker.src) ?? [])
+        )
+      )
+  )
+
+  const isSticker = (src: string) => {
+    const hash = stickerHash(src)
+    return !!hash && hashes.value.has(hash)
+  }
+
+  return { packs, load, isSticker }
 }

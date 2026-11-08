@@ -4,7 +4,6 @@ import {
   parseKunChatMarkdown,
   type KunChatAttachment,
   type KunChatFormattedText,
-  type KunChatMedia,
   type KunChatMessageAction,
   type KunChatReplyQuote
 } from '@kungal/ui-vue'
@@ -96,8 +95,6 @@ watch(
 )
 onBeforeUnmount(() => void persistDraft(props.id))
 onMounted(() => void chat.loadReactions())
-
-const resolveMedia = (media: KunChatMedia) => imageTokenUrl(media.image_hash)
 
 const notify = <T,>(r: ApiResult<T> | undefined) => {
   if (r && !r.ok) {
@@ -338,7 +335,6 @@ const openProfile = (uid: string) => navigateTo(`/user/${uid}`)
     <KunChatPinnedBar
       v-if="pinned.length"
       :messages="pinned"
-      :resolve-media-url="resolveMedia"
       :unpinnable="conv.me.accepted"
       @jump="(seq: number) => list?.scrollToSeq(seq) || jump(seq)"
       @unpin="(seq: number) => act.pin(conv!.id, seq, false).then(notify)"
@@ -365,7 +361,6 @@ const openProfile = (uid: string) => navigateTo(`/user/${uid}`)
       :last-read-seq="openedReadSeq"
       :peer-read-seq="conv.peer_read_seq"
       :reaction-options="chat.reactions"
-      :resolve-media-url="resolveMedia"
       :actions="actions"
       :has-older="win.hasOlder"
       :has-newer="win.hasNewer"
