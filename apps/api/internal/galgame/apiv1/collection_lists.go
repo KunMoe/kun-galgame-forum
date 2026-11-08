@@ -78,16 +78,11 @@ func (s *Service) listMyCollections(ctx context.Context, in *listMyCollectionsIn
 	sortFolders(folders)
 	n, rel := collect.ClampTotal(len(folders))
 	pageFolders := pageOfFolders(folders, pg.Page, pg.Limit)
-	items := make([]CollectionSummary, 0, len(pageFolders))
-	for _, f := range pageFolders {
-		sum, ok, p := s.toSummary(ctx, f, user, token, contains[f.ID], in.IncludeNSFW)
-		if p != nil {
-			return nil, p
-		}
-		if !ok {
-			continue
-		}
-		items = append(items, *sum)
+	items, p := s.summariesOf(ctx, pageFolders, user, token, func(f catalogclient.Folder) viewerState {
+		return viewerState{hasWork: contains[f.ID]}
+	}, in.IncludeNSFW)
+	if p != nil {
+		return nil, p
 	}
 	return &collectionSummaryPageOutput{Body: repr.NewPageList(items, n, rel)}, nil
 }
@@ -136,16 +131,15 @@ func (s *Service) listUserCollections(ctx context.Context, in *listUserCollectio
 	sortFolders(folders)
 	n, rel := collect.ClampTotal(len(folders))
 	pageFolders := pageOfFolders(folders, pg.Page, pg.Limit)
-	items := make([]CollectionSummary, 0, len(pageFolders))
-	for _, f := range pageFolders {
-		sum, ok, p := s.toSummary(ctx, f, user, previewToken, false, in.IncludeNSFW)
-		if p != nil {
-			return nil, p
-		}
-		if !ok {
-			continue
-		}
-		items = append(items, *sum)
+	following := map[int64]bool{}
+	if !isOwner {
+		following = s.followedAmong(ctx, user, pageFolders)
+	}
+	items, p := s.summariesOf(ctx, pageFolders, user, previewToken, func(f catalogclient.Folder) viewerState {
+		return viewerState{following: following[f.ID]}
+	}, in.IncludeNSFW)
+	if p != nil {
+		return nil, p
 	}
 	return &collectionSummaryPageOutput{Body: repr.NewPageList(items, n, rel)}, nil
 }

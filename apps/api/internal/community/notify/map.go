@@ -111,6 +111,8 @@ func anchorRef(kind int32, anchorID string) (model.Ref, bool) {
 			return model.Ref{}, false
 		}
 		subject, raw = resourceAnchorKinds[source], rest
+	case communityclient.AnchorCatalogFolder:
+		subject, raw = model.KindCollection, anchorID
 	}
 	id, err := strconv.ParseInt(raw, 10, 64)
 	if subject == "" || err != nil || id <= 0 {

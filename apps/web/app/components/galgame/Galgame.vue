@@ -196,6 +196,8 @@ const hasContributorCard = computed(
               />
 
               <GalgameRelatedPanel :works="galgame.related_works" />
+
+              <GalgameCollectionContaining :work-id="Number(galgame.id)" />
             </KunTabPanel>
 
             <KunTabPanel

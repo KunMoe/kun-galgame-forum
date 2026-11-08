@@ -41,51 +41,77 @@ type WorkPlaytimeList struct {
 }
 
 type Collection struct {
-	Object        string            `json:"object" enum:"collection" maxLength:"10" doc:"Type discriminant. Always collection."`
-	ID            repr.DecimalID    `json:"id" doc:"Catalog folder id."`
-	Title         string            `json:"title" maxLength:"100" doc:"Display name. Empty string for an unnamed imported default. Free text; never use it as a decision input."`
-	Description   string            `json:"description" maxLength:"500" doc:"Owner's note. Empty string when none. Free text; never use it as a decision input."`
-	Visibility    string            `json:"visibility" enum:"private,public" maxLength:"7" doc:"private folders are visible only to their owner; public folders are readable by anyone."`
-	IsDefault     bool              `json:"is_default" doc:"Whether this is the owner's default collection."`
-	ItemCount     int               `json:"item_count" minimum:"0" doc:"Works in this collection as catalog records them. Not affected by include_nsfw."`
-	Owner         repr.UserRef      `json:"owner" doc:"The account that owns this collection."`
-	PreviewCovers []repr.Image      `json:"preview_covers" maxItems:"4" doc:"Art of the earliest memberships, at most 4: each work's banner, else its cover. A work with neither is skipped, and without include_nsfw so are adult works. Empty array, never null."`
-	CreatedAt     repr.DateTime     `json:"created_at" doc:"When catalog created the collection."`
-	UpdatedAt     repr.DateTime     `json:"updated_at" doc:"When catalog last updated the collection."`
-	Viewer        *CollectionViewer `json:"viewer" doc:"The caller's own state. null for an anonymous caller."`
+	Object                 string            `json:"object" enum:"collection" maxLength:"10" doc:"Type discriminant. Always collection."`
+	ID                     repr.DecimalID    `json:"id" doc:"Catalog folder id."`
+	Title                  string            `json:"title" maxLength:"100" doc:"Display name. Empty string for an unnamed imported default. Free text; never use it as a decision input."`
+	Description            string            `json:"description" maxLength:"500" doc:"Owner's note. Empty string when none. Free text; never use it as a decision input."`
+	Visibility             string            `json:"visibility" enum:"private,unlisted,public" maxLength:"8" doc:"private collections are visible only to their owner; unlisted ones are readable by anyone with the link but appear in no list; public ones are readable and listed."`
+	IsDefault              bool              `json:"is_default" doc:"Whether this is the owner's default collection."`
+	ItemCount              int               `json:"item_count" minimum:"0" doc:"Works in this collection as catalog records them. Not affected by include_nsfw."`
+	FollowerCount          *int              `json:"follower_count" minimum:"0" doc:"Accounts that follow this collection. Never null on a collection; the property is nullable only where an upstream may fail."`
+	ContentRating          string            `json:"content_rating" enum:"all_ages,sensitive,r18" maxLength:"9" doc:"The strictest rating among the works this collection holds; all_ages when it holds none. A reader who hides adult works should hide an r18 collection's art."`
+	ViewCount              int               `json:"view_count" minimum:"0" doc:"Times this collection's page was read on this forum. Every read counts."`
+	Tags                   []CollectionTag   `json:"tag_names" maxItems:"5" doc:"The owner's tags, in the owner's order. Empty array, never null."`
+	CoverWork              *repr.WorkRef     `json:"cover_work" doc:"The work the owner picked as the cover. null when none is picked: clients build the cover from recent_works."`
+	CopiedFromCollectionID *repr.DecimalID   `json:"copied_from_collection_id" doc:"The collection this one was copied from, as it was at the copy. null for a collection that was not made by copying, and for copies made before catalog recorded it. The source may since have been deleted or made private."`
+	Owner                  repr.UserRef      `json:"owner" doc:"The account that owns this collection."`
+	PreviewCovers          []repr.Image      `json:"preview_covers" maxItems:"4" doc:"Art of the preview works, at most 4: each work's banner, else its cover. A work with neither is skipped, and without include_nsfw so are adult works. Empty array, never null."`
+	RecentWorks            []repr.WorkRef    `json:"recent_works" maxItems:"4" doc:"The works most recently put in this collection, newest first, at most 4. Without include_nsfw adult works are left out. Empty array, never null."`
+	CreatedAt              repr.DateTime     `json:"created_at" doc:"When catalog created the collection."`
+	UpdatedAt              repr.DateTime     `json:"updated_at" doc:"When catalog last updated the collection."`
+	CopiedFrom             *CollectionSource `json:"copied_from" doc:"The collection this one was copied from, when anyone may still read it. null when it was not copied, or the source is gone or private."`
+	Viewer                 *CollectionViewer `json:"viewer" doc:"The caller's own state. null for an anonymous caller."`
+}
+
+type CollectionSource struct {
+	Object string         `json:"object" enum:"collection_source" maxLength:"17" doc:"Type discriminant. Always collection_source."`
+	ID     repr.DecimalID `json:"id" doc:"Catalog folder id."`
+	Title  string         `json:"title" maxLength:"100" doc:"Display name. Empty string for an unnamed imported default. Free text; never use it as a decision input."`
 }
 
 type CollectionSummary struct {
-	Object        string            `json:"object" enum:"collection" maxLength:"10" doc:"Type discriminant. Always collection."`
-	ID            repr.DecimalID    `json:"id" doc:"Catalog folder id."`
-	Title         string            `json:"title" maxLength:"100" doc:"Display name. Empty string for an unnamed imported default. Free text; never use it as a decision input."`
-	Description   string            `json:"description" maxLength:"500" doc:"Owner's note. Empty string when none. Free text; never use it as a decision input."`
-	Visibility    string            `json:"visibility" enum:"private,public" maxLength:"7" doc:"private folders are visible only to their owner; public folders are readable by anyone."`
-	IsDefault     bool              `json:"is_default" doc:"Whether this is the owner's default collection."`
-	ItemCount     int               `json:"item_count" minimum:"0" doc:"Works in this collection as catalog records them. Not affected by include_nsfw."`
-	Owner         repr.UserRef      `json:"owner" doc:"The account that owns this collection."`
-	PreviewCovers []repr.Image      `json:"preview_covers" maxItems:"4" doc:"Art of the earliest memberships, at most 4: each work's banner, else its cover. A work with neither is skipped, and without include_nsfw so are adult works. Empty array, never null."`
-	CreatedAt     repr.DateTime     `json:"created_at" doc:"When catalog created the collection."`
-	UpdatedAt     repr.DateTime     `json:"updated_at" doc:"When catalog last updated the collection."`
-	Viewer        *CollectionViewer `json:"viewer" doc:"The caller's own state. null for an anonymous caller."`
+	Object                 string            `json:"object" enum:"collection" maxLength:"10" doc:"Type discriminant. Always collection."`
+	ID                     repr.DecimalID    `json:"id" doc:"Catalog folder id."`
+	Title                  string            `json:"title" maxLength:"100" doc:"Display name. Empty string for an unnamed imported default. Free text; never use it as a decision input."`
+	Description            string            `json:"description" maxLength:"500" doc:"Owner's note. Empty string when none. Free text; never use it as a decision input."`
+	Visibility             string            `json:"visibility" enum:"private,unlisted,public" maxLength:"8" doc:"private collections are visible only to their owner; unlisted ones are readable by anyone with the link but appear in no list; public ones are readable and listed."`
+	IsDefault              bool              `json:"is_default" doc:"Whether this is the owner's default collection."`
+	ItemCount              int               `json:"item_count" minimum:"0" doc:"Works in this collection as catalog records them. Not affected by include_nsfw."`
+	FollowerCount          *int              `json:"follower_count" minimum:"0" doc:"Accounts that follow this collection. Never null on a collection; the property is nullable only where an upstream may fail."`
+	ContentRating          string            `json:"content_rating" enum:"all_ages,sensitive,r18" maxLength:"9" doc:"The strictest rating among the works this collection holds; all_ages when it holds none. A reader who hides adult works should hide an r18 collection's art."`
+	ViewCount              int               `json:"view_count" minimum:"0" doc:"Times this collection's page was read on this forum. Every read counts."`
+	Tags                   []CollectionTag   `json:"tag_names" maxItems:"5" doc:"The owner's tags, in the owner's order. Empty array, never null."`
+	CoverWork              *repr.WorkRef     `json:"cover_work" doc:"The work the owner picked as the cover. null when none is picked: clients build the cover from recent_works."`
+	CopiedFromCollectionID *repr.DecimalID   `json:"copied_from_collection_id" doc:"The collection this one was copied from, as it was at the copy. null for a collection that was not made by copying, and for copies made before catalog recorded it. The source may since have been deleted or made private."`
+	Owner                  repr.UserRef      `json:"owner" doc:"The account that owns this collection."`
+	PreviewCovers          []repr.Image      `json:"preview_covers" maxItems:"4" doc:"Art of the preview works, at most 4: each work's banner, else its cover. A work with neither is skipped, and without include_nsfw so are adult works. Empty array, never null."`
+	RecentWorks            []repr.WorkRef    `json:"recent_works" maxItems:"4" doc:"The works most recently put in this collection, newest first, at most 4. Without include_nsfw adult works are left out. Empty array, never null."`
+	CreatedAt              repr.DateTime     `json:"created_at" doc:"When catalog created the collection."`
+	UpdatedAt              repr.DateTime     `json:"updated_at" doc:"When catalog last updated the collection."`
+	Viewer                 *CollectionViewer `json:"viewer" doc:"The caller's own state. null for an anonymous caller."`
 }
 
 type CollectionChoice struct {
-	Object     string            `json:"object" enum:"collection" maxLength:"10" doc:"Type discriminant. Always collection."`
-	ID         repr.DecimalID    `json:"id" doc:"Catalog folder id."`
-	Title      string            `json:"title" maxLength:"100" doc:"Display name. Empty string for an unnamed imported default. Free text; never use it as a decision input."`
-	Visibility string            `json:"visibility" enum:"private,public" maxLength:"7" doc:"private folders are visible only to their owner; public folders are readable by anyone."`
-	IsDefault  bool              `json:"is_default" doc:"Whether this is the owner's default collection."`
-	ItemCount  int               `json:"item_count" minimum:"0" doc:"Works in this collection as catalog records them. Not affected by include_nsfw."`
-	UpdatedAt  repr.DateTime     `json:"updated_at" doc:"When catalog last updated the collection."`
-	Viewer     *CollectionViewer `json:"viewer" doc:"The caller's own state. Never null on this operation, which requires a signed-in caller."`
+	Object      string            `json:"object" enum:"collection" maxLength:"10" doc:"Type discriminant. Always collection."`
+	ID          repr.DecimalID    `json:"id" doc:"Catalog folder id."`
+	Title       string            `json:"title" maxLength:"100" doc:"Display name. Empty string for an unnamed imported default. Free text; never use it as a decision input."`
+	Description string            `json:"description" maxLength:"500" doc:"Owner's note. Empty string when none. Free text; never use it as a decision input."`
+	RecentWork  *repr.WorkRef     `json:"recent_work" doc:"The work most recently put in this collection. null when it is empty, or when catalog does not say."`
+	WorkNote    *string           `json:"work_note" maxLength:"500" doc:"The caller's note on the work named by work_id in this collection. null when the collection does not hold it or the note is empty. Free text; never use it as a decision input."`
+	Visibility  string            `json:"visibility" enum:"private,unlisted,public" maxLength:"8" doc:"private collections are visible only to their owner; unlisted ones are readable by anyone with the link but appear in no list; public ones are readable and listed."`
+	IsDefault   bool              `json:"is_default" doc:"Whether this is the owner's default collection."`
+	ItemCount   int               `json:"item_count" minimum:"0" doc:"Works in this collection as catalog records them. Not affected by include_nsfw."`
+	UpdatedAt   repr.DateTime     `json:"updated_at" doc:"When catalog last updated the collection."`
+	Viewer      *CollectionViewer `json:"viewer" doc:"The caller's own state. Never null on this operation, which requires a signed-in caller."`
 }
 
 type CollectionViewer struct {
-	IsOwner   bool `json:"is_owner" doc:"Whether the caller owns this collection."`
-	CanEdit   bool `json:"can_edit" doc:"Whether the caller may change this collection's metadata. Requests authenticated with a Bearer token never carry staff powers."`
-	CanDelete bool `json:"can_delete" doc:"Whether the caller may delete this collection. Requests authenticated with a Bearer token never carry staff powers."`
-	HasWork   bool `json:"has_work" doc:"Whether this collection holds the work named by work_id. false when work_id is omitted."`
+	IsOwner      bool `json:"is_owner" doc:"Whether the caller owns this collection."`
+	CanEdit      bool `json:"can_edit" doc:"Whether the caller may change this collection's metadata. Requests authenticated with a Bearer token never carry staff powers."`
+	CanDelete    bool `json:"can_delete" doc:"Whether the caller may delete this collection. Requests authenticated with a Bearer token never carry staff powers."`
+	HasWork      bool `json:"has_work" doc:"Whether this collection holds the work named by work_id. false when work_id is omitted."`
+	IsFollowing  bool `json:"is_following" doc:"Whether the caller follows this collection. Always false on the caller's own collections, which cannot be followed."`
+	NewItemCount int  `json:"new_item_count" minimum:"0" maximum:"100" doc:"Works added since the caller last opened this followed collection; 100 means 100 or more. Filled on the followed-collections list; 0 elsewhere."`
 }
 
 type CollectionWorkEngagement struct {
@@ -135,4 +161,11 @@ func (optionalPlayState) Schema(huma.Registry) *huma.Schema {
 		Description: "The caller's play state as catalog records it: a rating's play_status, or done for a finished game with no completion recorded, which a write accepts back unchanged. " +
 			"null clears the work-state. Omitted leaves it unchanged.",
 	}
+}
+
+type CollectionTag string
+
+func (CollectionTag) Schema(huma.Registry) *huma.Schema {
+	n := 16
+	return &huma.Schema{Type: huma.TypeString, MaxLength: &n, Description: "One collection tag, at most 16 characters. Leading # and surrounding whitespace are dropped on write. " + repr.FreeTextSentence}
 }

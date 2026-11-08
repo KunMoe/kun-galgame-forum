@@ -28,10 +28,11 @@ type createCollectionInput struct {
 }
 
 type collectionCreate struct {
-	Title       string `json:"title" minLength:"1" maxLength:"100" doc:"Display name. 1–100 characters after trimming. Free text; never use it as a decision input."`
-	Description string `json:"description" required:"false" maxLength:"500" doc:"Owner's note. Omitted is an empty string. Free text; never use it as a decision input."`
-	Visibility  string `json:"visibility" enum:"private,public" required:"true" maxLength:"7" doc:"Must be sent. There is no default."`
-	IsDefault   *bool  `json:"is_default,omitempty" doc:"When true, this collection becomes the owner's default and the previous default loses the flag. Omitted is false."`
+	Title       string           `json:"title" minLength:"1" maxLength:"100" doc:"Display name. 1–100 characters after trimming. Free text; never use it as a decision input."`
+	Description string           `json:"description" required:"false" maxLength:"500" doc:"Owner's note. Omitted is an empty string. Free text; never use it as a decision input."`
+	Visibility  string           `json:"visibility" enum:"private,unlisted,public" required:"true" maxLength:"8" doc:"Must be sent. There is no default."`
+	IsDefault   *bool            `json:"is_default,omitempty" doc:"When true, this collection becomes the owner's default and the previous default loses the flag. Omitted is false."`
+	Tags        *[]CollectionTag `json:"tag_names,omitempty" maxItems:"5" doc:"Up to 5 tags. Case-insensitive duplicates are dropped."`
 }
 
 type createCollectionOutput struct {
@@ -45,10 +46,12 @@ type updateCollectionInput struct {
 }
 
 type collectionPatch struct {
-	Title       *string `json:"title,omitempty" minLength:"1" maxLength:"100" doc:"New display name. Free text; never use it as a decision input."`
-	Description *string `json:"description,omitempty" maxLength:"500" doc:"New note; an empty string clears it. Free text; never use it as a decision input."`
-	Visibility  *string `json:"visibility,omitempty" enum:"private,public" maxLength:"7" doc:"New visibility."`
-	IsDefault   *bool   `json:"is_default,omitempty" doc:"Only true is accepted. false is refused."`
+	Title       *string          `json:"title,omitempty" minLength:"1" maxLength:"100" doc:"New display name. Free text; never use it as a decision input."`
+	Description *string          `json:"description,omitempty" maxLength:"500" doc:"New note; an empty string clears it. Free text; never use it as a decision input."`
+	Visibility  *string          `json:"visibility,omitempty" enum:"private,unlisted,public" maxLength:"8" doc:"New visibility."`
+	IsDefault   *bool            `json:"is_default,omitempty" doc:"Only true is accepted. false is refused."`
+	Tags        *[]CollectionTag `json:"tag_names,omitempty" maxItems:"5" doc:"Replaces every tag; an empty array clears them."`
+	CoverWorkID *string          `json:"cover_work_id,omitempty" pattern:"^([1-9][0-9]{0,18})?$" maxLength:"19" doc:"A work this collection holds, as its cover. An empty string clears the pick."`
 }
 
 type noContentOutput struct{}
@@ -73,19 +76,20 @@ func (s *Service) createCollection(ctx context.Context, in *createCollectionInpu
 	// Only what the request actually changes is scanned. The unchanged half
 	// was scanned when it was set, and reading it back to recompose the pair
 	// would need a folder read this path does not otherwise make.
-	verdict, p := s.checkCollectionText(ctx, gate.ComposeText(title, desc), user.ID)
+	verdict, p := s.checkCollectionText(ctx, gate.ComposeText(title, desc, tagText(in.Body.Tags)), user.ID)
 	if p != nil {
 		return nil, p
 	}
-	write := catalogclient.FolderWrite{Name: &title, Description: &desc, Visibility: &in.Body.Visibility, IsDefault: in.Body.IsDefault}
+	write := catalogclient.FolderWrite{Name: &title, Description: &desc, Visibility: &in.Body.Visibility, IsDefault: in.Body.IsDefault, Tags: tagStrings(in.Body.Tags)}
 	folder, err := s.catalog.CreateFolderKeyed(ctx, token, write, idempotencyKey(ctx))
 	if err != nil {
-		return nil, mapUserPlane(err, true)
+		return nil, mapUserPlaneAt(err, true, collectionPointer)
 	}
 	if s.scan != nil {
 		s.scan.ScanBg(gate.SubjectKindGalgameCollection, string(repr.ID(int(folder.ID))), gate.ComposeText(title, desc), int64(user.ID), verdict.Skipped)
 	}
-	col, ok, p := s.toCollection(ctx, *folder, user, token, false, false)
+	s.feedCollectionCreated(*folder, user.ID)
+	col, ok, p := s.collectionOf(ctx, *folder, user, token, viewerState{}, false, 0)
 	if p != nil {
 		return nil, p
 	}
@@ -103,13 +107,15 @@ func (s *Service) getCollection(ctx context.Context, in *collectionIDInput) (*co
 	if err != nil {
 		return nil, err
 	}
-	col, ok, p := s.toCollection(ctx, *folder, user, token, false, in.IncludeNSFW)
+	vs := viewerState{following: s.viewerFollows(ctx, user, *folder)}
+	col, ok, p := s.collectionOf(ctx, *folder, user, token, vs, in.IncludeNSFW, s.bumpCollectionView(folder.ID))
 	if p != nil {
 		return nil, p
 	}
 	if !ok {
 		return nil, notFound()
 	}
+	col.CopiedFrom = s.collectionSource(ctx, *folder)
 	return &collectionOutput{Body: *col}, nil
 }
 
@@ -122,7 +128,8 @@ func (s *Service) updateCollection(ctx context.Context, in *updateCollectionInpu
 	if p != nil {
 		return nil, p
 	}
-	if in.Body.Title == nil && in.Body.Description == nil && in.Body.Visibility == nil && in.Body.IsDefault == nil {
+	if in.Body.Title == nil && in.Body.Description == nil && in.Body.Visibility == nil && in.Body.IsDefault == nil &&
+		in.Body.Tags == nil && in.Body.CoverWorkID == nil {
 		return nil, validationFailed(problem.AtPointer("", problem.ReasonRequired, "send at least one field to change", nil))
 	}
 	if in.Body.Title != nil {
@@ -142,7 +149,7 @@ func (s *Service) updateCollection(ctx context.Context, in *updateCollectionInpu
 	if s.catalog == nil {
 		return nil, problem.Unavailable(errUnconfigured)
 	}
-	moderationText := gate.ComposeText(derefOr(in.Body.Title, ""), derefOr(in.Body.Description, ""))
+	moderationText := gate.ComposeText(derefOr(in.Body.Title, ""), derefOr(in.Body.Description, ""), tagText(in.Body.Tags))
 	verdict, p := s.checkCollectionText(ctx, moderationText, user.ID)
 	if p != nil {
 		return nil, p
@@ -150,17 +157,21 @@ func (s *Service) updateCollection(ctx context.Context, in *updateCollectionInpu
 	write := catalogclient.FolderWrite{
 		Name: in.Body.Title, Description: in.Body.Description,
 		Visibility: in.Body.Visibility, IsDefault: in.Body.IsDefault,
+		Tags: tagStrings(in.Body.Tags), CoverWorkID: in.Body.CoverWorkID,
 	}
 	mine, err := s.catalog.MyFolder(ctx, token, folderID)
 	if err == nil {
 		updated, pErr := s.catalog.PatchFolder(ctx, token, folderID, write)
 		if pErr != nil {
-			return nil, mapUserPlane(pErr, true)
+			return nil, mapUserPlaneAt(pErr, true, collectionPointer)
 		}
 		if s.scan != nil && moderationText != "" {
 			s.scan.ScanBg(gate.SubjectKindGalgameCollection, in.CollectionID, moderationText, int64(mine.OwnerUID), verdict.Skipped)
 		}
-		col, ok, p := s.toCollection(ctx, *updated, user, token, false, false)
+		if updated.Visibility != catalogclient.FolderVisibilityPublic {
+			s.feedCollectionWithdrawn(folderID)
+		}
+		col, ok, p := s.collectionOf(ctx, *updated, user, token, viewerState{}, false, s.collectionViews([]int64{updated.ID})[updated.ID])
 		if p != nil {
 			return nil, p
 		}
@@ -181,6 +192,10 @@ func (s *Service) updateCollection(ctx context.Context, in *updateCollectionInpu
 	if in.Body.IsDefault != nil {
 		return nil, notFound()
 	}
+	if in.Body.Title == nil && in.Body.Description == nil && in.Body.Visibility == nil {
+		return nil, validationFailed(problem.AtPointer("", problem.ReasonNotAllowedValue,
+			"staff may change only title, description and visibility of someone else's collection", nil))
+	}
 	updated, pErr := s.catalog.ModeratePatchFolder(ctx, token, folderID, catalogclient.FolderWrite{
 		Name: in.Body.Title, Description: in.Body.Description, Visibility: in.Body.Visibility,
 	})
@@ -190,7 +205,10 @@ func (s *Service) updateCollection(ctx context.Context, in *updateCollectionInpu
 	if s.scan != nil && moderationText != "" {
 		s.scan.ScanBg(gate.SubjectKindGalgameCollection, in.CollectionID, moderationText, int64(updated.OwnerUID), verdict.Skipped)
 	}
-	col, ok, p := s.toCollection(ctx, *updated, user, token, false, false)
+	if updated.Visibility != catalogclient.FolderVisibilityPublic {
+		s.feedCollectionWithdrawn(folderID)
+	}
+	col, ok, p := s.collectionOf(ctx, *updated, user, token, viewerState{}, false, s.collectionViews([]int64{updated.ID})[updated.ID])
 	if p != nil {
 		return nil, p
 	}
@@ -229,6 +247,7 @@ func (s *Service) deleteCollection(ctx context.Context, in *collectionIDInput) (
 			return nil, mapUserPlane(dErr, true)
 		}
 		s.folderDeleteSideEffects(orphaned)
+		s.feedCollectionWithdrawn(folderID)
 		return &noContentOutput{}, nil
 	}
 	if !errors.Is(err, catalogclient.ErrNotFound) {
@@ -240,6 +259,7 @@ func (s *Service) deleteCollection(ctx context.Context, in *collectionIDInput) (
 	if dErr := s.catalog.ModerateDeleteFolder(ctx, token, folderID); dErr != nil {
 		return nil, mapUserPlane(dErr, false)
 	}
+	s.feedCollectionWithdrawn(folderID)
 	return &noContentOutput{}, nil
 }
 
@@ -304,4 +324,26 @@ func titleTooShort() problem.FieldError {
 	min := 1
 	return problem.AtPointer("/title", problem.ReasonTooShort, "at least 1 character once surrounding whitespace is removed",
 		&problem.FieldParams{MinLength: &min})
+}
+
+func tagStrings(tags *[]CollectionTag) *[]string {
+	if tags == nil {
+		return nil
+	}
+	out := make([]string, 0, len(*tags))
+	for _, t := range *tags {
+		out = append(out, string(t))
+	}
+	return &out
+}
+
+func tagText(tags *[]CollectionTag) string {
+	if tags == nil {
+		return ""
+	}
+	parts := make([]string, 0, len(*tags))
+	for _, t := range *tags {
+		parts = append(parts, string(t))
+	}
+	return strings.Join(parts, " ")
 }

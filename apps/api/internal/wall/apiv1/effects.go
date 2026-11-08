@@ -58,6 +58,9 @@ func (s *Service) afterCreate(ctx context.Context, sub *subject, authorID int, b
 		}
 	}
 
+	if sub.spec.feedType == "" {
+		return
+	}
 	created, err := parseUpstreamTime(post.CreatedAt)
 	if err != nil {
 		created = time.Now()
@@ -102,6 +105,9 @@ func (s *Service) afterDelete(sub *subject, postID int64) {
 		if err := s.store.BumpCount(sub.spec.counterTable, sub.id, -1); err != nil {
 			slog.Warn("wall counter bump failed (best-effort)", "subject", sub.spec.typ, "id", sub.id, "error", err)
 		}
+	}
+	if sub.spec.feedType == "" {
+		return
 	}
 	if err := s.store.FeedDelete(sub.spec.feedType, postID); err != nil {
 		slog.Warn("wall feed delete failed (best-effort)", "post_id", postID, "error", err)

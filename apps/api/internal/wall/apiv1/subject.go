@@ -13,7 +13,7 @@ import (
 
 type SubjectType string
 
-var subjectTypes = []any{"galgame", "galgame_rating", "galgame_resource", "galgame_quiz", "galgame_walkthrough", "toolset", "website"}
+var subjectTypes = []any{"galgame", "galgame_rating", "galgame_resource", "galgame_quiz", "galgame_walkthrough", "toolset", "website", "collection"}
 
 func (SubjectType) Schema(huma.Registry) *huma.Schema {
 	n := 19
@@ -89,6 +89,12 @@ var subjects = map[SubjectType]subjectSpec{
 		maxLength: 1007, feedType: "GALGAME_WEBSITE_COMMENT_CREATION", counterTable: "galgame_website",
 		linkPrefix: "/website/", legacyKey: "website",
 		rootKind: msgModel.KindWebsite,
+	},
+	"collection": {
+		typ: "collection", anchorKind: communityclient.AnchorCatalogFolder,
+		editPerm: perm.CommentGalgameEdit, deletePerm: perm.CommentGalgameDelete,
+		maxLength: 1007, feedType: "COLLECTION_COMMENT_CREATION", hasOwner: true, linkPrefix: "/collection/",
+		rootKind: msgModel.KindCollection,
 	},
 }
 

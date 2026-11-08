@@ -79,6 +79,20 @@ type CatalogUser interface {
 	DeleteFolderItem(ctx context.Context, token string, folderID, workID int64) error
 	ModeratePatchFolder(ctx context.Context, token string, folderID int64, in catalogclient.FolderWrite) (*catalogclient.Folder, error)
 	ModerateDeleteFolder(ctx context.Context, token string, folderID int64) error
+	FolderDirectory(ctx context.Context, in catalogclient.DirectoryQuery) (*catalogclient.FolderPage, error)
+	PatchFolderItem(ctx context.Context, token string, folderID, workID int64, in catalogclient.FolderItemPatch) (*catalogclient.FolderItem, error)
+	MyFolderItem(ctx context.Context, token string, folderID, workID int64) (*catalogclient.FolderItem, error)
+	FolderTags(ctx context.Context, limit int, includeNSFW bool) ([]catalogclient.FolderTagCount, error)
+	CopyFolder(ctx context.Context, token string, folderID int64, name, idempotencyKey string) (*catalogclient.Folder, error)
+	FollowedUpdates(ctx context.Context, token string) (int, error)
+	MarkFollowedSeen(ctx context.Context, token string, folderID int64) error
+	FolderProgress(ctx context.Context, token string, folderIDs []int64) ([]catalogclient.FolderProgress, error)
+	ModeratePatchFolderItem(ctx context.Context, token string, folderID, workID int64, note string) (*catalogclient.FolderItem, error)
+	FollowFolder(ctx context.Context, token string, folderID int64) (*catalogclient.Folder, error)
+	UnfollowFolder(ctx context.Context, token string, folderID int64) error
+	FollowedFolders(ctx context.Context, token, cursor string, limit int) (*catalogclient.FolderPage, error)
+	FollowedAmong(ctx context.Context, token string, folderIDs []int64) (map[int64]bool, error)
+	ReportFolder(ctx context.Context, token string, in catalogclient.FolderReport, idempotencyKey string) error
 	WorkRecords(ctx context.Context, token string, q catalogclient.WorkRecordsQuery) (catalogclient.WorkRecordsPage, error)
 	MyPrivacy(ctx context.Context, token string) (catalogclient.PrivacySettings, error)
 	PatchMyPrivacy(ctx context.Context, token, playRecords string) (catalogclient.PrivacySettings, error)

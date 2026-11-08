@@ -21,6 +21,7 @@ import (
 	"kun-galgame-api/pkg/problem"
 	"kun-galgame-api/pkg/userclient"
 
+	"golang.org/x/sync/errgroup"
 	"gorm.io/gorm"
 )
 
@@ -50,7 +51,7 @@ func folderTime(raw string, folderID int64, field string) (repr.DateTime, bool) 
 
 func folderVisibility(raw string, folderID int64) (string, bool) {
 	switch raw {
-	case catalogclient.FolderVisibilityPrivate, catalogclient.FolderVisibilityPublic:
+	case catalogclient.FolderVisibilityPrivate, catalogclient.FolderVisibilityUnlisted, catalogclient.FolderVisibilityPublic:
 		return raw, true
 	case "":
 		return catalogclient.FolderVisibilityPrivate, true
@@ -60,17 +61,37 @@ func folderVisibility(raw string, folderID int64) (string, bool) {
 	}
 }
 
-func (s *Service) collectionViewer(user *middleware.UserInfo, folder catalogclient.Folder, hasWork bool) *CollectionViewer {
+type viewerState struct {
+	hasWork   bool
+	following bool
+	newItems  int
+}
+
+func (s *Service) collectionViewer(user *middleware.UserInfo, folder catalogclient.Folder, vs viewerState) *CollectionViewer {
 	if user == nil {
 		return nil
 	}
 	ownerID := int(folder.OwnerUID)
 	isOwner := user.ID == ownerID
 	return &CollectionViewer{
-		IsOwner:   isOwner,
-		CanEdit:   isOwner || user.Can(perm.CollectionEditAny),
-		CanDelete: (isOwner && !folder.IsDefault) || (!isOwner && user.Can(perm.CollectionDeleteAny)),
-		HasWork:   hasWork,
+		IsOwner:      isOwner,
+		CanEdit:      isOwner || user.Can(perm.CollectionEditAny),
+		CanDelete:    (isOwner && !folder.IsDefault) || (!isOwner && user.Can(perm.CollectionDeleteAny)),
+		HasWork:      vs.hasWork,
+		IsFollowing:  vs.following && !isOwner,
+		NewItemCount: min(max(vs.newItems, 0), 100),
+	}
+}
+
+func folderContentRating(folder catalogclient.Folder) string {
+	switch folder.ContentRating {
+	case "all_ages", "sensitive", "r18":
+		return folder.ContentRating
+	case "":
+		return "all_ages"
+	default:
+		slog.Warn("collection: unknown content_rating read as r18", "folder_id", folder.ID, "content_rating", folder.ContentRating)
+		return "r18"
 	}
 }
 
@@ -86,51 +107,107 @@ func (s *Service) lookupOwner(ctx context.Context, ownerUID int64) (userclient.U
 	return u, true, nil
 }
 
-func (s *Service) previewCovers(ctx context.Context, token string, folder catalogclient.Folder, includeNSFW bool) []repr.Image {
-	out := []repr.Image{}
-	if s.catalog == nil || folder.ItemCount == 0 || s.hydrator == nil {
+type folderPreview struct {
+	covers []repr.Image
+	recent []repr.WorkRef
+	cover  *repr.WorkRef
+}
+
+const previewFetchParallel = 8
+
+// previewsOf hydrates every folder's preview works in one catalog read. One
+// read per folder serialised the page behind the slowest of them: with the
+// works face unreachable, /collection waited out a timeout per folder.
+func (s *Service) previewsOf(ctx context.Context, folders []catalogclient.Folder, token string, includeNSFW bool) map[int64]folderPreview {
+	out := make(map[int64]folderPreview, len(folders))
+	if s.catalog == nil || s.hydrator == nil || len(folders) == 0 {
 		return out
 	}
-	ids, err := s.previewWorkIDs(ctx, token, folder)
-	if err != nil {
-		slog.Warn("collection: preview items unreadable", "folder_id", folder.ID, "upstream_status", upstreamStatus(err), "err", err)
+	idsOf := make([][]int, len(folders))
+	g, gctx := errgroup.WithContext(ctx)
+	g.SetLimit(previewFetchParallel)
+	for i, f := range folders {
+		if f.ItemCount == 0 {
+			continue
+		}
+		if len(f.RecentWorkIDs) > 0 {
+			ids := make([]int, 0, len(f.RecentWorkIDs))
+			for _, id := range f.RecentWorkIDs {
+				ids = append(ids, int(id))
+			}
+			idsOf[i] = ids
+			continue
+		}
+		g.Go(func() error {
+			ids, err := s.previewWorkIDs(gctx, token, f)
+			if err != nil {
+				slog.Warn("collection: preview items unreadable", "folder_id", f.ID, "upstream_status", upstreamStatus(err), "err", err)
+				return nil
+			}
+			idsOf[i] = ids
+			return nil
+		})
+	}
+	_ = g.Wait()
+	seen := map[int]bool{}
+	all := []int{}
+	for _, f := range folders {
+		if f.CoverWorkID > 0 && !seen[int(f.CoverWorkID)] {
+			seen[int(f.CoverWorkID)] = true
+			all = append(all, int(f.CoverWorkID))
+		}
+	}
+	for _, ids := range idsOf {
+		for _, id := range ids {
+			if !seen[id] {
+				seen[id] = true
+				all = append(all, id)
+			}
+		}
+	}
+	if len(all) == 0 {
 		return out
 	}
 	// Hydrating under sfw made catalog omit NSFW preview items and the hydrator
 	// log each one as "catalog did not render work"; on 2026-09-24 that noise
-	// was misread as a counting bug (G6.1). The IsNSFW check below is the gate.
-	sums, p := s.hydrator.ByIDs(ctx, ids, true)
+	// was misread as a counting bug (G6.1). The IsNSFW checks below are the gate.
+	sums, p := s.hydrator.ByIDs(ctx, all, true)
 	if p != nil {
-		slog.Warn("collection: preview hydrate failed", "folder_id", folder.ID, "err", p)
+		slog.Warn("collection: preview hydrate failed", "folders", len(folders), "err", p)
 		return out
 	}
-	byID := map[int]previewArt{}
+	byID := make(map[int]*workrepr.WorkSummary, len(sums))
 	for i := range sums {
-		id, ok := repr.ParseID(sums[i].ID)
-		if !ok {
-			continue
+		if id, ok := repr.ParseID(sums[i].ID); ok {
+			byID[id] = &sums[i]
 		}
-		// Catalog leaves banner null when no cover is landscape. v1 read the
-		// banner alone, so such works vanished from every preview with a WARN
-		// a minute (2026-09-24); the legacy preview fell back to the portrait.
-		art := sums[i].Banner
-		if art == nil {
-			art = sums[i].Cover
-		}
-		byID[id] = previewArt{image: art, nsfw: sums[i].IsNSFW}
 	}
-	for _, id := range ids {
-		a, ok := byID[id]
-		if !ok || a.image == nil {
-			continue
+	for i, f := range folders {
+		pv := folderPreview{covers: []repr.Image{}, recent: []repr.WorkRef{}}
+		if sum, ok := byID[int(f.CoverWorkID)]; ok && f.CoverWorkID > 0 && (includeNSFW || !sum.IsNSFW || sum.CoverSFW != nil) {
+			ref := sum.WorkRef
+			pv.cover = &ref
 		}
-		if !includeNSFW && a.nsfw {
-			continue
+		for _, id := range idsOf[i] {
+			sum, ok := byID[id]
+			if !ok || (!includeNSFW && sum.IsNSFW) {
+				continue
+			}
+			if len(pv.recent) < previewCoversPerCollection {
+				pv.recent = append(pv.recent, sum.WorkRef)
+			}
+			// Catalog leaves banner null when no cover is landscape. v1 read the
+			// banner alone, so such works vanished from every preview with a WARN
+			// a minute (2026-09-24); the legacy preview fell back to the portrait.
+			art := sum.Banner
+			if art == nil {
+				art = sum.Cover
+			}
+			if art != nil && len(pv.covers) < previewCoversPerCollection {
+				pv.covers = append(pv.covers, *art)
+			}
 		}
-		out = append(out, *a.image)
-		if len(out) >= previewCoversPerCollection {
-			break
-		}
+		out[f.ID] = pv
 	}
 	return out
 }
@@ -170,12 +247,7 @@ func (s *Service) previewWorkIDs(ctx context.Context, token string, folder catal
 	return ids, nil
 }
 
-type previewArt struct {
-	image *repr.Image
-	nsfw  bool
-}
-
-func (s *Service) toCollection(ctx context.Context, folder catalogclient.Folder, user *middleware.UserInfo, token string, hasWork, includeNSFW bool) (*Collection, bool, *problem.Problem) {
+func (s *Service) toCollection(ctx context.Context, folder catalogclient.Folder, user *middleware.UserInfo, vs viewerState, pv folderPreview, views int) (*Collection, bool, *problem.Problem) {
 	vis, ok := folderVisibility(folder.Visibility, folder.ID)
 	if !ok {
 		return nil, false, nil
@@ -204,31 +276,81 @@ func (s *Service) toCollection(ctx context.Context, folder catalogclient.Folder,
 	}
 	title := truncateFolderText(folder, "name", folder.Name, 100)
 	desc := truncateFolderText(folder, "description", folder.Description, 500)
-	covers := s.previewCovers(ctx, token, folder, includeNSFW)
+	covers, recent := pv.covers, pv.recent
 	if covers == nil {
 		covers = []repr.Image{}
+	}
+	if recent == nil {
+		recent = []repr.WorkRef{}
 	}
 	col := Collection{
 		Object: "collection", ID: repr.ID(int(folder.ID)), Title: title, Description: desc,
 		Visibility: vis, IsDefault: folder.IsDefault, ItemCount: max(folder.ItemCount, 0),
-		Owner: ownerRef, PreviewCovers: covers, CreatedAt: created, UpdatedAt: updated,
-		Viewer: s.collectionViewer(user, folder, hasWork),
+		FollowerCount: new(max(folder.FollowerCount, 0)), ContentRating: folderContentRating(folder),
+		ViewCount: max(views, 0), Tags: collectionTags(folder.Tags), CoverWork: pv.cover,
+		CopiedFromCollectionID: copiedFromID(folder),
+		Owner:                  ownerRef, PreviewCovers: covers, RecentWorks: recent,
+		CreatedAt: created, UpdatedAt: updated, Viewer: s.collectionViewer(user, folder, vs),
 	}
 	return &col, true, nil
 }
 
-func (s *Service) toSummary(ctx context.Context, folder catalogclient.Folder, user *middleware.UserInfo, token string, hasWork, includeNSFW bool) (*CollectionSummary, bool, *problem.Problem) {
-	col, ok, p := s.toCollection(ctx, folder, user, token, hasWork, includeNSFW)
+func (s *Service) toSummary(ctx context.Context, folder catalogclient.Folder, user *middleware.UserInfo, vs viewerState, pv folderPreview, views int) (*CollectionSummary, bool, *problem.Problem) {
+	col, ok, p := s.toCollection(ctx, folder, user, vs, pv, views)
 	if p != nil || !ok {
 		return nil, ok, p
 	}
 	sum := CollectionSummary{
 		Object: col.Object, ID: col.ID, Title: col.Title, Description: col.Description,
 		Visibility: col.Visibility, IsDefault: col.IsDefault, ItemCount: col.ItemCount,
-		Owner: col.Owner, PreviewCovers: col.PreviewCovers, CreatedAt: col.CreatedAt,
-		UpdatedAt: col.UpdatedAt, Viewer: col.Viewer,
+		FollowerCount: col.FollowerCount, ContentRating: col.ContentRating, ViewCount: col.ViewCount,
+		Tags: col.Tags, CoverWork: col.CoverWork, CopiedFromCollectionID: col.CopiedFromCollectionID,
+		Owner: col.Owner, PreviewCovers: col.PreviewCovers, RecentWorks: col.RecentWorks,
+		CreatedAt: col.CreatedAt, UpdatedAt: col.UpdatedAt, Viewer: col.Viewer,
 	}
 	return &sum, true, nil
+}
+
+func (s *Service) summariesOf(ctx context.Context, folders []catalogclient.Folder, user *middleware.UserInfo, token string, vsOf func(catalogclient.Folder) viewerState, includeNSFW bool) ([]CollectionSummary, *problem.Problem) {
+	owners := make([]int, 0, len(folders))
+	ids := make([]int64, 0, len(folders))
+	for _, f := range folders {
+		owners = append(owners, int(f.OwnerUID))
+		ids = append(ids, f.ID)
+	}
+	if _, p := s.lookupUserRefs(ctx, owners); p != nil {
+		return nil, p
+	}
+	previews := s.previewsOf(ctx, folders, token, includeNSFW)
+	views := s.collectionViews(ids)
+	items := make([]CollectionSummary, 0, len(folders))
+	for _, f := range folders {
+		sum, ok, p := s.toSummary(ctx, f, user, vsOf(f), previews[f.ID], views[f.ID])
+		if p != nil {
+			return nil, p
+		}
+		if ok {
+			items = append(items, *sum)
+		}
+	}
+	return items, nil
+}
+
+func (s *Service) collectionOf(ctx context.Context, folder catalogclient.Folder, user *middleware.UserInfo, token string, vs viewerState, includeNSFW bool, views int) (*Collection, bool, *problem.Problem) {
+	pv := s.previewsOf(ctx, []catalogclient.Folder{folder}, token, includeNSFW)[folder.ID]
+	return s.toCollection(ctx, folder, user, vs, pv, views)
+}
+
+func (s *Service) collectionViews(ids []int64) map[int64]int {
+	if s.store == nil || !s.store.Ready() {
+		return map[int64]int{}
+	}
+	views, err := s.store.CollectionViews(ids)
+	if err != nil {
+		slog.Warn("collection: view counts unreadable", "err", err)
+		return map[int64]int{}
+	}
+	return views
 }
 
 func sortFolders(folders []catalogclient.Folder) {
@@ -260,12 +382,14 @@ const folderItemsCacheTTL = 6 * time.Hour
 type cachedFolderItem struct {
 	WorkID    int64  `json:"w"`
 	CreatedAt string `json:"c"`
+	Position  int64  `json:"p"`
+	Note      string `json:"n"`
 }
 
 // Catalog bumps a folder's updated_at on every item add and remove, so the key
 // goes stale by itself.
 func folderItemsCacheKey(folder *catalogclient.Folder) string {
-	return "kungal:folder-items:v2:" + strconv.FormatInt(folder.ID, 10) + ":" + folder.UpdatedAt
+	return "kungal:folder-items:v3:" + strconv.FormatInt(folder.ID, 10) + ":" + folder.UpdatedAt
 }
 
 func (s *Service) loadFolderItems(ctx context.Context, folder *catalogclient.Folder, token string) ([]catalogclient.FolderItem, error) {
@@ -305,7 +429,7 @@ func (s *Service) cachedFolderItems(ctx context.Context, folder *catalogclient.F
 	}
 	items := make([]catalogclient.FolderItem, 0, len(rows))
 	for _, row := range rows {
-		items = append(items, catalogclient.FolderItem{FolderID: folder.ID, WorkID: row.WorkID, CreatedAt: row.CreatedAt})
+		items = append(items, catalogclient.FolderItem{FolderID: folder.ID, WorkID: row.WorkID, CreatedAt: row.CreatedAt, Position: row.Position, Note: row.Note})
 	}
 	return items, true
 }
@@ -316,7 +440,7 @@ func (s *Service) storeFolderItems(ctx context.Context, folder *catalogclient.Fo
 	}
 	rows := make([]cachedFolderItem, 0, len(items))
 	for _, it := range items {
-		rows = append(rows, cachedFolderItem{WorkID: it.WorkID, CreatedAt: it.CreatedAt})
+		rows = append(rows, cachedFolderItem{WorkID: it.WorkID, CreatedAt: it.CreatedAt, Position: it.Position, Note: it.Note})
 	}
 	raw, err := json.Marshal(rows)
 	if err != nil {
@@ -550,4 +674,36 @@ func (s *Service) buildFolderPopulation(ctx context.Context, folder *catalogclie
 		population = append(population, member)
 	}
 	return population, nil
+}
+
+func collectionTags(tags []string) []CollectionTag {
+	out := make([]CollectionTag, 0, len(tags))
+	for _, t := range tags {
+		out = append(out, CollectionTag(t))
+	}
+	return out
+}
+
+func copiedFromID(folder catalogclient.Folder) *repr.DecimalID {
+	if folder.CopiedFromID <= 0 {
+		return nil
+	}
+	return new(repr.ID(int(folder.CopiedFromID)))
+}
+
+func (s *Service) collectionSource(ctx context.Context, folder catalogclient.Folder) *CollectionSource {
+	if folder.CopiedFromID <= 0 {
+		return nil
+	}
+	src, err := s.catalog.PublicFolder(ctx, folder.CopiedFromID)
+	if err != nil {
+		if upstreamStatus(err) != "404" {
+			slog.Warn("collection: copy source unreadable", "folder_id", folder.ID, "source_id", folder.CopiedFromID, "err", err)
+		}
+		return nil
+	}
+	return &CollectionSource{
+		Object: "collection_source", ID: repr.ID(int(src.ID)),
+		Title: truncateFolderText(*src, "name", src.Name, 100),
+	}
 }

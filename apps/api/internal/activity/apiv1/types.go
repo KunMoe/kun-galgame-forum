@@ -1,6 +1,7 @@
 package apiv1
 
 import (
+	galgameapiv1 "kun-galgame-api/internal/galgame/apiv1"
 	"kun-galgame-api/internal/galgame/resourcevocab"
 	"kun-galgame-api/internal/galgame/workrepr"
 	"strings"
@@ -38,6 +39,9 @@ var feedTypes = []struct{ kind, feed string }{
 	{"toolset_comment_creation", "TOOLSET_COMMENT_CREATION"},
 	{"todo_creation", "TODO_CREATION"},
 	{"update_log_creation", "UPDATE_LOG_CREATION"},
+	{"collection_creation", "COLLECTION_CREATION"},
+	{"collection_work_addition", "COLLECTION_WORK_ADDITION"},
+	{"collection_comment_creation", "COLLECTION_COMMENT_CREATION"},
 }
 
 var (
@@ -74,27 +78,28 @@ func (OpenToken) Schema(huma.Registry) *huma.Schema {
 }
 
 type Activity struct {
-	Object          string                   `json:"object" enum:"activity" maxLength:"8" doc:"Type discriminant. Always activity."`
-	ID              repr.DecimalID           `json:"id" doc:"Activity id."`
-	ActivityType    ActivityType             `json:"activity_type" doc:"What happened. It decides which of the detail blocks below is set: every block other than its own is null."`
-	OccurredAt      repr.DateTime            `json:"occurred_at" doc:"When it happened. Under sort bumped_desc this is still the topic's creation time; the sort key is topic.bumped_at."`
-	Performer       *repr.UserRef            `json:"performer" doc:"Who did it. For galgame_creation the work's creator, or null when none is recorded."`
-	Path            string                   `json:"path" pattern:"^/" maxLength:"512" doc:"In-site web path of the subject. Always starts with a slash."`
-	ExcerptMarkdown string                   `json:"excerpt_markdown" maxLength:"1000" doc:"The text stored with the activity, cut to 1000 characters: the title of a topic, toolset or website, a quiz question, the body of a reply, comment, todo or update log, an upvote note. Empty for the work kinds. Replies are Markdown; comments are plain text. Free text; never use it as a decision input."`
-	Topic           *topicapiv1.TopicSummary `json:"topic" doc:"The topic. Set for topic_creation and topic_upvote."`
-	TopicDigest     *TopicDigest             `json:"topic_digest" doc:"What a feed card shows beyond the list card. Set for topic_creation and topic_upvote."`
-	Reply           *ActivityReply           `json:"reply" doc:"The reply. Set for topic_reply_creation and best_answer_set."`
-	Comment         *ActivityComment         `json:"comment" doc:"The topic comment. Set for topic_comment_creation."`
-	Work            *repr.WorkRef            `json:"work" doc:"The work. Set for the galgame kinds tied to a work."`
-	WorkDigest      *WorkDigest              `json:"work_digest" doc:"Developers, intro and release of the work. Set for galgame_creation, galgame_edit and galgame_pr_creation."`
-	WorkStats       *WorkStats               `json:"work_stats" doc:"Counters of the work on this forum. Set for galgame_creation."`
-	WorkRevision    *WorkRevision            `json:"work_revision" doc:"The revision the edit made. Set for galgame_edit unless neither its number nor its wiki id is recorded."`
-	GalgameRating   *ActivityRating          `json:"galgame_rating" doc:"The rating. Set for galgame_rating_creation."`
-	Resource        *ActivityResource        `json:"resource" doc:"The download resource. Set for galgame_resource_creation."`
-	Quiz            *ActivityQuiz            `json:"quiz" doc:"The quiz. Set for galgame_quiz_creation."`
-	Toolset         *ActivityToolset         `json:"toolset" doc:"The toolset the resource belongs to. Set for toolset_resource_creation."`
-	Todo            *ActivityTodo            `json:"todo" doc:"The todo. Set for todo_creation."`
-	UpdateLog       *ActivityUpdateLog       `json:"update_log" doc:"The update log entry. Set for update_log_creation."`
+	Object          string                          `json:"object" enum:"activity" maxLength:"8" doc:"Type discriminant. Always activity."`
+	ID              repr.DecimalID                  `json:"id" doc:"Activity id."`
+	ActivityType    ActivityType                    `json:"activity_type" doc:"What happened. It decides which of the detail blocks below is set: every block other than its own is null."`
+	OccurredAt      repr.DateTime                   `json:"occurred_at" doc:"When it happened. Under sort bumped_desc this is still the topic's creation time; the sort key is topic.bumped_at."`
+	Performer       *repr.UserRef                   `json:"performer" doc:"Who did it. For galgame_creation the work's creator, or null when none is recorded."`
+	Path            string                          `json:"path" pattern:"^/" maxLength:"512" doc:"In-site web path of the subject. Always starts with a slash."`
+	ExcerptMarkdown string                          `json:"excerpt_markdown" maxLength:"1000" doc:"The text stored with the activity, cut to 1000 characters: the title of a topic, toolset or website, a quiz question, the body of a reply, comment, todo or update log, an upvote note. Empty for the work kinds. Replies are Markdown; comments are plain text. Free text; never use it as a decision input."`
+	Topic           *topicapiv1.TopicSummary        `json:"topic" doc:"The topic. Set for topic_creation and topic_upvote."`
+	TopicDigest     *TopicDigest                    `json:"topic_digest" doc:"What a feed card shows beyond the list card. Set for topic_creation and topic_upvote."`
+	Reply           *ActivityReply                  `json:"reply" doc:"The reply. Set for topic_reply_creation and best_answer_set."`
+	Comment         *ActivityComment                `json:"comment" doc:"The topic comment. Set for topic_comment_creation."`
+	Work            *repr.WorkRef                   `json:"work" doc:"The work. Set for the galgame kinds tied to a work."`
+	WorkDigest      *WorkDigest                     `json:"work_digest" doc:"Developers, intro and release of the work. Set for galgame_creation, galgame_edit and galgame_pr_creation."`
+	WorkStats       *WorkStats                      `json:"work_stats" doc:"Counters of the work on this forum. Set for galgame_creation."`
+	WorkRevision    *WorkRevision                   `json:"work_revision" doc:"The revision the edit made. Set for galgame_edit unless neither its number nor its wiki id is recorded."`
+	GalgameRating   *ActivityRating                 `json:"galgame_rating" doc:"The rating. Set for galgame_rating_creation."`
+	Resource        *ActivityResource               `json:"resource" doc:"The download resource. Set for galgame_resource_creation."`
+	Quiz            *ActivityQuiz                   `json:"quiz" doc:"The quiz. Set for galgame_quiz_creation."`
+	Toolset         *ActivityToolset                `json:"toolset" doc:"The toolset the resource belongs to. Set for toolset_resource_creation."`
+	Todo            *ActivityTodo                   `json:"todo" doc:"The todo. Set for todo_creation."`
+	UpdateLog       *ActivityUpdateLog              `json:"update_log" doc:"The update log entry. Set for update_log_creation."`
+	Collection      *galgameapiv1.CollectionSummary `json:"collection" doc:"The collection, as it stands now. Set for collection_creation, collection_work_addition and collection_comment_creation."`
 }
 
 type TopicDigest struct {

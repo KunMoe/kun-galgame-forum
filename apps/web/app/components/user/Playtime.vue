@@ -6,7 +6,9 @@ import {
 } from '~/constants/galgame-playtime'
 import type { WorkPlaytimeList } from '#shared/utils/api/schemas'
 
-const { allowsNsfw, stanceKey } = useContentStance()
+type Item = WorkPlaytimeList['items'][number]
+
+const { allowsNsfw, stanceKey, isBlurred } = useContentStance()
 const { id: myId } = storeToRefs(usePersistUserStore())
 const nameOf = useCatalogName()
 const pageData = reactive({ page: usePageQuery(), limit: 24 })
@@ -26,88 +28,120 @@ const { data, status, problem, pending } = useKunApi<WorkPlaytimeList>(
     })
 )
 
-const summary = computed(() => {
-  if (!data.value?.total) return ''
-  const total = formatDurationMinutes(data.value.total_minutes)
-  const parts = [`${data.value.total} 部作品`]
-  if (total) parts.push(`合计 ${total}`)
-  parts.push(`已通关 ${data.value.finished_work_count} 部`)
-  return parts.join(' · ')
-})
+const stats = computed(() =>
+  data.value?.total
+    ? [
+        { label: '部作品', value: String(data.value.total) },
+        {
+          label: '合计时长',
+          value: formatDurationMinutes(data.value.total_minutes) || '—'
+        },
+        { label: '部已通关', value: String(data.value.finished_work_count) }
+      ]
+    : []
+)
 
-const namesOf = (item: WorkPlaytimeList['items'][number]) =>
-  nameOf(item.work_summary)
-
-const bannerOf = (item: WorkPlaytimeList['items'][number]) =>
-  item.work_summary.banner ?? item.work_summary.cover
+const coverOf = (item: Item) =>
+  item.work_summary.is_nsfw && isBlurred.value
+    ? item.work_summary.cover_sfw
+    : item.work_summary.cover
+const stateLabel = (state: string) =>
+  KUN_GALGAME_PLAY_STATE_MAP[state as KunGalgamePlayStateRead] ?? state
 </script>
 
 <template>
-  <div class="space-y-3">
-    <KunInfo color="info" title="游玩记录默认公开">
-      你标记的游玩状态和上报的时长会显示在主页的「游戏库」里, 所有人都能看到,
-      和评分一样。
-      <KunLink
-        :to="`/user/${myId}/setting#play-records`"
-        size="sm"
-        underline="always"
+  <div class="space-y-6">
+    <div v-if="stats.length" class="grid grid-cols-3 gap-3">
+      <div
+        v-for="stat in stats"
+        :key="stat.label"
+        class="bg-default-100 rounded-lg px-4 py-3"
       >
-        在设置里关闭
-      </KunLink>
-      后只有你自己能看到。
-    </KunInfo>
+        <p class="text-2xl font-bold tabular-nums">{{ stat.value }}</p>
+        <p class="text-default-500 text-sm">{{ stat.label }}</p>
+      </div>
+    </div>
 
-    <p v-if="summary" class="text-default-600 text-sm">{{ summary }}</p>
-    <p v-if="data?.is_truncated" class="text-default-500 text-sm">
-      部分记录未能读取，统计可能偏少
-    </p>
-    <p v-if="data && !allowsNsfw" class="text-default-500 text-sm">
-      未开启 NSFW 显示，成人作品的记录不在这里，也不计入统计
-    </p>
+    <div class="text-default-500 space-y-1 text-sm">
+      <p>
+        游玩状态和时长默认显示在主页的「游戏库」里, 所有人都能看到,
+        <KunLink
+          :to="`/user/${myId}/setting#play-records`"
+          size="sm"
+          underline="always"
+        >
+          在设置里关闭
+        </KunLink>
+        后只有你自己能看到。
+      </p>
+      <p v-if="data?.is_truncated">部分记录未能读取，统计可能偏少。</p>
+      <p v-if="data && !allowsNsfw">
+        未开启 NSFW 显示，成人作品的记录不在这里，也不计入统计。
+      </p>
+    </div>
 
-    <div v-if="data && data.items.length" class="flex flex-col space-y-2">
-      <KunCard
-        v-for="item in data.items"
-        :key="item.work_summary.id"
-        :href="`/galgame/${item.work_summary.id}`"
-        :is-transparent="false"
-        content-class="flex items-center gap-3"
-      >
-        <KunImage
-          :src="bannerOf(item)?.url ?? '/placeholder.webp'"
-          loading="lazy"
-          :alt="namesOf(item).name"
-          placeholder="/placeholder.webp"
-          :thumbhash="bannerOf(item)?.thumbhash ?? undefined"
-          class="h-14 w-24 shrink-0 rounded-lg object-cover"
-        />
-
-        <div class="min-w-0 grow">
-          <p class="line-clamp-1 font-medium">{{ namesOf(item).name }}</p>
-          <p class="text-default-500 line-clamp-1 text-sm">
-            {{ namesOf(item).original }}
-          </p>
-        </div>
-
-        <div class="flex shrink-0 flex-col items-end gap-1">
-          <span v-if="item.minutes > 0" class="font-medium tabular-nums">
-            {{ formatDurationMinutes(item.minutes) }}
-          </span>
-          <div v-if="item.play_state" class="flex items-center gap-1">
-            <KunChip
-              size="sm"
-              variant="flat"
-              :color="kunPlayStateColor(item.play_state)"
+    <template v-if="data && data.items.length">
+      <ul class="grid gap-x-6 gap-y-1 md:grid-cols-2">
+        <li v-for="item in data.items" :key="item.work_summary.id">
+          <NuxtLink
+            :to="`/galgame/${item.work_summary.id}`"
+            class="hover:bg-default-100 flex items-center gap-3 rounded-lg p-2 transition-colors"
+          >
+            <div
+              class="bg-default-100 w-14 shrink-0 overflow-hidden rounded-md"
             >
-              {{
-                KUN_GALGAME_PLAY_STATE_MAP[
-                  item.play_state as KunGalgamePlayStateRead
-                ] ?? item.play_state
-              }}
-            </KunChip>
-          </div>
-        </div>
-      </KunCard>
+              <KunImage
+                v-if="coverOf(item)?.url"
+                :src="coverOf(item)!.url"
+                :alt="nameOf(item.work_summary).name"
+                :thumbhash="coverOf(item)?.thumbhash ?? undefined"
+                aspect-ratio="5 / 7"
+                loading="lazy"
+              />
+              <div
+                v-else
+                class="text-default-400 flex items-center justify-center"
+                style="aspect-ratio: 5 / 7"
+              >
+                <KunIcon name="lucide:image-off" class="size-5" />
+              </div>
+            </div>
+
+            <div class="min-w-0 flex-1 space-y-1">
+              <p class="line-clamp-1 font-medium">
+                {{ nameOf(item.work_summary).name }}
+              </p>
+              <p
+                v-if="nameOf(item.work_summary).original"
+                class="text-default-500 line-clamp-1 text-sm"
+              >
+                {{ nameOf(item.work_summary).original }}
+              </p>
+              <KunChip
+                v-if="item.play_state"
+                size="xs"
+                variant="flat"
+                :color="kunPlayStateColor(item.play_state)"
+              >
+                {{ stateLabel(item.play_state) }}
+              </KunChip>
+            </div>
+
+            <div class="shrink-0 text-right">
+              <p
+                v-if="item.minutes > 0"
+                class="text-lg font-semibold tabular-nums"
+              >
+                {{ formatDurationMinutes(item.minutes) }}
+              </p>
+              <p v-else class="text-default-400 text-sm">未记录时长</p>
+              <p v-if="item.client_count > 1" class="text-default-400 text-xs">
+                {{ item.client_count }} 个应用上报
+              </p>
+            </div>
+          </NuxtLink>
+        </li>
+      </ul>
 
       <KunPagination
         v-if="data.total > pageData.limit"
@@ -115,7 +149,7 @@ const bannerOf = (item: WorkPlaytimeList['items'][number]) =>
         :total-page="Math.ceil(data.total / pageData.limit)"
         :is-loading="status === 'pending'"
       />
-    </div>
+    </template>
 
     <UserListSkeleton v-else-if="pending" shape="media" />
     <KunInfo
@@ -124,10 +158,9 @@ const bannerOf = (item: WorkPlaytimeList['items'][number]) =>
       title="读取失败"
       description="暂时读不到你的游玩记录。"
     />
-
     <KunNull
       v-else-if="data"
-      description="还没有游玩记录, 在任意 Galgame 页面点「评分」即可记录游玩状态和时长"
+      description="还没有游玩记录, 在任意 Galgame 页面点「标记」或「评分」即可记录游玩状态和时长"
     />
 
     <p class="text-default-500 text-sm">

@@ -23,7 +23,10 @@ export const KUN_ACTIVITY_TYPE_TYPE: Record<ActivityType, string> = {
   toolset_comment_creation: '工具评论',
   galgame_resource_comment_creation: 'Galgame 资源评论',
   galgame_quiz_comment_creation: 'Galgame 题目讨论',
-  galgame_walkthrough_comment_creation: 'Galgame 攻略评论'
+  galgame_walkthrough_comment_creation: 'Galgame 攻略评论',
+  collection_creation: '新收藏夹',
+  collection_work_addition: '收藏夹添加游戏',
+  collection_comment_creation: '收藏夹评论'
 }
 
 export const KUN_ACTIVITY_GROUPS: { label: string; types: ActivityType[] }[] = [
@@ -64,6 +67,14 @@ export const KUN_ACTIVITY_GROUPS: { label: string; types: ActivityType[] }[] = [
     ]
   },
   {
+    label: 'Gal 收藏夹',
+    types: [
+      'collection_creation',
+      'collection_work_addition',
+      'collection_comment_creation'
+    ]
+  },
+  {
     label: '站务',
     types: ['todo_creation', 'update_log_creation']
   }
@@ -92,7 +103,10 @@ export const KUN_ACTIVITY_ICON_MAP: Record<ActivityType, string> = {
   topic_comment_creation: 'lucide:message-circle-more',
   todo_creation: 'lucide:list-checks',
   update_log_creation: 'lucide:file-clock',
-  best_answer_set: 'lucide:bookmark-check'
+  best_answer_set: 'lucide:bookmark-check',
+  collection_creation: 'lucide:folder-heart',
+  collection_work_addition: 'lucide:folder-plus',
+  collection_comment_creation: 'lucide:message-square-text'
 }
 
 export interface KunFeedKind {
@@ -197,6 +211,26 @@ export const KUN_FEED_KIND_GROUPS: { label: string; kinds: KunFeedKind[] }[] = [
     ]
   },
   {
+    label: 'Gal 收藏夹',
+    kinds: [
+      {
+        value: 'COLLECTION_CREATION',
+        label: '新收藏夹',
+        icon: 'lucide:folder-heart'
+      },
+      {
+        value: 'COLLECTION_WORK_ADDITION',
+        label: '收藏夹添加游戏',
+        icon: 'lucide:folder-plus'
+      },
+      {
+        value: 'COLLECTION_COMMENT_CREATION',
+        label: '收藏夹评论',
+        icon: 'lucide:message-square-text'
+      }
+    ]
+  },
+  {
     label: '站务',
     kinds: [
       { value: 'TODO_CREATION', label: '待办', icon: 'lucide:list-checks' },
@@ -248,7 +282,7 @@ const KUN_ALL_TAB_KINDS = [
   'UPDATE_LOG_CREATION'
 ]
 
-export const KUN_FEED_TABS_VERSION = 8
+export const KUN_FEED_TABS_VERSION = 9
 
 export const KUN_DEFAULT_FEED_TABS: KunFeedTab[] = [
   {
@@ -282,6 +316,16 @@ export const KUN_DEFAULT_FEED_TABS: KunFeedTab[] = [
       'TOOLSET_CREATION',
       'TOOLSET_RESOURCE_CREATION',
       'TOOLSET_COMMENT_CREATION'
+    ]
+  },
+  {
+    id: 'collection',
+    name: 'Gal 收藏夹',
+    icon: 'lucide:folder-heart',
+    kinds: [
+      'COLLECTION_CREATION',
+      'COLLECTION_WORK_ADDITION',
+      'COLLECTION_COMMENT_CREATION'
     ]
   },
   {

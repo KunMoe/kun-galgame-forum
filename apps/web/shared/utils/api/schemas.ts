@@ -130,6 +130,7 @@ export type WorkPreview = components['schemas']['WorkPreview']
 export type VideoNode = components['schemas']['VideoNode']
 
 export type WallComment = components['schemas']['WallComment']
+export type ListWallComment = components['schemas']['ListWallComment']
 export type WallCommentViewer = components['schemas']['WallCommentViewer']
 export type WallSubjectType =
   operations['listWallComments']['parameters']['query']['subject_type']
@@ -214,6 +215,7 @@ export type WorkPlaytimeAggregate =
   components['schemas']['WorkPlaytimeAggregate']
 export type WorkViewer = components['schemas']['WorkViewer']
 export type WorkViewerPlaytime = components['schemas']['WorkViewerPlaytime']
+export type PlayState = components['schemas']['PlayState']
 export type MyWork = components['schemas']['MyWork']
 export type MyWorkLibrary = components['schemas']['MyWorkLibrary']
 export type MyCoverVote = components['schemas']['MyCoverVote']
@@ -461,6 +463,25 @@ export type CollectionWorkEngagement =
 export type CollectionVisibility = Collection['visibility']
 export type PageListCollectionSummary =
   components['schemas']['PageListCollectionSummary']
+export type ListCollectionSummary =
+  components['schemas']['ListCollectionSummary']
+export type CollectionEntry = components['schemas']['CollectionEntry']
+export type PageListCollectionEntry =
+  components['schemas']['PageListCollectionEntry']
+export type CollectionItem = components['schemas']['CollectionItem']
+export type CollectionFollowEngagement =
+  components['schemas']['CollectionFollowEngagement']
+export type CollectionContentRating = Collection['content_rating']
+export type BatchListCollectionProgress =
+  components['schemas']['BatchListCollectionProgress']
+export type CollectionProgress = components['schemas']['CollectionProgress']
+export type ListCollectionTagCount =
+  components['schemas']['ListCollectionTagCount']
+export type CollectionTagCount = components['schemas']['CollectionTagCount']
+export type BatchListMyWork = components['schemas']['BatchListMyWork']
+export type CollectionReportCreate =
+  components['schemas']['CollectionReportCreate']
+export type CollectionReportCategory = CollectionReportCreate['report_category']
 export type WorkSubmission = components['schemas']['WorkSubmission']
 export type WorkSubmissionCreated =
   components['schemas']['WorkSubmissionCreated']

@@ -6,6 +6,7 @@ const (
 	AnchorSiteResource  = 2
 	AnchorCatalogWork   = 3
 	AnchorCatalogPerson = 4
+	AnchorCatalogFolder = 5
 )
 
 const (

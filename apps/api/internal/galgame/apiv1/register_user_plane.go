@@ -9,6 +9,8 @@ import (
 )
 
 func (s *Service) registerUserPlane(api huma.API) {
+	s.registerCollectionLists(api)
+
 	huma.Register(api, v1.Optional(huma.Operation{
 		OperationID: "getWorkCover",
 		Method:      http.MethodGet,
@@ -306,7 +308,7 @@ func (s *Service) registerUserPlane(api huma.API) {
 		Method:      http.MethodGet,
 		Path:        "/me/works/{work_id}/collections",
 		Summary:     "List the caller's collections against one work",
-		Description: "A page-number collection of every collection the caller owns, including private ones, each with viewer.has_work for this work. The shape the collection picker needs: no preview covers, no owner, no description. GET never creates a default collection.",
+		Description: "A page-number collection of every collection the caller owns, including private ones, each with viewer.has_work for this work. The shape the collection picker needs: no preview covers and no owner; the newest work for a thumbnail, and the caller's note on this work where the collection holds it. GET never creates a default collection.",
 		Tags:        []string{"me"},
 		Middlewares: huma.Middlewares{withAccessToken},
 		Responses: problemResponses(map[int]string{

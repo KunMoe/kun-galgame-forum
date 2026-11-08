@@ -12,6 +12,9 @@ type KunSeoMetaInput = {
   articleModifiedTime?: string
   // What useKunDisableSeo does, for a page that only knows once its data lands.
   noindex?: boolean
+  // Kept out of search but still shared: an unlisted collection's link must
+  // unfurl into a card, which noindex would strip.
+  indexable?: boolean
 }
 
 // Pages fetch lazily: a value read once in setup is still undefined during SSR,
@@ -58,7 +61,7 @@ export const useKunSeoMeta = (source: MaybeRefOrGetter<KunSeoMetaInput>) => {
       title,
       description: input.description,
       keywords: input.keywords ?? kungal.keywords.toString(),
-      robots: undefined,
+      robots: input.indexable === false ? 'noindex, nofollow' : undefined,
       pageUrl,
       ogType: input.ogType ?? 'website',
       image,

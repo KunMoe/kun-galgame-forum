@@ -18,8 +18,9 @@ const (
 )
 
 const (
-	FolderVisibilityPrivate = "private"
-	FolderVisibilityPublic  = "public"
+	FolderVisibilityPrivate  = "private"
+	FolderVisibilityUnlisted = "unlisted"
+	FolderVisibilityPublic   = "public"
 )
 
 // Folder lists stay small (cap 200) and are still walked. Item lists are not:
@@ -32,20 +33,28 @@ const folderWalkPages = FolderItemsMax/v2PageMax + 1
 const FolderHoldingsMax = 100
 
 type Folder struct {
-	ID          int64  `json:"-"`
-	OwnerUID    int64  `json:"-"`
-	Name        string `json:"name"`
-	Description string `json:"description"`
-	Visibility  string `json:"visibility"`
-	IsDefault   bool   `json:"is_default"`
-	ItemCount   int    `json:"item_count"`
-	CreatedAt   string `json:"created_at"`
-	UpdatedAt   string `json:"updated_at"`
+	ID            int64    `json:"-"`
+	OwnerUID      int64    `json:"-"`
+	Name          string   `json:"name"`
+	Description   string   `json:"description"`
+	Visibility    string   `json:"visibility"`
+	IsDefault     bool     `json:"is_default"`
+	ItemCount     int      `json:"item_count"`
+	FollowerCount int      `json:"follower_count"`
+	ContentRating string   `json:"content_rating"`
+	RecentWorkIDs []int64  `json:"-"`
+	CoverWorkID   int64    `json:"-"`
+	CopiedFromID  int64    `json:"-"`
+	Tags          []string `json:"-"`
+	CreatedAt     string   `json:"created_at"`
+	UpdatedAt     string   `json:"updated_at"`
 }
 
 type FolderItem struct {
 	FolderID  int64
 	WorkID    int64
+	Position  int64
+	Note      string
 	CreatedAt string
 	UpdatedAt string
 }
@@ -56,20 +65,28 @@ type FolderHolding struct {
 }
 
 type v2Folder struct {
-	ID          json.RawMessage `json:"id"`
-	OwnerUID    json.RawMessage `json:"owner_uid"`
-	Name        string          `json:"name"`
-	Description string          `json:"description"`
-	Visibility  string          `json:"visibility"`
-	IsDefault   bool            `json:"is_default"`
-	ItemCount   int             `json:"item_count"`
-	CreatedAt   string          `json:"created_at"`
-	UpdatedAt   string          `json:"updated_at"`
+	ID            json.RawMessage   `json:"id"`
+	OwnerUID      json.RawMessage   `json:"owner_uid"`
+	Name          string            `json:"name"`
+	Description   string            `json:"description"`
+	Visibility    string            `json:"visibility"`
+	IsDefault     bool              `json:"is_default"`
+	ItemCount     int               `json:"item_count"`
+	FollowerCount int               `json:"follower_count"`
+	ContentRating string            `json:"content_rating"`
+	RecentWorkIDs []json.RawMessage `json:"recent_work_ids"`
+	CoverWorkID   json.RawMessage   `json:"cover_work_id"`
+	CopiedFromID  json.RawMessage   `json:"copied_from_folder_id"`
+	Tags          []string          `json:"tags"`
+	CreatedAt     string            `json:"created_at"`
+	UpdatedAt     string            `json:"updated_at"`
 }
 
 type v2FolderItem struct {
 	FolderID  json.RawMessage `json:"folder_id"`
 	WorkID    json.RawMessage `json:"work_id"`
+	Position  int64           `json:"position"`
+	Note      string          `json:"note"`
 	CreatedAt string          `json:"created_at"`
 	UpdatedAt string          `json:"updated_at"`
 }
@@ -83,14 +100,32 @@ func (f v2Folder) view() Folder {
 	return Folder{
 		ID: parseFlexID(f.ID), OwnerUID: parseFlexID(f.OwnerUID), Name: f.Name,
 		Description: f.Description, Visibility: f.Visibility, IsDefault: f.IsDefault,
-		ItemCount: f.ItemCount, CreatedAt: f.CreatedAt, UpdatedAt: f.UpdatedAt,
+		ItemCount: f.ItemCount, FollowerCount: f.FollowerCount, ContentRating: f.ContentRating,
+		RecentWorkIDs: flexIDs(f.RecentWorkIDs), CoverWorkID: parseFlexID(f.CoverWorkID), CopiedFromID: parseFlexID(f.CopiedFromID), Tags: nonNilTags(f.Tags), CreatedAt: f.CreatedAt, UpdatedAt: f.UpdatedAt,
 	}
+}
+
+func nonNilTags(tags []string) []string {
+	if tags == nil {
+		return []string{}
+	}
+	return tags
+}
+
+func flexIDs(raw []json.RawMessage) []int64 {
+	out := make([]int64, 0, len(raw))
+	for _, r := range raw {
+		if id := parseFlexID(r); id > 0 {
+			out = append(out, id)
+		}
+	}
+	return out
 }
 
 func (i v2FolderItem) view() FolderItem {
 	return FolderItem{
 		FolderID: parseFlexID(i.FolderID), WorkID: parseFlexID(i.WorkID),
-		CreatedAt: i.CreatedAt, UpdatedAt: i.UpdatedAt,
+		Position: i.Position, Note: i.Note, CreatedAt: i.CreatedAt, UpdatedAt: i.UpdatedAt,
 	}
 }
 
@@ -256,10 +291,12 @@ func (c *Client) PublicFolderItems(ctx context.Context, folderID int64) ([]Folde
 }
 
 type FolderWrite struct {
-	Name        *string `json:"name,omitempty"`
-	Description *string `json:"description,omitempty"`
-	Visibility  *string `json:"visibility,omitempty"`
-	IsDefault   *bool   `json:"is_default,omitempty"`
+	Name        *string   `json:"name,omitempty"`
+	Description *string   `json:"description,omitempty"`
+	Visibility  *string   `json:"visibility,omitempty"`
+	IsDefault   *bool     `json:"is_default,omitempty"`
+	CoverWorkID *string   `json:"cover_work_id,omitempty"`
+	Tags        *[]string `json:"tags,omitempty"`
 }
 
 func (c *Client) CreateFolderKeyed(ctx context.Context, token string, in FolderWrite, idempotencyKey string) (*Folder, error) {

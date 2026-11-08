@@ -1,10 +1,13 @@
 <script setup lang="ts">
-import type { KunRadioOption } from '@kungal/ui-vue'
 import {
   KUN_GALGAME_PLAYTIME_HOURS_MAX,
   KUN_GALGAME_PLAYTIME_MINUTES_FLOOR,
-  KUN_GALGAME_PLAY_STATE_OPTIONS,
-  KUN_GALGAME_PLAY_STATE_UNSTATED_DONE_OPTION,
+  KUN_GALGAME_PLAY_COMPLETION_OPTIONS,
+  KUN_GALGAME_PLAY_STATE_BASE,
+  kunPlayStateBase,
+  kunPlayStateIsDone,
+  type KunGalgamePlayCompletion,
+  type KunGalgamePlayStateBase,
   type KunGalgamePlayStateRead
 } from '~/constants/galgame-playtime'
 import {
@@ -54,7 +57,11 @@ const loading = ref(false)
 const pending = ref(false)
 const loaded = ref<WorkRecord | null>(null)
 
-const status = ref<KunGalgamePlayStateRead | ''>('')
+const baseState = ref<KunGalgamePlayStateBase | ''>('')
+const completion = ref<KunGalgamePlayCompletion>('')
+const status = computed<KunGalgamePlayStateRead | ''>(() =>
+  baseState.value === 'done' ? completion.value || 'done' : baseState.value
+)
 const hours = ref(0)
 
 const overall = ref(0)
@@ -78,19 +85,6 @@ const emptyDims = (): Record<KunGalgameDim, number> => ({
 const dims = ref(emptyDims())
 
 const isWish = computed(() => status.value === 'wish')
-const statusOptions = computed<
-  readonly KunRadioOption<KunGalgamePlayStateRead>[]
->(() =>
-  loaded.value?.play_state === 'done'
-    ? KUN_GALGAME_PLAY_STATE_OPTIONS.flatMap<
-        KunRadioOption<KunGalgamePlayStateRead>
-      >((o) =>
-        o.value === 'done_one_route'
-          ? [KUN_GALGAME_PLAY_STATE_UNSTATED_DONE_OPTION, o]
-          : [o]
-      )
-    : KUN_GALGAME_PLAY_STATE_OPTIONS
-)
 const hadRating = computed(() => !!loaded.value?.rating_summary)
 
 const rated = computed(() => overall.value > 0)
@@ -99,6 +93,16 @@ const hasRatingContent = computed(
     gameTypes.value.length > 0 ||
     shortSummary.value.trim() !== '' ||
     (aspectsOn.value && Object.values(dims.value).some((v) => v > 0))
+)
+const ratingSnapshot = () =>
+  JSON.stringify([
+    gameTypes.value,
+    shortSummary.value,
+    aspectsOn.value ? dims.value : null
+  ])
+const openedWith = ref('')
+const ratingEdited = computed(
+  () => hasRatingContent.value && ratingSnapshot() !== openedWith.value
 )
 const deletingRating = computed(
   () => hadRating.value && !rated.value && !isWish.value
@@ -169,10 +173,15 @@ const restoreRating = () => fillRating(loaded.value?.rating_summary ?? null)
 
 const fill = (record: WorkRecord) => {
   loaded.value = record
-  status.value = record.play_state ?? ''
+  baseState.value = kunPlayStateBase(record.play_state) ?? ''
+  completion.value =
+    kunPlayStateIsDone(record.play_state) && record.play_state !== 'done'
+      ? (record.play_state as KunGalgamePlayCompletion)
+      : ''
   hours.value =
     record.minutes > 0 ? Math.round((record.minutes / 60) * 10) / 10 : 0
   fillRating(record.rating_summary)
+  openedWith.value = ratingSnapshot()
 }
 
 watch(open, async (isOpen) => {
@@ -226,12 +235,12 @@ const save = async () => {
     )
     return
   }
-  if (!isWish.value && !rated.value && hasRatingContent.value) {
-    useMessage(
-      '请先打总体评分, 只想记录游玩状态和时长的话, 点「清除评分」',
-      'warn'
+  if (!isWish.value && !rated.value && !hadRating.value && ratingEdited.value) {
+    const ok = await useComponentMessageStore().alert(
+      '还没有打总体评分',
+      '类型、多维评分和短评要和总体评分一起保存, 这次只保存游玩状态和时长, 短评会继续留在本地草稿里。'
     )
-    return
+    if (!ok) return
   }
 
   const body: WorkRecordPut = {}
@@ -296,11 +305,11 @@ const save = async () => {
     v-model="open"
     inner-class-name="max-w-[780px] w-[90vw]"
     :is-dismissable="false"
-    aria-label="评分"
+    aria-label="评分与游玩记录"
   >
     <div class="space-y-4">
       <div>
-        <h3 class="text-lg font-bold">评分</h3>
+        <h3 class="text-lg font-bold">评分与游玩记录</h3>
         <p v-if="workName" class="text-default-500 line-clamp-1 text-sm">
           {{ workName }}
         </p>
@@ -313,6 +322,57 @@ const save = async () => {
       <KunLoading v-if="loading" />
 
       <template v-else>
+        <div class="border-default-200 space-y-3 rounded-lg border p-3">
+          <div class="flex items-center justify-between gap-2">
+            <span class="font-medium">游玩记录</span>
+            <KunButton
+              v-if="baseState"
+              size="sm"
+              variant="light"
+              color="default"
+              @click="baseState = ''"
+            >
+              清除状态
+            </KunButton>
+          </div>
+          <KunRadioGroup
+            v-model="baseState"
+            :options="KUN_GALGAME_PLAY_STATE_BASE"
+            variant="pill"
+            orientation="horizontal"
+            color="primary"
+            size="sm"
+            class-name="flex-wrap"
+          />
+          <div v-if="baseState === 'done'" class="space-y-1.5">
+            <span class="text-default-600 text-sm">通关程度 (可选)</span>
+            <KunRadioGroup
+              v-model="completion"
+              :options="KUN_GALGAME_PLAY_COMPLETION_OPTIONS"
+              variant="pill"
+              orientation="horizontal"
+              color="success"
+              size="sm"
+              class-name="flex-wrap"
+            />
+          </div>
+
+          <template v-if="!isWish">
+            <KunNumberInput
+              v-model="hours"
+              label="游玩时长 (小时, 可选)"
+              :min="0"
+              :max="KUN_GALGAME_PLAYTIME_HOURS_MAX"
+              :step="0.5"
+              :precision="1"
+              placeholder="例如 12.5"
+            />
+            <p v-if="tooShort" class="text-warning text-sm">
+              不足 10 分钟的记录不会计入统计
+            </p>
+          </template>
+        </div>
+
         <KunInfo
           v-if="isWish"
           color="warning"
@@ -456,45 +516,6 @@ const save = async () => {
           <KunLink to="/doc/galgame-rating-guide" size="sm">
             鲲 Galgame 八维超评分系统介绍及使用说明
           </KunLink>
-        </div>
-
-        <div class="border-default-200 space-y-3 rounded-lg border p-3">
-          <div class="flex items-center justify-between gap-2">
-            <span class="font-medium">游玩记录</span>
-            <KunButton
-              v-if="status"
-              size="sm"
-              variant="light"
-              color="default"
-              @click="status = ''"
-            >
-              清除状态
-            </KunButton>
-          </div>
-          <KunRadioGroup
-            v-model="status"
-            :options="statusOptions"
-            variant="pill"
-            orientation="horizontal"
-            color="primary"
-            size="sm"
-            class-name="flex-wrap"
-          />
-
-          <template v-if="!isWish">
-            <KunNumberInput
-              v-model="hours"
-              label="游玩时长 (小时, 可选)"
-              :min="0"
-              :max="KUN_GALGAME_PLAYTIME_HOURS_MAX"
-              :step="0.5"
-              :precision="1"
-              placeholder="例如 12.5"
-            />
-            <p v-if="tooShort" class="text-warning text-sm">
-              不足 10 分钟的记录不会计入统计
-            </p>
-          </template>
         </div>
 
         <div class="flex items-center justify-end gap-2">

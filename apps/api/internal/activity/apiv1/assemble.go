@@ -45,6 +45,7 @@ func (s ids) list() []int {
 }
 
 type batch struct {
+	collections   map[int64]galgameapiv1.CollectionSummary
 	topicOf       map[int]int
 	topics        map[int]repository.TopicCardRow
 	sections      map[int][]string
@@ -261,7 +262,34 @@ func (s *Service) load(ctx context.Context, rows []repository.FeedRow, includeNS
 			b.replyDocs[key] = docs[i]
 		}
 	}
+	b.collections = s.collectionsOf(ctx, rows, includeNSFW)
 	return b, nil
+}
+
+func collectionIDOf(r repository.FeedRow) (int64, bool) {
+	if !strings.HasPrefix(r.TypeStr, "COLLECTION_") {
+		return 0, false
+	}
+	id, err := strconv.ParseInt(strings.TrimPrefix(r.Link, "/collection/"), 10, 64)
+	return id, err == nil && id > 0
+}
+
+func (s *Service) collectionsOf(ctx context.Context, rows []repository.FeedRow, includeNSFW bool) map[int64]galgameapiv1.CollectionSummary {
+	if s.collections == nil {
+		return nil
+	}
+	seen := map[int64]bool{}
+	ids := []int64{}
+	for _, r := range rows {
+		if id, ok := collectionIDOf(r); ok && !seen[id] {
+			seen[id] = true
+			ids = append(ids, id)
+		}
+	}
+	if len(ids) == 0 {
+		return nil
+	}
+	return s.collections(ctx, ids, includeNSFW)
 }
 
 func (s *Service) userRef(b *batch, id int) (*repr.UserRef, bool) {
@@ -313,6 +341,14 @@ func (s *Service) build(ctx context.Context, r repository.FeedRow, b *batch) *Ac
 		}
 		ref := galgameapiv1.WorkRefOf(ctx, &row, s.cdn)
 		a.Work = &ref
+	}
+
+	if id, ok := collectionIDOf(r); ok {
+		c, found := b.collections[id]
+		if !found {
+			return nil
+		}
+		a.Collection = &c
 	}
 
 	switch r.TypeStr {

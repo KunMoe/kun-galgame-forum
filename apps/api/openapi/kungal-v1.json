@@ -133,6 +133,17 @@
             "$ref": "#/components/schemas/ActivityType",
             "description": "What happened. It decides which of the detail blocks below is set: every block other than its own is null."
           },
+          "collection": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/CollectionSummary"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "The collection, as it stands now. Set for collection_creation, collection_work_addition and collection_comment_creation."
+          },
           "comment": {
             "anyOf": [
               {
@@ -352,7 +363,8 @@
           "quiz",
           "toolset",
           "todo",
-          "update_log"
+          "update_log",
+          "collection"
         ],
         "type": "object"
       },
@@ -751,7 +763,10 @@
           "toolset_resource_creation",
           "toolset_comment_creation",
           "todo_creation",
-          "update_log_creation"
+          "update_log_creation",
+          "collection_creation",
+          "collection_work_addition",
+          "collection_comment_creation"
         ],
         "maxLength": 36,
         "type": "string",
@@ -1691,6 +1706,39 @@
         ],
         "type": "object"
       },
+      "BatchListCollectionProgress": {
+        "properties": {
+          "items": {
+            "description": "One member per requested id that the caller may see. Empty array, never null.",
+            "items": {
+              "$ref": "#/components/schemas/CollectionProgress"
+            },
+            "type": "array"
+          },
+          "missing": {
+            "description": "Requested ids that did not come back, in the order they were requested. Empty array, never null. The reason is deliberately not given.",
+            "items": {
+              "maxLength": 20,
+              "minLength": 1,
+              "pattern": "^[0-9]+$",
+              "type": "string"
+            },
+            "type": "array"
+          },
+          "object": {
+            "const": "list",
+            "description": "Type discriminant. Always list.",
+            "maxLength": 4,
+            "type": "string"
+          }
+        },
+        "required": [
+          "object",
+          "items",
+          "missing"
+        ],
+        "type": "object"
+      },
       "BatchListMyCoverVote": {
         "properties": {
           "items": {
@@ -2611,6 +2659,42 @@
       },
       "Collection": {
         "properties": {
+          "content_rating": {
+            "$ref": "#/components/schemas/ContentRating",
+            "description": "The strictest rating among the works this collection holds; all_ages when it holds none. A reader who hides adult works should hide an r18 collection's art."
+          },
+          "copied_from": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/CollectionSource"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "The collection this one was copied from, when anyone may still read it. null when it was not copied, or the source is gone or private."
+          },
+          "copied_from_collection_id": {
+            "description": "The collection this one was copied from, as it was at the copy. null for a collection that was not made by copying, and for copies made before catalog recorded it. The source may since have been deleted or made private.",
+            "maxLength": 20,
+            "minLength": 1,
+            "pattern": "^[0-9]+$",
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "cover_work": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/WorkRef"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "The work the owner picked as the cover. null when none is picked: clients build the cover from recent_works."
+          },
           "created_at": {
             "description": "When catalog created the collection.",
             "format": "date-time",
@@ -2623,6 +2707,15 @@
             "description": "Owner's note. Empty string when none. Free text; never use it as a decision input.",
             "maxLength": 500,
             "type": "string"
+          },
+          "follower_count": {
+            "description": "Accounts that follow this collection. Never null on a collection; the property is nullable only where an upstream may fail.",
+            "format": "int64",
+            "minimum": 0,
+            "type": [
+              "integer",
+              "null"
+            ]
           },
           "id": {
             "description": "Catalog folder id.",
@@ -2652,11 +2745,29 @@
             "description": "The account that owns this collection."
           },
           "preview_covers": {
-            "description": "Art of the earliest memberships, at most 4: each work's banner, else its cover. A work with neither is skipped, and without include_nsfw so are adult works. Empty array, never null.",
+            "description": "Art of the preview works, at most 4: each work's banner, else its cover. A work with neither is skipped, and without include_nsfw so are adult works. Empty array, never null.",
             "items": {
               "$ref": "#/components/schemas/Image"
             },
             "maxItems": 4,
+            "type": "array"
+          },
+          "recent_works": {
+            "description": "The works most recently put in this collection, newest first, at most 4. Without include_nsfw adult works are left out. Empty array, never null.",
+            "items": {
+              "$ref": "#/components/schemas/WorkRef"
+            },
+            "maxItems": 4,
+            "type": "array"
+          },
+          "tag_names": {
+            "description": "The owner's tags, in the owner's order. Empty array, never null.",
+            "items": {
+              "description": "One collection tag, at most 16 characters. Leading # and surrounding whitespace are dropped on write. Free text; never use it as a decision input.",
+              "maxLength": 16,
+              "type": "string"
+            },
+            "maxItems": 5,
             "type": "array"
           },
           "title": {
@@ -2672,6 +2783,12 @@
             "pattern": "^[0-9]{4}-[0-9]{2}-[0-9]{2}T[0-9]{2}:[0-9]{2}:[0-9]{2}Z$",
             "type": "string"
           },
+          "view_count": {
+            "description": "Times this collection's page was read on this forum. Every read counts.",
+            "format": "int64",
+            "minimum": 0,
+            "type": "integer"
+          },
           "viewer": {
             "anyOf": [
               {
@@ -2685,7 +2802,7 @@
           },
           "visibility": {
             "$ref": "#/components/schemas/CollectionVisibility",
-            "description": "private folders are visible only to their owner; public folders are readable by anyone."
+            "description": "private collections are visible only to their owner; unlisted ones are readable by anyone with the link but appear in no list; public ones are readable and listed."
           }
         },
         "required": [
@@ -2696,10 +2813,18 @@
           "visibility",
           "is_default",
           "item_count",
+          "follower_count",
+          "content_rating",
+          "view_count",
+          "tag_names",
+          "cover_work",
+          "copied_from_collection_id",
           "owner",
           "preview_covers",
+          "recent_works",
           "created_at",
           "updated_at",
+          "copied_from",
           "viewer"
         ],
         "type": "object"
@@ -2736,6 +2861,11 @@
       },
       "CollectionChoice": {
         "properties": {
+          "description": {
+            "description": "Owner's note. Empty string when none. Free text; never use it as a decision input.",
+            "maxLength": 500,
+            "type": "string"
+          },
           "id": {
             "description": "Catalog folder id.",
             "maxLength": 20,
@@ -2758,6 +2888,17 @@
             "description": "Type discriminant. Always collection.",
             "maxLength": 10,
             "type": "string"
+          },
+          "recent_work": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/WorkRef"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "The work most recently put in this collection. null when it is empty, or when catalog does not say."
           },
           "title": {
             "description": "Display name. Empty string for an unnamed imported default. Free text; never use it as a decision input.",
@@ -2785,18 +2926,48 @@
           },
           "visibility": {
             "$ref": "#/components/schemas/CollectionVisibility",
-            "description": "private folders are visible only to their owner; public folders are readable by anyone."
+            "description": "private collections are visible only to their owner; unlisted ones are readable by anyone with the link but appear in no list; public ones are readable and listed."
+          },
+          "work_note": {
+            "description": "The caller's note on the work named by work_id in this collection. null when the collection does not hold it or the note is empty. Free text; never use it as a decision input.",
+            "maxLength": 500,
+            "type": [
+              "string",
+              "null"
+            ]
           }
         },
         "required": [
           "object",
           "id",
           "title",
+          "description",
+          "recent_work",
+          "work_note",
           "visibility",
           "is_default",
           "item_count",
           "updated_at",
           "viewer"
+        ],
+        "type": "object"
+      },
+      "CollectionCopyCreate": {
+        "properties": {
+          "collection_id": {
+            "description": "The collection to copy: a public or unlisted one, or one of the caller's own.",
+            "maxLength": 19,
+            "pattern": "^[1-9][0-9]{0,18}$",
+            "type": "string"
+          },
+          "title": {
+            "description": "Title of the copy. Absent or blank: the source's title. Free text; never use it as a decision input.",
+            "maxLength": 100,
+            "type": "string"
+          }
+        },
+        "required": [
+          "collection_id"
         ],
         "type": "object"
       },
@@ -2810,6 +2981,16 @@
           "is_default": {
             "description": "When true, this collection becomes the owner's default and the previous default loses the flag. Omitted is false.",
             "type": "boolean"
+          },
+          "tag_names": {
+            "description": "Up to 5 tags. Case-insensitive duplicates are dropped.",
+            "items": {
+              "description": "One collection tag, at most 16 characters. Leading # and surrounding whitespace are dropped on write. Free text; never use it as a decision input.",
+              "maxLength": 16,
+              "type": "string"
+            },
+            "maxItems": 5,
+            "type": "array"
           },
           "title": {
             "description": "Display name. 1–100 characters after trimming. Free text; never use it as a decision input.",
@@ -2828,8 +3009,194 @@
         ],
         "type": "object"
       },
+      "CollectionEntry": {
+        "properties": {
+          "added_at": {
+            "description": "When the work was put in this collection.",
+            "format": "date-time",
+            "maxLength": 20,
+            "minLength": 20,
+            "pattern": "^[0-9]{4}-[0-9]{2}-[0-9]{2}T[0-9]{2}:[0-9]{2}:[0-9]{2}Z$",
+            "type": "string"
+          },
+          "illustration_credits": {
+            "description": "Credited illustrators, else character designers, at most 3. Empty array, never null.",
+            "items": {
+              "$ref": "#/components/schemas/CreditNameRef"
+            },
+            "maxItems": 3,
+            "type": "array"
+          },
+          "note": {
+            "description": "The owner's note on this work in this collection. null when none. Free text; never use it as a decision input.",
+            "maxLength": 500,
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "object": {
+            "const": "collection_entry",
+            "description": "Type discriminant. Always collection_entry.",
+            "maxLength": 16,
+            "type": "string"
+          },
+          "scenario_credits": {
+            "description": "Credited scenario writers, at most 3, each linking to /galgame/staff/{id}. Empty array, never null.",
+            "items": {
+              "$ref": "#/components/schemas/CreditNameRef"
+            },
+            "maxItems": 3,
+            "type": "array"
+          },
+          "top_tags": {
+            "description": "The work's first tags as its page lists them, without spoilers, and without adult tags unless include_nsfw. Empty array, never null.",
+            "items": {
+              "$ref": "#/components/schemas/TagRef"
+            },
+            "maxItems": 6,
+            "type": "array"
+          },
+          "work_summary": {
+            "$ref": "#/components/schemas/WorkSummary",
+            "description": "The work."
+          }
+        },
+        "required": [
+          "object",
+          "work_summary",
+          "note",
+          "added_at",
+          "top_tags",
+          "scenario_credits",
+          "illustration_credits"
+        ],
+        "type": "object"
+      },
+      "CollectionEntrySort": {
+        "enum": [
+          "position_asc",
+          "favorited_desc",
+          "favorited_asc",
+          "released_desc",
+          "released_asc"
+        ],
+        "maxLength": 14,
+        "type": "string",
+        "x-vocabulary-closed": true
+      },
+      "CollectionFollowEngagement": {
+        "properties": {
+          "collection_id": {
+            "description": "Catalog folder id.",
+            "maxLength": 20,
+            "minLength": 1,
+            "pattern": "^[0-9]+$",
+            "type": "string"
+          },
+          "follower_count": {
+            "description": "Accounts that follow the collection after this request. null when the collection is no longer public and the count is not published.",
+            "format": "int64",
+            "minimum": 0,
+            "type": [
+              "integer",
+              "null"
+            ]
+          },
+          "object": {
+            "const": "collection_follow_engagement",
+            "description": "Type discriminant. Always collection_follow_engagement.",
+            "maxLength": 28,
+            "type": "string"
+          },
+          "viewer": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/CollectionFollowEngagementViewer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "The caller's follow after this request."
+          }
+        },
+        "required": [
+          "object",
+          "collection_id",
+          "follower_count",
+          "viewer"
+        ],
+        "type": "object"
+      },
+      "CollectionFollowEngagementViewer": {
+        "properties": {
+          "is_following": {
+            "description": "Whether the caller follows this collection.",
+            "type": "boolean"
+          }
+        },
+        "required": [
+          "is_following"
+        ],
+        "type": "object"
+      },
+      "CollectionItem": {
+        "properties": {
+          "added_at": {
+            "description": "When the work was put in this collection.",
+            "format": "date-time",
+            "maxLength": 20,
+            "minLength": 20,
+            "pattern": "^[0-9]{4}-[0-9]{2}-[0-9]{2}T[0-9]{2}:[0-9]{2}:[0-9]{2}Z$",
+            "type": "string"
+          },
+          "collection_id": {
+            "description": "Catalog folder id.",
+            "maxLength": 20,
+            "minLength": 1,
+            "pattern": "^[0-9]+$",
+            "type": "string"
+          },
+          "note": {
+            "description": "The owner's note on this work in this collection. null when none. Free text; never use it as a decision input.",
+            "maxLength": 500,
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "object": {
+            "const": "collection_item",
+            "description": "Type discriminant. Always collection_item.",
+            "maxLength": 15,
+            "type": "string"
+          },
+          "work_id": {
+            "description": "Work id.",
+            "maxLength": 20,
+            "minLength": 1,
+            "pattern": "^[0-9]+$",
+            "type": "string"
+          }
+        },
+        "required": [
+          "object",
+          "collection_id",
+          "work_id",
+          "note",
+          "added_at"
+        ],
+        "type": "object"
+      },
       "CollectionPatch": {
         "properties": {
+          "cover_work_id": {
+            "description": "A work this collection holds, as its cover. An empty string clears the pick.",
+            "maxLength": 19,
+            "pattern": "^([1-9][0-9]{0,18})?$",
+            "type": "string"
+          },
           "description": {
             "description": "New note; an empty string clears it. Free text; never use it as a decision input.",
             "maxLength": 500,
@@ -2838,6 +3205,16 @@
           "is_default": {
             "description": "Only true is accepted. false is refused.",
             "type": "boolean"
+          },
+          "tag_names": {
+            "description": "Replaces every tag; an empty array clears them.",
+            "items": {
+              "description": "One collection tag, at most 16 characters. Leading # and surrounding whitespace are dropped on write. Free text; never use it as a decision input.",
+              "maxLength": 16,
+              "type": "string"
+            },
+            "maxItems": 5,
+            "type": "array"
           },
           "title": {
             "description": "New display name. Free text; never use it as a decision input.",
@@ -2852,8 +3229,188 @@
         },
         "type": "object"
       },
+      "CollectionProgress": {
+        "properties": {
+          "collected_count": {
+            "description": "Of those, how many the caller keeps in another collection of their own.",
+            "format": "int64",
+            "minimum": 0,
+            "type": "integer"
+          },
+          "collection_id": {
+            "description": "Catalog folder id.",
+            "maxLength": 20,
+            "minLength": 1,
+            "pattern": "^[0-9]+$",
+            "type": "string"
+          },
+          "doing_count": {
+            "description": "The same for doing.",
+            "format": "int64",
+            "minimum": 0,
+            "type": "integer"
+          },
+          "done_count": {
+            "description": "The same for any finished state.",
+            "format": "int64",
+            "minimum": 0,
+            "type": "integer"
+          },
+          "dropped_count": {
+            "description": "The same for dropped.",
+            "format": "int64",
+            "minimum": 0,
+            "type": "integer"
+          },
+          "item_count": {
+            "description": "Live works in the collection.",
+            "format": "int64",
+            "minimum": 0,
+            "type": "integer"
+          },
+          "object": {
+            "const": "collection_progress",
+            "description": "Type discriminant. Always collection_progress.",
+            "maxLength": 19,
+            "type": "string"
+          },
+          "on_hold_count": {
+            "description": "The same for on_hold.",
+            "format": "int64",
+            "minimum": 0,
+            "type": "integer"
+          },
+          "wish_count": {
+            "description": "Of those, how many carry the caller's play state wish.",
+            "format": "int64",
+            "minimum": 0,
+            "type": "integer"
+          }
+        },
+        "required": [
+          "object",
+          "collection_id",
+          "item_count",
+          "collected_count",
+          "wish_count",
+          "doing_count",
+          "done_count",
+          "on_hold_count",
+          "dropped_count"
+        ],
+        "type": "object"
+      },
+      "CollectionReportCreate": {
+        "properties": {
+          "collection_id": {
+            "description": "The public collection being reported.",
+            "maxLength": 19,
+            "pattern": "^[1-9][0-9]{0,18}$",
+            "type": "string"
+          },
+          "note": {
+            "description": "The reporter's own words for the moderators. Absent or null for none. Free text; never use it as a decision input.",
+            "maxLength": 500,
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "report_category": {
+            "$ref": "#/components/schemas/CollectionReportReason",
+            "description": "Why the collection is reported."
+          },
+          "work_id": {
+            "description": "Report the owner's note on this work instead of the collection's title and description. The work must be in the collection and carry a note.",
+            "maxLength": 19,
+            "pattern": "^[1-9][0-9]{0,18}$",
+            "type": "string"
+          }
+        },
+        "required": [
+          "collection_id",
+          "report_category"
+        ],
+        "type": "object"
+      },
+      "CollectionReportReason": {
+        "enum": [
+          "abuse",
+          "spam",
+          "illegal",
+          "rating_mislabel",
+          "copyright",
+          "other"
+        ],
+        "maxLength": 15,
+        "type": "string",
+        "x-vocabulary-closed": true
+      },
+      "CollectionSort": {
+        "enum": [
+          "followers_desc",
+          "updated_desc",
+          "created_desc"
+        ],
+        "maxLength": 14,
+        "type": "string",
+        "x-vocabulary-closed": true
+      },
+      "CollectionSource": {
+        "properties": {
+          "id": {
+            "description": "Catalog folder id.",
+            "maxLength": 20,
+            "minLength": 1,
+            "pattern": "^[0-9]+$",
+            "type": "string"
+          },
+          "object": {
+            "const": "collection_source",
+            "description": "Type discriminant. Always collection_source.",
+            "maxLength": 17,
+            "type": "string"
+          },
+          "title": {
+            "description": "Display name. Empty string for an unnamed imported default. Free text; never use it as a decision input.",
+            "maxLength": 100,
+            "type": "string"
+          }
+        },
+        "required": [
+          "object",
+          "id",
+          "title"
+        ],
+        "type": "object"
+      },
       "CollectionSummary": {
         "properties": {
+          "content_rating": {
+            "$ref": "#/components/schemas/ContentRating",
+            "description": "The strictest rating among the works this collection holds; all_ages when it holds none. A reader who hides adult works should hide an r18 collection's art."
+          },
+          "copied_from_collection_id": {
+            "description": "The collection this one was copied from, as it was at the copy. null for a collection that was not made by copying, and for copies made before catalog recorded it. The source may since have been deleted or made private.",
+            "maxLength": 20,
+            "minLength": 1,
+            "pattern": "^[0-9]+$",
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "cover_work": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/WorkRef"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "The work the owner picked as the cover. null when none is picked: clients build the cover from recent_works."
+          },
           "created_at": {
             "description": "When catalog created the collection.",
             "format": "date-time",
@@ -2866,6 +3423,15 @@
             "description": "Owner's note. Empty string when none. Free text; never use it as a decision input.",
             "maxLength": 500,
             "type": "string"
+          },
+          "follower_count": {
+            "description": "Accounts that follow this collection. Never null on a collection; the property is nullable only where an upstream may fail.",
+            "format": "int64",
+            "minimum": 0,
+            "type": [
+              "integer",
+              "null"
+            ]
           },
           "id": {
             "description": "Catalog folder id.",
@@ -2895,11 +3461,29 @@
             "description": "The account that owns this collection."
           },
           "preview_covers": {
-            "description": "Art of the earliest memberships, at most 4: each work's banner, else its cover. A work with neither is skipped, and without include_nsfw so are adult works. Empty array, never null.",
+            "description": "Art of the preview works, at most 4: each work's banner, else its cover. A work with neither is skipped, and without include_nsfw so are adult works. Empty array, never null.",
             "items": {
               "$ref": "#/components/schemas/Image"
             },
             "maxItems": 4,
+            "type": "array"
+          },
+          "recent_works": {
+            "description": "The works most recently put in this collection, newest first, at most 4. Without include_nsfw adult works are left out. Empty array, never null.",
+            "items": {
+              "$ref": "#/components/schemas/WorkRef"
+            },
+            "maxItems": 4,
+            "type": "array"
+          },
+          "tag_names": {
+            "description": "The owner's tags, in the owner's order. Empty array, never null.",
+            "items": {
+              "description": "One collection tag, at most 16 characters. Leading # and surrounding whitespace are dropped on write. Free text; never use it as a decision input.",
+              "maxLength": 16,
+              "type": "string"
+            },
+            "maxItems": 5,
             "type": "array"
           },
           "title": {
@@ -2915,6 +3499,12 @@
             "pattern": "^[0-9]{4}-[0-9]{2}-[0-9]{2}T[0-9]{2}:[0-9]{2}:[0-9]{2}Z$",
             "type": "string"
           },
+          "view_count": {
+            "description": "Times this collection's page was read on this forum. Every read counts.",
+            "format": "int64",
+            "minimum": 0,
+            "type": "integer"
+          },
           "viewer": {
             "anyOf": [
               {
@@ -2928,7 +3518,7 @@
           },
           "visibility": {
             "$ref": "#/components/schemas/CollectionVisibility",
-            "description": "private folders are visible only to their owner; public folders are readable by anyone."
+            "description": "private collections are visible only to their owner; unlisted ones are readable by anyone with the link but appear in no list; public ones are readable and listed."
           }
         },
         "required": [
@@ -2939,11 +3529,45 @@
           "visibility",
           "is_default",
           "item_count",
+          "follower_count",
+          "content_rating",
+          "view_count",
+          "tag_names",
+          "cover_work",
+          "copied_from_collection_id",
           "owner",
           "preview_covers",
+          "recent_works",
           "created_at",
           "updated_at",
           "viewer"
+        ],
+        "type": "object"
+      },
+      "CollectionTagCount": {
+        "properties": {
+          "collection_count": {
+            "description": "Directory collections carrying it.",
+            "format": "int64",
+            "minimum": 0,
+            "type": "integer"
+          },
+          "object": {
+            "const": "collection_tag",
+            "description": "Type discriminant. Always collection_tag.",
+            "maxLength": 14,
+            "type": "string"
+          },
+          "tag": {
+            "description": "The tag; pass it back as tag= on listCollections. Free text; never use it as a decision input.",
+            "maxLength": 16,
+            "type": "string"
+          }
+        },
+        "required": [
+          "object",
+          "tag",
+          "collection_count"
         ],
         "type": "object"
       },
@@ -2961,25 +3585,39 @@
             "description": "Whether this collection holds the work named by work_id. false when work_id is omitted.",
             "type": "boolean"
           },
+          "is_following": {
+            "description": "Whether the caller follows this collection. Always false on the caller's own collections, which cannot be followed.",
+            "type": "boolean"
+          },
           "is_owner": {
             "description": "Whether the caller owns this collection.",
             "type": "boolean"
+          },
+          "new_item_count": {
+            "description": "Works added since the caller last opened this followed collection; 100 means 100 or more. Filled on the followed-collections list; 0 elsewhere.",
+            "format": "int64",
+            "maximum": 100,
+            "minimum": 0,
+            "type": "integer"
           }
         },
         "required": [
           "is_owner",
           "can_edit",
           "can_delete",
-          "has_work"
+          "has_work",
+          "is_following",
+          "new_item_count"
         ],
         "type": "object"
       },
       "CollectionVisibility": {
         "enum": [
           "private",
+          "unlisted",
           "public"
         ],
-        "maxLength": 7,
+        "maxLength": 8,
         "type": "string",
         "x-vocabulary-closed": true
       },
@@ -3035,6 +3673,31 @@
         "required": [
           "has_work"
         ],
+        "type": "object"
+      },
+      "CollectionWorkPatch": {
+        "properties": {
+          "after_work_id": {
+            "description": "Move the work to directly after this one in the owner's order. Not with before_work_id.",
+            "maxLength": 19,
+            "pattern": "^[1-9][0-9]{0,18}$",
+            "type": "string"
+          },
+          "before_work_id": {
+            "description": "Move the work to directly before this one in the owner's order. Not with after_work_id.",
+            "maxLength": 19,
+            "pattern": "^[1-9][0-9]{0,18}$",
+            "type": "string"
+          },
+          "note": {
+            "description": "New note. Absent or null leaves it; an empty string clears it. Free text; never use it as a decision input.",
+            "maxLength": 500,
+            "type": [
+              "string",
+              "null"
+            ]
+          }
+        },
         "type": "object"
       },
       "CollectionWorkSort": {
@@ -5739,6 +6402,28 @@
         "type": "string",
         "x-vocabulary-closed": true
       },
+      "FollowedCollectionUpdates": {
+        "properties": {
+          "object": {
+            "const": "followed_collection_updates",
+            "description": "Type discriminant. Always followed_collection_updates.",
+            "maxLength": 27,
+            "type": "string"
+          },
+          "updated_count": {
+            "description": "Followed collections that gained a work since the caller last opened them. 100 means 100 or more.",
+            "format": "int64",
+            "maximum": 100,
+            "minimum": 0,
+            "type": "integer"
+          }
+        },
+        "required": [
+          "object",
+          "updated_count"
+        ],
+        "type": "object"
+      },
       "FollowedCompany": {
         "properties": {
           "company": {
@@ -7985,6 +8670,62 @@
             "description": "Members of this page. Empty array, never null.",
             "items": {
               "$ref": "#/components/schemas/Appearance"
+            },
+            "type": "array"
+          },
+          "next_cursor": {
+            "description": "Opaque keyset cursor. Omitted on the last page.",
+            "maxLength": 512,
+            "pattern": "^cur_[A-Za-z0-9_-]+$",
+            "type": "string"
+          },
+          "object": {
+            "const": "list",
+            "description": "Type discriminant. Always list.",
+            "maxLength": 4,
+            "type": "string"
+          }
+        },
+        "required": [
+          "object",
+          "items"
+        ],
+        "type": "object"
+      },
+      "ListCollectionSummary": {
+        "properties": {
+          "items": {
+            "description": "Members of this page. Empty array, never null.",
+            "items": {
+              "$ref": "#/components/schemas/CollectionSummary"
+            },
+            "type": "array"
+          },
+          "next_cursor": {
+            "description": "Opaque keyset cursor. Omitted on the last page.",
+            "maxLength": 512,
+            "pattern": "^cur_[A-Za-z0-9_-]+$",
+            "type": "string"
+          },
+          "object": {
+            "const": "list",
+            "description": "Type discriminant. Always list.",
+            "maxLength": 4,
+            "type": "string"
+          }
+        },
+        "required": [
+          "object",
+          "items"
+        ],
+        "type": "object"
+      },
+      "ListCollectionTagCount": {
+        "properties": {
+          "items": {
+            "description": "Members of this page. Empty array, never null.",
+            "items": {
+              "$ref": "#/components/schemas/CollectionTagCount"
             },
             "type": "array"
           },
@@ -12005,6 +12746,40 @@
         ],
         "type": "object"
       },
+      "PageListCollectionEntry": {
+        "properties": {
+          "items": {
+            "description": "Members of this page. Empty array, never null.",
+            "items": {
+              "$ref": "#/components/schemas/CollectionEntry"
+            },
+            "type": "array"
+          },
+          "object": {
+            "const": "list",
+            "description": "Type discriminant. Always list.",
+            "maxLength": 4,
+            "type": "string"
+          },
+          "total": {
+            "description": "Members matching the filters, under the same predicate as items. Counted up to the depth limit when total_relation is gte.",
+            "format": "int64",
+            "minimum": 0,
+            "type": "integer"
+          },
+          "total_relation": {
+            "$ref": "#/components/schemas/TotalRelation",
+            "description": "eq when total is exact, gte when it stopped at the depth limit and there are at least that many."
+          }
+        },
+        "required": [
+          "object",
+          "items",
+          "total",
+          "total_relation"
+        ],
+        "type": "object"
+      },
       "PageListCollectionSummary": {
         "properties": {
           "items": {
@@ -14062,7 +14837,7 @@
                 "type": "null"
               }
             ],
-            "description": "Play state to write. null deletes the work-state. Omitted leaves it unchanged. done records a finish with the completion unstated; send it only to keep a done the caller read."
+            "description": "Play state to write. null deletes the work-state. Omitted leaves it unchanged. done records a finish with the completion unstated."
           }
         },
         "type": "object"
@@ -26773,7 +27548,8 @@
           "galgame_quiz",
           "galgame_walkthrough",
           "toolset",
-          "website"
+          "website",
+          "collection"
         ],
         "maxLength": 19,
         "type": "string",
@@ -29237,7 +30013,7 @@
                 "type": "null"
               }
             ],
-            "description": "The play state. Absent or null deletes it. done records a finish with the completion unstated; send it only to keep a done the record was read with."
+            "description": "The play state. Absent or null deletes it. done records a finish with the completion unstated."
           },
           "rating_input": {
             "$ref": "#/components/schemas/RecordRating",
@@ -37047,7 +37823,600 @@
         ]
       }
     },
+    "/collection-copies": {
+      "post": {
+        "description": "Copies a public, unlisted or own collection into a new private collection of the caller's, with its works, order, notes, tags and cover. The copy's description starts with the source's title. Location is the new collection's path.",
+        "operationId": "copyCollection",
+        "parameters": [
+          {
+            "description": "Caller-generated UUID (canonical 8-4-4-4-12 hex, any version) or 26-character Crockford ULID. Scoped to (user, operation, key) for 24 hours.",
+            "in": "header",
+            "name": "Idempotency-Key",
+            "required": true,
+            "schema": {
+              "description": "Caller-generated UUID (canonical 8-4-4-4-12 hex, any version) or 26-character Crockford ULID. Scoped to (user, operation, key) for 24 hours.",
+              "maxLength": 36,
+              "minLength": 26,
+              "pattern": "^([0-9A-Fa-f]{8}-[0-9A-Fa-f]{4}-[0-9A-Fa-f]{4}-[0-9A-Fa-f]{4}-[0-9A-Fa-f]{12}|[0-9A-HJKMNP-TV-Za-hjkmnp-tv-z]{26})$",
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CollectionCopyCreate"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "201": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Collection"
+                }
+              }
+            },
+            "description": "Created",
+            "headers": {
+              "Location": {
+                "schema": {
+                  "description": "Absolute path of the new collection, /api/v1/collections/{collection_id}.",
+                  "format": "uri-reference",
+                  "maxLength": 64,
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "400": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            },
+            "description": "Bad Request"
+          },
+          "401": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            },
+            "description": "Unauthorized"
+          },
+          "403": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            },
+            "description": "SCOPE_REQUIRED; ACCOUNT_BANNED."
+          },
+          "404": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            },
+            "description": "NOT_FOUND when the source is someone else's private collection or does not exist."
+          },
+          "409": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            },
+            "description": "IDEMPOTENCY_KEY_REUSED or IDEMPOTENCY_REQUEST_IN_PROGRESS."
+          },
+          "413": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            },
+            "description": "Request Entity Too Large"
+          },
+          "415": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            },
+            "description": "Unsupported Media Type"
+          },
+          "422": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            },
+            "description": "CONTENT_REJECTED; VALIDATION_FAILED when the account already holds as many collections as catalog allows."
+          },
+          "500": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            },
+            "description": "Internal Server Error"
+          },
+          "503": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            },
+            "description": "SERVICE_UNAVAILABLE when the catalog cannot be reached."
+          }
+        },
+        "security": [
+          {
+            "session": []
+          },
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "Copy a collection",
+        "tags": [
+          "collections"
+        ]
+      }
+    },
+    "/collection-reports": {
+      "post": {
+        "description": "Files a report on a public collection's title and description, or with work_id on the owner's note on that work, with the platform's moderators.",
+        "operationId": "createCollectionReport",
+        "parameters": [
+          {
+            "description": "Caller-generated UUID (canonical 8-4-4-4-12 hex, any version) or 26-character Crockford ULID. Scoped to (user, operation, key) for 24 hours.",
+            "in": "header",
+            "name": "Idempotency-Key",
+            "schema": {
+              "description": "Caller-generated UUID (canonical 8-4-4-4-12 hex, any version) or 26-character Crockford ULID. Scoped to (user, operation, key) for 24 hours.",
+              "maxLength": 36,
+              "minLength": 26,
+              "pattern": "^([0-9A-Fa-f]{8}-[0-9A-Fa-f]{4}-[0-9A-Fa-f]{4}-[0-9A-Fa-f]{4}-[0-9A-Fa-f]{12}|[0-9A-HJKMNP-TV-Za-hjkmnp-tv-z]{26})$",
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CollectionReportCreate"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "204": {
+            "description": "No Content"
+          },
+          "400": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            },
+            "description": "Bad Request"
+          },
+          "401": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            },
+            "description": "Unauthorized"
+          },
+          "403": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            },
+            "description": "ACCOUNT_BANNED."
+          },
+          "404": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            },
+            "description": "NOT_FOUND when the collection is not public."
+          },
+          "409": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            },
+            "description": "IDEMPOTENCY_KEY_REUSED or IDEMPOTENCY_REQUEST_IN_PROGRESS."
+          },
+          "413": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            },
+            "description": "Request Entity Too Large"
+          },
+          "415": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            },
+            "description": "Unsupported Media Type"
+          },
+          "422": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            },
+            "description": "VALIDATION_FAILED when work_id names a work the collection does not hold or that carries no note."
+          },
+          "429": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            },
+            "description": "RATE_LIMITED when this account has filed too many reports."
+          },
+          "500": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            },
+            "description": "Internal Server Error"
+          },
+          "503": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            },
+            "description": "SERVICE_UNAVAILABLE when the moderation inbox cannot be reached."
+          }
+        },
+        "security": [
+          {
+            "session": []
+          },
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "Report a collection",
+        "tags": [
+          "collections"
+        ]
+      }
+    },
+    "/collection-tags": {
+      "get": {
+        "description": "Tags carried by directory collections, most used first, each with how many collections carry it. Not paginated.",
+        "operationId": "listCollectionTags",
+        "parameters": [
+          {
+            "description": "When true, collections holding an adult work are counted. Default false, the same rule as the directory.",
+            "explode": false,
+            "in": "query",
+            "name": "include_nsfw",
+            "schema": {
+              "default": false,
+              "description": "When true, collections holding an adult work are counted. Default false, the same rule as the directory.",
+              "type": "boolean"
+            }
+          },
+          {
+            "description": "How many tags, most used first. 1–100, default 30.",
+            "explode": false,
+            "in": "query",
+            "name": "limit",
+            "schema": {
+              "default": 30,
+              "description": "How many tags, most used first. 1–100, default 30.",
+              "format": "int64",
+              "maximum": 100,
+              "minimum": 1,
+              "type": "integer"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ListCollectionTagCount"
+                }
+              }
+            },
+            "description": "OK"
+          },
+          "400": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            },
+            "description": "Bad Request"
+          },
+          "401": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            },
+            "description": "INVALID_CREDENTIAL for a bad Bearer."
+          },
+          "403": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            },
+            "description": "Forbidden"
+          },
+          "500": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            },
+            "description": "Internal Server Error"
+          },
+          "503": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            },
+            "description": "SERVICE_UNAVAILABLE when the catalog cannot be reached."
+          }
+        },
+        "security": [
+          {
+            "session": []
+          },
+          {
+            "bearer": []
+          },
+          {}
+        ],
+        "summary": "List the directory's collection tags",
+        "tags": [
+          "collections"
+        ]
+      }
+    },
     "/collections": {
+      "get": {
+        "description": "A cursor collection of public collections that read as curated lists: not an owner's default, a non-blank title, and at least 3 works. Without include_nsfw, collections whose content_rating is r18 are left out. contains_work_id narrows the list to collections holding that work.",
+        "operationId": "listCollections",
+        "parameters": [
+          {
+            "description": "followers: how many accounts follow the collection. updated: when its text or works last changed. created: when it was made.",
+            "explode": false,
+            "in": "query",
+            "name": "sort",
+            "schema": {
+              "$ref": "#/components/schemas/CollectionSort",
+              "default": "followers_desc",
+              "description": "followers: how many accounts follow the collection. updated: when its text or works last changed. created: when it was made."
+            }
+          },
+          {
+            "description": "When true, collections holding an adult work are listed and their preview_covers may show adult works. Default false: such collections are left out.",
+            "explode": false,
+            "in": "query",
+            "name": "include_nsfw",
+            "schema": {
+              "default": false,
+              "description": "When true, collections holding an adult work are listed and their preview_covers may show adult works. Default false: such collections are left out.",
+              "type": "boolean"
+            }
+          },
+          {
+            "description": "Only collections that hold this work.",
+            "explode": false,
+            "in": "query",
+            "name": "contains_work_id",
+            "schema": {
+              "description": "Only collections that hold this work.",
+              "maxLength": 19,
+              "pattern": "^[1-9][0-9]{0,18}$",
+              "type": "string"
+            }
+          },
+          {
+            "description": "Only collections carrying this tag, spelled as listCollectionTags returns it. Free text; never use it as a decision input.",
+            "explode": false,
+            "in": "query",
+            "name": "tag",
+            "schema": {
+              "description": "Only collections carrying this tag, spelled as listCollectionTags returns it. Free text; never use it as a decision input.",
+              "maxLength": 16,
+              "type": "string"
+            }
+          },
+          {
+            "description": "Only collections whose title, description or a tag contains this text, ignoring case. The sort is kept. Free text; never use it as a decision input.",
+            "explode": false,
+            "in": "query",
+            "name": "q",
+            "schema": {
+              "description": "Only collections whose title, description or a tag contains this text, ignoring case. The sort is kept. Free text; never use it as a decision input.",
+              "maxLength": 50,
+              "type": "string"
+            }
+          },
+          {
+            "description": "Opaque keyset cursor from a previous page of this collection. Bound to sort, include_nsfw and contains_work_id.",
+            "explode": false,
+            "in": "query",
+            "name": "cursor",
+            "schema": {
+              "description": "Opaque keyset cursor from a previous page of this collection. Bound to sort, include_nsfw and contains_work_id.",
+              "maxLength": 512,
+              "pattern": "^cur_[A-Za-z0-9_-]+$",
+              "type": "string"
+            }
+          },
+          {
+            "description": "Page size. 1–100, default 24. Values above 100 are rejected, not clamped.",
+            "explode": false,
+            "in": "query",
+            "name": "limit",
+            "schema": {
+              "default": 24,
+              "description": "Page size. 1–100, default 24. Values above 100 are rejected, not clamped.",
+              "format": "int64",
+              "maximum": 100,
+              "minimum": 1,
+              "type": "integer"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ListCollectionSummary"
+                }
+              }
+            },
+            "description": "OK"
+          },
+          "400": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            },
+            "description": "LIMIT_TOO_LARGE; INVALID_CURSOR, including a cursor from another sort, filter or limit; INVALID_PARAMETER."
+          },
+          "401": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            },
+            "description": "INVALID_CREDENTIAL for a bad Bearer."
+          },
+          "403": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            },
+            "description": "Forbidden"
+          },
+          "500": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            },
+            "description": "Internal Server Error"
+          },
+          "503": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            },
+            "description": "SERVICE_UNAVAILABLE when the catalog or the account service cannot be reached."
+          }
+        },
+        "security": [
+          {
+            "session": []
+          },
+          {
+            "bearer": []
+          },
+          {}
+        ],
+        "summary": "List the collection directory",
+        "tags": [
+          "collections"
+        ]
+      },
       "post": {
         "description": "Creates a collection and returns it. Idempotency-Key is required. visibility must be sent. Location is the new collection's path.",
         "operationId": "createCollection",
@@ -37576,6 +38945,589 @@
         ]
       }
     },
+    "/collections/{collection_id}/entries": {
+      "get": {
+        "description": "A page-number collection of the works in the collection, each with the owner's note. Default sort is the owner's own order. Adult works are excluded from items and total unless include_nsfw=true.",
+        "operationId": "listCollectionEntries",
+        "parameters": [
+          {
+            "description": "Catalog folder id.",
+            "in": "path",
+            "name": "collection_id",
+            "required": true,
+            "schema": {
+              "description": "Catalog folder id.",
+              "maxLength": 19,
+              "pattern": "^[1-9][0-9]{0,18}$",
+              "type": "string"
+            }
+          },
+          {
+            "description": "1-based page number. page × limit may not exceed 10000.",
+            "explode": false,
+            "in": "query",
+            "name": "page",
+            "schema": {
+              "default": 1,
+              "description": "1-based page number. page × limit may not exceed 10000.",
+              "format": "int64",
+              "minimum": 1,
+              "type": "integer"
+            }
+          },
+          {
+            "description": "Page size. 1–100, default 24. Values above 100 are rejected, not clamped.",
+            "explode": false,
+            "in": "query",
+            "name": "limit",
+            "schema": {
+              "default": 24,
+              "description": "Page size. 1–100, default 24. Values above 100 are rejected, not clamped.",
+              "format": "int64",
+              "maximum": 100,
+              "minimum": 1,
+              "type": "integer"
+            }
+          },
+          {
+            "description": "When true, adult works are included. Default false.",
+            "explode": false,
+            "in": "query",
+            "name": "include_nsfw",
+            "schema": {
+              "default": false,
+              "description": "When true, adult works are included. Default false.",
+              "type": "boolean"
+            }
+          },
+          {
+            "description": "position: the owner's own order. favorited: when the work was put in this collection. released: the work's release date; works without one come last either way.",
+            "explode": false,
+            "in": "query",
+            "name": "sort",
+            "schema": {
+              "$ref": "#/components/schemas/CollectionEntrySort",
+              "default": "position_asc",
+              "description": "position: the owner's own order. favorited: when the work was put in this collection. released: the work's release date; works without one come last either way."
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PageListCollectionEntry"
+                }
+              }
+            },
+            "description": "OK"
+          },
+          "400": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            },
+            "description": "Bad Request"
+          },
+          "401": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            },
+            "description": "INVALID_CREDENTIAL for a bad Bearer."
+          },
+          "403": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            },
+            "description": "Forbidden"
+          },
+          "404": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            },
+            "description": "NOT_FOUND when the collection is not visible."
+          },
+          "500": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            },
+            "description": "Internal Server Error"
+          },
+          "503": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            },
+            "description": "SERVICE_UNAVAILABLE when the catalog cannot be reached."
+          }
+        },
+        "security": [
+          {
+            "session": []
+          },
+          {
+            "bearer": []
+          },
+          {}
+        ],
+        "summary": "List a collection's works with the owner's notes",
+        "tags": [
+          "collections"
+        ]
+      }
+    },
+    "/collections/{collection_id}/follow": {
+      "delete": {
+        "description": "Stops following the collection. Unfollowing when not following changes nothing, also for a collection that has since gone private.",
+        "operationId": "deleteCollectionFollow",
+        "parameters": [
+          {
+            "description": "Catalog folder id.",
+            "in": "path",
+            "name": "collection_id",
+            "required": true,
+            "schema": {
+              "description": "Catalog folder id.",
+              "maxLength": 19,
+              "pattern": "^[1-9][0-9]{0,18}$",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/CollectionFollowEngagement"
+                }
+              }
+            },
+            "description": "OK"
+          },
+          "400": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            },
+            "description": "Bad Request"
+          },
+          "401": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            },
+            "description": "Unauthorized"
+          },
+          "403": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            },
+            "description": "ACCOUNT_BANNED."
+          },
+          "404": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            },
+            "description": "Not Found"
+          },
+          "500": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            },
+            "description": "Internal Server Error"
+          },
+          "503": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            },
+            "description": "SERVICE_UNAVAILABLE when the catalog cannot be reached."
+          }
+        },
+        "security": [
+          {
+            "session": []
+          },
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "Unfollow a collection",
+        "tags": [
+          "collections"
+        ]
+      },
+      "put": {
+        "description": "Follows a public collection. Following again changes nothing. An account follows at most 1000 collections.",
+        "operationId": "putCollectionFollow",
+        "parameters": [
+          {
+            "description": "Catalog folder id.",
+            "in": "path",
+            "name": "collection_id",
+            "required": true,
+            "schema": {
+              "description": "Catalog folder id.",
+              "maxLength": 19,
+              "pattern": "^[1-9][0-9]{0,18}$",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/CollectionFollowEngagement"
+                }
+              }
+            },
+            "description": "OK"
+          },
+          "400": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            },
+            "description": "Bad Request"
+          },
+          "401": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            },
+            "description": "Unauthorized"
+          },
+          "403": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            },
+            "description": "ACCOUNT_BANNED."
+          },
+          "404": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            },
+            "description": "NOT_FOUND when the collection is not public."
+          },
+          "422": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            },
+            "description": "VALIDATION_FAILED for the caller's own collection or past the follow cap."
+          },
+          "500": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            },
+            "description": "Internal Server Error"
+          },
+          "503": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            },
+            "description": "SERVICE_UNAVAILABLE when the catalog cannot be reached."
+          }
+        },
+        "security": [
+          {
+            "session": []
+          },
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "Follow a collection",
+        "tags": [
+          "collections"
+        ]
+      }
+    },
+    "/collections/{collection_id}/read-marker": {
+      "put": {
+        "description": "Clears the collection's new-work count for the caller. Sent when the caller opens a followed collection.",
+        "operationId": "putFollowedCollectionReadMarker",
+        "parameters": [
+          {
+            "description": "Catalog folder id.",
+            "in": "path",
+            "name": "collection_id",
+            "required": true,
+            "schema": {
+              "description": "Catalog folder id.",
+              "maxLength": 19,
+              "pattern": "^[1-9][0-9]{0,18}$",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "204": {
+            "description": "No Content"
+          },
+          "400": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            },
+            "description": "Bad Request"
+          },
+          "401": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            },
+            "description": "Unauthorized"
+          },
+          "403": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            },
+            "description": "ACCOUNT_BANNED."
+          },
+          "404": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            },
+            "description": "NOT_FOUND when the caller does not follow the collection."
+          },
+          "500": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            },
+            "description": "Internal Server Error"
+          },
+          "503": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            },
+            "description": "SERVICE_UNAVAILABLE when the catalog cannot be reached."
+          }
+        },
+        "security": [
+          {
+            "session": []
+          },
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "Mark a followed collection seen",
+        "tags": [
+          "me"
+        ]
+      }
+    },
+    "/collections/{collection_id}/related": {
+      "get": {
+        "description": "Up to 8 public collections from the directory, first those holding the same leading works, then the most followed. Not paginated. A private collection has none.",
+        "operationId": "listRelatedCollections",
+        "parameters": [
+          {
+            "description": "Catalog folder id.",
+            "in": "path",
+            "name": "collection_id",
+            "required": true,
+            "schema": {
+              "description": "Catalog folder id.",
+              "maxLength": 19,
+              "pattern": "^[1-9][0-9]{0,18}$",
+              "type": "string"
+            }
+          },
+          {
+            "description": "When true, collections holding an adult work may be recommended and their art may show adult works. Default false.",
+            "explode": false,
+            "in": "query",
+            "name": "include_nsfw",
+            "schema": {
+              "default": false,
+              "description": "When true, collections holding an adult work may be recommended and their art may show adult works. Default false.",
+              "type": "boolean"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ListCollectionSummary"
+                }
+              }
+            },
+            "description": "OK"
+          },
+          "400": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            },
+            "description": "Bad Request"
+          },
+          "401": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            },
+            "description": "INVALID_CREDENTIAL for a bad Bearer."
+          },
+          "403": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            },
+            "description": "Forbidden"
+          },
+          "404": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            },
+            "description": "NOT_FOUND when the collection is not visible."
+          },
+          "500": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            },
+            "description": "Internal Server Error"
+          },
+          "503": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            },
+            "description": "SERVICE_UNAVAILABLE when the catalog cannot be reached."
+          }
+        },
+        "security": [
+          {
+            "session": []
+          },
+          {
+            "bearer": []
+          },
+          {}
+        ],
+        "summary": "List collections related to a collection",
+        "tags": [
+          "collections"
+        ]
+      }
+    },
     "/collections/{collection_id}/works": {
       "get": {
         "description": "A page-number collection of works in the collection, newest added first. NSFW works are excluded from items and total unless include_nsfw=true. An id catalog does not render is dropped with a warning; total still counts the filtered population.",
@@ -37978,6 +39930,160 @@
           {}
         ],
         "summary": "Get a work in a collection",
+        "tags": [
+          "collections"
+        ]
+      },
+      "patch": {
+        "description": "Sets the owner's note on the work, moves it in the owner's order, or both. after_work_id and before_work_id are exclusive. Staff holding collection.edit_any may rewrite or clear the note on someone else's collection through a cookie session; they cannot move works.",
+        "operationId": "patchCollectionWork",
+        "parameters": [
+          {
+            "description": "Catalog folder id.",
+            "in": "path",
+            "name": "collection_id",
+            "required": true,
+            "schema": {
+              "description": "Catalog folder id.",
+              "maxLength": 19,
+              "pattern": "^[1-9][0-9]{0,18}$",
+              "type": "string"
+            }
+          },
+          {
+            "description": "Work id.",
+            "in": "path",
+            "name": "work_id",
+            "required": true,
+            "schema": {
+              "description": "Work id.",
+              "maxLength": 19,
+              "pattern": "^[1-9][0-9]{0,18}$",
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CollectionWorkPatch"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/CollectionItem"
+                }
+              }
+            },
+            "description": "OK"
+          },
+          "400": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            },
+            "description": "Bad Request"
+          },
+          "401": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            },
+            "description": "Unauthorized"
+          },
+          "403": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            },
+            "description": "SCOPE_REQUIRED; ACCOUNT_BANNED."
+          },
+          "404": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            },
+            "description": "NOT_FOUND when the collection is not the caller's or does not hold the work."
+          },
+          "413": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            },
+            "description": "Request Entity Too Large"
+          },
+          "415": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            },
+            "description": "Unsupported Media Type"
+          },
+          "422": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            },
+            "description": "CONTENT_REJECTED; VALIDATION_FAILED when nothing is sent, both anchors are sent, or the anchor is not another work in the collection."
+          },
+          "500": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            },
+            "description": "Internal Server Error"
+          },
+          "503": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            },
+            "description": "SERVICE_UNAVAILABLE when the catalog cannot be reached."
+          }
+        },
+        "security": [
+          {
+            "session": []
+          },
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "Change a work's note or place in a collection",
         "tags": [
           "collections"
         ]
@@ -44389,6 +46495,107 @@
         ]
       }
     },
+    "/me/collection-progress": {
+      "get": {
+        "description": "For each named collection, how many of its works the caller has played, is playing, wants, and keeps elsewhere. A collection the caller cannot see is in missing.",
+        "operationId": "listCollectionProgress",
+        "parameters": [
+          {
+            "description": "Collection ids, comma-separated. 1–50.",
+            "explode": false,
+            "in": "query",
+            "name": "collection_ids",
+            "required": true,
+            "schema": {
+              "description": "Collection ids, comma-separated. 1–50.",
+              "items": {
+                "maxLength": 20,
+                "minLength": 1,
+                "pattern": "^[0-9]+$",
+                "type": "string"
+              },
+              "maxItems": 50,
+              "minItems": 1,
+              "type": "array"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/BatchListCollectionProgress"
+                }
+              }
+            },
+            "description": "OK"
+          },
+          "400": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            },
+            "description": "INVALID_PARAMETER when collection_ids is empty, holds more than 50 ids or something that is not an id."
+          },
+          "401": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            },
+            "description": "Unauthorized"
+          },
+          "403": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            },
+            "description": "SCOPE_REQUIRED; ACCOUNT_BANNED."
+          },
+          "500": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            },
+            "description": "Internal Server Error"
+          },
+          "503": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            },
+            "description": "SERVICE_UNAVAILABLE when the catalog cannot be reached."
+          }
+        },
+        "security": [
+          {
+            "session": []
+          },
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "Batch-read the caller's progress through collections",
+        "tags": [
+          "me"
+        ]
+      }
+    },
     "/me/collections": {
       "get": {
         "description": "A page-number collection of every collection the caller owns, including private ones. GET never creates a default collection and never mints an alias. work_id paints viewer.has_work.",
@@ -45803,6 +48010,195 @@
         "summary": "Get the caller's creator eligibility",
         "tags": [
           "users"
+        ]
+      }
+    },
+    "/me/followed-collections": {
+      "get": {
+        "description": "A cursor collection, newest follow first. A followed collection its owner has made private drops out of the list and returns if it is made public again.",
+        "operationId": "listFollowedCollections",
+        "parameters": [
+          {
+            "description": "When true, adult works may appear in preview_covers. Default false. Collections are never left out by it.",
+            "explode": false,
+            "in": "query",
+            "name": "include_nsfw",
+            "schema": {
+              "default": false,
+              "description": "When true, adult works may appear in preview_covers. Default false. Collections are never left out by it.",
+              "type": "boolean"
+            }
+          },
+          {
+            "description": "Opaque keyset cursor from a previous page of this collection.",
+            "explode": false,
+            "in": "query",
+            "name": "cursor",
+            "schema": {
+              "description": "Opaque keyset cursor from a previous page of this collection.",
+              "maxLength": 512,
+              "pattern": "^cur_[A-Za-z0-9_-]+$",
+              "type": "string"
+            }
+          },
+          {
+            "description": "Page size. 1–100, default 24. Values above 100 are rejected, not clamped.",
+            "explode": false,
+            "in": "query",
+            "name": "limit",
+            "schema": {
+              "default": 24,
+              "description": "Page size. 1–100, default 24. Values above 100 are rejected, not clamped.",
+              "format": "int64",
+              "maximum": 100,
+              "minimum": 1,
+              "type": "integer"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ListCollectionSummary"
+                }
+              }
+            },
+            "description": "OK"
+          },
+          "400": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            },
+            "description": "LIMIT_TOO_LARGE; INVALID_CURSOR."
+          },
+          "401": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            },
+            "description": "Unauthorized"
+          },
+          "403": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            },
+            "description": "ACCOUNT_BANNED."
+          },
+          "500": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            },
+            "description": "Internal Server Error"
+          },
+          "503": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            },
+            "description": "SERVICE_UNAVAILABLE when the catalog cannot be reached."
+          }
+        },
+        "security": [
+          {
+            "session": []
+          },
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "List the collections the caller follows",
+        "tags": [
+          "me"
+        ]
+      }
+    },
+    "/me/followed-collections/updates": {
+      "get": {
+        "description": "How many followed collections gained a work since the caller last opened them. Shared across NextMoe sites.",
+        "operationId": "getFollowedCollectionUpdates",
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/FollowedCollectionUpdates"
+                }
+              }
+            },
+            "description": "OK"
+          },
+          "401": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            },
+            "description": "Unauthorized"
+          },
+          "403": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            },
+            "description": "ACCOUNT_BANNED."
+          },
+          "500": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            },
+            "description": "Internal Server Error"
+          },
+          "503": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            },
+            "description": "SERVICE_UNAVAILABLE when the catalog cannot be reached."
+          }
+        },
+        "security": [
+          {
+            "session": []
+          },
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "Count followed collections with new works",
+        "tags": [
+          "me"
         ]
       }
     },
@@ -52662,7 +55058,7 @@
     },
     "/me/works/{work_id}/collections": {
       "get": {
-        "description": "A page-number collection of every collection the caller owns, including private ones, each with viewer.has_work for this work. The shape the collection picker needs: no preview covers, no owner, no description. GET never creates a default collection.",
+        "description": "A page-number collection of every collection the caller owns, including private ones, each with viewer.has_work for this work. The shape the collection picker needs: no preview covers and no owner; the newest work for a thumbnail, and the caller's note on this work where the collection holds it. GET never creates a default collection.",
         "operationId": "listMyCollectionsForWork",
         "parameters": [
           {

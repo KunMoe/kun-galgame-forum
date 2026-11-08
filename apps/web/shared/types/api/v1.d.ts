@@ -837,7 +837,7 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
-    "/collections": {
+    "/collection-copies": {
         parameters: {
             query?: never;
             header?: never;
@@ -845,6 +845,70 @@ export interface paths {
             cookie?: never;
         };
         get?: never;
+        put?: never;
+        /**
+         * Copy a collection
+         * @description Copies a public, unlisted or own collection into a new private collection of the caller's, with its works, order, notes, tags and cover. The copy's description starts with the source's title. Location is the new collection's path.
+         */
+        post: operations["copyCollection"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/collection-reports": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Report a collection
+         * @description Files a report on a public collection's title and description, or with work_id on the owner's note on that work, with the platform's moderators.
+         */
+        post: operations["createCollectionReport"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/collection-tags": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * List the directory's collection tags
+         * @description Tags carried by directory collections, most used first, each with how many collections carry it. Not paginated.
+         */
+        get: operations["listCollectionTags"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/collections": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * List the collection directory
+         * @description A cursor collection of public collections that read as curated lists: not an owner's default, a non-blank title, and at least 3 works. Without include_nsfw, collections whose content_rating is r18 are left out. contains_work_id narrows the list to collections holding that work.
+         */
+        get: operations["listCollections"];
         put?: never;
         /**
          * Create a collection
@@ -883,6 +947,90 @@ export interface paths {
          * @description Partial update. An empty body is VALIDATION_FAILED. Staff edits of someone else's collection require a cookie session holding collection.edit_any and go through catalog moderation. Bearer requests never hold staff powers.
          */
         patch: operations["updateCollection"];
+        trace?: never;
+    };
+    "/collections/{collection_id}/entries": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * List a collection's works with the owner's notes
+         * @description A page-number collection of the works in the collection, each with the owner's note. Default sort is the owner's own order. Adult works are excluded from items and total unless include_nsfw=true.
+         */
+        get: operations["listCollectionEntries"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/collections/{collection_id}/follow": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        /**
+         * Follow a collection
+         * @description Follows a public collection. Following again changes nothing. An account follows at most 1000 collections.
+         */
+        put: operations["putCollectionFollow"];
+        post?: never;
+        /**
+         * Unfollow a collection
+         * @description Stops following the collection. Unfollowing when not following changes nothing, also for a collection that has since gone private.
+         */
+        delete: operations["deleteCollectionFollow"];
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/collections/{collection_id}/read-marker": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        /**
+         * Mark a followed collection seen
+         * @description Clears the collection's new-work count for the caller. Sent when the caller opens a followed collection.
+         */
+        put: operations["putFollowedCollectionReadMarker"];
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/collections/{collection_id}/related": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * List collections related to a collection
+         * @description Up to 8 public collections from the directory, first those holding the same leading works, then the most followed. Not paginated. A private collection has none.
+         */
+        get: operations["listRelatedCollections"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
         trace?: never;
     };
     "/collections/{collection_id}/works": {
@@ -930,7 +1078,11 @@ export interface paths {
         delete: operations["deleteCollectionWork"];
         options?: never;
         head?: never;
-        patch?: never;
+        /**
+         * Change a work's note or place in a collection
+         * @description Sets the owner's note on the work, moves it in the owner's order, or both. after_work_id and before_work_id are exclusive. Staff holding collection.edit_any may rewrite or clear the note on someone else's collection through a cookie session; they cannot move works.
+         */
+        patch: operations["patchCollectionWork"];
         trace?: never;
     };
     "/comments/{comment_id}": {
@@ -1816,6 +1968,26 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/me/collection-progress": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Batch-read the caller's progress through collections
+         * @description For each named collection, how many of its works the caller has played, is playing, wants, and keeps elsewhere. A collection the caller cannot see is in missing.
+         */
+        get: operations["listCollectionProgress"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/me/collections": {
         parameters: {
             query?: never;
@@ -1996,6 +2168,46 @@ export interface paths {
          * @description Returns whether the caller is a creator, the live eligibility snapshot, and their latest application if any.
          */
         get: operations["getCreatorStatus"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/me/followed-collections": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * List the collections the caller follows
+         * @description A cursor collection, newest follow first. A followed collection its owner has made private drops out of the list and returns if it is made public again.
+         */
+        get: operations["listFollowedCollections"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/me/followed-collections/updates": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Count followed collections with new works
+         * @description How many followed collections gained a work since the caller last opened them. Shared across NextMoe sites.
+         */
+        get: operations["getFollowedCollectionUpdates"];
         put?: never;
         post?: never;
         delete?: never;
@@ -2921,7 +3133,7 @@ export interface paths {
         };
         /**
          * List the caller's collections against one work
-         * @description A page-number collection of every collection the caller owns, including private ones, each with viewer.has_work for this work. The shape the collection picker needs: no preview covers, no owner, no description. GET never creates a default collection.
+         * @description A page-number collection of every collection the caller owns, including private ones, each with viewer.has_work for this work. The shape the collection picker needs: no preview covers and no owner; the newest work for a thumbnail, and the caller's note on this work where the collection holds it. GET never creates a default collection.
          */
         get: operations["listMyCollectionsForWork"];
         put?: never;
@@ -5921,6 +6133,8 @@ export interface components {
         Activity: {
             /** @description What happened. It decides which of the detail blocks below is set: every block other than its own is null. */
             activity_type: components["schemas"]["ActivityType"];
+            /** @description The collection, as it stands now. Set for collection_creation, collection_work_addition and collection_comment_creation. */
+            collection: components["schemas"]["CollectionSummary"] | null;
             /** @description The topic comment. Set for topic_comment_creation. */
             comment: components["schemas"]["ActivityComment"] | null;
             /** @description The text stored with the activity, cut to 1000 characters: the title of a topic, toolset or website, a quiz question, the body of a reply, comment, todo or update log, an upvote note. Empty for the work kinds. Replies are Markdown; comments are plain text. Free text; never use it as a decision input. */
@@ -6096,7 +6310,7 @@ export interface components {
         /** @enum {string} */
         ActivityTopicSection: "normal" | "help" | "all";
         /** @enum {string} */
-        ActivityType: "topic_creation" | "topic_reply_creation" | "topic_comment_creation" | "topic_upvote" | "best_answer_set" | "galgame_creation" | "galgame_edit" | "galgame_pr_creation" | "galgame_resource_creation" | "galgame_resource_comment_creation" | "galgame_comment_creation" | "galgame_rating_creation" | "galgame_rating_comment_creation" | "galgame_quiz_creation" | "galgame_quiz_comment_creation" | "galgame_walkthrough_comment_creation" | "galgame_website_creation" | "galgame_website_comment_creation" | "toolset_creation" | "toolset_resource_creation" | "toolset_comment_creation" | "todo_creation" | "update_log_creation";
+        ActivityType: "topic_creation" | "topic_reply_creation" | "topic_comment_creation" | "topic_upvote" | "best_answer_set" | "galgame_creation" | "galgame_edit" | "galgame_pr_creation" | "galgame_resource_creation" | "galgame_resource_comment_creation" | "galgame_comment_creation" | "galgame_rating_creation" | "galgame_rating_comment_creation" | "galgame_quiz_creation" | "galgame_quiz_comment_creation" | "galgame_walkthrough_comment_creation" | "galgame_website_creation" | "galgame_website_comment_creation" | "toolset_creation" | "toolset_resource_creation" | "toolset_comment_creation" | "todo_creation" | "update_log_creation" | "collection_creation" | "collection_work_addition" | "collection_comment_creation";
         ActivityUpdateLog: {
             /** @description Site version the change shipped in. Free text; never use it as a decision input. */
             release_version: string;
@@ -6507,6 +6721,17 @@ export interface components {
              */
             static_url: string;
         };
+        BatchListCollectionProgress: {
+            /** @description One member per requested id that the caller may see. Empty array, never null. */
+            items: components["schemas"]["CollectionProgress"][];
+            /** @description Requested ids that did not come back, in the order they were requested. Empty array, never null. The reason is deliberately not given. */
+            missing: string[];
+            /**
+             * @description Type discriminant. Always list.
+             * @constant
+             */
+            object: "list";
+        };
         BatchListMyCoverVote: {
             /** @description One member per requested id that the caller may see. Empty array, never null. */
             items: components["schemas"]["MyCoverVote"][];
@@ -6808,6 +7033,14 @@ export interface components {
             value: string;
         };
         Collection: {
+            /** @description The strictest rating among the works this collection holds; all_ages when it holds none. A reader who hides adult works should hide an r18 collection's art. */
+            content_rating: components["schemas"]["ContentRating"];
+            /** @description The collection this one was copied from, when anyone may still read it. null when it was not copied, or the source is gone or private. */
+            copied_from: components["schemas"]["CollectionSource"] | null;
+            /** @description The collection this one was copied from, as it was at the copy. null for a collection that was not made by copying, and for copies made before catalog recorded it. The source may since have been deleted or made private. */
+            copied_from_collection_id: string | null;
+            /** @description The work the owner picked as the cover. null when none is picked: clients build the cover from recent_works. */
+            cover_work: components["schemas"]["WorkRef"] | null;
             /**
              * Format: date-time
              * @description When catalog created the collection.
@@ -6815,6 +7048,11 @@ export interface components {
             created_at: string;
             /** @description Owner's note. Empty string when none. Free text; never use it as a decision input. */
             description: string;
+            /**
+             * Format: int64
+             * @description Accounts that follow this collection. Never null on a collection; the property is nullable only where an upstream may fail.
+             */
+            follower_count: number | null;
             /** @description Catalog folder id. */
             id: string;
             /** @description Whether this is the owner's default collection. */
@@ -6831,8 +7069,12 @@ export interface components {
             object: "collection";
             /** @description The account that owns this collection. */
             owner: components["schemas"]["UserRef"];
-            /** @description Art of the earliest memberships, at most 4: each work's banner, else its cover. A work with neither is skipped, and without include_nsfw so are adult works. Empty array, never null. */
+            /** @description Art of the preview works, at most 4: each work's banner, else its cover. A work with neither is skipped, and without include_nsfw so are adult works. Empty array, never null. */
             preview_covers: components["schemas"]["Image"][];
+            /** @description The works most recently put in this collection, newest first, at most 4. Without include_nsfw adult works are left out. Empty array, never null. */
+            recent_works: components["schemas"]["WorkRef"][];
+            /** @description The owner's tags, in the owner's order. Empty array, never null. */
+            tag_names: string[];
             /** @description Display name. Empty string for an unnamed imported default. Free text; never use it as a decision input. */
             title: string;
             /**
@@ -6840,9 +7082,14 @@ export interface components {
              * @description When catalog last updated the collection.
              */
             updated_at: string;
+            /**
+             * Format: int64
+             * @description Times this collection's page was read on this forum. Every read counts.
+             */
+            view_count: number;
             /** @description The caller's own state. null for an anonymous caller. */
             viewer: components["schemas"]["CollectionViewer"] | null;
-            /** @description private folders are visible only to their owner; public folders are readable by anyone. */
+            /** @description private collections are visible only to their owner; unlisted ones are readable by anyone with the link but appear in no list; public ones are readable and listed. */
             visibility: components["schemas"]["CollectionVisibility"];
         };
         CollectionAlias: {
@@ -6857,58 +7104,6 @@ export interface components {
             object: "collection_alias";
         };
         CollectionChoice: {
-            /** @description Catalog folder id. */
-            id: string;
-            /** @description Whether this is the owner's default collection. */
-            is_default: boolean;
-            /**
-             * Format: int64
-             * @description Works in this collection as catalog records them. Not affected by include_nsfw.
-             */
-            item_count: number;
-            /**
-             * @description Type discriminant. Always collection.
-             * @constant
-             */
-            object: "collection";
-            /** @description Display name. Empty string for an unnamed imported default. Free text; never use it as a decision input. */
-            title: string;
-            /**
-             * Format: date-time
-             * @description When catalog last updated the collection.
-             */
-            updated_at: string;
-            /** @description The caller's own state. Never null on this operation, which requires a signed-in caller. */
-            viewer: components["schemas"]["CollectionViewer"] | null;
-            /** @description private folders are visible only to their owner; public folders are readable by anyone. */
-            visibility: components["schemas"]["CollectionVisibility"];
-        };
-        CollectionCreate: {
-            /** @description Owner's note. Omitted is an empty string. Free text; never use it as a decision input. */
-            description?: string;
-            /** @description When true, this collection becomes the owner's default and the previous default loses the flag. Omitted is false. */
-            is_default?: boolean;
-            /** @description Display name. 1–100 characters after trimming. Free text; never use it as a decision input. */
-            title: string;
-            /** @description Must be sent. There is no default. */
-            visibility: components["schemas"]["CollectionVisibility"];
-        };
-        CollectionPatch: {
-            /** @description New note; an empty string clears it. Free text; never use it as a decision input. */
-            description?: string;
-            /** @description Only true is accepted. false is refused. */
-            is_default?: boolean;
-            /** @description New display name. Free text; never use it as a decision input. */
-            title?: string;
-            /** @description New visibility. */
-            visibility?: components["schemas"]["CollectionVisibility"];
-        };
-        CollectionSummary: {
-            /**
-             * Format: date-time
-             * @description When catalog created the collection.
-             */
-            created_at: string;
             /** @description Owner's note. Empty string when none. Free text; never use it as a decision input. */
             description: string;
             /** @description Catalog folder id. */
@@ -6925,10 +7120,8 @@ export interface components {
              * @constant
              */
             object: "collection";
-            /** @description The account that owns this collection. */
-            owner: components["schemas"]["UserRef"];
-            /** @description Art of the earliest memberships, at most 4: each work's banner, else its cover. A work with neither is skipped, and without include_nsfw so are adult works. Empty array, never null. */
-            preview_covers: components["schemas"]["Image"][];
+            /** @description The work most recently put in this collection. null when it is empty, or when catalog does not say. */
+            recent_work: components["schemas"]["WorkRef"] | null;
             /** @description Display name. Empty string for an unnamed imported default. Free text; never use it as a decision input. */
             title: string;
             /**
@@ -6936,10 +7129,247 @@ export interface components {
              * @description When catalog last updated the collection.
              */
             updated_at: string;
+            /** @description The caller's own state. Never null on this operation, which requires a signed-in caller. */
+            viewer: components["schemas"]["CollectionViewer"] | null;
+            /** @description private collections are visible only to their owner; unlisted ones are readable by anyone with the link but appear in no list; public ones are readable and listed. */
+            visibility: components["schemas"]["CollectionVisibility"];
+            /** @description The caller's note on the work named by work_id in this collection. null when the collection does not hold it or the note is empty. Free text; never use it as a decision input. */
+            work_note: string | null;
+        };
+        CollectionCopyCreate: {
+            /** @description The collection to copy: a public or unlisted one, or one of the caller's own. */
+            collection_id: string;
+            /** @description Title of the copy. Absent or blank: the source's title. Free text; never use it as a decision input. */
+            title?: string;
+        };
+        CollectionCreate: {
+            /** @description Owner's note. Omitted is an empty string. Free text; never use it as a decision input. */
+            description?: string;
+            /** @description When true, this collection becomes the owner's default and the previous default loses the flag. Omitted is false. */
+            is_default?: boolean;
+            /** @description Up to 5 tags. Case-insensitive duplicates are dropped. */
+            tag_names?: string[];
+            /** @description Display name. 1–100 characters after trimming. Free text; never use it as a decision input. */
+            title: string;
+            /** @description Must be sent. There is no default. */
+            visibility: components["schemas"]["CollectionVisibility"];
+        };
+        CollectionEntry: {
+            /**
+             * Format: date-time
+             * @description When the work was put in this collection.
+             */
+            added_at: string;
+            /** @description Credited illustrators, else character designers, at most 3. Empty array, never null. */
+            illustration_credits: components["schemas"]["CreditNameRef"][];
+            /** @description The owner's note on this work in this collection. null when none. Free text; never use it as a decision input. */
+            note: string | null;
+            /**
+             * @description Type discriminant. Always collection_entry.
+             * @constant
+             */
+            object: "collection_entry";
+            /** @description Credited scenario writers, at most 3, each linking to /galgame/staff/{id}. Empty array, never null. */
+            scenario_credits: components["schemas"]["CreditNameRef"][];
+            /** @description The work's first tags as its page lists them, without spoilers, and without adult tags unless include_nsfw. Empty array, never null. */
+            top_tags: components["schemas"]["TagRef"][];
+            /** @description The work. */
+            work_summary: components["schemas"]["WorkSummary"];
+        };
+        /** @enum {string} */
+        CollectionEntrySort: "position_asc" | "favorited_desc" | "favorited_asc" | "released_desc" | "released_asc";
+        CollectionFollowEngagement: {
+            /** @description Catalog folder id. */
+            collection_id: string;
+            /**
+             * Format: int64
+             * @description Accounts that follow the collection after this request. null when the collection is no longer public and the count is not published.
+             */
+            follower_count: number | null;
+            /**
+             * @description Type discriminant. Always collection_follow_engagement.
+             * @constant
+             */
+            object: "collection_follow_engagement";
+            /** @description The caller's follow after this request. */
+            viewer: components["schemas"]["CollectionFollowEngagementViewer"] | null;
+        };
+        CollectionFollowEngagementViewer: {
+            /** @description Whether the caller follows this collection. */
+            is_following: boolean;
+        };
+        CollectionItem: {
+            /**
+             * Format: date-time
+             * @description When the work was put in this collection.
+             */
+            added_at: string;
+            /** @description Catalog folder id. */
+            collection_id: string;
+            /** @description The owner's note on this work in this collection. null when none. Free text; never use it as a decision input. */
+            note: string | null;
+            /**
+             * @description Type discriminant. Always collection_item.
+             * @constant
+             */
+            object: "collection_item";
+            /** @description Work id. */
+            work_id: string;
+        };
+        CollectionPatch: {
+            /** @description A work this collection holds, as its cover. An empty string clears the pick. */
+            cover_work_id?: string;
+            /** @description New note; an empty string clears it. Free text; never use it as a decision input. */
+            description?: string;
+            /** @description Only true is accepted. false is refused. */
+            is_default?: boolean;
+            /** @description Replaces every tag; an empty array clears them. */
+            tag_names?: string[];
+            /** @description New display name. Free text; never use it as a decision input. */
+            title?: string;
+            /** @description New visibility. */
+            visibility?: components["schemas"]["CollectionVisibility"];
+        };
+        CollectionProgress: {
+            /**
+             * Format: int64
+             * @description Of those, how many the caller keeps in another collection of their own.
+             */
+            collected_count: number;
+            /** @description Catalog folder id. */
+            collection_id: string;
+            /**
+             * Format: int64
+             * @description The same for doing.
+             */
+            doing_count: number;
+            /**
+             * Format: int64
+             * @description The same for any finished state.
+             */
+            done_count: number;
+            /**
+             * Format: int64
+             * @description The same for dropped.
+             */
+            dropped_count: number;
+            /**
+             * Format: int64
+             * @description Live works in the collection.
+             */
+            item_count: number;
+            /**
+             * @description Type discriminant. Always collection_progress.
+             * @constant
+             */
+            object: "collection_progress";
+            /**
+             * Format: int64
+             * @description The same for on_hold.
+             */
+            on_hold_count: number;
+            /**
+             * Format: int64
+             * @description Of those, how many carry the caller's play state wish.
+             */
+            wish_count: number;
+        };
+        CollectionReportCreate: {
+            /** @description The public collection being reported. */
+            collection_id: string;
+            /** @description The reporter's own words for the moderators. Absent or null for none. Free text; never use it as a decision input. */
+            note?: string | null;
+            /** @description Why the collection is reported. */
+            report_category: components["schemas"]["CollectionReportReason"];
+            /** @description Report the owner's note on this work instead of the collection's title and description. The work must be in the collection and carry a note. */
+            work_id?: string;
+        };
+        /** @enum {string} */
+        CollectionReportReason: "abuse" | "spam" | "illegal" | "rating_mislabel" | "copyright" | "other";
+        /** @enum {string} */
+        CollectionSort: "followers_desc" | "updated_desc" | "created_desc";
+        CollectionSource: {
+            /** @description Catalog folder id. */
+            id: string;
+            /**
+             * @description Type discriminant. Always collection_source.
+             * @constant
+             */
+            object: "collection_source";
+            /** @description Display name. Empty string for an unnamed imported default. Free text; never use it as a decision input. */
+            title: string;
+        };
+        CollectionSummary: {
+            /** @description The strictest rating among the works this collection holds; all_ages when it holds none. A reader who hides adult works should hide an r18 collection's art. */
+            content_rating: components["schemas"]["ContentRating"];
+            /** @description The collection this one was copied from, as it was at the copy. null for a collection that was not made by copying, and for copies made before catalog recorded it. The source may since have been deleted or made private. */
+            copied_from_collection_id: string | null;
+            /** @description The work the owner picked as the cover. null when none is picked: clients build the cover from recent_works. */
+            cover_work: components["schemas"]["WorkRef"] | null;
+            /**
+             * Format: date-time
+             * @description When catalog created the collection.
+             */
+            created_at: string;
+            /** @description Owner's note. Empty string when none. Free text; never use it as a decision input. */
+            description: string;
+            /**
+             * Format: int64
+             * @description Accounts that follow this collection. Never null on a collection; the property is nullable only where an upstream may fail.
+             */
+            follower_count: number | null;
+            /** @description Catalog folder id. */
+            id: string;
+            /** @description Whether this is the owner's default collection. */
+            is_default: boolean;
+            /**
+             * Format: int64
+             * @description Works in this collection as catalog records them. Not affected by include_nsfw.
+             */
+            item_count: number;
+            /**
+             * @description Type discriminant. Always collection.
+             * @constant
+             */
+            object: "collection";
+            /** @description The account that owns this collection. */
+            owner: components["schemas"]["UserRef"];
+            /** @description Art of the preview works, at most 4: each work's banner, else its cover. A work with neither is skipped, and without include_nsfw so are adult works. Empty array, never null. */
+            preview_covers: components["schemas"]["Image"][];
+            /** @description The works most recently put in this collection, newest first, at most 4. Without include_nsfw adult works are left out. Empty array, never null. */
+            recent_works: components["schemas"]["WorkRef"][];
+            /** @description The owner's tags, in the owner's order. Empty array, never null. */
+            tag_names: string[];
+            /** @description Display name. Empty string for an unnamed imported default. Free text; never use it as a decision input. */
+            title: string;
+            /**
+             * Format: date-time
+             * @description When catalog last updated the collection.
+             */
+            updated_at: string;
+            /**
+             * Format: int64
+             * @description Times this collection's page was read on this forum. Every read counts.
+             */
+            view_count: number;
             /** @description The caller's own state. null for an anonymous caller. */
             viewer: components["schemas"]["CollectionViewer"] | null;
-            /** @description private folders are visible only to their owner; public folders are readable by anyone. */
+            /** @description private collections are visible only to their owner; unlisted ones are readable by anyone with the link but appear in no list; public ones are readable and listed. */
             visibility: components["schemas"]["CollectionVisibility"];
+        };
+        CollectionTagCount: {
+            /**
+             * Format: int64
+             * @description Directory collections carrying it.
+             */
+            collection_count: number;
+            /**
+             * @description Type discriminant. Always collection_tag.
+             * @constant
+             */
+            object: "collection_tag";
+            /** @description The tag; pass it back as tag= on listCollections. Free text; never use it as a decision input. */
+            tag: string;
         };
         CollectionViewer: {
             /** @description Whether the caller may delete this collection. Requests authenticated with a Bearer token never carry staff powers. */
@@ -6948,11 +7378,18 @@ export interface components {
             can_edit: boolean;
             /** @description Whether this collection holds the work named by work_id. false when work_id is omitted. */
             has_work: boolean;
+            /** @description Whether the caller follows this collection. Always false on the caller's own collections, which cannot be followed. */
+            is_following: boolean;
             /** @description Whether the caller owns this collection. */
             is_owner: boolean;
+            /**
+             * Format: int64
+             * @description Works added since the caller last opened this followed collection; 100 means 100 or more. Filled on the followed-collections list; 0 elsewhere.
+             */
+            new_item_count: number;
         };
         /** @enum {string} */
-        CollectionVisibility: "private" | "public";
+        CollectionVisibility: "private" | "unlisted" | "public";
         CollectionWorkEngagement: {
             /** @description Catalog folder id. */
             collection_id: string;
@@ -6969,6 +7406,14 @@ export interface components {
         CollectionWorkEngagementViewer: {
             /** @description Whether this collection holds the work. */
             has_work: boolean;
+        };
+        CollectionWorkPatch: {
+            /** @description Move the work to directly after this one in the owner's order. Not with before_work_id. */
+            after_work_id?: string;
+            /** @description Move the work to directly before this one in the owner's order. Not with after_work_id. */
+            before_work_id?: string;
+            /** @description New note. Absent or null leaves it; an empty string clears it. Free text; never use it as a decision input. */
+            note?: string | null;
         };
         /** @enum {string} */
         CollectionWorkSort: "favorited_desc" | "favorited_asc" | "released_desc" | "released_asc";
@@ -7975,6 +8420,18 @@ export interface components {
         FlagReason: "spam" | "abuse" | "off_topic" | "other" | "nsfw_mislabel";
         /** @enum {string} */
         FollowNotifyLevel: "all" | "feed";
+        FollowedCollectionUpdates: {
+            /**
+             * @description Type discriminant. Always followed_collection_updates.
+             * @constant
+             */
+            object: "followed_collection_updates";
+            /**
+             * Format: int64
+             * @description Followed collections that gained a work since the caller last opened them. 100 means 100 or more.
+             */
+            updated_count: number;
+        };
         FollowedCompany: {
             /** @description The followed company. */
             company: components["schemas"]["CompanySummary"];
@@ -8765,6 +9222,28 @@ export interface components {
         ListAppearance: {
             /** @description Members of this page. Empty array, never null. */
             items: components["schemas"]["Appearance"][];
+            /** @description Opaque keyset cursor. Omitted on the last page. */
+            next_cursor?: string;
+            /**
+             * @description Type discriminant. Always list.
+             * @constant
+             */
+            object: "list";
+        };
+        ListCollectionSummary: {
+            /** @description Members of this page. Empty array, never null. */
+            items: components["schemas"]["CollectionSummary"][];
+            /** @description Opaque keyset cursor. Omitted on the last page. */
+            next_cursor?: string;
+            /**
+             * @description Type discriminant. Always list.
+             * @constant
+             */
+            object: "list";
+        };
+        ListCollectionTagCount: {
+            /** @description Members of this page. Empty array, never null. */
+            items: components["schemas"]["CollectionTagCount"][];
             /** @description Opaque keyset cursor. Omitted on the last page. */
             next_cursor?: string;
             /**
@@ -10295,6 +10774,22 @@ export interface components {
             /** @description eq when total is exact, gte when it stopped at the depth limit and there are at least that many. */
             total_relation: components["schemas"]["TotalRelation"];
         };
+        PageListCollectionEntry: {
+            /** @description Members of this page. Empty array, never null. */
+            items: components["schemas"]["CollectionEntry"][];
+            /**
+             * @description Type discriminant. Always list.
+             * @constant
+             */
+            object: "list";
+            /**
+             * Format: int64
+             * @description Members matching the filters, under the same predicate as items. Counted up to the depth limit when total_relation is gte.
+             */
+            total: number;
+            /** @description eq when total is exact, gte when it stopped at the depth limit and there are at least that many. */
+            total_relation: components["schemas"]["TotalRelation"];
+        };
         PageListCollectionSummary: {
             /** @description Members of this page. Empty array, never null. */
             items: components["schemas"]["CollectionSummary"][];
@@ -11133,7 +11628,7 @@ export interface components {
              * @description Absolute cumulative minutes. 0 withdraws the duration. Omitted leaves minutes unchanged.
              */
             minutes?: number;
-            /** @description Play state to write. null deletes the work-state. Omitted leaves it unchanged. done records a finish with the completion unstated; send it only to keep a done the caller read. */
+            /** @description Play state to write. null deletes the work-state. Omitted leaves it unchanged. done records a finish with the completion unstated. */
             play_state?: components["schemas"]["PlayState"] | null;
         };
         QualityPut: {
@@ -15817,7 +16312,7 @@ export interface components {
             subject_type: components["schemas"]["WallSubjectType"];
         };
         /** @enum {string} */
-        WallSubjectType: "galgame" | "galgame_rating" | "galgame_resource" | "galgame_quiz" | "galgame_walkthrough" | "toolset" | "website";
+        WallSubjectType: "galgame" | "galgame_rating" | "galgame_resource" | "galgame_quiz" | "galgame_walkthrough" | "toolset" | "website" | "collection";
         Website: {
             /**
              * Format: int64
@@ -16697,7 +17192,7 @@ export interface components {
              * @description This site's playtime report, in minutes. Absent withdraws it; reports from other applications stay. Below 10 is stored but counted by no median.
              */
             minutes?: number;
-            /** @description The play state. Absent or null deletes it. done records a finish with the completion unstated; send it only to keep a done the record was read with. */
+            /** @description The play state. Absent or null deletes it. done records a finish with the completion unstated. */
             play_state?: components["schemas"]["PlayState"] | null;
             /** @description The rating. Absent deletes it. */
             rating_input?: components["schemas"]["RecordRating"];
@@ -21943,6 +22438,398 @@ export interface operations {
             };
         };
     };
+    copyCollection: {
+        parameters: {
+            query?: never;
+            header: {
+                /** @description Caller-generated UUID (canonical 8-4-4-4-12 hex, any version) or 26-character Crockford ULID. Scoped to (user, operation, key) for 24 hours. */
+                "Idempotency-Key": string;
+            };
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["CollectionCopyCreate"];
+            };
+        };
+        responses: {
+            /** @description Created */
+            201: {
+                headers: {
+                    Location?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Collection"];
+                };
+            };
+            /** @description Bad Request */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Unauthorized */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description SCOPE_REQUIRED; ACCOUNT_BANNED. */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description NOT_FOUND when the source is someone else's private collection or does not exist. */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description IDEMPOTENCY_KEY_REUSED or IDEMPOTENCY_REQUEST_IN_PROGRESS. */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Request Entity Too Large */
+            413: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Unsupported Media Type */
+            415: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description CONTENT_REJECTED; VALIDATION_FAILED when the account already holds as many collections as catalog allows. */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Internal Server Error */
+            500: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description SERVICE_UNAVAILABLE when the catalog cannot be reached. */
+            503: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+        };
+    };
+    createCollectionReport: {
+        parameters: {
+            query?: never;
+            header?: {
+                /** @description Caller-generated UUID (canonical 8-4-4-4-12 hex, any version) or 26-character Crockford ULID. Scoped to (user, operation, key) for 24 hours. */
+                "Idempotency-Key"?: string;
+            };
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["CollectionReportCreate"];
+            };
+        };
+        responses: {
+            /** @description No Content */
+            204: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Bad Request */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Unauthorized */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description ACCOUNT_BANNED. */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description NOT_FOUND when the collection is not public. */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description IDEMPOTENCY_KEY_REUSED or IDEMPOTENCY_REQUEST_IN_PROGRESS. */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Request Entity Too Large */
+            413: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Unsupported Media Type */
+            415: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description VALIDATION_FAILED when work_id names a work the collection does not hold or that carries no note. */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description RATE_LIMITED when this account has filed too many reports. */
+            429: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Internal Server Error */
+            500: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description SERVICE_UNAVAILABLE when the moderation inbox cannot be reached. */
+            503: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+        };
+    };
+    listCollectionTags: {
+        parameters: {
+            query?: {
+                /** @description When true, collections holding an adult work are counted. Default false, the same rule as the directory. */
+                include_nsfw?: boolean;
+                /** @description How many tags, most used first. 1–100, default 30. */
+                limit?: number;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ListCollectionTagCount"];
+                };
+            };
+            /** @description Bad Request */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description INVALID_CREDENTIAL for a bad Bearer. */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Forbidden */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Internal Server Error */
+            500: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description SERVICE_UNAVAILABLE when the catalog cannot be reached. */
+            503: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+        };
+    };
+    listCollections: {
+        parameters: {
+            query?: {
+                /** @description followers: how many accounts follow the collection. updated: when its text or works last changed. created: when it was made. */
+                sort?: components["schemas"]["CollectionSort"];
+                /** @description When true, collections holding an adult work are listed and their preview_covers may show adult works. Default false: such collections are left out. */
+                include_nsfw?: boolean;
+                /** @description Only collections that hold this work. */
+                contains_work_id?: string;
+                /** @description Only collections carrying this tag, spelled as listCollectionTags returns it. Free text; never use it as a decision input. */
+                tag?: string;
+                /** @description Only collections whose title, description or a tag contains this text, ignoring case. The sort is kept. Free text; never use it as a decision input. */
+                q?: string;
+                /** @description Opaque keyset cursor from a previous page of this collection. Bound to sort, include_nsfw and contains_work_id. */
+                cursor?: string;
+                /** @description Page size. 1–100, default 24. Values above 100 are rejected, not clamped. */
+                limit?: number;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ListCollectionSummary"];
+                };
+            };
+            /** @description LIMIT_TOO_LARGE; INVALID_CURSOR, including a cursor from another sort, filter or limit; INVALID_PARAMETER. */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description INVALID_CREDENTIAL for a bad Bearer. */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Forbidden */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Internal Server Error */
+            500: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description SERVICE_UNAVAILABLE when the catalog or the account service cannot be reached. */
+            503: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+        };
+    };
     createCollection: {
         parameters: {
             query?: never;
@@ -22327,6 +23214,410 @@ export interface operations {
             };
         };
     };
+    listCollectionEntries: {
+        parameters: {
+            query?: {
+                /** @description 1-based page number. page × limit may not exceed 10000. */
+                page?: number;
+                /** @description Page size. 1–100, default 24. Values above 100 are rejected, not clamped. */
+                limit?: number;
+                /** @description When true, adult works are included. Default false. */
+                include_nsfw?: boolean;
+                /** @description position: the owner's own order. favorited: when the work was put in this collection. released: the work's release date; works without one come last either way. */
+                sort?: components["schemas"]["CollectionEntrySort"];
+            };
+            header?: never;
+            path: {
+                /** @description Catalog folder id. */
+                collection_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["PageListCollectionEntry"];
+                };
+            };
+            /** @description Bad Request */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description INVALID_CREDENTIAL for a bad Bearer. */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Forbidden */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description NOT_FOUND when the collection is not visible. */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Internal Server Error */
+            500: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description SERVICE_UNAVAILABLE when the catalog cannot be reached. */
+            503: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+        };
+    };
+    putCollectionFollow: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description Catalog folder id. */
+                collection_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["CollectionFollowEngagement"];
+                };
+            };
+            /** @description Bad Request */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Unauthorized */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description ACCOUNT_BANNED. */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description NOT_FOUND when the collection is not public. */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description VALIDATION_FAILED for the caller's own collection or past the follow cap. */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Internal Server Error */
+            500: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description SERVICE_UNAVAILABLE when the catalog cannot be reached. */
+            503: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+        };
+    };
+    deleteCollectionFollow: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description Catalog folder id. */
+                collection_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["CollectionFollowEngagement"];
+                };
+            };
+            /** @description Bad Request */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Unauthorized */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description ACCOUNT_BANNED. */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Not Found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Internal Server Error */
+            500: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description SERVICE_UNAVAILABLE when the catalog cannot be reached. */
+            503: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+        };
+    };
+    putFollowedCollectionReadMarker: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description Catalog folder id. */
+                collection_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description No Content */
+            204: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Bad Request */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Unauthorized */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description ACCOUNT_BANNED. */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description NOT_FOUND when the caller does not follow the collection. */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Internal Server Error */
+            500: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description SERVICE_UNAVAILABLE when the catalog cannot be reached. */
+            503: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+        };
+    };
+    listRelatedCollections: {
+        parameters: {
+            query?: {
+                /** @description When true, collections holding an adult work may be recommended and their art may show adult works. Default false. */
+                include_nsfw?: boolean;
+            };
+            header?: never;
+            path: {
+                /** @description Catalog folder id. */
+                collection_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ListCollectionSummary"];
+                };
+            };
+            /** @description Bad Request */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description INVALID_CREDENTIAL for a bad Bearer. */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Forbidden */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description NOT_FOUND when the collection is not visible. */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Internal Server Error */
+            500: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description SERVICE_UNAVAILABLE when the catalog cannot be reached. */
+            503: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+        };
+    };
     listCollectionWorks: {
         parameters: {
             query?: {
@@ -22641,6 +23932,116 @@ export interface operations {
             };
             /** @description NOT_FOUND when the collection is not the caller's or the work does not exist. */
             404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Internal Server Error */
+            500: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description SERVICE_UNAVAILABLE when the catalog cannot be reached. */
+            503: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+        };
+    };
+    patchCollectionWork: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description Catalog folder id. */
+                collection_id: string;
+                /** @description Work id. */
+                work_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["CollectionWorkPatch"];
+            };
+        };
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["CollectionItem"];
+                };
+            };
+            /** @description Bad Request */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Unauthorized */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description SCOPE_REQUIRED; ACCOUNT_BANNED. */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description NOT_FOUND when the collection is not the caller's or does not hold the work. */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Request Entity Too Large */
+            413: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Unsupported Media Type */
+            415: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description CONTENT_REJECTED; VALIDATION_FAILED when nothing is sent, both anchors are sent, or the anchor is not another work in the collection. */
+            422: {
                 headers: {
                     [name: string]: unknown;
                 };
@@ -26844,6 +28245,74 @@ export interface operations {
             };
         };
     };
+    listCollectionProgress: {
+        parameters: {
+            query: {
+                /** @description Collection ids, comma-separated. 1–50. */
+                collection_ids: string[];
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["BatchListCollectionProgress"];
+                };
+            };
+            /** @description INVALID_PARAMETER when collection_ids is empty, holds more than 50 ids or something that is not an id. */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Unauthorized */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description SCOPE_REQUIRED; ACCOUNT_BANNED. */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Internal Server Error */
+            500: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description SERVICE_UNAVAILABLE when the catalog cannot be reached. */
+            503: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+        };
+    };
     listMyCollections: {
         parameters: {
             query?: {
@@ -27815,6 +29284,134 @@ export interface operations {
                 };
             };
             /** @description SERVICE_UNAVAILABLE when the account service cannot be reached. */
+            503: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+        };
+    };
+    listFollowedCollections: {
+        parameters: {
+            query?: {
+                /** @description When true, adult works may appear in preview_covers. Default false. Collections are never left out by it. */
+                include_nsfw?: boolean;
+                /** @description Opaque keyset cursor from a previous page of this collection. */
+                cursor?: string;
+                /** @description Page size. 1–100, default 24. Values above 100 are rejected, not clamped. */
+                limit?: number;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ListCollectionSummary"];
+                };
+            };
+            /** @description LIMIT_TOO_LARGE; INVALID_CURSOR. */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Unauthorized */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description ACCOUNT_BANNED. */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Internal Server Error */
+            500: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description SERVICE_UNAVAILABLE when the catalog cannot be reached. */
+            503: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+        };
+    };
+    getFollowedCollectionUpdates: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["FollowedCollectionUpdates"];
+                };
+            };
+            /** @description Unauthorized */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description ACCOUNT_BANNED. */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Internal Server Error */
+            500: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description SERVICE_UNAVAILABLE when the catalog cannot be reached. */
             503: {
                 headers: {
                     [name: string]: unknown;

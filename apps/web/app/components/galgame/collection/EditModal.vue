@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { createCollectionSchema } from '~/validations/collection'
-import { settle } from '#shared/utils/api/problem'
+import { settle, type ClientProblem } from '#shared/utils/api/problem'
 import { useIdempotencyKey } from '~/composables/useIdempotencyKey'
 import type {
   CollectionCreate,
@@ -17,6 +17,7 @@ const props = defineProps<{
     title: string
     description: string
     visibility: CollectionVisibility
+    tags: string[]
   }
 }>()
 
@@ -33,21 +34,26 @@ const isOpen = computed({
   set: (value) => emits('update:modelValue', value)
 })
 
-const visibilityOptions = [
-  { value: 'public', label: '公开 · 所有人可见' },
-  { value: 'private', label: '私密 · 仅自己可见' }
-] as const
-
 const form = reactive<{
   title: string
   description: string
   visibility: CollectionVisibility
+  tags: string[]
 }>({
   title: '',
   description: '',
-  visibility: 'public'
+  visibility: 'public',
+  tags: []
 })
 const submitting = ref(false)
+const fieldErrors = ref<Record<string, string>>({})
+
+const showProblem = (problem: ClientProblem) => {
+  fieldErrors.value = collectionFieldErrors(problem, '/title')
+  if (!Object.keys(fieldErrors.value).length) {
+    reportProblem(problem)
+  }
+}
 
 watch(
   () => isOpen.value,
@@ -56,17 +62,21 @@ watch(
       return
     }
     submitting.value = false
+    fieldErrors.value = {}
     form.title = props.initial?.title ?? ''
     form.description = props.initial?.description ?? ''
     form.visibility = props.initial?.visibility ?? 'public'
+    form.tags = [...(props.initial?.tags ?? [])]
   }
 )
 
 const submit = async () => {
+  fieldErrors.value = {}
   const parsed = createCollectionSchema.safeParse({
     title: form.title.trim(),
     description: form.description,
-    visibility: form.visibility
+    visibility: form.visibility,
+    tags: form.tags.map((t) => t.replace(/^#+/, ''))
   })
   if (!parsed.success) {
     const issue = JSON.parse(parsed.error.message)[0]
@@ -80,6 +90,9 @@ const submit = async () => {
       title: parsed.data.title,
       description: parsed.data.description,
       visibility: parsed.data.visibility
+    }
+    if (parsed.data.tags.length) {
+      payload.tag_names = parsed.data.tags
     }
     if (props.isDefault) {
       payload.is_default = true
@@ -96,7 +109,7 @@ const submit = async () => {
     )
     submitting.value = false
     if (!result.ok) {
-      reportProblem(result.problem)
+      showProblem(result.problem)
       return
     }
     createKey.clear()
@@ -117,6 +130,11 @@ const submit = async () => {
     if (parsed.data.visibility !== (props.initial?.visibility ?? 'public')) {
       body.visibility = parsed.data.visibility
     }
+    if (
+      parsed.data.tags.join('\n') !== (props.initial?.tags ?? []).join('\n')
+    ) {
+      body.tag_names = parsed.data.tags
+    }
     if (Object.keys(body).length === 0) {
       submitting.value = false
       isOpen.value = false
@@ -130,7 +148,7 @@ const submit = async () => {
     )
     submitting.value = false
     if (!result.ok) {
-      reportProblem(result.problem)
+      showProblem(result.problem)
       return
     }
     useMessage(10567, 'success')
@@ -145,18 +163,36 @@ const submit = async () => {
     v-model="isOpen"
     inner-class-name="max-w-md"
     :is-dismissable="false"
+    :title="mode === 'create' ? '新建收藏夹' : '编辑收藏夹'"
   >
     <form class="space-y-4" @submit.prevent>
-      <h2 class="text-xl font-bold">
-        {{ mode === 'create' ? '新建收藏夹' : '编辑收藏夹' }}
-      </h2>
-
-      <KunInput v-model="form.title" label="名称" required />
-      <KunTextarea v-model="form.description" label="描述 (可选)" :rows="3" />
+      <KunInput
+        v-model="form.title"
+        label="名称"
+        required
+        :error="fieldErrors['/title'] ?? ''"
+      />
+      <KunTextarea
+        v-model="form.description"
+        label="描述 (可选)"
+        :rows="3"
+        :maxlength="500"
+        show-char-count
+        :error="fieldErrors['/description'] ?? ''"
+      />
       <KunSelect
         v-model="form.visibility"
-        label="隐私设置"
-        :options="visibilityOptions"
+        label="谁可以看到"
+        :options="[...COLLECTION_VISIBILITY_OPTIONS]"
+      />
+      <KunTagInput
+        v-model="form.tags"
+        label="标签 (可选)"
+        placeholder="输入后按回车，例如 纯爱、拔作、入坑推荐"
+        :max-tags="COLLECTION_TAG_MAX"
+        :max-tag-length="COLLECTION_TAG_LENGTH_MAX"
+        :error="fieldErrors['/tag_names'] ?? ''"
+        helper-text="最多 5 个，每个不超过 16 字；公开收藏夹可以在广场按标签筛选"
       />
 
       <div class="flex justify-end gap-3">

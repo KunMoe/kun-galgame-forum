@@ -18,7 +18,8 @@ const WALL_PAGE: Record<
   galgame_quiz: { label: '游戏答题', path: '/galgame-quiz/' },
   galgame_walkthrough: { label: '游戏攻略', path: '/galgame-walkthrough/' },
   toolset: { label: 'Gal 工具', path: '/toolset/' },
-  website: { label: '网站', path: '/website/' }
+  website: { label: '网站', path: '/website/' },
+  collection: { label: '收藏夹', path: '/collection/' }
 }
 
 const api = useApiClient()

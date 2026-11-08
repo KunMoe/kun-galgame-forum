@@ -2,6 +2,7 @@ package app
 
 import (
 	"context"
+	"errors"
 	"strconv"
 
 	"kun-galgame-api/internal/apiv1"
@@ -15,6 +16,7 @@ import (
 	wallRepo "kun-galgame-api/internal/wall/repository"
 	websiteapiv1 "kun-galgame-api/internal/website/apiv1"
 	websiteRepo "kun-galgame-api/internal/website/repository"
+	"kun-galgame-api/pkg/catalogclient"
 	"kun-galgame-api/pkg/communityclient"
 	"kun-galgame-api/pkg/imageclient"
 	"kun-galgame-api/pkg/userclient"
@@ -27,6 +29,7 @@ func newWallV1(
 	community *communityclient.Client,
 	users *userclient.Client,
 	galgame *client.GalgameClient,
+	catalog *catalogclient.Client,
 	images func(hashes []string) map[string]imageclient.ImageMeta,
 	cdn string,
 ) *wallapiv1.Service {
@@ -75,8 +78,19 @@ func newWallV1(
 		}
 		return workID, w.WorkContentLimit != "sfw", true, nil
 	}
+	collection := func(ctx context.Context, id int) (int, bool, bool, error) {
+		folder, err := catalog.PublicFolder(ctx, int64(id))
+		if errors.Is(err, catalogclient.ErrNotFound) {
+			return 0, false, false, nil
+		}
+		if err != nil {
+			return 0, false, false, err
+		}
+		return int(folder.OwnerUID), folder.ContentRating == "r18", true, nil
+	}
 	return wallapiv1.New(wallRepo.NewStore(db), community, users, convert, resolve, exist, moemoepoint.Award, cdn).
 		WithWalkthroughs(walkthrough).
+		WithCollections(collection).
 		WithFollowing(msgRepo.NewMessageRepository(db).MarkCommunityThreadRead, works,
 			websiteapiv1.New(websiteRepo.NewStore(db), users, images, cdn).SummariesByIDs)
 }

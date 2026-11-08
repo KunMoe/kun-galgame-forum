@@ -8,6 +8,7 @@ export type CommunityCommentTarget =
   | { kind: 'resource'; resourceId: number }
   | { kind: 'quiz'; quizId: number }
   | { kind: 'walkthrough'; walkthroughId: number }
+  | { kind: 'collection'; collectionId: string }
 
 export interface CommunityCommentSurface {
   subjectType: WallSubjectType
@@ -86,6 +87,15 @@ export const communityCommentSurface = (
         maxLength: 1007,
         anchorPrefix: 'walkthrough-comment',
         composerPlaceholder: '这份攻略有遗漏或走不通的地方? 欢迎在这里补充～',
+        showsReplyTarget: true
+      }
+    case 'collection':
+      return {
+        subjectType: 'collection',
+        subjectId: target.collectionId,
+        maxLength: 1007,
+        anchorPrefix: 'collection-comment',
+        composerPlaceholder: '聊聊这个收藏夹吧～评论会在所有 NextMoe 站点显示',
         showsReplyTarget: true
       }
   }

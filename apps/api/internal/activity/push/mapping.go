@@ -50,9 +50,12 @@ var pushed = map[string]spec{
 }
 
 var neverPushed = map[string]struct{}{
-	"MESSAGE_SOLUTION":    {},
-	"TODO_CREATION":       {},
-	"UPDATE_LOG_CREATION": {},
+	"MESSAGE_SOLUTION":            {},
+	"TODO_CREATION":               {},
+	"UPDATE_LOG_CREATION":         {},
+	"COLLECTION_CREATION":         {},
+	"COLLECTION_WORK_ADDITION":    {},
+	"COLLECTION_COMMENT_CREATION": {},
 }
 
 // Wall comments live in community, which projects them into the feed itself

@@ -48,7 +48,7 @@ onMounted(load)
         <span class="text-xl">公开我的游玩记录</span>
         <p class="text-default-500 text-sm">
           你在鲲 Galgame 和 NextMoe
-          各站标记的游玩状态（想玩、在玩、玩过、搁置、抛弃）和游玩时长，会显示在你个人主页的「游戏库」里，所有人都能看到。
+          各站标记的游玩状态（想玩、在玩、玩过、搁置、弃坑）和游玩时长，会显示在你个人主页的「游戏库」里，所有人都能看到。
         </p>
         <p class="text-default-500 text-sm">
           关闭后只有你自己能看到。评分一直是公开的，不受这个开关影响。

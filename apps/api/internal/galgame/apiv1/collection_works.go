@@ -159,7 +159,8 @@ func (s *Service) putCollectionWork(ctx context.Context, in *collectionWorkInput
 	if !ok {
 		return nil, notFound()
 	}
-	if _, p := s.catalogWork(ctx, workID); p != nil {
+	work, p := s.catalogWork(ctx, workID)
+	if p != nil {
 		return nil, p
 	}
 	if s.catalog == nil {
@@ -175,6 +176,9 @@ func (s *Service) putCollectionWork(ctx context.Context, in *collectionWorkInput
 	}
 	if firstAdd {
 		s.firstAddSideEffects(ctx, user.ID, workID)
+	}
+	if !holding[folderID] {
+		s.feedCollectionWorkAdded(ctx, folderID, user.ID, workID, work)
 	}
 	return &collectionWorkEngagementOutput{Body: CollectionWorkEngagement{
 		Object: "collection_work_engagement", CollectionID: repr.ID(int(folderID)), WorkID: repr.ID(workID),

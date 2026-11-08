@@ -107,5 +107,10 @@ defineProps<{ activity: Activity }>()
     :activity="activity"
     :quiz="activity.quiz"
   />
+  <ActivityCardCollection
+    v-else-if="activity.collection"
+    :activity="activity"
+    :collection="activity.collection"
+  />
   <ActivityCardGeneric v-else :activity="activity" />
 </template>

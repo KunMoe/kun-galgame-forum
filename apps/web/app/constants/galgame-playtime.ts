@@ -56,10 +56,8 @@ export const KUN_GALGAME_PLAY_STATE_CONST = [
 ] as const
 export type KunGalgamePlayState = (typeof KUN_GALGAME_PLAY_STATE_CONST)[number]
 
-// catalog answers state=done with no completion when another application
-// reported a completion it does not carry. A picker offers it only to someone
-// who already has it, and saves it back unchanged: mapped to 单线通关, a save
-// that only added a rating would rewrite it on every NextMoe site.
+// catalog keeps a finish as state=done plus an optional completion; the flat
+// value joins the two. A bare done is a finish with the completion unstated.
 export type KunGalgamePlayStateRead = KunGalgamePlayState | 'done'
 
 export const KUN_GALGAME_PLAY_STATE_MAP: Record<
@@ -67,30 +65,33 @@ export const KUN_GALGAME_PLAY_STATE_MAP: Record<
   string
 > = {
   wish: '想玩',
-  doing: '游玩中',
+  doing: '在玩',
   done_one_route: '单线通关',
   done_main: '主线通关',
   done_all: '全线通关',
-  done: '已通关',
-  on_hold: '搁置中',
-  dropped: '已弃坑'
+  done: '玩过',
+  on_hold: '搁置',
+  dropped: '弃坑'
 }
 
-export const KUN_GALGAME_PLAY_STATE_OPTIONS = [
+export const KUN_GALGAME_PLAY_STATE_BASE = [
   { value: 'wish', label: '想玩', icon: 'lucide:bookmark' },
-  { value: 'doing', label: '游玩中', icon: 'lucide:play' },
-  { value: 'done_one_route', label: '单线通关', icon: 'lucide:flag' },
-  { value: 'done_main', label: '主线通关', icon: 'lucide:flag' },
-  { value: 'done_all', label: '全线通关', icon: 'lucide:trophy' },
-  { value: 'on_hold', label: '搁置中', icon: 'lucide:pause' },
-  { value: 'dropped', label: '已弃坑', icon: 'lucide:x' }
+  { value: 'doing', label: '在玩', icon: 'lucide:play' },
+  { value: 'done', label: '玩过', icon: 'lucide:flag' },
+  { value: 'on_hold', label: '搁置', icon: 'lucide:pause' },
+  { value: 'dropped', label: '弃坑', icon: 'lucide:x' }
 ] as const
+export type KunGalgamePlayStateBase =
+  (typeof KUN_GALGAME_PLAY_STATE_BASE)[number]['value']
 
-export const KUN_GALGAME_PLAY_STATE_UNSTATED_DONE_OPTION = {
-  value: 'done',
-  label: '已通关',
-  icon: 'lucide:flag'
-} as const
+export const KUN_GALGAME_PLAY_COMPLETION_OPTIONS = [
+  { value: '', label: '不填' },
+  { value: 'done_one_route', label: '单线通关' },
+  { value: 'done_main', label: '主线通关' },
+  { value: 'done_all', label: '全线通关' }
+] as const
+export type KunGalgamePlayCompletion =
+  (typeof KUN_GALGAME_PLAY_COMPLETION_OPTIONS)[number]['value']
 
 export const KUN_GALGAME_PLAY_STATE_DONE = [
   'done_one_route',
@@ -98,11 +99,22 @@ export const KUN_GALGAME_PLAY_STATE_DONE = [
   'done_all'
 ] as const
 
+export const kunPlayStateIsDone = (value: string | null | undefined) =>
+  value === 'done' ||
+  (KUN_GALGAME_PLAY_STATE_DONE as readonly string[]).includes(value ?? '')
+
+export const kunPlayStateBase = (
+  value: string | null | undefined
+): KunGalgamePlayStateBase | null => {
+  if (!value) return null
+  if (kunPlayStateIsDone(value)) return 'done'
+  return KUN_GALGAME_PLAY_STATE_BASE.some((s) => s.value === value)
+    ? (value as KunGalgamePlayStateBase)
+    : null
+}
+
 export const kunPlayStateColor = (value: string) => {
-  if (
-    value === 'done' ||
-    (KUN_GALGAME_PLAY_STATE_DONE as readonly string[]).includes(value)
-  ) {
+  if (kunPlayStateIsDone(value)) {
     return 'success'
   }
   if (value === 'dropped') return 'danger'
@@ -115,7 +127,7 @@ export const KUN_GALGAME_LIBRARY_TABS = [
   { value: 'doing', label: '在玩', icon: 'lucide:play' },
   { value: 'done', label: '玩过', icon: 'lucide:flag' },
   { value: 'on_hold', label: '搁置', icon: 'lucide:pause' },
-  { value: 'dropped', label: '抛弃', icon: 'lucide:x' }
+  { value: 'dropped', label: '弃坑', icon: 'lucide:x' }
 ] as const
 
 export type KunGalgameLibraryTab =

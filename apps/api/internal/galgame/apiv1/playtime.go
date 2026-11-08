@@ -30,7 +30,7 @@ type putWorkPlaytimeInput struct {
 
 type putWorkPlaytimeBody struct {
 	Minutes   *int              `json:"minutes,omitempty" minimum:"0" maximum:"60000" doc:"Absolute cumulative minutes. 0 withdraws the duration. Omitted leaves minutes unchanged."`
-	PlayState optionalPlayState `json:"play_state" required:"false" doc:"Play state to write. null deletes the work-state. Omitted leaves it unchanged. done records a finish with the completion unstated; send it only to keep a done the caller read."`
+	PlayState optionalPlayState `json:"play_state" required:"false" doc:"Play state to write. null deletes the work-state. Omitted leaves it unchanged. done records a finish with the completion unstated."`
 }
 
 type workViewerPlaytimeOutput struct {

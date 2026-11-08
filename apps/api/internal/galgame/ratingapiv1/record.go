@@ -40,7 +40,7 @@ type RecordRating struct {
 // WorkRecordPut replaces the whole record, as NextMoe does: a part left out is
 // deleted. A client sends every part its form shows.
 type WorkRecordPut struct {
-	PlayState   *AuthorPlayStatus `json:"play_state" required:"false" doc:"The play state. Absent or null deletes it. done records a finish with the completion unstated; send it only to keep a done the record was read with."`
+	PlayState   *AuthorPlayStatus `json:"play_state" required:"false" doc:"The play state. Absent or null deletes it. done records a finish with the completion unstated."`
 	Minutes     *int              `json:"minutes,omitempty" minimum:"1" maximum:"60000" doc:"This site's playtime report, in minutes. Absent withdraws it; reports from other applications stay. Below 10 is stored but counted by no median."`
 	RatingInput *RecordRating     `json:"rating_input,omitempty" doc:"The rating. Absent deletes it."`
 }

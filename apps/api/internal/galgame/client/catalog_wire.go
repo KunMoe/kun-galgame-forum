@@ -228,8 +228,36 @@ type CatalogWorkListItem struct {
 	CoverSlots *catCoverSlots              `json:"cover_slots"`
 	Refs       []catRef                    `json:"refs"`
 	Tags       []catWorkTag                `json:"tags"`
+	Credits    []catCreditGroup            `json:"credits"`
 
 	ViaLabel *CatalogLabelVia `json:"via_label"`
+}
+
+type CatalogCredit = catCreditItem
+
+// Credited lists, without repeats, the people credited under the first of
+// roleKeys that has any.
+func (it *CatalogWorkListItem) Credited(max int, roleKeys ...string) []CatalogCredit {
+	for _, key := range roleKeys {
+		out := []CatalogCredit{}
+		seen := map[int64]bool{}
+		for _, g := range it.Credits {
+			if g.RoleKey != key {
+				continue
+			}
+			for _, c := range g.Credits {
+				if c.ID <= 0 || seen[c.ID] || len(out) == max {
+					continue
+				}
+				seen[c.ID] = true
+				out = append(out, c)
+			}
+		}
+		if len(out) > 0 {
+			return out
+		}
+	}
+	return []CatalogCredit{}
 }
 
 type CatalogLabelVia struct {

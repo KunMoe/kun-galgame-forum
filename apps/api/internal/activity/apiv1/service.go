@@ -3,6 +3,7 @@ package apiv1
 import (
 	"context"
 	"errors"
+	galgameapiv1 "kun-galgame-api/internal/galgame/apiv1"
 	"slices"
 	"strconv"
 	"strings"
@@ -43,6 +44,15 @@ type Service struct {
 	mu     sync.Mutex
 	works  map[workKey]workEntry
 	flight singleflight.Group
+
+	collections CollectionsFunc
+}
+
+type CollectionsFunc func(ctx context.Context, ids []int64, includeNSFW bool) map[int64]galgameapiv1.CollectionSummary
+
+func (s *Service) WithCollections(fn CollectionsFunc) *Service {
+	s.collections = fn
+	return s
 }
 
 type workKey struct {

@@ -47,6 +47,7 @@ const (
 	KindWalkthrough   = "walkthrough"
 	KindToolset       = "toolset"
 	KindWebsite       = "website"
+	KindCollection    = "collection"
 	KindLottery       = "lottery"
 	KindPoll          = "poll"
 	KindEditProposal  = "edit_proposal"

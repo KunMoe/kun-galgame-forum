@@ -1,6 +1,5 @@
 <script setup lang="ts">
 import type { PageListCollectionSummary } from '#shared/utils/api/schemas'
-import { deletedUserName } from '#shared/utils/deletedUser'
 
 const props = defineProps<{
   userId: number
@@ -31,14 +30,14 @@ const { data, status, pending } = useKunApi<PageListCollectionSummary>(
 
 <template>
   <div class="space-y-3">
-    <UserCollectionGridSkeleton v-if="pending" />
+    <GalgameCollectionRowCardSkeleton v-if="pending" :count="4" />
     <div v-if="data && data.items.length" class="flex flex-col space-y-3">
-      <div class="grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-4">
-        <GalgameCollectionCard
+      <div class="grid grid-cols-1 gap-3 md:grid-cols-2">
+        <GalgameCollectionRowCard
           v-for="c in data.items"
           :key="c.id"
           :collection="c"
-          :owner-name="ownerName ?? deletedUserName"
+          :show-owner="false"
         />
       </div>
 

@@ -9,6 +9,7 @@ import type {
   WorkRecordPut
 } from '#shared/utils/api/schemas'
 import RecordModal from './Modal.vue'
+import { usePersistEditGalgameRatingStore } from '~/store/modules/edit/rating'
 
 const { api, alert, message } = vi.hoisted(() => ({
   api: { GET: vi.fn(), PUT: vi.fn() },
@@ -136,36 +137,43 @@ afterEach(() => {
   api.PUT.mockReset()
   alert.mockReset()
   message.mockReset()
+  usePersistEditGalgameRatingStore().shortSummary = ''
 })
 
-describe('a finish another app recorded without a completion', () => {
-  it('is offered as 已通关 and saved back unchanged', async () => {
-    const { picked, offered } = await openWith('done')
+const completionGroup = () =>
+  wrapper!.findAllComponents({ name: 'KunRadioGroup' })[1]
+
+describe('the play state is five states, a finish with an optional completion', () => {
+  it('offers the five catalog states', async () => {
+    const { picked, offered } = await openWith('doing')
+
+    expect(picked).toBe('doing')
+    expect(offered).toEqual(['wish', 'doing', 'done', 'on_hold', 'dropped'])
+    expect(completionGroup()).toBeUndefined()
+  })
+
+  it('saves a finish with no completion as done', async () => {
+    const { picked } = await openWith('done')
 
     expect(picked).toBe('done')
-    expect(offered).toEqual([
-      'wish',
-      'doing',
-      'done',
-      'done_one_route',
-      'done_main',
-      'done_all',
-      'on_hold',
-      'dropped'
-    ])
-
+    expect(
+      (completionGroup()!.props() as { modelValue: string }).modelValue
+    ).toBe('')
     await save()
     expect(sentPlayState()).toBe('done')
   })
 
-  it('is not offered to anyone who does not have it', async () => {
-    const { picked, offered } = await openWith('done_one_route')
+  it('joins the completion back into the flat state', async () => {
+    const { picked } = await openWith('done_main')
 
-    expect(picked).toBe('done_one_route')
-    expect(offered).not.toContain('done')
-
+    expect(picked).toBe('done')
+    expect(
+      (completionGroup()!.props() as { modelValue: string }).modelValue
+    ).toBe('done_main')
+    completionGroup()!.vm.$emit('update:modelValue', 'done_all')
+    await flushPromises()
     await save()
-    expect(sentPlayState()).toBe('done_one_route')
+    expect(sentPlayState()).toBe('done_all')
   })
 })
 
@@ -191,15 +199,28 @@ describe('the rating is the form', () => {
     expect(ratingProps('KunRating').modelValue).toBe(0)
   })
 
-  it('asks for the overall score before saving a short review without one', async () => {
+  it('saves state and playtime past a local draft nobody touched', async () => {
+    usePersistEditGalgameRatingStore().shortSummary = '上次没写完的短评'
+    await mountWith(record('doing', { minutes: 120 }))
+    expect(summaryProps().valueMarkdown).toBe('上次没写完的短评')
+
+    await save()
+    expect(alert).not.toHaveBeenCalled()
+    expect(sent()).toEqual({ play_state: 'doing', minutes: 120 })
+    expect(usePersistEditGalgameRatingStore().shortSummary).toBe(
+      '上次没写完的短评'
+    )
+  })
+
+  it('confirms once before saving a short review without a score, and keeps it as a draft', async () => {
     await mountWith(record('doing'))
     await writeSummary('还没打分的短评')
 
     await save()
-    expect(api.PUT).not.toHaveBeenCalled()
-    expect(message).toHaveBeenCalledWith(
-      expect.stringContaining('请先打总体评分'),
-      'warn'
+    expect(alert).toHaveBeenCalledWith('还没有打总体评分', expect.any(String))
+    expect(sent()).toEqual({ play_state: 'doing' })
+    expect(usePersistEditGalgameRatingStore().shortSummary).toBe(
+      '还没打分的短评'
     )
   })
 

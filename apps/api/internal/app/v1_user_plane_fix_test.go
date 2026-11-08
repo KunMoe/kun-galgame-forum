@@ -95,6 +95,9 @@ type g6User struct {
 	followState    map[string]map[int64]string
 	followNotFound int64
 	followCapped   int64
+	folderFollows  map[int64]map[int64]bool
+	reports        []catalogclient.FolderReport
+	modItemPatch   int
 }
 
 func newG6Fix(t *testing.T) *g6Fix {
@@ -638,7 +641,7 @@ func (u *g6User) PublicFolder(_ context.Context, folderID int64) (*catalogclient
 	u.mu.Lock()
 	defer u.mu.Unlock()
 	f, ok := u.folders[folderID]
-	if !ok || f.Visibility != "public" {
+	if !ok || f.Visibility == "private" {
 		return nil, catalogclient.ErrNotFound
 	}
 	cp := f
@@ -648,7 +651,7 @@ func (u *g6User) PublicFolderItems(_ context.Context, folderID int64) ([]catalog
 	u.mu.Lock()
 	defer u.mu.Unlock()
 	f, ok := u.folders[folderID]
-	if !ok || f.Visibility != "public" {
+	if !ok || f.Visibility == "private" {
 		return nil, catalogclient.ErrNotFound
 	}
 	u.pubReads++

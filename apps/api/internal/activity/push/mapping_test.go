@@ -20,8 +20,8 @@ var occurred = time.Date(2026, 9, 26, 4, 30, 0, 123456000, time.UTC)
 
 func TestFeedTypePartition(t *testing.T) {
 	pairs := activityapiv1.FeedTypePairs()
-	if len(pairs) != 23 {
-		t.Fatalf("feedTypes = %d, want 23", len(pairs))
+	if len(pairs) != 26 {
+		t.Fatalf("feedTypes = %d, want 26", len(pairs))
 	}
 	var in, gone, out []string
 	seen := map[string]bool{}
@@ -43,10 +43,11 @@ func TestFeedTypePartition(t *testing.T) {
 	if len(gone) != 7 || len(withdrawn) != 7 {
 		t.Errorf("withdrawn from feedTypes = %d %v, want the 7 wall comment types", len(gone), gone)
 	}
-	if len(out) != 3 {
-		t.Errorf("never-pushed from feedTypes = %d %v, want 3", len(out), out)
+	if len(out) != 6 {
+		t.Errorf("never-pushed from feedTypes = %d %v, want 6", len(out), out)
 	}
-	for _, feed := range []string{"MESSAGE_SOLUTION", "TODO_CREATION", "UPDATE_LOG_CREATION"} {
+	for _, feed := range []string{"MESSAGE_SOLUTION", "TODO_CREATION", "UPDATE_LOG_CREATION",
+		"COLLECTION_CREATION", "COLLECTION_WORK_ADDITION", "COLLECTION_COMMENT_CREATION"} {
 		if IsPushed(feed) || !seen[feed] {
 			t.Errorf("%s must be in feedTypes and never pushed", feed)
 		}

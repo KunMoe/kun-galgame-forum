@@ -14,7 +14,8 @@ const WALL_LABEL: Record<WallCommentSearchHit['subject_type'], string> = {
   galgame_quiz: '游戏答题',
   galgame_walkthrough: '游戏攻略',
   toolset: 'Gal 工具',
-  website: '网站'
+  website: '网站',
+  collection: '收藏夹'
 }
 
 const workName = useWorkName()

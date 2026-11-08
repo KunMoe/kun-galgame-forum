@@ -281,7 +281,7 @@ func TestV1ListMyCollectionsForWork(t *testing.T) {
 	held := map[string]bool{}
 	for _, raw := range items {
 		it := raw.(map[string]any)
-		for _, k := range []string{"preview_covers", "owner", "description", "created_at"} {
+		for _, k := range []string{"preview_covers", "owner", "created_at"} {
 			if _, ok := it[k]; ok {
 				t.Errorf("the picker shape carries %s: %+v", k, it)
 			}

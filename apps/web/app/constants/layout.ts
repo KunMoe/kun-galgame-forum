@@ -88,6 +88,14 @@ export const kunLayoutItem: KunLayoutItem[] = [
         hintColor: 'danger'
       },
       {
+        name: 'galgame-collection',
+        icon: 'lucide:folder-heart',
+        router: '/collection',
+        label: 'Galgame 收藏夹',
+        hint: '新',
+        hintColor: 'danger'
+      },
+      {
         name: 'galgame-calendar',
         icon: 'lucide:calendar-days',
         router: '/galgame-calendar',
@@ -385,6 +393,11 @@ export const kunSidebarRail: KunRailGroup[] = [
             label: 'Galgame 题库',
             router: '/galgame-quiz',
             icon: 'lucide:brain'
+          },
+          {
+            label: 'Galgame 收藏夹',
+            router: '/collection',
+            icon: 'lucide:folder-heart'
           },
           {
             label: 'Galgame 发售月历',

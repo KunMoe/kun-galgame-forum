@@ -91,6 +91,10 @@ func (r *Resolver) Resolve(refs []Ref) map[Ref]Target {
 				continue
 			}
 			out[ref] = Target{Link: page.linkPrefix + rawID, Label: page.label}
+		case communityclient.AnchorCatalogFolder:
+			if id, err := strconv.Atoi(ref.ID); err == nil && id > 0 {
+				out[ref] = Target{Link: "/collection/" + ref.ID, Label: "收藏夹"}
+			}
 		}
 	}
 

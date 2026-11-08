@@ -23,6 +23,8 @@ type GalgamesResolver func(ctx context.Context, workIDs []int) (map[int]bool, er
 
 type WalkthroughResolver func(ctx context.Context, id int) (workID int, isNSFW, found bool, err error)
 
+type CollectionResolver func(ctx context.Context, id int) (ownerID int, isNSFW, found bool, err error)
+
 type Service struct {
 	store       *repository.Store
 	community   *communityclient.Client
@@ -31,6 +33,7 @@ type Service struct {
 	galgame     GalgameResolver
 	galgames    GalgamesResolver
 	walkthrough WalkthroughResolver
+	collection  CollectionResolver
 	award       AwardFunc
 	cdn         string
 	readSync    ReadSyncFunc
@@ -55,6 +58,11 @@ func New(
 }
 
 var errUnconfigured = errors.New("apiv1 walls: service is not configured")
+
+func (s *Service) WithCollections(resolve CollectionResolver) *Service {
+	s.collection = resolve
+	return s
+}
 
 func (s *Service) WithWalkthroughs(resolve WalkthroughResolver) *Service {
 	s.walkthrough = resolve
@@ -141,6 +149,22 @@ func (s *Service) resolveSubject(ctx context.Context, spec subjectSpec, id int, 
 			return nil, notFound()
 		}
 		sub.workID, sub.isNSFW = workID, isNSFW
+		return sub, nil
+	case "collection":
+		if s.collection == nil {
+			return nil, problem.Internal(errUnconfigured)
+		}
+		ownerID, isNSFW, found, cerr := s.collection(ctx, id)
+		if cerr != nil {
+			return nil, problem.Unavailable(cerr)
+		}
+		if !found {
+			return nil, notFound()
+		}
+		sub.ownerID, sub.isNSFW = ownerID, isNSFW
+		if p := s.userRenderable(ctx, sub.ownerID); p != nil {
+			return nil, p
+		}
 		return sub, nil
 	case "galgame_rating":
 		sub.ownerID, err = s.store.RatingAuthor(id)

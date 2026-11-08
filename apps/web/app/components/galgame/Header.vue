@@ -367,6 +367,13 @@ const coverUrl = computed(() =>
           </div>
 
           <div class="ml-auto flex flex-wrap items-center justify-end gap-1">
+            <GalgamePlayStateMark
+              :work-id="workId"
+              @changed="
+                (_, ratingDeleted) => ratingDeleted && emits('onRatingCreated')
+              "
+            />
+
             <KunButton
               variant="shadow"
               color="primary"
