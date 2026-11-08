@@ -52,6 +52,7 @@ const list = ref<{
   scrollToSeq: (seq: number) => boolean
   scrollToBottom: () => void
 } | null>(null)
+const composer = ref<{ insertText: (text: string) => void } | null>(null)
 const loadingOlder = ref(false)
 const loadingNewer = ref(false)
 const requestBusy = ref<'accept' | 'delete' | null>(null)
@@ -159,22 +160,45 @@ const onAction = async (
 }
 
 const send = async (body: KunChatFormattedText) => {
-  const photos = attachments.value.filter((a) => a.photo)
+  const id = props.id
+  const picked = attachments.value
   const reply = replyTo.value
   const q = quote.value
   attachments.value = []
   savedDraft = ''
+  const settled = await Promise.all(
+    picked.map(async (a) => ({
+      a,
+      photo: a.photo ?? (await uploads.get(a.key))
+    }))
+  )
+  const failed = settled.filter((s) => !s.photo).map((s) => s.a)
+  const photos = settled.flatMap((s) => (s.photo ? [s.photo] : []))
+  for (const { a, photo } of settled) {
+    if (photo) {
+      forget(a)
+    }
+  }
+  if (failed.length && props.id === id) {
+    attachments.value = [
+      ...failed.map((a) => ({ ...a, progress: undefined, error: true })),
+      ...attachments.value
+    ]
+    useMessage('有图片上传失败，点击图片可重试', 'warn')
+  }
   if (!photos.length) {
-    notify(await act.send(props.id, body, { replyTo: reply, quote: q }))
+    if (body.text) {
+      notify(await act.send(id, body, { replyTo: reply, quote: q }))
+    }
     return
   }
-  for (const [i, a] of photos.entries()) {
+  for (const [i, photo] of photos.entries()) {
     const last = i === photos.length - 1
     notify(
-      await act.send(props.id, last ? body : { text: '', entities: [] }, {
+      await act.send(id, last ? body : { text: '', entities: [] }, {
         replyTo: i === 0 ? reply : null,
         quote: i === 0 ? q : null,
-        photo: a.photo
+        photo
       })
     )
   }
@@ -192,29 +216,36 @@ const editLast = () => {
   }
 }
 
-const upload = async (key: string, file: File) => {
-  const r = notify(await act.uploadPhoto(file))
+const files = new Map<string, File>()
+const uploads = new Map<string, Promise<Attachment['photo']>>()
+
+const patchAttachment = (key: string, patch: Partial<Attachment>) => {
   const i = attachments.value.findIndex((a) => a.key === key)
-  if (i < 0 || !r) {
-    return
+  if (i >= 0) {
+    attachments.value[i] = { ...attachments.value[i]!, ...patch }
   }
-  attachments.value[i] = r.ok
-    ? {
-        ...attachments.value[i]!,
-        error: false,
-        photo: {
+}
+
+const upload = (key: string, file: File) => {
+  patchAttachment(key, { error: false, progress: 0 })
+  const task = act.uploadPhoto(file).then((r) => {
+    notify(r)
+    const photo = r.ok
+      ? {
           image_hash: r.data.image_hash,
           width: r.data.width,
           height: r.data.height,
           thumbhash: r.data.thumbhash
         }
-      }
-    : { ...attachments.value[i]!, error: true }
+      : undefined
+    patchAttachment(key, { progress: undefined, error: !photo, photo })
+    return photo
+  })
+  uploads.set(key, task)
+  return task
 }
 
-const files = new Map<string, File>()
-
-const attach = async (picked: File[]) => {
+const attach = (picked: File[]) => {
   for (const file of picked) {
     const key = crypto.randomUUID()
     files.set(key, file)
@@ -223,7 +254,7 @@ const attach = async (picked: File[]) => {
       url: URL.createObjectURL(file),
       name: file.name
     })
-    await upload(key, file)
+    void upload(key, file)
   }
 }
 
@@ -234,12 +265,19 @@ const retryAttachment = (key: string) => {
   }
 }
 
-const removeAttachment = (key: string) => {
-  const a = attachments.value.find((x) => x.key === key)
-  if (a?.url) {
+const forget = (a: Attachment) => {
+  if (a.url) {
     URL.revokeObjectURL(a.url)
   }
-  files.delete(key)
+  files.delete(a.key)
+  uploads.delete(a.key)
+}
+
+const removeAttachment = (key: string) => {
+  const a = attachments.value.find((x) => x.key === key)
+  if (a) {
+    forget(a)
+  }
   attachments.value = attachments.value.filter((x) => x.key !== key)
 }
 
@@ -359,6 +397,7 @@ const openProfile = (uid: string) => navigateTo(`/user/${uid}`)
     </div>
 
     <KunChatComposer
+      ref="composer"
       v-model="draft"
       v-model:reply-to="replyTo"
       v-model:quote="quote"
@@ -375,7 +414,13 @@ const openProfile = (uid: string) => navigateTo(`/user/${uid}`)
       @remove-attachment="removeAttachment"
       @retry-attachment="retryAttachment"
       @typing="act.sendTyping(conv.id)"
-    />
+    >
+      <template #prefix>
+        <ChatEmojiPicker
+          @emoji="(text: string) => composer?.insertText(text)"
+        />
+      </template>
+    </KunChatComposer>
 
     <ChatDeleteModal
       :message="deleting"
