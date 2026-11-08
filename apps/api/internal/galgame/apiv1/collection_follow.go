@@ -80,7 +80,7 @@ func (s *Service) listCollections(ctx context.Context, in *listCollectionsInput)
 	if p != nil {
 		return nil, p
 	}
-	page, err := s.catalog.FolderDirectory(ctx, catalogclient.DirectoryQuery{
+	page, err := s.folderDirectory(ctx, catalogclient.DirectoryQuery{
 		Sort: in.Sort, IncludeNSFW: in.IncludeNSFW, ContainsWorkID: workID, Cursor: upstream, Limit: in.Limit,
 		Tag: strings.TrimSpace(in.Tag), Q: strings.TrimSpace(in.Q),
 	})

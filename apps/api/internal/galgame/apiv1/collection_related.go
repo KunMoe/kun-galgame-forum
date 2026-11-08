@@ -58,7 +58,7 @@ func (s *Service) listRelatedCollections(ctx context.Context, in *relatedCollect
 	g, gctx := errgroup.WithContext(ctx)
 	for _, it := range items[:min(relatedSeedWorks, len(items))] {
 		g.Go(func() error {
-			page, err := s.catalog.FolderDirectory(gctx, catalogclient.DirectoryQuery{
+			page, err := s.folderDirectory(gctx, catalogclient.DirectoryQuery{
 				Sort: catalogclient.FolderSortFollowersDesc, IncludeNSFW: in.IncludeNSFW,
 				ContainsWorkID: it.WorkID, Limit: relatedPerSeed,
 			})
@@ -72,7 +72,7 @@ func (s *Service) listRelatedCollections(ctx context.Context, in *relatedCollect
 	}
 	_ = g.Wait()
 	if len(byID) < relatedCollectionsMax {
-		page, err := s.catalog.FolderDirectory(ctx, catalogclient.DirectoryQuery{
+		page, err := s.folderDirectory(ctx, catalogclient.DirectoryQuery{
 			Sort: catalogclient.FolderSortFollowersDesc, IncludeNSFW: in.IncludeNSFW, Limit: relatedCollectionsMax * 2,
 		})
 		if err != nil {

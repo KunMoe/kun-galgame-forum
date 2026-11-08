@@ -57,7 +57,7 @@ func (p *Pusher) PushClaimed(ctx context.Context, claims []Claim, rev int64) ([]
 	for i := range claims {
 		k := keys[i]
 		rec, ok := feeds[k]
-		if !ok {
+		if !ok || !IsPushed(claims[i].Type) {
 			continue
 		}
 		present[k] = len(rows)

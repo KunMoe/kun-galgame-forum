@@ -5,6 +5,7 @@ import (
 	"testing"
 	"time"
 
+	galgameapiv1 "kun-galgame-api/internal/galgame/apiv1"
 	"kun-galgame-api/pkg/communityclient"
 )
 
@@ -454,5 +455,33 @@ func TestActivityPushReconcileTombstoneLosesToLaterRead(t *testing.T) {
 	f.cm.mu.Unlock()
 	if out.Results[0].Outcome == "stale" || final.Removed {
 		t.Fatalf("the reconcile tombstone outranked a later live push: %+v, stored %+v", out.Results, final)
+	}
+}
+
+func TestActivityPushSkipsAssemblingUnpushedRows(t *testing.T) {
+	f := newPushFix(t)
+	var hydrated int
+	f.ActivityV1.WithCollections(func(_ context.Context, ids []int64, _ bool) map[int64]galgameapiv1.CollectionSummary {
+		hydrated += len(ids)
+		return nil
+	})
+	t.Cleanup(func() { f.ActivityV1.WithCollections(nil) })
+	if err := f.db.Exec(`INSERT INTO feed_activity (type, source_id, user_id, content, link, created) VALUES
+		('COLLECTION_CREATION', ?, ?, 'c', '/collection/77', now()),
+		('COLLECTION_WORK_ADDITION', ?, ?, 'c', '/collection/78', now())`,
+		apMsgUp, w3UserOther, apTodo, w3UserOther).Error; err != nil {
+		t.Fatal(err)
+	}
+	if _, err := f.pusher.RunOnce(context.Background()); err != nil {
+		t.Fatal(err)
+	}
+	if hydrated != 0 {
+		t.Fatalf("never-pushed rows hydrated %d collections", hydrated)
+	}
+	if len(f.writes()) != 0 {
+		t.Fatalf("sent %+v", f.writes())
+	}
+	if f.queueCount(t) != 0 {
+		t.Fatalf("queue = %d, want drained", f.queueCount(t))
 	}
 }
