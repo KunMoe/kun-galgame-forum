@@ -16,7 +16,10 @@ const props = defineProps<{ id: string }>()
 const EDIT_WINDOW = 48 * 3600 * 1000
 
 type Attachment = KunChatAttachment & {
-  photo?: Pick<ChatPhoto, 'image_hash' | 'width' | 'height' | 'thumbhash'>
+  photo?: Pick<
+    ChatPhoto,
+    'image_hash' | 'width' | 'height' | 'thumbhash' | 'url'
+  >
 }
 
 const chat = useChatStore()
@@ -195,10 +198,41 @@ const send = async (body: KunChatFormattedText) => {
       await act.send(id, last ? body : { text: '', entities: [] }, {
         replyTo: i === 0 ? reply : null,
         quote: i === 0 ? q : null,
-        photo
+        media: { type: 'photo', ...photo }
       })
     )
   }
+}
+
+const stickers = useStickerPacks()
+
+const sendSticker = async (src: string) => {
+  const image = stickers.image(src)
+  if (!image) {
+    return
+  }
+  const reply = replyTo.value
+  const q = quote.value
+  replyTo.value = null
+  quote.value = null
+  notify(
+    await act.send(
+      props.id,
+      { text: '', entities: [] },
+      {
+        replyTo: reply,
+        quote: q,
+        media: {
+          type: 'sticker',
+          image_hash: image.hash,
+          width: image.width,
+          height: image.height,
+          thumbhash: image.thumbhash,
+          url: src
+        }
+      }
+    )
+  )
 }
 
 const edit = async (body: KunChatFormattedText, target: ChatMessage) =>
@@ -232,7 +266,8 @@ const upload = (key: string, file: File) => {
           image_hash: r.data.image_hash,
           width: r.data.width,
           height: r.data.height,
-          thumbhash: r.data.thumbhash
+          thumbhash: r.data.thumbhash,
+          url: r.data.url
         }
       : undefined
     patchAttachment(key, { progress: undefined, error: !photo, photo })
@@ -413,6 +448,7 @@ const openProfile = (uid: string) => navigateTo(`/user/${uid}`)
       <template #prefix>
         <ChatEmojiPicker
           @emoji="(text: string) => composer?.insertText(text)"
+          @sticker="sendSticker"
         />
       </template>
     </KunChatComposer>

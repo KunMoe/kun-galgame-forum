@@ -6,13 +6,16 @@ const KunStickerPanel = defineAsyncComponent(() =>
   import('@kungal/editor-vue').then((m) => m.KunStickerPanel)
 )
 
-const emit = defineEmits<{ emoji: [text: string] }>()
+const emit = defineEmits<{ emoji: [text: string]; sticker: [src: string] }>()
 
-const adapters: KunEditorAdapters = {}
+const stickers = useStickerPacks()
+const adapters: KunEditorAdapters = { stickerSource: stickers.load }
 
 const pick = (item: KunStickerPick) => {
   if (item.kind === 'emoji') {
     emit('emoji', item.text)
+  } else {
+    emit('sticker', item.src)
   }
 }
 </script>
@@ -25,7 +28,7 @@ const pick = (item: KunStickerPick) => {
         variant="light"
         rounded="full"
         class="size-10 shrink-0"
-        aria-label="表情"
+        aria-label="表情和贴纸"
       >
         <KunIcon name="lucide:smile" class="text-xl" />
       </KunButton>

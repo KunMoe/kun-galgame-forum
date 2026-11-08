@@ -20,6 +20,9 @@ const { store, act } = vi.hoisted(() => ({
 mockNuxtImport('useChatStore', () => () => store.value)
 mockNuxtImport('useChatActions', () => () => act)
 
+const { get } = vi.hoisted(() => ({ get: vi.fn() }))
+mockNuxtImport('useApiClient', () => () => ({ GET: get }))
+
 const photo = {
   object: 'chat_image',
   type: 'photo',
@@ -115,7 +118,11 @@ describe('chat pane sending a photo', () => {
     const [id, body, opts] = act.send.mock.calls[0]!
     expect(id).toBe('c1')
     expect(body.text).toBe('')
-    expect(opts.photo.image_hash).toBe(photo.image_hash)
+    expect(opts.media).toMatchObject({
+      type: 'photo',
+      image_hash: photo.image_hash,
+      url: photo.url
+    })
   })
 
   it('sends a photo-only message once its upload has finished', async () => {
@@ -128,7 +135,7 @@ describe('chat pane sending a photo', () => {
     await flushPromises()
 
     expect(act.send).toHaveBeenCalledTimes(1)
-    expect(act.send.mock.calls[0]![2].photo.image_hash).toBe(photo.image_hash)
+    expect(act.send.mock.calls[0]![2].media.image_hash).toBe(photo.image_hash)
   })
 
   it('keeps a failed upload in the composer and sends nothing empty', async () => {
@@ -164,6 +171,92 @@ describe('chat pane sending a photo', () => {
     expect(act.send).toHaveBeenCalledTimes(2)
     expect(act.send.mock.calls[0]![1].text).toBe('')
     expect(act.send.mock.calls[1]![1].text).toBe('caption')
+  })
+})
+
+describe('chat pane sticker', () => {
+  it('sends a picked sticker as sticker media with no text', async () => {
+    const hash = 'ef'.repeat(32)
+    const src = `https://img.example/ef/ef/${hash}_320.webp`
+    useState('kun-sticker-images').value = {
+      [hash]: { width: 640, height: 480, thumbhash: 'th' }
+    }
+    const wrapper = await mountPane()
+
+    wrapper.findComponent(ChatEmojiPicker).vm.$emit('sticker', src)
+    await flushPromises()
+
+    expect(act.send).toHaveBeenCalledTimes(1)
+    const [id, body, opts] = act.send.mock.calls[0]!
+    expect(id).toBe('c1')
+    expect(body).toEqual({ text: '', entities: [] })
+    expect(opts.media).toEqual({
+      type: 'sticker',
+      image_hash: hash,
+      width: 640,
+      height: 480,
+      thumbhash: 'th',
+      url: src
+    })
+  })
+
+  it('sends nothing for an image that is not a known sticker', async () => {
+    useState('kun-sticker-images').value = {}
+    const wrapper = await mountPane()
+
+    wrapper
+      .findComponent(ChatEmojiPicker)
+      .vm.$emit('sticker', `/image/${'ef'.repeat(32)}_320`)
+    await flushPromises()
+
+    expect(act.send).not.toHaveBeenCalled()
+  })
+})
+
+describe('chat sticker panel', () => {
+  it('shows the official packs and emits the picked sticker', async () => {
+    const hash = '12'.repeat(32)
+    useState('kun-sticker-packs').value = []
+    get.mockResolvedValue({
+      response: new Response(null, { status: 200 }),
+      data: {
+        items: [
+          {
+            display_name: 'pack',
+            stickers: [
+              {
+                display_name: 's',
+                image: { hash, width: 640, height: 480, thumbhash: null }
+              }
+            ]
+          }
+        ]
+      }
+    })
+    const wrapper = await mountSuspended(ChatEmojiPicker, {
+      attachTo: document.body
+    })
+    await wrapper.find('button').trigger('click')
+    const tab = await vi.waitFor(() => {
+      const found = [...document.querySelectorAll('button')].find(
+        (b) => b.textContent?.trim() === '贴纸'
+      )
+      expect(found).toBeDefined()
+      return found!
+    })
+    tab.click()
+    const cell = await vi.waitFor(() => {
+      const found = document.querySelector(
+        `.kun-sticker-panel__cell img[src*="${hash}_320"]`
+      )
+      expect(found).not.toBeNull()
+      return found!.closest('button') ?? (found as HTMLElement)
+    })
+    ;(cell as HTMLElement).click()
+    await flushPromises()
+
+    expect(wrapper.emitted('sticker')?.[0]?.[0]).toContain(`${hash}_320`)
+    wrapper.unmount()
   })
 })
 

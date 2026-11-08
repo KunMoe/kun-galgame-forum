@@ -1,29 +1,55 @@
 // @vitest-environment nuxt
-import { describe, expect, it } from 'vitest'
+import { beforeEach, describe, expect, it, vi } from 'vitest'
+import { mockNuxtImport } from '@nuxt/test-utils/runtime'
 
 const hash = 'ab'.repeat(32)
 const other = 'cd'.repeat(32)
 
-describe('useStickerPacks().isSticker', () => {
-  it('knows a sticker by hash in both the CDN and the token form', () => {
-    useState('kun-sticker-packs').value = [
-      {
-        name: 'pack',
-        stickers: [
-          { name: 's', src: `https://img.example/ab/ab/${hash}_320.webp` }
-        ]
-      }
-    ]
-    const { isSticker } = useStickerPacks()
+const { get } = vi.hoisted(() => ({ get: vi.fn() }))
 
-    expect(isSticker(`https://img.example/ab/ab/${hash}_320.webp`)).toBe(true)
+mockNuxtImport('useApiClient', () => () => ({ GET: get }))
+
+beforeEach(() => {
+  useState('kun-sticker-packs').value = []
+  useState('kun-sticker-images').value = {}
+  get.mockResolvedValue({
+    response: new Response(null, { status: 200 }),
+    data: {
+      items: [
+        {
+          display_name: 'pack',
+          stickers: [
+            {
+              display_name: 's',
+              image: { hash, width: 640, height: 480, thumbhash: 'th' }
+            }
+          ]
+        }
+      ]
+    }
+  })
+})
+
+describe('useStickerPacks', () => {
+  it('knows a sticker by hash in both the CDN and the token form', async () => {
+    const { load, isSticker, image } = useStickerPacks()
+    const [pack] = await load()
+    const src = pack!.stickers[0]!.src
+
+    expect(src).toContain(`${hash}_320`)
+    expect(isSticker(src)).toBe(true)
     expect(isSticker(`/image/${hash}_320`)).toBe(true)
     expect(isSticker(`/image/${other}`)).toBe(false)
     expect(isSticker('https://elsewhere.example/a.png')).toBe(false)
+    expect(image(src)).toEqual({
+      hash,
+      width: 640,
+      height: 480,
+      thumbhash: 'th'
+    })
   })
 
   it('answers no before the packs have loaded', () => {
-    useState('kun-sticker-packs').value = []
     expect(useStickerPacks().isSticker(`/image/${hash}_320`)).toBe(false)
   })
 })

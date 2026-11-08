@@ -1,4 +1,8 @@
-import type { KunChatFormattedText, KunChatReplyQuote } from '@kungal/ui-vue'
+import type {
+  KunChatFormattedText,
+  KunChatMedia,
+  KunChatReplyQuote
+} from '@kungal/ui-vue'
 import type {
   ChatConversationDetail,
   ChatDeleted,
@@ -23,7 +27,7 @@ const typingSentAt: Record<string, number> = {}
 export interface ChatSendOptions {
   replyTo?: ChatMessage | null
   quote?: KunChatReplyQuote | null
-  photo?: Pick<ChatPhoto, 'image_hash' | 'width' | 'height' | 'thumbhash'>
+  media?: KunChatMedia
 }
 
 export const useChatActions = () => {
@@ -103,7 +107,7 @@ export const useChatActions = () => {
       kind: 'message',
       text: text.text,
       entities: text.entities,
-      media: o.photo ? { type: 'photo', ...o.photo } : null,
+      media: o.media ?? null,
       media_group_id: null,
       reply_to: replyTo
         ? {
