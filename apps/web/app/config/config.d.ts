@@ -39,7 +39,6 @@ export interface KunSiteImage {
 
 export interface KunSiteAD {
   name: string
-  link: string
   banner: string
   icon: string
 }

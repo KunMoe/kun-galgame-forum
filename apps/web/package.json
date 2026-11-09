@@ -43,7 +43,6 @@
     "happy-dom": "^20.9.0",
     "nuxt": "^4.4.7",
     "nuxt-schema-org": "^5.0.10",
-    "nuxt-umami": "3.2.1",
     "openapi-typescript": "7.13.0",
     "pkg-types": "^2.3.0",
     "prettier": "^3.7.4",

@@ -40,8 +40,7 @@ export default defineNuxtConfig({
     '@dxup/nuxt',
     'pinia-plugin-persistedstate/nuxt',
     'nuxt-schema-org',
-    '@nuxtjs/sitemap',
-    'nuxt-umami'
+    '@nuxtjs/sitemap'
   ],
 
   runtimeConfig: {
@@ -85,7 +84,16 @@ export default defineNuxtConfig({
 
       // NUXT_PUBLIC_IMAGE_CDN_BASE at runtime; production feeds it from the
       // same compose value as the API's KUN_IMAGE_PUBLIC_BASE_URL.
-      imageCdnBase: process.env.IMAGE_CDN_BASE || DEFAULT_IMAGE_CDN_BASE
+      imageCdnBase: process.env.IMAGE_CDN_BASE || DEFAULT_IMAGE_CDN_BASE,
+
+      // NUXT_PUBLIC_UMAMI_HOST / NUXT_PUBLIC_UMAMI_ID / NUXT_PUBLIC_AIFY_LINK.
+      // Empty on purpose: the generic prod image is built without these, and a
+      // fallback string here is what ships. Nuxt fills them from the container
+      // env at start. Unset host or id omits the tracker; an unset AIFY link
+      // hides the banner and the nav icon.
+      umamiHost: '',
+      umamiId: '',
+      aifyLink: ''
     }
   },
 
@@ -148,15 +156,6 @@ export default defineNuxtConfig({
     experimentalWarmUp: true,
     cacheMaxAgeSeconds: 60 * 60 * 6,
     defaults: { changefreq: 'daily', priority: 0.7 }
-  },
-
-  umami: {
-    id:
-      process.env.KUN_VISUAL_NOVEL_FORUM_UMAMI_ID ||
-      '2fc714ed-ed3b-459a-b52c-65f7e1621834',
-    host: 'https://umami.kungal.org/',
-    autoTrack: true,
-    ignoreLocalhost: true
   },
 
   css: ['~/styles/index.css'],

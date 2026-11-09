@@ -38,7 +38,9 @@ export const envSchema = z.object({
   KUN_VISUAL_NOVEL_IMAGE_BED_URL: z.string(),
   KUN_VISUAL_NOVEL_IMAGE_BED_BUCKET: z.string(),
 
-  KUN_VISUAL_NOVEL_FORUM_UMAMI_ID: z.string(),
+  NUXT_PUBLIC_UMAMI_HOST: z.string().optional(),
+  NUXT_PUBLIC_UMAMI_ID: z.string().optional(),
+  NUXT_PUBLIC_AIFY_LINK: z.string().optional(),
   KUN_VISUAL_NOVEL_FORUM_YANDEX_VERIFICATION: z.string(),
 
   KUN_CF_CACHE_ZONE_ID: z.string(),

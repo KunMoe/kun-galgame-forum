@@ -97,7 +97,8 @@ x-kungal-api-env: &kungal-api-env
   KUN_DLSITE_LINK_TEMPLATE: ${KUN_DLSITE_LINK_TEMPLATE:-https://dlaf.jp/soft/dlaf/=/t/s/link/work/aid/kungal/locale/zh_CN/id/{workno}.html/?locale=zh_CN}
   # 优惠券落地页。必须是短链 (合作方要求, 防网络审查拦截)。这条是常设落地页,
   # 不是 campaign; store 面报告有活动时会被 coupon_url 顶掉, 没有活动时仍然展示。
-  KUN_DLSITE_COUPON_URL: ${KUN_DLSITE_COUPON_URL:-https://umami.kungal.org/q/N3TmTZJ9X}
+  # No default URL: an empty KUN_DLSITE_COUPON_URL hides the standing coupon page.
+  KUN_DLSITE_COUPON_URL: ${KUN_DLSITE_COUPON_URL:-}
   # infra 的 /v2/store 面。给出 key 后购买按钮改用它铸的本站专属短链 —— 短链背后
   # 的点击计数就是结算依据, 直链虽然照样能买但这笔销售 infra 看不见。
   # 第三把 developer key (scope 只要 store:read), 不与 catalog/news 共用: v2 限流
@@ -290,6 +291,11 @@ services:
       NUXT_PUBLIC_OG_CARD_ENABLED: ${NUXT_PUBLIC_OG_CARD_ENABLED:-false}
       # Same panel variable as the API's KUN_CHAT_ENABLED; see there.
       NUXT_PUBLIC_CHAT_ENABLED: ${KUN_CHAT_ENABLED:-false}
+      # Umami tracker and the AIFY short link. No default URL: unset means no
+      # tracker and no AIFY banner. HOST is the origin only, without /script.js.
+      NUXT_PUBLIC_UMAMI_HOST: ${NUXT_PUBLIC_UMAMI_HOST:-}
+      NUXT_PUBLIC_UMAMI_ID: ${NUXT_PUBLIC_UMAMI_ID:-}
+      NUXT_PUBLIC_AIFY_LINK: ${NUXT_PUBLIC_AIFY_LINK:-}
     expose: ["7777"]
     depends_on:
       kungal-api: { condition: service_healthy }

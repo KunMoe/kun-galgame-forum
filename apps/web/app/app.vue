@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import { showMoeMessage } from '~/widget/showMoeMessage'
 import { kunFeedUrl } from '#shared/utils/feedUrl'
+import { umamiTrackerSrc } from '~/utils/umamiScript'
 
 const { isOpen: isAuthModalOpen } = useAuthModal()
 
@@ -12,6 +13,26 @@ const config = useRuntimeConfig()
 const siteImage = kunOgSiteImage(
   config.public.ogCardEnabled,
   kungal.domain.main
+)
+
+const umamiId = computed(() => String(config.public.umamiId || '').trim())
+const umamiSrc = computed(() =>
+  umamiTrackerSrc(config.public.umamiHost, umamiId.value)
+)
+
+useHead(() =>
+  umamiSrc.value
+    ? {
+        script: [
+          {
+            key: 'umami',
+            src: umamiSrc.value,
+            defer: true,
+            'data-website-id': umamiId.value
+          }
+        ]
+      }
+    : {}
 )
 
 useHead({

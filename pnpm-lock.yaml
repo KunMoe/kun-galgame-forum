@@ -288,9 +288,6 @@ importers:
       nuxt-schema-org:
         specifier: ^5.0.10
         version: 5.0.10(@unhead/vue@2.1.15(vue@3.5.35(typescript@5.9.3)))(magicast@0.5.2)(unhead@2.1.15)(vite@7.3.5(@types/node@25.5.0)(jiti@2.7.0)(lightningcss@1.32.0)(sass@1.99.0)(terser@5.46.1)(tsx@4.21.0)(yaml@2.8.3))(vue@3.5.35(typescript@5.9.3))(zod@4.3.6)
-      nuxt-umami:
-        specifier: 3.2.1
-        version: 3.2.1(magicast@0.5.2)
       openapi-typescript:
         specifier: 7.13.0
         version: 7.13.0(typescript@5.9.3)
@@ -5053,9 +5050,6 @@ packages:
   nuxt-site-config@3.2.21:
     resolution: {integrity: sha512-WCqo4cirBc+GLPBZOU1ye5+f4xjC7Sf7qbKt/zpeCtEUqJLHDR0MoKICfsGt/8EdkSDYUo+m5BNZ1oxai0isgQ==}
 
-  nuxt-umami@3.2.1:
-    resolution: {integrity: sha512-82cf3kcrMn4Iq0rJ2Blfl48AqLWqRubEpxOinOoxqW7taZAd5SgZcCdCj7y4qXSt0W5DhBYgaq4IboyGFHoVUQ==}
-
   nuxt@4.4.7:
     resolution: {integrity: sha512-4ASIbcOVF2O1HJqoKRVntxOphl9zmikgmj25D9c93l795yp8x0f4TItzrnT0xyrFxMkpL6z3rHhrfQQfoxNXxw==}
     engines: {node: ^22.12.0 || ^24.11.0 || >=26.0.0}
@@ -5730,9 +5724,6 @@ packages:
 
   remark@15.0.1:
     resolution: {integrity: sha512-Eht5w30ruCXgFmxVUSlNWQ9iiimq07URKeFS3hNc8cUWy1llX4KDWfyEDZRycMc+znsN9Ux5/tJ/BFdgdOwA3A==}
-
-  request-ip@3.3.0:
-    resolution: {integrity: sha512-cA6Xh6e0fDBBBwH77SLJaJPBmD3nWVAcF9/XAcsrIHdjhFzFiB5aNQFytdjCGPezU3ROwrR11IddKAM08vohxA==}
 
   require-directory@2.1.1:
     resolution: {integrity: sha512-fGxEI7+wsG9xrvdjsrlmL22OMTTiHRwAMroiEeMgq8gzoLC/PQr7RsRDSTLUg/bZAZtF+TVIkHc6/4RIKrui+Q==}
@@ -12463,13 +12454,6 @@ snapshots:
       - vite
       - vue
 
-  nuxt-umami@3.2.1(magicast@0.5.2):
-    dependencies:
-      '@nuxt/kit': 3.21.2(magicast@0.5.2)
-      request-ip: 3.3.0
-    transitivePeerDependencies:
-      - magicast
-
   nuxt@4.4.7(@babel/plugin-syntax-jsx@7.28.6(@babel/core@7.29.0))(@babel/plugin-syntax-typescript@7.28.6(@babel/core@7.29.0))(@electric-sql/pglite@0.3.15)(@parcel/watcher@2.5.6)(@types/node@25.5.0)(@vue/compiler-sfc@3.5.35)(cac@6.7.14)(db0@0.3.4(@electric-sql/pglite@0.3.15)(mysql2@3.15.3))(eslint@9.39.4(jiti@2.7.0))(ioredis@5.10.1)(lightningcss@1.32.0)(magicast@0.5.2)(mysql2@3.15.3)(optionator@0.9.4)(pinia@3.0.4(typescript@5.9.3)(vue@3.5.35(typescript@5.9.3)))(rollup-plugin-visualizer@7.0.1(rollup@4.61.1))(rollup@4.61.1)(sass@1.99.0)(terser@5.46.1)(tsx@4.21.0)(typescript@5.9.3)(vite@7.3.5(@types/node@25.5.0)(jiti@2.7.0)(lightningcss@1.32.0)(sass@1.99.0)(terser@5.46.1)(tsx@4.21.0)(yaml@2.8.3))(vue-tsc@3.3.1(typescript@5.9.3))(xml2js@0.6.2)(yaml@2.8.3):
     dependencies:
       '@dxup/nuxt': 0.4.1(magicast@0.5.2)(typescript@5.9.3)
@@ -13356,8 +13340,6 @@ snapshots:
       unified: 11.0.5
     transitivePeerDependencies:
       - supports-color
-
-  request-ip@3.3.0: {}
 
   require-directory@2.1.1: {}
 

@@ -102,7 +102,6 @@ export const kungal: KunSiteConfig = {
   ad: [
     {
       name: 'aify',
-      link: 'https://umami.kungal.org/q/MowDtlqFz',
       banner: '/a/kungal1.webp',
       icon: '/a/icon1.webp'
     }

@@ -11,13 +11,14 @@ const props = withDefaults(
 )
 
 const showAd = useAdVisible()
+const aifyLink = useAifyLink()
 </script>
 
 <template>
   <KunLink
     :class-name="cn('block', props.className)"
     target="_blank"
-    :to="kungal.ad[0]!.link"
+    :to="aifyLink"
     v-if="showAd"
   >
     <KunImage
