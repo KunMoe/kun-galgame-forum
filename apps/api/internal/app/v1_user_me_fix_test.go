@@ -44,6 +44,8 @@ type meFix struct {
 	searchFail   atomic.Bool
 	searchRefuse atomic.Bool
 	avatarFail   atomic.Bool
+	avatarStatus atomic.Int32
+	avatarCode   atomic.Int32
 	avatarCT     atomic.Value
 	avatarName   atomic.Value
 }
@@ -161,6 +163,10 @@ func (f *meFix) installUpstream() {
 	f.mux.HandleFunc("POST /auth/me/avatar", func(w http.ResponseWriter, r *http.Request) {
 		if f.avatarFail.Load() {
 			writeHouse(w, 500, 10, nil)
+			return
+		}
+		if s := f.avatarStatus.Load(); s != 0 {
+			writeHouse(w, int(s), int(f.avatarCode.Load()), nil)
 			return
 		}
 		_, params, _ := mime.ParseMediaType(r.Header.Get("Content-Type"))

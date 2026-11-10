@@ -180,6 +180,36 @@ func TestV1AvatarUpstreamFailureIs503(t *testing.T) {
 	mustCode(t, resp, body, http.StatusServiceUnavailable, "SERVICE_UNAVAILABLE")
 }
 
+func TestV1AvatarUpstreamVerdicts(t *testing.T) {
+	cases := []struct {
+		name       string
+		upStatus   int
+		upCode     int
+		status     int
+		code       string
+		fieldCheck string
+	}{
+		{"unsupported format", 400, 80009, http.StatusUnsupportedMediaType, "UNSUPPORTED_MEDIA_TYPE", ""},
+		{"undecodable", 400, 80010, http.StatusUnprocessableEntity, "VALIDATION_FAILED", "INVALID_FORMAT"},
+		{"moderation", 400, 60002, http.StatusUnprocessableEntity, "IMAGE_REJECTED", ""},
+		{"too large", 413, 80007, http.StatusRequestEntityTooLarge, "PAYLOAD_TOO_LARGE", ""},
+		{"daily quota", 429, 80008, http.StatusTooManyRequests, "QUOTA_EXCEEDED", ""},
+		{"real server fault", 500, 1, http.StatusServiceUnavailable, "SERVICE_UNAVAILABLE", ""},
+	}
+	for _, c := range cases {
+		t.Run(c.name, func(t *testing.T) {
+			f := newMeFix(t)
+			f.avatarStatus.Store(int32(c.upStatus))
+			f.avatarCode.Store(int32(c.upCode))
+			resp, body := f.putAvatar(t, "sess-alice", "gif-bytes", "image/gif", "pic.gif")
+			mustCode(t, resp, body, c.status, c.code)
+			if c.fieldCheck != "" {
+				fieldErr(t, body, "pointer", "/file", c.fieldCheck)
+			}
+		})
+	}
+}
+
 func TestV1AvatarRoundTrip(t *testing.T) {
 	f := newMeFix(t)
 	resp, body := f.putAvatar(t, "sess-alice", "png-bytes", "image/png", "pic.png")

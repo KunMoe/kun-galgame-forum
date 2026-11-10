@@ -1,8 +1,29 @@
 <script setup lang="ts">
-import { settle } from '#shared/utils/api/problem'
+import { settle, type ClientProblem } from '#shared/utils/api/problem'
 
-const ACCEPT_TYPES = 'image/png,image/jpeg,image/webp,image/gif,image/avif'
+const ACCEPT_TYPES = 'image/jpeg,image/png,image/webp'
 const MAX_BYTES = 4 * 1024 * 1024
+
+const AVATAR_PROBLEM_TEXT: Record<string, string> = {
+  UNSUPPORTED_MEDIA_TYPE: '不支持该图片格式，请使用 JPG、PNG 或 WebP',
+  PAYLOAD_TOO_LARGE: '图片文件太大了，请压缩后再试',
+  IMAGE_REJECTED: '图片未通过内容审核，请换一张',
+  QUOTA_EXCEEDED: '今天的头像上传次数已用完，明天再来吧'
+}
+
+const avatarProblemText = (problem: ClientProblem) => {
+  if (problem.code && Object.hasOwn(AVATAR_PROBLEM_TEXT, problem.code)) {
+    return AVATAR_PROBLEM_TEXT[problem.code]
+  }
+  const fileError = problem.errors.find((e) => e.pointer === '/file')
+  if (fileError?.reason === 'INVALID_FORMAT') {
+    return '图片解码失败，请换一张图片'
+  }
+  if (fileError?.reason === 'TOO_LONG') {
+    return '图片不能超过 4 MiB'
+  }
+  return null
+}
 
 const api = useApiClient()
 const userStore = usePersistUserStore()
@@ -20,7 +41,7 @@ const handleFileChange = (event: Event) => {
   if (!file) return
 
   if (!ACCEPT_TYPES.split(',').includes(file.type)) {
-    useMessage('请选择 PNG / JPEG / WebP / GIF / AVIF 格式的图片', 'warn')
+    useMessage('请选择 JPG / PNG / WebP 格式的图片', 'warn')
     target.value = ''
     return
   }
@@ -57,7 +78,9 @@ const submit = async () => {
   isUploading.value = false
 
   if (!result.ok) {
-    reportProblem(result.problem)
+    const text = avatarProblemText(result.problem)
+    if (text) useMessage(text, 'error')
+    else reportProblem(result.problem)
     return
   }
   useMessage('头像更新成功', 'success')
@@ -73,8 +96,8 @@ const submit = async () => {
       <span class="text-xl">更改头像</span>
       <p class="text-default-500 text-sm">
         头像统一由 {{ nextmoe.account }} 管理, 在
-        {{ kungal.titleShort }} 直接上传图片即可生效。支持 PNG / JPEG / WebP /
-        GIF / AVIF, 不超过 4 MiB。
+        {{ kungal.titleShort }} 直接上传图片即可生效。支持 JPG / PNG / WebP,
+        不超过 4 MiB。
       </p>
       <p class="text-default-500 text-sm">
         默认头像将会从

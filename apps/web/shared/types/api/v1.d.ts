@@ -1890,7 +1890,7 @@ export interface paths {
         get?: never;
         /**
          * Replace the caller's avatar
-         * @description Uploads a new avatar image as multipart field file. The image must be image/* and at most 4 MiB.
+         * @description Uploads a new avatar image as multipart field file. The image must be JPEG, PNG, or WebP and at most 4 MiB.
          */
         put: operations["putMyAvatar"];
         post?: never;
@@ -27771,7 +27771,7 @@ export interface operations {
                 "multipart/form-data": {
                     /**
                      * Format: binary
-                     * @description Avatar image. Must be image/* and at most 4 MiB.
+                     * @description Avatar image. Must be JPEG, PNG, or WebP and at most 4 MiB.
                      */
                     file?: string;
                 };
@@ -27814,7 +27814,7 @@ export interface operations {
                     "application/problem+json": components["schemas"]["Problem"];
                 };
             };
-            /** @description Request Entity Too Large */
+            /** @description PAYLOAD_TOO_LARGE when the account service refuses the image as too large. */
             413: {
                 headers: {
                     [name: string]: unknown;
@@ -27823,7 +27823,7 @@ export interface operations {
                     "application/problem+json": components["schemas"]["Problem"];
                 };
             };
-            /** @description UNSUPPORTED_MEDIA_TYPE when file is not an image. */
+            /** @description UNSUPPORTED_MEDIA_TYPE when file is not an image, or is an image other than JPEG, PNG, or WebP. */
             415: {
                 headers: {
                     [name: string]: unknown;
@@ -27832,8 +27832,17 @@ export interface operations {
                     "application/problem+json": components["schemas"]["Problem"];
                 };
             };
-            /** @description VALIDATION_FAILED when file is missing or larger than 4 MiB. */
+            /** @description VALIDATION_FAILED when file is missing, larger than 4 MiB, or cannot be decoded; IMAGE_REJECTED when moderation refuses the image. */
             422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description QUOTA_EXCEEDED when the caller's avatar upload quota for today is used up. */
+            429: {
                 headers: {
                     [name: string]: unknown;
                 };
@@ -27850,7 +27859,7 @@ export interface operations {
                     "application/problem+json": components["schemas"]["Problem"];
                 };
             };
-            /** @description SERVICE_UNAVAILABLE when the account service cannot be reached. */
+            /** @description SERVICE_UNAVAILABLE when the account service cannot be reached or fails. */
             503: {
                 headers: {
                     [name: string]: unknown;

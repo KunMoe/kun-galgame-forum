@@ -306,14 +306,16 @@ func Register(u *Users) func(huma.API) {
 			Method:      http.MethodPut,
 			Path:        "/me/avatar",
 			Summary:     "Replace the caller's avatar",
-			Description: "Uploads a new avatar image as multipart field file. The image must be image/* and at most 4 MiB.",
+			Description: "Uploads a new avatar image as multipart field file. The image must be JPEG, PNG, or WebP and at most 4 MiB.",
 			Tags:        []string{"users"},
 			Middlewares: huma.Middlewares{withUpstream},
 			RequestBody: avatarRequestBody(),
 			Responses: problemResponses(map[int]string{
-				415: "UNSUPPORTED_MEDIA_TYPE when file is not an image.",
-				422: "VALIDATION_FAILED when file is missing or larger than 4 MiB.",
-				503: "SERVICE_UNAVAILABLE when the account service cannot be reached.",
+				413: "PAYLOAD_TOO_LARGE when the account service refuses the image as too large.",
+				415: "UNSUPPORTED_MEDIA_TYPE when file is not an image, or is an image other than JPEG, PNG, or WebP.",
+				422: "VALIDATION_FAILED when file is missing, larger than 4 MiB, or cannot be decoded; IMAGE_REJECTED when moderation refuses the image.",
+				429: "QUOTA_EXCEEDED when the caller's avatar upload quota for today is used up.",
+				503: "SERVICE_UNAVAILABLE when the account service cannot be reached or fails.",
 			}),
 		}), u.putMyAvatar)
 

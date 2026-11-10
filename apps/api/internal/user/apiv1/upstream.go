@@ -31,6 +31,12 @@ const (
 	oauthCreatorAlready  = 17001
 	oauthCreatorPending  = 17002
 	oauthCreatorCooldown = 17003
+
+	oauthImageModerationRejected = 60002
+	oauthImageTooLarge           = 80007
+	oauthImageQuotaExceeded      = 80008
+	oauthImageUnsupportedFormat  = 80009
+	oauthImageUndecodable        = 80010
 )
 
 // Operation middleware runs after identity middleware, which is what puts the token into Fiber locals.
@@ -108,6 +114,31 @@ func mapProfileError(err error) *problem.Problem {
 	case oauthFieldConstraint:
 		return validationFailed(problem.AtPointer("/name", problem.ReasonInvalidFormat,
 			"the name does not match the allowed character set", nil))
+	case oauthTokenMissing, oauthTokenInvalid, oauthTokenExpired:
+		return problem.New(problem.CodeInvalidCredential, "The credential is invalid, expired, or revoked.")
+	}
+	return unavailable(err)
+}
+
+// Every verdict on the file came back as SERVICE_UNAVAILABLE, so a GIF or an
+// oversized image read as "服务暂时不可用".
+func mapAvatarError(err error) *problem.Problem {
+	switch oauthCode(err) {
+	case oauthImageUnsupportedFormat:
+		return problem.New(problem.CodeUnsupportedMediaType,
+			"The avatar must be JPEG, PNG, or WebP.")
+	case oauthImageUndecodable:
+		return validationFailed(problem.AtPointer("/file", problem.ReasonInvalidFormat,
+			"the image could not be decoded", nil))
+	case oauthImageModerationRejected:
+		return problem.New(problem.CodeImageRejected,
+			"The image service's moderation refused the image. Nothing was stored.")
+	case oauthImageTooLarge:
+		return problem.New(problem.CodePayloadTooLarge,
+			"The account service refused the image as too large.")
+	case oauthImageQuotaExceeded:
+		return problem.New(problem.CodeQuotaExceeded,
+			"The caller's avatar upload quota for today is used up.")
 	case oauthTokenMissing, oauthTokenInvalid, oauthTokenExpired:
 		return problem.New(problem.CodeInvalidCredential, "The credential is invalid, expired, or revoked.")
 	}

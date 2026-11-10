@@ -37,7 +37,7 @@ func avatarRequestBody() *huma.RequestBody {
 							Type:        huma.TypeString,
 							Format:      "binary",
 							MaxLength:   &maxLen,
-							Description: "Avatar image. Must be image/* and at most 4 MiB.",
+							Description: "Avatar image. Must be JPEG, PNG, or WebP and at most 4 MiB.",
 						},
 					},
 				},
@@ -100,7 +100,7 @@ func (s *Users) putMyAvatar(ctx context.Context, in *putMyAvatarInput) (*putMyAv
 	}
 	resp, err := s.oauth.UploadAvatar(accessToken(ctx), payload, formType)
 	if err != nil {
-		return nil, unavailable(err)
+		return nil, mapAvatarError(err)
 	}
 	if s.accounts != nil {
 		s.accounts.Invalidate(user.ID)
