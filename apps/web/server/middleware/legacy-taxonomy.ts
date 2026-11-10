@@ -7,6 +7,7 @@ import {
 import { taxonomyDetailPath } from '../../shared/utils/kunTaxonomyPaths'
 import { createApiClient } from '../../shared/utils/api/client'
 import { settle } from '../../shared/utils/api/problem'
+import { kunRedirect } from '../utils/kunRedirect'
 
 const LEGACY_RE = /^\/galgame-(tag|official|engine)\/(\d+)$/
 
@@ -17,7 +18,7 @@ export default defineEventHandler(async (event) => {
   const withQuery = (to: string) => (query ? `${to}?${query}` : to)
 
   const renamed = resolveRenamedTaxonomyPath(path)
-  if (renamed) return sendRedirect(event, withQuery(renamed), 301)
+  if (renamed) return kunRedirect(event, withQuery(renamed), 301)
 
   const m = path.match(LEGACY_RE)
   if (!m) return
@@ -28,7 +29,7 @@ export default defineEventHandler(async (event) => {
 
   if (family === 'tag') {
     const res = resolveLegacyTag(wikiId)
-    if (res.kind === 'redirect') return sendRedirect(event, res.to, 301)
+    if (res.kind === 'redirect') return kunRedirect(event, res.to, 301)
     if (res.kind === 'gone') {
       throw createError({
         statusCode: 410,
@@ -40,7 +41,7 @@ export default defineEventHandler(async (event) => {
 
   if (family === 'engine') {
     const res = resolveLegacyEngine(wikiId)
-    if (res.kind === 'redirect') return sendRedirect(event, res.to, 301)
+    if (res.kind === 'redirect') return kunRedirect(event, res.to, 301)
     return
   }
 
@@ -54,7 +55,7 @@ export default defineEventHandler(async (event) => {
   )
 
   if (res.ok) {
-    return sendRedirect(
+    return kunRedirect(
       event,
       taxonomyDetailPath('official', Number(res.data.company_id)),
       301

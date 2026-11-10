@@ -1,5 +1,6 @@
 import type { H3Event } from 'h3'
 import { type KunOgCard, kunOgSignedUrl, kunOgSiteCard } from './kunOgCard'
+import { kunRedirect } from './kunRedirect'
 
 /**
  * Short, not immutable: the path stays the same for the life of an entity, so a renamed topic
@@ -16,5 +17,5 @@ export const kunOgRedirect = (event: H3Event, card: KunOgCard | null) => {
     `${origin}/kungalgame.webp`
 
   setHeader(event, 'Cache-Control', CACHE_CONTROL)
-  return sendRedirect(event, target, 302)
+  return kunRedirect(event, target, 302)
 }

@@ -1,4 +1,5 @@
 import { imageHashUrl, parseImageToken } from '#shared/utils/imageService'
+import { kunRedirect } from '../utils/kunRedirect'
 
 export default defineEventHandler((event) => {
   if (event.method !== 'GET') return
@@ -15,7 +16,7 @@ export default defineEventHandler((event) => {
     'cache-control',
     'public, max-age=31536000, immutable'
   )
-  return sendRedirect(
+  return kunRedirect(
     event,
     imageHashUrl(base, parsed.hash, parsed.variant),
     302

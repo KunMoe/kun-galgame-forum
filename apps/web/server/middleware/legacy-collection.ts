@@ -1,5 +1,6 @@
 import { createApiClient, sessionCookie } from '../../shared/utils/api/client'
 import { settle } from '../../shared/utils/api/problem'
+import { kunRedirect } from '../utils/kunRedirect'
 
 const LEGACY_RE = /^\/galgame\/collection\/(\d+)$/
 
@@ -25,6 +26,6 @@ export default defineEventHandler(async (event) => {
 
   if (res.ok) {
     const to = `/collection/${res.data.collection_id}`
-    return sendRedirect(event, query ? `${to}?${query}` : to, 301)
+    return kunRedirect(event, query ? `${to}?${query}` : to, 301)
   }
 })
