@@ -34,10 +34,18 @@ const { data, status, pending } = useKunApi<RatingPage>(
 const ratings = computed(() =>
   (data.value?.items ?? []).map((r) => ratingToCard(r, nameOf))
 )
+
+const listStart = useTemplateRef('listStart')
+const revealList = useRevealListStart(
+  listStart,
+  () => pageData.page,
+  () => status.value === 'pending'
+)
 </script>
 
 <template>
-  <div class="space-y-3">
+  <div ref="listStart" class="scroll-mt-36 space-y-3 lg:scroll-mt-20">
+    <h2 class="sr-only">评分<KunPageLabel :page="pageData.page" /></h2>
     <GalgameRatingCardSkeleton v-if="pending" :count="8" />
     <div v-if="data && data.items.length" class="space-y-3">
       <GalgameRatingCard :ratings="ratings" :is-transparent="false" />
@@ -47,6 +55,7 @@ const ratings = computed(() =>
         v-model:current-page="pageData.page"
         :total-page="Math.ceil(data.total / pageData.limit)"
         :is-loading="status === 'pending'"
+        @update:current-page="revealList"
       />
     </div>
 

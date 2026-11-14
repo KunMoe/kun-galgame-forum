@@ -1,5 +1,4 @@
 <script setup lang="ts">
-import type { KunTabItem } from '@kungal/ui-vue'
 import type {
   ListUserFollowee,
   ListUserFollower,
@@ -24,14 +23,6 @@ const props = defineProps<{
 }>()
 
 const api = useApiClient()
-
-const tabItems = computed<KunTabItem[]>(() => {
-  const base = `/user/${props.user.id}/follow`
-  return [
-    { value: 'followers', textValue: '粉丝', href: `${base}/followers` },
-    { value: 'following', textValue: '关注', href: `${base}/following` }
-  ]
-})
 
 const personOf = (item: FollowItem): UserRef =>
   item.object === 'user_follower' ? item.follower : item.followee
@@ -99,8 +90,6 @@ const emptyDescription = computed(() =>
 
 <template>
   <div class="space-y-3">
-    <KunTab :items="tabItems" :model-value="type" variant="light" size="sm" />
-
     <UserListSkeleton v-if="pending && !items.length" shape="user" />
 
     <KunNull v-else-if="problem" :description="problemMessage(problem)" />

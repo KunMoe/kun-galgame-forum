@@ -2,12 +2,11 @@
 import { isMissingProblem } from '#shared/utils/api/problem'
 import type { UserProfile } from '#shared/utils/api/schemas'
 import {
-  kunUserMainNav,
-  userSegmentGroup,
-  userSegmentHref,
-  userTopicGroupOptions,
-  userGalgameGroupOptions
-} from '~/constants/user'
+  findUserNavSection,
+  userNavTabs,
+  userProfileNav,
+  userSectionTabs
+} from '~/constants/userProfileNav'
 
 definePageMeta({
   key: (route) => (route.params as { id: string }).id,
@@ -39,8 +38,14 @@ const nuxtApp = useNuxtApp()
 const MIN_VISIBLE_MS = 280
 let navStartedAt = 0
 let clearTimer: ReturnType<typeof setTimeout> | null = null
+// Only a move between sections dims the panel. Paging a list changes nothing
+// but the query, and the inert this sets dropped the page button the reader
+// had just pressed to <body>.
 const stopNavHooks = [
-  nuxtApp.hook('page:loading:start', () => {
+  useRouter().beforeEach((to, from) => {
+    if (to.path === from.path) {
+      return
+    }
     if (clearTimer) {
       clearTimeout(clearTimer)
       clearTimer = null
@@ -67,13 +72,15 @@ const isOwner = computed(
   () => !!storeUid.value && Number(userId.value) === storeUid.value
 )
 
-const activeSegment = computed(() => {
-  const m = route.path.match(/^\/user\/\d+\/([^/]+)/)
-  return m ? m[1]! : 'activity'
+const nav = computed(() =>
+  data.value ? userProfileNav(data.value, isOwner.value) : []
+)
+const active = computed(() => findUserNavSection(nav.value, route.path))
+const sectionGroups = computed(() => {
+  const groups = active.value?.item.groups ?? []
+  const count = groups.reduce((n, group) => n + group.sections.length, 0)
+  return count > 1 ? groups : []
 })
-const activeGroup = computed(() => userSegmentGroup(activeSegment.value))
-const goToSegment = (seg: string) =>
-  navigateTo(userSegmentHref(Number(userId.value), seg))
 
 useKunSeoMeta(() => {
   if (data.value) {
@@ -88,59 +95,51 @@ useKunSeoMeta(() => {
 
 <template>
   <div class="space-y-4">
-    <template v-if="data">
-      <UserProfileHeader :user="data" />
+    <div
+      v-if="data"
+      class="grid grid-cols-1 items-start gap-4 lg:grid-cols-[18rem_minmax(0,1fr)] lg:gap-6"
+    >
+      <UserProfileCard :user="data" />
 
-      <div
-        class="grid grid-cols-1 items-start gap-4 sm:grid-cols-[auto_minmax(0,1fr)]"
-      >
-        <div class="sm:hidden">
-          <KunTab
-            :items="kunUserMainNav(Number(data.id), isOwner)"
-            :model-value="activeGroup"
-            variant="solid"
-            color="primary"
-            size="sm"
-            scrollable
-          />
-        </div>
+      <div class="min-w-0 space-y-4 lg:min-h-[calc(100dvh-6rem)]">
+        <KunTab
+          :items="userNavTabs(nav)"
+          :model-value="active?.item.value ?? ''"
+          variant="underlined"
+          color="primary"
+          scrollable
+        />
 
-        <div class="hidden self-start sm:sticky sm:top-36 sm:block">
-          <KunTab
-            :items="kunUserMainNav(Number(data.id), isOwner)"
-            :model-value="activeGroup"
-            orientation="vertical"
-            variant="underlined"
-            color="primary"
-          />
-        </div>
-
-        <div class="min-w-0 sm:min-h-[calc(100dvh-9rem)]">
+        <div v-if="sectionGroups.length" class="space-y-2">
           <div
-            v-if="activeGroup === 'topic' || activeGroup === 'galgame'"
-            class="mb-4"
+            v-for="group in sectionGroups"
+            :key="group.label ?? 'sections'"
+            class="flex items-center gap-3"
           >
-            <KunRadioGroup
-              :model-value="activeSegment"
-              :options="
-                activeGroup === 'topic'
-                  ? userTopicGroupOptions
-                  : userGalgameGroupOptions(isOwner)
-              "
-              variant="pill"
-              orientation="horizontal"
-              color="primary"
-              size="sm"
-              @change="goToSegment"
-            />
+            <span
+              v-if="group.label"
+              class="text-default-500 shrink-0 text-xs font-medium"
+            >
+              {{ group.label }}
+            </span>
+            <div class="min-w-0 flex-1">
+              <KunTab
+                :items="userSectionTabs(group)"
+                :model-value="active?.section.value ?? ''"
+                variant="pills"
+                color="primary"
+                size="sm"
+                scrollable
+              />
+            </div>
           </div>
-
-          <KunLoadingDim :loading="isNavLoading" :delay="0">
-            <NuxtPage :user="data" />
-          </KunLoadingDim>
         </div>
+
+        <KunLoadingDim :loading="isNavLoading" :delay="0">
+          <NuxtPage :user="data" />
+        </KunLoadingDim>
       </div>
-    </template>
+    </div>
 
     <UserProfileSkeleton v-else-if="pending" />
 

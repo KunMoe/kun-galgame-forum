@@ -64,10 +64,18 @@ const { data, status, problem, pending } = useKunApi<PageListQuizSummary>(
 const onTab = (v: string) => {
   set({ tab: v })
 }
+
+const listStart = useTemplateRef('listStart')
+const revealList = useRevealListStart(
+  listStart,
+  page,
+  () => status.value === 'pending'
+)
 </script>
 
 <template>
-  <div class="space-y-3">
+  <div ref="listStart" class="scroll-mt-36 space-y-3 lg:scroll-mt-20">
+    <h2 class="sr-only">题库<KunPageLabel :page="page" /></h2>
     <KunTab
       v-if="tabItems.length > 1"
       :model-value="tab"
@@ -85,6 +93,7 @@ const onTab = (v: string) => {
         v-model:current-page="page"
         :total-page="Math.ceil(data.total / limit)"
         :is-loading="status === 'pending'"
+        @update:current-page="revealList"
       />
     </template>
 

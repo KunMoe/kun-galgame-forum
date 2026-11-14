@@ -26,10 +26,18 @@ const { data, status, pending } = useKunApi<PageListCollectionSummary>(
       signal
     })
 )
+
+const listStart = useTemplateRef('listStart')
+const revealList = useRevealListStart(
+  listStart,
+  page,
+  () => status.value === 'pending'
+)
 </script>
 
 <template>
-  <div class="space-y-3">
+  <div ref="listStart" class="scroll-mt-36 space-y-3 lg:scroll-mt-20">
+    <h2 class="sr-only">游戏收藏夹<KunPageLabel :page="page" /></h2>
     <GalgameCollectionRowCardSkeleton v-if="pending" :count="4" />
     <div v-if="data && data.items.length" class="flex flex-col space-y-3">
       <div class="grid grid-cols-1 gap-3 md:grid-cols-2">
@@ -46,6 +54,7 @@ const { data, status, pending } = useKunApi<PageListCollectionSummary>(
         v-model:current-page="page"
         :total-page="Math.ceil(data.total / limit)"
         :is-loading="status === 'pending'"
+        @update:current-page="revealList"
       />
     </div>
 

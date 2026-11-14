@@ -1,34 +1,29 @@
 <template>
-  <div class="space-y-4" aria-hidden="true">
-    <KunCard :is-hoverable="false">
-      <div class="flex items-start gap-4">
+  <div
+    class="grid grid-cols-1 items-start gap-4 lg:grid-cols-[18rem_minmax(0,1fr)] lg:gap-6"
+    aria-hidden="true"
+  >
+    <KunCard :is-hoverable="false" content-class="gap-4">
+      <div class="flex items-start gap-4 lg:flex-col lg:gap-3">
         <KunSkeleton variant="circle" width="6rem" height="6rem" />
-        <div class="min-w-0 flex-1">
+        <div class="min-w-0 flex-1 space-y-2">
           <KunSkeleton variant="text" width="10rem" class-name="text-2xl" />
-          <KunSkeleton
-            height="1.5rem"
-            width="4rem"
-            rounded="full"
-            class-name="mt-2"
-          />
-          <KunSkeleton variant="text" width="70%" class-name="mt-2 text-sm" />
+          <KunSkeleton height="1.5rem" width="4rem" rounded="full" />
+          <KunSkeleton variant="text" width="70%" class-name="text-sm" />
         </div>
       </div>
-      <div class="mt-5 flex flex-wrap gap-x-8 gap-y-3">
-        <div v-for="n in 5" :key="n" class="min-w-14">
+      <div
+        class="grid grid-cols-4 gap-x-4 gap-y-3 sm:grid-cols-8 lg:grid-cols-2"
+      >
+        <div v-for="n in 8" :key="n">
           <KunSkeleton variant="text" width="2.5rem" class-name="text-xl" />
           <KunSkeleton variant="text" width="3rem" class-name="text-xs" />
         </div>
       </div>
     </KunCard>
 
-    <div
-      class="grid grid-cols-1 items-start gap-4 sm:grid-cols-[auto_minmax(0,1fr)]"
-    >
-      <KunSkeleton height="2rem" rounded="lg" class-name="sm:hidden" />
-      <div class="hidden w-28 space-y-3 sm:block">
-        <KunSkeleton v-for="n in 6" :key="n" height="1.75rem" rounded="md" />
-      </div>
+    <div class="min-w-0 space-y-4">
+      <KunSkeleton height="2.25rem" rounded="lg" />
       <UserListSkeleton :rows="4" />
     </div>
   </div>

@@ -139,10 +139,18 @@ const loadMoreComments = async () => {
   comments.value.push(...result.data.items.filter((c) => !seen.has(c.id)))
   commentCursor.value = result.data.next_cursor
 }
+
+const listStart = useTemplateRef('listStart')
+const revealList = useRevealListStart(
+  listStart,
+  () => pageData.page,
+  () => galgameStatus.value === 'pending'
+)
 </script>
 
 <template>
-  <div class="space-y-3">
+  <div ref="listStart" class="scroll-mt-36 space-y-3 lg:scroll-mt-20">
+    <h2 class="sr-only">Galgame<KunPageLabel :page="pageData.page" /></h2>
     <KunTab
       :items="kunUserGalgameNavItem(userId)"
       :model-value="activeTab"
@@ -164,6 +172,7 @@ const loadMoreComments = async () => {
           v-model:current-page="pageData.page"
           :total-page="Math.ceil(galgameData.total / pageData.limit)"
           :is-loading="galgameStatus === 'pending'"
+          @update:current-page="revealList"
         />
       </div>
 

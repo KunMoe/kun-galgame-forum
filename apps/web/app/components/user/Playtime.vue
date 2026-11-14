@@ -47,10 +47,18 @@ const coverOf = (item: Item) =>
     : item.work_summary.cover
 const stateLabel = (state: string) =>
   KUN_GALGAME_PLAY_STATE_MAP[state as KunGalgamePlayStateRead] ?? state
+
+const listStart = useTemplateRef('listStart')
+const revealList = useRevealListStart(
+  listStart,
+  () => pageData.page,
+  () => status.value === 'pending'
+)
 </script>
 
 <template>
-  <div class="space-y-6">
+  <div ref="listStart" class="scroll-mt-36 space-y-6 lg:scroll-mt-20">
+    <h2 class="sr-only">游玩时长<KunPageLabel :page="pageData.page" /></h2>
     <div v-if="stats.length" class="grid grid-cols-3 gap-3">
       <div
         v-for="stat in stats"
@@ -148,6 +156,7 @@ const stateLabel = (state: string) =>
         v-model:current-page="pageData.page"
         :total-page="Math.ceil(data.total / pageData.limit)"
         :is-loading="status === 'pending'"
+        @update:current-page="revealList"
       />
     </template>
 

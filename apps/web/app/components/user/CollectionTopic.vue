@@ -26,10 +26,18 @@ const { data, status, pending } = useKunApi<PageListUserTopicItem>(
       signal
     })
 )
+
+const listStart = useTemplateRef('listStart')
+const revealList = useRevealListStart(
+  listStart,
+  page,
+  () => status.value === 'pending'
+)
 </script>
 
 <template>
-  <div class="space-y-3">
+  <div ref="listStart" class="scroll-mt-36 space-y-3 lg:scroll-mt-20">
+    <h2 class="sr-only">话题收藏<KunPageLabel :page="page" /></h2>
     <UserListSkeleton v-if="pending" />
     <div v-if="data && data.items.length" class="flex flex-col space-y-3">
       <KunCard
@@ -48,6 +56,7 @@ const { data, status, pending } = useKunApi<PageListUserTopicItem>(
         v-model:current-page="page"
         :total-page="Math.ceil(data.total / limit)"
         :is-loading="status === 'pending'"
+        @update:current-page="revealList"
       />
     </div>
 

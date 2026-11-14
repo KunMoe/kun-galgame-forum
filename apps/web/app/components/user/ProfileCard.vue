@@ -70,9 +70,12 @@ useIntersectionObserver(
 </script>
 
 <template>
-  <div ref="bannerRef">
-    <KunCard :is-hoverable="false">
-      <div class="flex items-start gap-4">
+  <div
+    ref="bannerRef"
+    class="lg:sticky lg:top-20 lg:max-h-[calc(100dvh-6rem)] lg:overflow-y-auto"
+  >
+    <KunCard :is-hoverable="false" content-class="gap-4">
+      <div class="flex items-start gap-4 lg:flex-col lg:gap-3">
         <KunAvatar
           class-name="cursor-default shrink-0 relative"
           :is-navigation="false"
@@ -80,35 +83,10 @@ useIntersectionObserver(
           :user="kunUser"
         />
 
-        <div class="min-w-0 flex-1">
-          <h1 class="flex flex-wrap items-center gap-2 text-2xl font-bold">
-            <span class="truncate">{{ displayName }}</span>
-            <KunButton
-              v-if="!isSelf"
-              variant="flat"
-              size="xs"
-              color="primary"
-              class-name="gap-1"
-              :href="directMessagePath(user.id)"
-            >
-              <KunIcon name="lucide:message-circle" />
-              私聊
-            </KunButton>
-            <UserFollowButton
-              v-if="!isSelf"
-              :user-id="user.id"
-              @change="onFollowChange"
-            />
-            <ReportButton
-              v-if="!isSelf"
-              subject-kind="user"
-              :subject-id="user.id"
-              :snapshot="displayName"
-              :subject-url="`${kungal.domain.main}/user/${user.id}`"
-            />
-          </h1>
+        <div class="min-w-0 flex-1 space-y-2">
+          <h1 class="text-2xl font-bold break-words">{{ displayName }}</h1>
 
-          <div class="mt-2 flex flex-wrap items-center gap-2">
+          <div class="flex flex-wrap items-center gap-2">
             <KunChip size="sm" color="primary">
               {{ managementRoleLabel(user.roles) }}
             </KunChip>
@@ -123,18 +101,66 @@ useIntersectionObserver(
 
           <p
             v-if="user.bio"
-            class="text-default-600 mt-2 line-clamp-2 text-sm break-words"
+            class="text-default-600 line-clamp-3 text-sm break-words"
           >
             {{ user.bio }}
           </p>
 
-          <div class="text-default-500 mt-2 text-sm">
+          <div class="text-default-500 text-sm">
             注册于 <KunTime :time="user.created_at" type="date" show-year />
           </div>
         </div>
       </div>
 
-      <div v-if="user.about_html" class="mt-4 space-y-1">
+      <div v-if="!isSelf" class="flex flex-wrap items-center gap-2">
+        <KunButton
+          variant="flat"
+          size="xs"
+          color="primary"
+          class-name="gap-1"
+          :href="directMessagePath(user.id)"
+        >
+          <KunIcon name="lucide:message-circle" />
+          私聊
+        </KunButton>
+        <UserFollowButton :user-id="user.id" @change="onFollowChange" />
+        <ReportButton
+          subject-kind="user"
+          :subject-id="user.id"
+          :snapshot="displayName"
+          :subject-url="`${kungal.domain.main}/user/${user.id}`"
+        />
+      </div>
+
+      <dl
+        class="grid grid-cols-4 gap-x-4 gap-y-3 sm:grid-cols-8 lg:grid-cols-2"
+      >
+        <div v-for="m in metrics" :key="m.label" class="flex flex-col-reverse">
+          <dt class="text-default-500 text-xs">{{ m.label }}</dt>
+          <dd>
+            <KunLink
+              v-if="m.href"
+              :to="m.href"
+              color="default"
+              underline="none"
+              class-name="hover:text-primary text-xl font-bold"
+            >
+              {{ displayCount(m.value) }}
+            </KunLink>
+            <span
+              v-else
+              :class="cn('text-xl font-bold', m.accent && 'text-secondary')"
+            >
+              {{ displayCount(m.value) }}
+            </span>
+          </dd>
+        </div>
+      </dl>
+
+      <div
+        v-if="user.about_html"
+        class="border-default-200 space-y-1 border-t pt-4"
+      >
         <KunContent :content="user.about_html" compact />
         <KunLink
           v-if="isSelf"
@@ -149,27 +175,6 @@ useIntersectionObserver(
           在账号中心编辑介绍
         </KunLink>
       </div>
-
-      <div class="mt-5 flex flex-wrap gap-x-8 gap-y-3">
-        <div v-for="m in metrics" :key="m.label" class="min-w-14">
-          <KunLink
-            v-if="m.href"
-            :to="m.href"
-            color="default"
-            underline="none"
-            class-name="hover:text-primary"
-          >
-            <div class="text-xl font-bold">{{ displayCount(m.value) }}</div>
-            <div class="text-default-500 text-xs">{{ m.label }}</div>
-          </KunLink>
-          <template v-else>
-            <div :class="cn('text-xl font-bold', m.accent && 'text-secondary')">
-              {{ displayCount(m.value) }}
-            </div>
-            <div class="text-default-500 text-xs">{{ m.label }}</div>
-          </template>
-        </div>
-      </div>
     </KunCard>
 
     <Transition
@@ -180,7 +185,7 @@ useIntersectionObserver(
       leave-from-class="opacity-100 translate-y-0"
       leave-to-class="opacity-0 -translate-y-2"
     >
-      <div v-show="collapsed" class="fixed inset-x-0 top-20 z-20">
+      <div v-show="collapsed" class="fixed inset-x-0 top-20 z-20 lg:hidden">
         <div class="flex justify-center">
           <div
             class="desktop-nav:mr-3 desktop-nav:ml-[104px] desktop-nav:px-0 w-full max-w-7xl min-w-0 px-2"

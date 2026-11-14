@@ -33,10 +33,18 @@ const onFollowChange = async (delta: number) => {
   }
   await refresh()
 }
+
+const listStart = useTemplateRef('listStart')
+const revealList = useRevealListStart(
+  listStart,
+  () => pageData.page,
+  () => status.value === 'pending'
+)
 </script>
 
 <template>
-  <div class="space-y-3">
+  <div ref="listStart" class="scroll-mt-36 space-y-3 lg:scroll-mt-20">
+    <h2 class="sr-only">关注的会社<KunPageLabel :page="pageData.page" /></h2>
     <UserListSkeleton v-if="pending" shape="media" />
     <template v-else>
       <div v-if="officials.length" class="flex flex-col gap-3">
@@ -59,6 +67,7 @@ const onFollowChange = async (delta: number) => {
           v-model:current-page="pageData.page"
           :total-page="Math.ceil(data.total / pageData.limit)"
           :is-loading="status === 'pending'"
+          @update:current-page="revealList"
         />
       </div>
 

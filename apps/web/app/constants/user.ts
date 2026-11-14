@@ -42,15 +42,6 @@ export const GALGAME_NAV_CONFIG: Record<
   galgame_comment_like: { text: '点赞评论', path: 'galgame-comment-like' }
 }
 
-export const COLLECTION_NAV_CONFIG: Record<
-  (typeof KUN_USER_PAGE_COLLECTION_TYPE)[number],
-  _NavItemData
-> = {
-  galgame: { text: '游戏收藏夹', path: 'galgame' },
-  topic: { text: '话题收藏', path: 'topic' },
-  toolset: { text: '工具收藏', path: 'toolset' }
-}
-
 export const GALGAME_RESOURCE_NAV_CONFIG: Record<
   (typeof KUN_USER_PAGE_GALGAME_RESOURCE_TYPE)[number],
   _NavItemData
@@ -114,15 +105,6 @@ export const kunUserGalgameNavItem = (userId: number): KunTabItem[] => {
   )
 }
 
-export const kunUserCollectionNavItem = (userId: number): KunTabItem[] => {
-  return createUserPageNavItems(
-    userId,
-    'collection',
-    KUN_USER_PAGE_COLLECTION_TYPE,
-    COLLECTION_NAV_CONFIG
-  )
-}
-
 export const kunUserGalgameResourceNavItem = (userId: number): KunTabItem[] => {
   return createUserPageNavItems(
     userId,
@@ -171,121 +153,6 @@ export const KUN_USER_PAGE_GALGAME_RESOURCE_TYPE = [
   'expire',
   'galgame_resource_like'
 ] as const
-
-export const kunUserMainNav = (
-  userId: number,
-  isOwner: boolean
-): KunTabItem[] => {
-  const base = `/user/${userId}`
-  const items: KunTabItem[] = [
-    {
-      value: 'activity',
-      textValue: '动态',
-      href: `${base}/activity`,
-      icon: 'lucide:activity'
-    },
-    {
-      value: 'library',
-      textValue: '游戏库',
-      href: `${base}/library`,
-      icon: 'lucide:library'
-    },
-    {
-      value: 'collection',
-      textValue: '收藏',
-      href: `${base}/collection/galgame`,
-      icon: 'lucide:heart'
-    },
-    {
-      value: 'topic',
-      textValue: '话题',
-      href: `${base}/topic/topic`,
-      icon: 'lucide:square-gantt-chart'
-    },
-    {
-      value: 'galgame',
-      textValue: 'Galgame',
-      href: `${base}/galgame/galgame-publish`,
-      icon: 'lucide:gamepad-2'
-    },
-    {
-      value: 'info',
-      textValue: '关于',
-      href: `${base}/info`,
-      icon: 'lucide:user-round'
-    }
-  ]
-  if (isOwner) {
-    items.push({
-      value: 'setting',
-      textValue: '设置',
-      href: `${base}/setting`,
-      icon: 'lucide:settings'
-    })
-  }
-  return items
-}
-
-export const userTopicGroupOptions = [
-  { value: 'topic', label: '话题', icon: 'lucide:square-gantt-chart' },
-  { value: 'reply', label: '回复', icon: 'carbon:reply' },
-  { value: 'comment', label: '评论', icon: 'uil:comment-dots' }
-]
-export const userGalgameGroupOptions = (isOwner: boolean) => {
-  const options = [
-    { value: 'galgame', label: 'Galgame', icon: 'lucide:gamepad-2' },
-    { value: 'rating', label: '评分', icon: 'lucide:star' },
-    { value: 'quiz', label: '题库', icon: 'lucide:brain' },
-    { value: 'resource', label: '资源', icon: 'lucide:package' },
-    { value: 'toolset', label: '工具', icon: 'lucide:wrench' }
-  ]
-  // The tab reads /me/playtimes, which only ever answers the caller.
-  if (isOwner) {
-    options.push({ value: 'playtime', label: '时长', icon: 'lucide:clock' })
-    options.push({
-      value: 'followed-companies',
-      label: '关注的厂商',
-      icon: 'lucide:building-2'
-    })
-  }
-  return options
-}
-
-export const userSegmentGroup = (segment: string): string => {
-  if (['topic', 'reply', 'comment'].includes(segment)) return 'topic'
-  if (
-    [
-      'galgame',
-      'rating',
-      'quiz',
-      'resource',
-      'toolset',
-      'playtime',
-      'followed-companies'
-    ].includes(segment)
-  )
-    return 'galgame'
-  return segment
-}
-
-export const userSegmentHref = (userId: number, segment: string): string => {
-  const base = `/user/${userId}`
-  const map: Record<string, string> = {
-    collection: `${base}/collection/galgame`,
-    topic: `${base}/topic/topic`,
-    reply: `${base}/reply/reply-created`,
-    comment: `${base}/comment/comment-created`,
-    galgame: `${base}/galgame/galgame-publish`,
-    rating: `${base}/rating`,
-    quiz: `${base}/quiz`,
-    resource: `${base}/resource/valid`,
-    toolset: `${base}/toolset`,
-    playtime: `${base}/playtime`,
-    library: `${base}/library`,
-    'followed-companies': `${base}/followed-companies`
-  }
-  return map[segment] ?? `${base}/${segment}`
-}
 
 export const KUN_USER_ROLE_MAP: Record<string, string> = {
   ren: '莲',
