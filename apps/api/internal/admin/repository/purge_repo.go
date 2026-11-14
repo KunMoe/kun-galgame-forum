@@ -95,12 +95,11 @@ func (r *PurgeRepository) CountUserContent(userID int) (UserContentCounts, error
 }
 
 var interactionTables = []string{
-	"topic_like", "topic_dislike", "topic_favorite", "topic_upvote",
+	"topic_favorite", "topic_upvote",
 	"topic_reaction", "topic_reply_reaction",
-	"topic_reply_like", "topic_reply_dislike", "topic_comment_like",
+	"topic_comment_like",
 	"topic_poll_vote", "topic_lottery_entry",
-	"galgame_like", "galgame_favorite",
-	"galgame_collection_item", "galgame_collection_viewer",
+	"galgame_like",
 	"galgame_post_like",
 	"galgame_quiz_answer", "galgame_quiz_favorite",
 	"galgame_rating_like", "galgame_resource_like",
@@ -228,9 +227,7 @@ func (r *PurgeRepository) PurgeUserContent(userID, operatorID int) (PurgeReceipt
 
 		for _, q := range []string{
 			"DELETE FROM chat_message WHERE sender_id = ?",
-			"DELETE FROM chat_message_reaction WHERE user_id = ?",
 			"DELETE FROM chat_message_read_by WHERE user_id = ?",
-			"DELETE FROM chat_room_admin WHERE user_id = ?",
 			"DELETE FROM chat_room_participant WHERE user_id = ?",
 		} {
 			if err := del(tx, q, userID); err != nil {
@@ -269,23 +266,6 @@ func (r *PurgeRepository) PurgeUserContent(userID, operatorID int) (PurgeReceipt
 
 		if err := del(tx, "DELETE FROM message WHERE sender_id = ? OR receiver_id = ? OR (subject_kind = 'user' AND subject_id = ?)", userID, userID, userID); err != nil {
 			return err
-		}
-		for _, q := range []string{
-			"DELETE FROM system_message WHERE user_id = ?",
-			"DELETE FROM system_message_read_state WHERE user_id = ?",
-		} {
-			if err := del(tx, q, userID); err != nil {
-				return err
-			}
-		}
-
-		for _, q := range []string{
-			"DELETE FROM user_follow WHERE follower_id = ? OR followed_id = ?",
-			"DELETE FROM user_friend WHERE user_id = ? OR friend_id = ?",
-		} {
-			if err := del(tx, q, userID, userID); err != nil {
-				return err
-			}
 		}
 
 		for _, q := range []string{
@@ -363,11 +343,6 @@ type interactionDelete struct {
 }
 
 var interactionDeletes = []interactionDelete{
-	// Purge used to recount like_count from topic_like and then delete
-	// topic_reaction without recounting, so remaining reaction rows left the
-	// cached count high.
-	{table: "topic_like"},
-	{table: "topic_dislike"},
 	{table: "topic_favorite", recounts: []recountSpec{{"topic", "favorite_count", "topic_id", ""}}},
 	{table: "topic_upvote", recounts: []recountSpec{{"topic", "upvote_count", "topic_id", ""}}},
 	{table: "topic_reaction", recounts: []recountSpec{
@@ -378,18 +353,10 @@ var interactionDeletes = []interactionDelete{
 		{"topic_reply", "like_count", "topic_reply_id", "COUNT(*) FILTER (WHERE reaction = 'like')"},
 		{"topic_reply", "dislike_count", "topic_reply_id", "COUNT(*) FILTER (WHERE reaction = 'dislike')"},
 	}},
-	{table: "topic_reply_like"},
-	{table: "topic_reply_dislike"},
 	{table: "topic_comment_like"},
 	{table: "topic_poll_vote", recounts: []recountSpec{{"topic_poll_option", "vote_count", "option_id", ""}}},
 	{table: "topic_lottery_entry", recounts: []recountSpec{{"topic_lottery", "entry_count", "lottery_id", ""}}},
 	{table: "galgame_like", recounts: []recountSpec{{"galgame", "like_count", "work_id", ""}}},
-	{table: "galgame_favorite"},
-	{table: "galgame_collection_item", recounts: []recountSpec{
-		{"galgame_collection", "item_count", "collection_id", ""},
-		{"galgame", "favorite_count", "work_id", "COUNT(DISTINCT user_id)"},
-	}},
-	{table: "galgame_collection_viewer"},
 	{table: "galgame_post_like"},
 	{table: "galgame_quiz_answer", recounts: []recountSpec{
 		{"galgame_quiz", "answer_count", "quiz_id", "COUNT(*) FILTER (WHERE role = 'answerer')"},

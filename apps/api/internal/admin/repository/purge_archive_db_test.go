@@ -124,10 +124,6 @@ func (w *purgeWorld) populate(t *testing.T) {
 	s.run(`UPDATE topic SET favorite_count = 2 WHERE id = ?`, pwTopicO)
 	s.insert("topic_upvote", map[string]any{"topic_id": pwTopicO, "user_id": pwTarget, "created": at, "updated": at})
 	s.run(`UPDATE topic SET upvote_count = 1 WHERE id = ?`, pwTopicO)
-	s.insert("topic_like", map[string]any{"topic_id": pwTopicO, "user_id": pwTarget, "created": at, "updated": at})
-	s.insert("topic_dislike", map[string]any{"topic_id": pwTopicO, "user_id": pwTarget, "created": at, "updated": at})
-	s.insert("topic_reply_like", map[string]any{"topic_reply_id": pwReplyOO, "user_id": pwTarget, "created": at, "updated": at})
-	s.insert("topic_reply_dislike", map[string]any{"topic_reply_id": pwReplyOO, "user_id": pwTarget, "created": at, "updated": at})
 
 	pollT := s.insert("topic_poll", map[string]any{"topic_id": pwTopicT, "user_id": pwTarget, "title": "pw poll", "created": at, "updated": at})
 	optT := s.insert("topic_poll_option", map[string]any{"poll_id": pollT["id"], "text": "a", "vote_count": 1, "created": at, "updated": at})
@@ -150,14 +146,12 @@ func (w *purgeWorld) populate(t *testing.T) {
 
 	s.insert("galgame_like", map[string]any{"work_id": pwGalgame, "user_id": pwTarget, "created": at, "updated": at})
 	s.insert("galgame_like", map[string]any{"work_id": pwGalgame, "user_id": pwThird, "created": at, "updated": at})
-	s.insert("galgame_favorite", map[string]any{"work_id": pwGalgame, "user_id": pwTarget, "created": at, "updated": at})
 	ratingT := s.insert("galgame_rating", map[string]any{"id": pwRatingT, "work_id": pwGalgame, "user_id": pwTarget, "like_count": 1, "created": at, "updated": at})
 	s.insert("galgame_rating_like", map[string]any{"galgame_rating_id": ratingT["id"], "user_id": pwOther, "created": at, "updated": at})
 	ratingO := s.insert("galgame_rating", map[string]any{"id": pwRatingO, "work_id": pwGalgame, "user_id": pwOther, "like_count": 1, "created": at, "updated": at})
 	s.insert("galgame_rating_like", map[string]any{"galgame_rating_id": ratingO["id"], "user_id": pwTarget, "created": at, "updated": at})
 	resT := s.insert("galgame_resource", map[string]any{"work_id": pwGalgame, "user_id": pwTarget, "like_count": 1, "created": at, "updated": at})
 	s.insert("galgame_resource_link", map[string]any{"galgame_resource_id": resT["id"], "url": "https://pw.example/t", "created": at, "updated": at})
-	s.insert("galgame_resource_provider", map[string]any{"resource_id": resT["id"], "name": "pw", "created": at, "updated": at})
 	s.insert("galgame_resource_like", map[string]any{"galgame_resource_id": resT["id"], "user_id": pwOther, "created": at, "updated": at})
 	resO := s.insert("galgame_resource", map[string]any{"work_id": pwGalgame, "user_id": pwOther, "like_count": 1, "created": at, "updated": at})
 	s.insert("galgame_resource_like", map[string]any{"galgame_resource_id": resO["id"], "user_id": pwTarget, "created": at, "updated": at})
@@ -191,11 +185,8 @@ func (w *purgeWorld) populate(t *testing.T) {
 	s.run(`UPDATE galgame_toolset SET favorite_count = 2 WHERE id = ?`, pwToolsetO)
 	s.run(`UPDATE galgame_toolset SET favorite_count = 1 WHERE id = ?`, pwToolsetT)
 
-	colT := s.insert("galgame_collection", map[string]any{"user_id": pwTarget, "name": "pw col", "visibility": "public", "item_count": 1, "created": at, "updated": at})
-	s.insert("galgame_collection_item", map[string]any{"collection_id": colT["id"], "work_id": pwGalgame, "user_id": pwTarget, "created": at})
-	s.insert("galgame_collection_viewer", map[string]any{"collection_id": colT["id"], "user_id": pwOther, "created": at})
-	colO := s.insert("galgame_collection", map[string]any{"user_id": pwOther, "name": "pw col o", "visibility": "public", "item_count": 1, "created": at, "updated": at})
-	s.insert("galgame_collection_viewer", map[string]any{"collection_id": colO["id"], "user_id": pwTarget, "created": at})
+	s.insert("galgame_collection", map[string]any{"user_id": pwTarget, "name": "pw col", "visibility": "public", "item_count": 1, "created": at, "updated": at})
+	s.insert("galgame_collection", map[string]any{"user_id": pwOther, "name": "pw col o", "visibility": "public", "item_count": 1, "created": at, "updated": at})
 
 	quiz := func(user int) map[string]any {
 		return s.insert("galgame_quiz", map[string]any{"user_id": user, "type": "single", "category": "plot",
@@ -222,16 +213,11 @@ func (w *purgeWorld) populate(t *testing.T) {
 	s.insert("chat_room_participant", map[string]any{"chat_room_id": room["id"], "user_id": pwTarget, "created": at})
 	s.insert("chat_room_participant", map[string]any{"chat_room_id": room["id"], "user_id": pwOther, "created": at})
 	fromOther := s.insert("chat_message", map[string]any{"chat_room_id": room["id"], "sender_id": pwOther, "receiver_id": pwTarget, "content": "yo", "created": at, "updated": at})
-	fromTarget := s.insert("chat_message", map[string]any{"chat_room_id": room["id"], "sender_id": pwTarget, "receiver_id": pwOther, "content": "hi", "created": at.Add(time.Minute), "updated": at})
+	s.insert("chat_message", map[string]any{"chat_room_id": room["id"], "sender_id": pwTarget, "receiver_id": pwOther, "content": "hi", "created": at.Add(time.Minute), "updated": at})
 	s.insert("chat_message_read_by", map[string]any{"chat_message_id": fromOther["id"], "user_id": pwTarget})
-	s.insert("chat_message_reaction", map[string]any{"chat_message_id": fromTarget["id"], "user_id": pwOther, "reaction": "like", "created": at})
 
 	s.insert("message", map[string]any{"sender_id": pwTarget, "receiver_id": pwOther, "type": "liked", "content": "m", "created": at, "updated": at})
 	s.insert("message", map[string]any{"sender_id": pwOther, "receiver_id": pwTarget, "type": "liked", "content": "m", "created": at, "updated": at})
-	s.insert("system_message_read_state", map[string]any{"user_id": pwTarget, "last_read_message_id": 0, "updated_at": at})
-	s.insert("user_follow", map[string]any{"follower_id": pwTarget, "followed_id": pwOther, "created": at, "updated": at})
-	s.insert("user_follow", map[string]any{"follower_id": pwOther, "followed_id": pwTarget, "created": at, "updated": at})
-	s.insert("user_friend", map[string]any{"user_id": pwTarget, "friend_id": pwOther, "created": at, "updated": at})
 	s.insert("user_permission_override", map[string]any{"user_id": pwTarget, "permission": "topic.view_hidden", "effect": "grant", "updated_by": pwAdmin, "updated_at": at})
 }
 
@@ -449,19 +435,19 @@ func TestPurgeFailureLeavesNothing(t *testing.T) {
 
 func TestPurgeSettingsEndWithTheTransaction(t *testing.T) {
 	w := newPurgeWorld(t)
-	stray := w.seed.insert("user_follow", map[string]any{"follower_id": pwThird, "followed_id": pwOther,
+	stray := w.seed.insert("topic_upvote", map[string]any{"topic_id": pwTopicO, "user_id": pwThird,
 		"created": time.Now(), "updated": time.Now()})
 	err := w.db.Connection(func(conn *gorm.DB) error {
 		if _, err := NewPurgeRepository(conn).PurgeUserContent(pwTarget, pwAdmin); err != nil {
 			return err
 		}
-		return conn.Exec(`DELETE FROM user_follow WHERE id = ?`, stray["id"]).Error
+		return conn.Exec(`DELETE FROM topic_upvote WHERE id = ?`, stray["id"]).Error
 	})
 	if err != nil {
 		t.Fatal(err)
 	}
 	if n := w.scalar(t, `SELECT count(*) FROM user_purge_archive
-		WHERE table_name = 'user_follow' AND (row_pk ->> 'id')::int = ?`, stray["id"]); n != 0 {
+		WHERE table_name = 'topic_upvote' AND (row_pk ->> 'id')::int = ?`, stray["id"]); n != 0 {
 		t.Error("a delete after the purge, on the purge's connection, was archived")
 	}
 }

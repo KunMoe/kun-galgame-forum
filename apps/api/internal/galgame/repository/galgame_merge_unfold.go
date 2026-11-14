@@ -240,8 +240,14 @@ func ledgerKey(raw []byte, column string) (int64, error) {
 	return key[column].Int64()
 }
 
+// Migration 225 dropped galgame_favorite. Folds made before it still list its
+// rows, and there is no table left to put them back in.
+var retiredMergeTables = map[string]bool{"galgame_favorite": true}
+
 func (u *unfolder) apply(row foldRow) error {
 	switch {
+	case retiredMergeTables[row.Table]:
+		return nil
 	case row.Action == "moved":
 		return u.moveBack(row)
 	case row.Action == "dropped":

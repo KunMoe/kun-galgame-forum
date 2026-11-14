@@ -161,7 +161,7 @@ func effectOf(ev *catalogclient.ClaimEventFeedItem) claimEffect {
 	case catalogclient.ClaimStateLive:
 		return claimEffectSeedStub
 	// A ban unpublishes; it must never delete the local row. galgame_comment,
-	// galgame_like, galgame_favorite and galgame_resource are ON DELETE CASCADE
+	// galgame_like and galgame_resource are ON DELETE CASCADE
 	// off galgame (galgame_rating was RESTRICT then), so dropping the stub took every
 	// comment and resource down with it — or silently failed on a rated entry —
 	// and a later unban rebuilt the row owned by whoever lifted the ban.

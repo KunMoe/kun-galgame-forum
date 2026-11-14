@@ -28,7 +28,6 @@ func main() {
 		WHERE (table_name = 'galgame_engine' AND column_name = 'alias')
 		   OR (table_name = 'galgame_rating' AND column_name = 'galgame_type')
 		   OR (table_name = 'galgame_toolset' AND column_name = 'homepage')
-		   OR (table_name = 'galgame_toolset_category' AND column_name = 'alias')
 		   OR (table_name = 'galgame_website' AND column_name = 'domain')
 		ORDER BY table_name`).Scan(&cols)
 

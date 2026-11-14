@@ -360,10 +360,6 @@ func (f *writeFix) cleanup(t *testing.T) {
 	_ = f.db.Exec(`DELETE FROM topic_reply_reaction WHERE topic_reply_id IN (
 		SELECT id FROM topic_reply WHERE user_id BETWEEN ? AND ? OR topic_id IN (SELECT id FROM topic WHERE user_id BETWEEN ? AND ?))`,
 		ours[0], ours[1], ours[0], ours[1]).Error
-	_ = f.db.Exec(`DELETE FROM topic_reply_like WHERE topic_reply_id IN (SELECT id FROM topic_reply WHERE user_id BETWEEN ? AND ?)`,
-		ours[0], ours[1]).Error
-	_ = f.db.Exec(`DELETE FROM topic_reply_dislike WHERE topic_reply_id IN (SELECT id FROM topic_reply WHERE user_id BETWEEN ? AND ?)`,
-		ours[0], ours[1]).Error
 	_ = f.db.Exec(`UPDATE topic SET pinned_reply_id = NULL, best_answer_id = NULL WHERE user_id BETWEEN ? AND ? OR id BETWEEN ? AND ?`,
 		ours[0], ours[1], w3TopicMin, w3TopicMax).Error
 	_ = f.db.Exec(`DELETE FROM topic_reply WHERE user_id BETWEEN ? AND ? OR topic_id IN (SELECT id FROM topic WHERE user_id BETWEEN ? AND ?) OR id BETWEEN ? AND ?`,

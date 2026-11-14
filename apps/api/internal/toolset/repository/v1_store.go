@@ -328,7 +328,6 @@ func (s *Store) DeleteToolset(id int) error {
 			&model.GalgameToolsetContributor{},
 			&model.GalgameToolsetPracticality{},
 			&model.GalgameToolsetResource{},
-			&model.GalgameToolsetCategoryRelation{},
 			&model.ToolsetUpload{},
 		}
 		for _, m := range related {

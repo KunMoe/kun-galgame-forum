@@ -7,15 +7,6 @@ func TestInteractionDeletesRecountFromReactions(t *testing.T) {
 	for _, it := range interactionDeletes {
 		byTable[it.table] = it
 	}
-	for _, abandoned := range []string{"topic_like", "topic_dislike", "topic_reply_like", "topic_reply_dislike"} {
-		it, ok := byTable[abandoned]
-		if !ok {
-			t.Fatalf("missing %s", abandoned)
-		}
-		if len(it.recounts) != 0 {
-			t.Errorf("%s still recounts from the abandoned table: %+v", abandoned, it.recounts)
-		}
-	}
 	topic := byTable["topic_reaction"]
 	if len(topic.recounts) != 2 {
 		t.Fatalf("topic_reaction recounts %d, want 2", len(topic.recounts))

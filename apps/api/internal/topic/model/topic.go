@@ -138,28 +138,6 @@ type TopicReply struct {
 
 func (TopicReply) TableName() string { return "topic_reply" }
 
-type TopicReplyLike struct {
-	ID           int `gorm:"primaryKey;autoIncrement" json:"id"`
-	UserID       int `gorm:"column:user_id;not null;uniqueIndex:idx_reply_like" json:"user_id"`
-	TopicReplyID int `gorm:"column:topic_reply_id;not null;uniqueIndex:idx_reply_like" json:"topic_reply_id"`
-
-	CreatedAt time.Time `gorm:"column:created" json:"created"`
-	UpdatedAt time.Time `gorm:"column:updated" json:"updated"`
-}
-
-func (TopicReplyLike) TableName() string { return "topic_reply_like" }
-
-type TopicReplyDislike struct {
-	ID           int `gorm:"primaryKey;autoIncrement" json:"id"`
-	UserID       int `gorm:"column:user_id;not null;uniqueIndex:idx_reply_dislike" json:"user_id"`
-	TopicReplyID int `gorm:"column:topic_reply_id;not null;uniqueIndex:idx_reply_dislike" json:"topic_reply_id"`
-
-	CreatedAt time.Time `gorm:"column:created" json:"created"`
-	UpdatedAt time.Time `gorm:"column:updated" json:"updated"`
-}
-
-func (TopicReplyDislike) TableName() string { return "topic_reply_dislike" }
-
 type TopicReaction struct {
 	ID        int       `gorm:"primaryKey;autoIncrement" json:"id"`
 	TopicID   int       `gorm:"column:topic_id;not null" json:"topic_id"`

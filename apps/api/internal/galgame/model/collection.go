@@ -4,8 +4,8 @@ import "time"
 
 // restricted ("visible to named users") went with the cutover to catalog
 // folders, which know only private and public. Production held 0 restricted
-// collections and 0 rows in galgame_collection_viewer on the day it was
-// removed, so nothing had to be migrated — the option had been offered in the
+// collections and 0 rows in the viewer table on the day it was removed, so
+// nothing had to be migrated — the option had been offered in the
 // edit modal since the feature shipped and nobody ever used it.
 const (
 	CollectionPublic  = "public"

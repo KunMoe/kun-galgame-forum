@@ -32,7 +32,6 @@ var mergeMovableTables = []mergeTable{
 
 var mergeUniqueTables = []mergeTable{
 	{table: "galgame_like", key: "id", peer: "user_id"},
-	{table: "galgame_favorite", key: "id", peer: "user_id"},
 	{table: "galgame_contributor", key: "id", peer: "user_id"},
 	{table: "galgame_quiz_galgame", key: "quiz_id", peer: "quiz_id"},
 }
@@ -295,10 +294,9 @@ func archiveByGalgame(tx *gorm.DB, table string, oldWorkID, newWorkID int) error
 }
 
 // favorite_count is absent for a related reason since the folder cutover:
-// galgame_collection_item is frozen rollback material, so recomputing from it
-// would replace the live counter with a snapshot, and the memberships that
-// actually moved were rehung upstream by the catalog's own merge. The counter
-// is maintained by this site's writes and is not recomputed here.
+// folder memberships live in catalog, which rehangs them in its own merge, so
+// there is no local table to recompute from. The counter is maintained by this
+// site's writes and is not recomputed here.
 //
 // comment_count is absent on purpose: it mirrors the community thread anchored
 // at site_game:<work id>, which lives in infra and does not move when the forum

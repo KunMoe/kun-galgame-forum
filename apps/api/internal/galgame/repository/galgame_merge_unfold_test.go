@@ -487,3 +487,24 @@ func TestUnfoldLeavesAFoldedRowOutOnceItsSurvivorCopyIsGone(t *testing.T) {
 		t.Errorf("reports = %+v, want the withdrawn like recorded as gone", reports)
 	}
 }
+
+func TestUnfoldSkipsLedgerRowsOfARetiredTable(t *testing.T) {
+	db, run := unfoldFixture(t)
+	seedUnfold(t, db, run)
+	repo := NewGalgameMergeRepository(db)
+	counts, err := repo.Fold(mfDead, mfSurvivor)
+	if err != nil {
+		t.Fatalf("fold: %v", err)
+	}
+	run(`INSERT INTO galgame_merge_fold_row (fold_id, table_name, action, row_key, before)
+		VALUES (?, 'galgame_favorite', 'moved', '{"id": 1}', NULL), (?, 'galgame_favorite', 'dropped', '{"id": 2}', '{"id": 2}')`,
+		counts.FoldID, counts.FoldID)
+
+	reports := unfoldAll(t, repo, mfDead)
+	if len(reports) != 1 || len(reports[0].Problems) != 0 {
+		t.Fatalf("reports = %+v", reports)
+	}
+	if n := scalar(t, db, `SELECT count(*) FROM galgame_like WHERE work_id = ?`, mfDead); n != 2 {
+		t.Errorf("likes back on the old work = %d, want 2", n)
+	}
+}

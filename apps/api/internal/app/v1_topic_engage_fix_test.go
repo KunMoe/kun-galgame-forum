@@ -241,10 +241,6 @@ func (f *engageFix) cleanup(t *testing.T) {
 		"DELETE FROM topic_favorite WHERE topic_id BETWEEN ? AND ?",
 		"DELETE FROM topic_reaction WHERE topic_id BETWEEN ? AND ?",
 		"DELETE FROM topic_reply_reaction WHERE topic_reply_id BETWEEN ? AND ?",
-		"DELETE FROM topic_like WHERE topic_id BETWEEN ? AND ?",
-		"DELETE FROM topic_dislike WHERE topic_id BETWEEN ? AND ?",
-		"DELETE FROM topic_reply_like WHERE topic_reply_id BETWEEN ? AND ?",
-		"DELETE FROM topic_reply_dislike WHERE topic_reply_id BETWEEN ? AND ?",
 		"UPDATE topic SET best_answer_id = NULL, pinned_reply_id = NULL WHERE id BETWEEN ? AND ?",
 		"DELETE FROM topic_reply WHERE id BETWEEN ? AND ?",
 		"DELETE FROM topic WHERE id BETWEEN ? AND ?",
@@ -257,8 +253,7 @@ func (f *engageFix) cleanup(t *testing.T) {
 				t.Errorf("cleanup %q: %v", q, err)
 			}
 			continue
-		case strings.Contains(q, "topic_reply_reaction") || strings.Contains(q, "topic_reply_like") ||
-			strings.Contains(q, "topic_reply_dislike") || strings.Contains(q, "DELETE FROM topic_reply"):
+		case strings.Contains(q, "topic_reply_reaction") || strings.Contains(q, "DELETE FROM topic_reply"):
 			a, b = e1ReplyMin, e1ReplyMax
 		}
 		if err := f.db.Exec(q, a, b).Error; err != nil {
