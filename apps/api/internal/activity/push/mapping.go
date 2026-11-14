@@ -47,6 +47,12 @@ var pushed = map[string]spec{
 	"TOPIC_UPVOTE":              {Verb: "like", ObjectKind: "topic", ObjectLabel: "话题", TopicKind: true},
 	"GALGAME_EDIT":              {Verb: "edit", ObjectKind: "galgame", ObjectLabel: "Galgame", WorkTied: true},
 	"GALGAME_PR_CREATION":       {Verb: "edit", ObjectKind: "galgame", ObjectLabel: "Galgame", WorkTied: true},
+	"TOPIC_LIKE":                {Verb: "like", ObjectKind: "topic", ObjectLabel: "话题", TopicKind: true},
+	"TOPIC_REPLY_LIKE":          {Verb: "like", ObjectKind: "topic_reply", ObjectLabel: "回复", TopicKind: true},
+	"TOPIC_COMMENT_LIKE":        {Verb: "like", ObjectKind: "topic_comment", ObjectLabel: "话题评论", TopicKind: true},
+	"GALGAME_LIKE":              {Verb: "like", ObjectKind: "galgame", ObjectLabel: "Galgame", WorkTied: true},
+	"GALGAME_RESOURCE_LIKE":     {Verb: "like", ObjectKind: "galgame_resource", ObjectLabel: "Galgame 资源", WorkTied: true},
+	"GALGAME_RATING_LIKE":       {Verb: "like", ObjectKind: "galgame_rating", ObjectLabel: "评分", WorkTied: true},
 }
 
 var neverPushed = map[string]struct{}{
@@ -133,7 +139,7 @@ func Tombstone(key string, actorID int64, rev int64) communityclient.ActivityWri
 
 func pageTitle(feedType string, a *activityapiv1.Activity) string {
 	switch feedType {
-	case "TOPIC_CREATION", "TOPIC_UPVOTE":
+	case "TOPIC_CREATION", "TOPIC_UPVOTE", "TOPIC_LIKE", "TOPIC_REPLY_LIKE", "TOPIC_COMMENT_LIKE":
 		if a.Topic != nil {
 			return a.Topic.Title
 		}

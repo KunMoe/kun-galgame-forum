@@ -2,6 +2,7 @@ package app
 
 import (
 	"context"
+	"strconv"
 	"testing"
 	"time"
 
@@ -483,5 +484,35 @@ func TestActivityPushSkipsAssemblingUnpushedRows(t *testing.T) {
 	}
 	if f.queueCount(t) != 0 {
 		t.Fatalf("queue = %d, want drained", f.queueCount(t))
+	}
+}
+
+func TestActivityPushTopicLike(t *testing.T) {
+	f := newPushFix(t)
+	f.topic(t, apTopicA, w3UserOther, false, time.Now().UTC().Add(-time.Hour), "Liked topic")
+	var reaction int
+	if err := f.db.Raw(`INSERT INTO topic_reaction (topic_id, user_id, reaction) VALUES (?, ?, 'like') RETURNING id`,
+		apTopicA, w3UserBob).Scan(&reaction).Error; err != nil {
+		t.Fatal(err)
+	}
+	if _, err := f.pusher.RunOnce(context.Background()); err != nil {
+		t.Fatal(err)
+	}
+	var like *communityclient.ActivityWriteItem
+	for _, w := range f.writes() {
+		for i := range w.Items {
+			if w.Items[i].Key == "topic_like:"+strconv.Itoa(reaction) {
+				like = &w.Items[i]
+			}
+		}
+	}
+	if like == nil {
+		t.Fatalf("no topic_like item in %+v", f.writes())
+	}
+	if like.Verb != "like" || like.ObjectKind != "topic" || like.ActorID != int64(w3UserBob) || like.Notify {
+		t.Fatalf("identity %+v", like)
+	}
+	if like.Title != "Liked topic" || like.URL != "https://www.kungal.com/topic/"+strconv.Itoa(apTopicA) {
+		t.Fatalf("title/url %+v", like)
 	}
 }

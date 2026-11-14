@@ -55,12 +55,22 @@ func TestFeedTypePartition(t *testing.T) {
 	if activityapiv1.KindOfFeed("MESSAGE_UPVOTE") != "" || IsPushed("MESSAGE_UPVOTE") {
 		t.Error("MESSAGE_UPVOTE must stay outside feedTypes and the push table")
 	}
-	if got := len(pushed); got != 13 {
-		t.Errorf("pushed table = %d, want 13", got)
+	pushOnly := map[string]bool{}
+	for _, p := range activityapiv1.PushOnlyFeedTypePairs() {
+		pushOnly[p.Feed] = true
+		if seen[p.Feed] {
+			t.Errorf("push-only %s is in feedTypes, so listActivities would show it", p.Feed)
+		}
+		if !IsPushed(p.Feed) {
+			t.Errorf("push-only %s is not pushed", p.Feed)
+		}
+	}
+	if got := len(pushed); got != 13+len(pushOnly) {
+		t.Errorf("pushed table = %d, want %d", got, 13+len(pushOnly))
 	}
 	for feed := range pushed {
-		if !seen[feed] {
-			t.Errorf("pushed %s is not in feedTypes", feed)
+		if !seen[feed] && !pushOnly[feed] {
+			t.Errorf("pushed %s is in neither feedTypes nor the push-only types", feed)
 		}
 	}
 	for feed := range neverPushed {
@@ -142,6 +152,24 @@ func TestMapLiveEveryPushedType(t *testing.T) {
 		{"GALGAME_PR_CREATION", 21, false, false, &activityapiv1.Activity{
 			Performer: performer, Path: "/galgame/88", Work: work,
 		}, want{"galgame_pr_creation:21", "edit", "galgame", "Galgame", "Work 88", "empty", false, true, true, "sfw"}},
+		{"TOPIC_LIKE", 31, false, true, &activityapiv1.Activity{
+			Performer: performer, Path: "/topic/123", Topic: topic,
+		}, want{"topic_like:31", "like", "topic", "话题", "Topic title", "empty", false, false, true, "sfw"}},
+		{"TOPIC_REPLY_LIKE", 32, false, false, &activityapiv1.Activity{
+			Performer: performer, Path: "/topic/123", Topic: topic,
+		}, want{"topic_reply_like:32", "like", "topic_reply", "回复", "Topic title", "empty", false, false, true, "sfw"}},
+		{"TOPIC_COMMENT_LIKE", 33, true, false, &activityapiv1.Activity{
+			Performer: performer, Path: "/topic/123", Topic: topic,
+		}, want{"topic_comment_like:33", "like", "topic_comment", "话题评论", "Topic title", "empty", false, false, true, "nsfw"}},
+		{"GALGAME_LIKE", 34, false, false, &activityapiv1.Activity{
+			Performer: performer, Path: "/galgame/88", Work: work,
+		}, want{"galgame_like:34", "like", "galgame", "Galgame", "Work 88", "empty", false, true, true, "sfw"}},
+		{"GALGAME_RESOURCE_LIKE", 35, false, false, &activityapiv1.Activity{
+			Performer: performer, Path: "/galgame/88", Work: work,
+		}, want{"galgame_resource_like:35", "like", "galgame_resource", "Galgame 资源", "Work 88", "empty", false, true, true, "sfw"}},
+		{"GALGAME_RATING_LIKE", 36, false, false, &activityapiv1.Activity{
+			Performer: performer, Path: "/galgame/88", Work: work,
+		}, want{"galgame_rating_like:36", "like", "galgame_rating", "评分", "Work 88", "empty", false, true, true, "sfw"}},
 	}
 
 	if len(cases) != len(pushed) {

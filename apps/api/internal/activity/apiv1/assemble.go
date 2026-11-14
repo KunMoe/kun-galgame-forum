@@ -103,6 +103,11 @@ func (s *Service) load(ctx context.Context, rows []repository.FeedRow, includeNS
 			topicIDs.add(r.SourceID)
 		case "TOPIC_UPVOTE":
 			upvoteIDs.add(r.SourceID)
+		case "TOPIC_LIKE", "TOPIC_REPLY_LIKE", "TOPIC_COMMENT_LIKE":
+			if m := topicLinkRe.FindStringSubmatch(r.Link); m != nil {
+				id, _ := strconv.Atoi(m[1])
+				topicIDs.add(id)
+			}
 		case "TOPIC_REPLY_CREATION":
 			replyIDs.add(r.SourceID)
 			if m := quotedReplyRe.FindStringSubmatch(r.Content); m != nil {
@@ -358,6 +363,15 @@ func (s *Service) build(ctx context.Context, r repository.FeedRow, b *batch) *Ac
 		}
 	case "TOPIC_UPVOTE":
 		if !s.fillTopic(a, b, b.topicOf[r.SourceID]) {
+			return nil
+		}
+	case "TOPIC_LIKE", "TOPIC_REPLY_LIKE", "TOPIC_COMMENT_LIKE":
+		m := topicLinkRe.FindStringSubmatch(r.Link)
+		if m == nil {
+			return nil
+		}
+		tid, _ := strconv.Atoi(m[1])
+		if !s.fillTopic(a, b, tid) {
 			return nil
 		}
 	case "TOPIC_REPLY_CREATION":

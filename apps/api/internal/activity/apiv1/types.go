@@ -49,10 +49,24 @@ var (
 	feedByKind = map[string]string{}
 )
 
+// Likes reach a user's timeline through community and are never listed by
+// listActivities: tens of thousands of them would bury the site feed.
+var pushOnlyFeedTypes = []struct{ kind, feed string }{
+	{"topic_like", "TOPIC_LIKE"},
+	{"topic_reply_like", "TOPIC_REPLY_LIKE"},
+	{"topic_comment_like", "TOPIC_COMMENT_LIKE"},
+	{"galgame_like", "GALGAME_LIKE"},
+	{"galgame_resource_like", "GALGAME_RESOURCE_LIKE"},
+	{"galgame_rating_like", "GALGAME_RATING_LIKE"},
+}
+
 func init() {
 	for _, t := range feedTypes {
 		kindByFeed[t.feed] = t.kind
 		feedByKind[t.kind] = t.feed
+	}
+	for _, t := range pushOnlyFeedTypes {
+		kindByFeed[t.feed] = t.kind
 	}
 }
 

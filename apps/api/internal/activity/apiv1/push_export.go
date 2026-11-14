@@ -44,4 +44,12 @@ func FeedTypePairs() []FeedTypePair {
 	return out
 }
 
+func PushOnlyFeedTypePairs() []FeedTypePair {
+	out := make([]FeedTypePair, len(pushOnlyFeedTypes))
+	for i, t := range pushOnlyFeedTypes {
+		out[i] = FeedTypePair{Kind: t.kind, Feed: t.feed}
+	}
+	return out
+}
+
 func KindOfFeed(feed string) string { return kindByFeed[feed] }
