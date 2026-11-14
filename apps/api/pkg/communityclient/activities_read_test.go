@@ -257,3 +257,32 @@ func TestActivitySettings(t *testing.T) {
 		t.Errorf("put false sent %s (%v): hidden must always be written", gotBody, err)
 	}
 }
+
+func TestListUserActivities(t *testing.T) {
+	var gotPath, gotQuery string
+	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		gotPath, gotQuery = r.URL.Path, r.URL.RawQuery
+		_ = json.NewEncoder(w).Encode(map[string]any{"code": 0, "data": map[string]any{
+			"groups":      []any{map[string]any{"id": 5, "site": "moyu", "actor_id": 2, "verb": "rate", "day": "2026-11-01", "item_count": 1}},
+			"next_cursor": "more",
+		}})
+	}))
+	defer srv.Close()
+
+	out, err := newTestClient(srv.URL).ListUserActivities(context.Background(), 2, 42, "cm_prev", 20, "sfw", nil, []string{"rate"})
+	if err != nil {
+		t.Fatalf("ListUserActivities: %v", err)
+	}
+	if gotPath != "/users/2/activities" {
+		t.Errorf("path = %q", gotPath)
+	}
+	q, _ := http.NewRequest(http.MethodGet, "http://x/?"+gotQuery, nil)
+	vals := q.URL.Query()
+	if vals.Get("viewer_id") != "42" || vals.Get("cursor") != "cm_prev" || vals.Get("limit") != "20" ||
+		vals.Get("content_limit") != "sfw" || vals.Get("verbs") != "rate" || vals.Has("sites") {
+		t.Errorf("query %q", gotQuery)
+	}
+	if len(out.Groups) != 1 || out.Groups[0].Site != "moyu" || out.NextCursor != "more" {
+		t.Errorf("decoded = %+v", out)
+	}
+}

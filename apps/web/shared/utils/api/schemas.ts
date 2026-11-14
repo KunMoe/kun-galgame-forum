@@ -377,6 +377,7 @@ export type FollowingActivityGroup =
   components['schemas']['FollowingActivityGroup']
 export type FollowingActivityItem =
   components['schemas']['FollowingActivityItem']
+export type UserActivityGroup = components['schemas']['UserActivityGroup']
 export type FollowingActivityQuery = NonNullable<
   operations['getFollowingActivitySummary']['parameters']['query']
 >

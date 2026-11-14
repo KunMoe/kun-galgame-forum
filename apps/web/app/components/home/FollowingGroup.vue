@@ -1,9 +1,5 @@
 <script setup lang="ts">
-import { settle } from '#shared/utils/api/problem'
-import type {
-  FollowingActivityGroup,
-  FollowingActivityItem
-} from '#shared/utils/api/schemas'
+import type { FollowingActivityGroup } from '#shared/utils/api/schemas'
 import { followingGroupPhrase, followingSiteLabel } from '~/utils/following'
 
 const props = defineProps<{
@@ -15,49 +11,14 @@ const emit = defineEmits<{
   gone: [id: string]
 }>()
 
-const api = useApiClient()
-
-const expanded = ref<FollowingActivityItem[] | null>(null)
-const nextCursor = ref<string | undefined>()
-const loading = ref(false)
-
-const items = computed(() => expanded.value ?? props.group.items)
-const hasHidden = computed(
-  () =>
-    expanded.value === null && props.group.item_count > props.group.items.length
-)
+const { items, hasHidden, nextCursor, loading, loadItems } =
+  useActivityGroupItems(
+    () => props.group,
+    () => props.includeNsfw,
+    () => emit('gone', props.group.id)
+  )
 const phrase = computed(() => followingGroupPhrase(props.group))
 const siteLabel = computed(() => followingSiteLabel(props.group.site))
-
-const loadItems = async () => {
-  if (loading.value) {
-    return
-  }
-  loading.value = true
-  const result = await settle(
-    api.GET('/activity-groups/{group_id}/items', {
-      params: {
-        path: { group_id: props.group.id },
-        query: {
-          include_nsfw: props.includeNsfw,
-          limit: 20,
-          ...(nextCursor.value ? { cursor: nextCursor.value } : {})
-        }
-      }
-    })
-  )
-  loading.value = false
-  if (!result.ok) {
-    if (result.problem.status === 404) {
-      emit('gone', props.group.id)
-      return
-    }
-    reportProblem(result.problem)
-    return
-  }
-  expanded.value = [...(expanded.value ?? []), ...result.data.items]
-  nextCursor.value = result.data.next_cursor
-}
 </script>
 
 <template>

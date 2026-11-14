@@ -5,6 +5,7 @@ import (
 	"errors"
 	"net/http"
 	"net/url"
+	"slices"
 	"strconv"
 	"strings"
 	"time"
@@ -33,8 +34,23 @@ const (
 
 type ActivityVerb string
 
+var activityVerbs = []string{"publish", "reply", "comment", "rate", "like", "edit"}
+
+// Community appends verbs (favorite, follow, mark, play) ahead of this list, and
+// the web looks every verb up in a phrase table; an unknown one is left out
+// here instead of breaking the page.
+func knownVerb(v string) bool { return slices.Contains(activityVerbs, v) }
+
+func knownGroups(groups []communityclient.ActivityGroupView) []communityclient.ActivityGroupView {
+	return slices.DeleteFunc(groups, func(g communityclient.ActivityGroupView) bool { return !knownVerb(g.Verb) })
+}
+
+func knownItems(items []communityclient.ActivityItemView) []communityclient.ActivityItemView {
+	return slices.DeleteFunc(items, func(it communityclient.ActivityItemView) bool { return !knownVerb(it.Verb) })
+}
+
 func (ActivityVerb) Schema(huma.Registry) *huma.Schema {
-	s := repr.ClosedEnum("publish", "reply", "comment", "rate", "like", "edit")
+	s := repr.ClosedEnum(activityVerbs...)
 	s.Description = "What the performer did: publish, reply, comment, rate, like or edit."
 	return s
 }
@@ -258,6 +274,7 @@ func (s *Service) listFollowingActivities(ctx context.Context, in *followingList
 	if err != nil {
 		return nil, communityReadProblem(err, true)
 	}
+	page.Groups = knownGroups(page.Groups)
 	actorIDs := make([]int, 0, len(page.Groups))
 	for _, g := range page.Groups {
 		actorIDs = append(actorIDs, int(g.ActorID))
@@ -323,6 +340,7 @@ func (s *Service) listActivityGroupItems(ctx context.Context, in *groupItemsInpu
 	if err != nil {
 		return nil, communityReadProblem(err, true)
 	}
+	page.Items = knownItems(page.Items)
 	actorIDs := make([]int, 0, len(page.Items))
 	for _, it := range page.Items {
 		actorIDs = append(actorIDs, int(it.ActorID))

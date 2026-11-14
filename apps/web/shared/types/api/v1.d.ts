@@ -5129,6 +5129,26 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/users/{user_id}/activities": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * List a user's own activity across NextMoe sites
+         * @description Groups of one user's activity across NextMoe sites, newest group first. A group is the user's items of one verb and object_kind on one site on one Asia/Shanghai calendar day. A user who hides their activity has none listed, except to themselves. A page can be shorter than limit; only an absent next_cursor means the end. The cursor is bound to include_nsfw, verbs and sites. NOT_FOUND when the account does not exist or is not renderable. PROFILE_SIGN_IN_REQUIRED when the caller is anonymous and user_id names a user who shows their profile to signed-in users only.
+         */
+        get: operations["listUserActivities"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/users/{user_id}/collections": {
         parameters: {
             query?: never;
@@ -9680,6 +9700,17 @@ export interface components {
         ListUpdateLog: {
             /** @description Members of this page. Empty array, never null. */
             items: components["schemas"]["UpdateLog"][];
+            /** @description Opaque keyset cursor. Omitted on the last page. */
+            next_cursor?: string;
+            /**
+             * @description Type discriminant. Always list.
+             * @constant
+             */
+            object: "list";
+        };
+        ListUserActivityGroup: {
+            /** @description Members of this page. Empty array, never null. */
+            items: components["schemas"]["UserActivityGroup"][];
             /** @description Opaque keyset cursor. Omitted on the last page. */
             next_cursor?: string;
             /**
@@ -15440,6 +15471,40 @@ export interface components {
             upvoted_at: string | null;
             /** @description Who upvoted. */
             upvoter: components["schemas"]["UserRef"];
+        };
+        UserActivityGroup: {
+            /**
+             * Format: date
+             * @description The Asia/Shanghai calendar day the group belongs to.
+             */
+            calendar_date: string;
+            /** @description Community group id. Pass it to listActivityGroupItems for every item. */
+            id: string;
+            /**
+             * Format: int64
+             * @description Live items in the group. At least 1 from community; 0 is reserved for the integer floor every *_count uses.
+             */
+            item_count: number;
+            /** @description Newest items in the group, at most 3. Empty array, never null. */
+            items: components["schemas"]["FollowingActivityItem"][];
+            /**
+             * Format: date-time
+             * @description When the newest item in the group occurred.
+             */
+            latest_at: string;
+            /**
+             * @description Type discriminant. Always user_activity_group.
+             * @constant
+             */
+            object: "user_activity_group";
+            /** @description The site's type name for the object, such as topic or patch. An open vocabulary. */
+            object_kind: string;
+            /** @description Display name of object_kind. Show as it is. Free text; never use it as a decision input. */
+            object_label: string;
+            /** @description The NextMoe site the group happened on. kungal is this forum. An open vocabulary: show an unknown token as it is. */
+            site: string;
+            /** @description What the user did. */
+            verb: components["schemas"]["ActivityVerb"];
         };
         UserCommentItem: {
             /** @description Comment author. */
@@ -45208,6 +45273,94 @@ export interface operations {
                 };
             };
             /** @description SERVICE_UNAVAILABLE when the account service cannot be reached. */
+            503: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+        };
+    };
+    listUserActivities: {
+        parameters: {
+            query?: {
+                /** @description Opaque keyset cursor from a previous page of this collection. */
+                cursor?: string;
+                /** @description Page size. 1–50, default 20. Values above 50 are rejected, not clamped. */
+                limit?: number;
+                /** @description When true, NSFW groups are included. Default false. */
+                include_nsfw?: boolean;
+                /** @description Only these verbs, comma-separated. Absent means every verb. */
+                verbs?: components["schemas"]["ActivityVerb"][];
+                /** @description Only these NextMoe sites, comma-separated. Absent means every site. */
+                sites?: string[];
+            };
+            header?: never;
+            path: {
+                /** @description User id. */
+                user_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ListUserActivityGroup"];
+                };
+            };
+            /** @description INVALID_CURSOR, LIMIT_TOO_LARGE, UNKNOWN_ENUM_VALUE or INVALID_PARAMETER. */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Unauthorized */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description ACCOUNT_BANNED when the caller's account is banned. PROFILE_SIGN_IN_REQUIRED when the caller is anonymous and user_id names a user who shows their profile to signed-in users only. */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description NOT_FOUND when the account does not exist or is not renderable. */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Internal Server Error */
+            500: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description SERVICE_UNAVAILABLE when the community service or the account service is unreachable. */
             503: {
                 headers: {
                     [name: string]: unknown;

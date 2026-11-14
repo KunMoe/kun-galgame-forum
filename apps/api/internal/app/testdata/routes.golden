@@ -233,6 +233,7 @@ GET    /api/v1/update-logs                            cors.New → v1Headers →
 GET    /api/v1/update-logs/:update_log_id             cors.New → v1Headers → fiberAdapter.Handle
 GET    /api/v1/users                                  cors.New → v1Headers → fiberAdapter.Handle
 GET    /api/v1/users/:user_id                         cors.New → v1Headers → fiberAdapter.Handle
+GET    /api/v1/users/:user_id/activities              cors.New → v1Headers → fiberAdapter.Handle
 GET    /api/v1/users/:user_id/collections             cors.New → v1Headers → fiberAdapter.Handle
 GET    /api/v1/users/:user_id/comments                cors.New → v1Headers → fiberAdapter.Handle
 GET    /api/v1/users/:user_id/followers               cors.New → v1Headers → fiberAdapter.Handle

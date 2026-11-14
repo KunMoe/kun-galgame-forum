@@ -18,5 +18,5 @@ useHead({
 </script>
 
 <template>
-  <UserOverview :user-id="Number(user.id)" />
+  <UserTimeline :user-id="Number(user.id)" />
 </template>

@@ -69,6 +69,12 @@ func (u *followingUpstream) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 		writeEnvelope(w, 200, 0, "", communityclient.ActivityUnseenResponse{UnseenCount: unseen, SeenAt: seenAt})
 	case r.Method == http.MethodPost && strings.HasSuffix(path, "/following/activities/seen"):
 		writeEnvelope(w, 200, 0, "", communityclient.ActivitySeenResponse{SeenAt: seenReply})
+	case r.Method == http.MethodGet && strings.Contains(path, "/users/") && strings.HasSuffix(path, "/activities"):
+		if bad {
+			writeEnvelope(w, http.StatusBadRequest, 40000, "bad cursor", nil)
+			return
+		}
+		writeEnvelope(w, 200, 0, "", communityclient.ActivityGroupListResponse{Groups: groups, NextCursor: next})
 	case r.Method == http.MethodGet && strings.HasPrefix(path, "/activity-groups/") && strings.HasSuffix(path, "/items"):
 		if bad {
 			writeEnvelope(w, http.StatusBadRequest, 40000, "bad cursor", nil)
