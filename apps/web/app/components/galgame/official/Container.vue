@@ -47,14 +47,24 @@ watchDebounced(
   },
   { debounce: 500, maxWait: 1000 }
 )
+
+const listStart = useTemplateRef('listStart')
+const revealList = useRevealListStart(
+  listStart,
+  page,
+  () => status.value === 'pending'
+)
 </script>
 
 <template>
   <div class="space-y-6">
     <KunHeader
+      ref="listStart"
+      class="scroll-mt-20"
       name="Galgame 会社 / 厂商资料库"
       description="这里展示了绝大多数 Galgame 的制作厂商 / Galgame 会社, 并有会社别名 (例如 Yuzusoft 的别名为柚子社), 按作品数量从多到少排列, 您可以点击会社以查看这个会社制作的所有 Galgame"
     >
+      <template #title><KunPageLabel :page="page" /></template>
       <template #endContent>
         <div>
           <KunInput
@@ -97,6 +107,7 @@ watchDebounced(
       v-model:current-page="page"
       :total-page="Math.ceil(data.total / limit)"
       :is-loading="status === 'pending'"
+      @update:current-page="revealList"
     />
   </div>
 </template>

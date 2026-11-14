@@ -143,14 +143,25 @@ const handlePurge = async () => {
   useMessage(`已彻底删除话题《${target.title}》`, 'success')
   await refresh()
 }
+
+const listStart = useTemplateRef('listStart')
+const revealList = useRevealListStart(
+  listStart,
+  () => pageData.page,
+  () => status.value === 'pending'
+)
 </script>
 
 <template>
   <div class="w-full space-y-4">
     <KunHeader
+      ref="listStart"
+      class="scroll-mt-20"
       name="隐藏话题管理"
       description="此处汇总全站被隐藏的话题, 包含作者自行隐藏、管理员隐藏与风纪处置隐藏三种来源。隐藏只是让话题从列表与搜索中消失, 作者与持有查看权限的管理人员仍可访问; 若要连同回复、评论、投票、抽奖与收藏一并抹除, 请使用彻底删除。"
-    />
+    >
+      <template #title><KunPageLabel :page="pageData.page" /></template>
+    </KunHeader>
 
     <div class="flex flex-col gap-3 sm:flex-row sm:items-center">
       <KunTab
@@ -242,6 +253,7 @@ const handlePurge = async () => {
       v-model:current-page="pageData.page"
       :total-page="Math.ceil(total / pageData.limit)"
       :is-loading="status === 'pending'"
+      @update:current-page="revealList"
     />
 
     <KunModal

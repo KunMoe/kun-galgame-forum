@@ -72,12 +72,20 @@ const { data, status, pending } = useKunApi(
 const ratings = computed(() =>
   (data.value?.items ?? []).map((r) => ratingToCard(r, nameOf))
 )
+
+const listStart = useTemplateRef('listStart')
+const revealList = useRevealListStart(
+  listStart,
+  () => params.page,
+  () => status.value === 'pending'
+)
 </script>
 
 <template>
   <div class="space-y-3">
     <div class="space-y-2">
-      <KunHeader name="Galgame 评分列表">
+      <KunHeader ref="listStart" class="scroll-mt-20" name="Galgame 评分列表">
+        <template #title><KunPageLabel :page="params.page" /></template>
         <template #description>
           <p class="text-default-500">
             浏览所有用户对所有 Galgame 的评分与短评，支持按 Galgame 剧透等级,
@@ -130,6 +138,7 @@ const ratings = computed(() =>
       v-model:current-page="params.page"
       :total-page="Math.ceil((data?.total || 0) / params.limit)"
       :is-loading="status === 'pending'"
+      @update:current-page="revealList"
     />
   </div>
 </template>

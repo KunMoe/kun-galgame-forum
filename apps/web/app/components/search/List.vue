@@ -120,7 +120,8 @@ watch(
     // would otherwise start scrolled past its own first row. Only a page change
     // earns the scroll — a new keyword or filter already starts at the top.
     if (before && before[2] !== page.value) {
-      top.value?.scrollIntoView({ behavior: 'smooth', block: 'start' })
+      await nextTick()
+      revealListStart(top.value)
     }
   },
   { immediate: true }
@@ -128,7 +129,8 @@ watch(
 </script>
 
 <template>
-  <div ref="top" class="scroll-mt-40 space-y-6">
+  <div ref="top" class="scroll-mt-20 space-y-6 lg:scroll-mt-40">
+    <h2 class="sr-only">搜索结果<KunPageLabel :page="page" /></h2>
     <SearchGalgameFilter
       v-if="isGalgame"
       :total="total"

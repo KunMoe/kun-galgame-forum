@@ -23,12 +23,24 @@ const releaseLabel = (galgame: GalgameCard) => {
   }
   return galgame.release_date?.slice(0, 10) || '发售日期未知'
 }
+
+const listStart = useTemplateRef('listStart')
+const revealList = useRevealListStart(
+  listStart,
+  page,
+  () => status.value === 'pending'
+)
 </script>
 
 <template>
   <div class="flex flex-col gap-3">
     <div class="z-10">
-      <KunHeader name="Galgame 信息资料数据库">
+      <KunHeader
+        ref="listStart"
+        class="scroll-mt-20"
+        name="Galgame 信息资料数据库"
+      >
+        <template #title><KunPageLabel :page="page" /></template>
         <template #endContent>
           <GalgameLibraryNav
             :total="data ? total : null"
@@ -72,6 +84,7 @@ const releaseLabel = (galgame: GalgameCard) => {
         v-model:current-page="page"
         :total-page="Math.ceil(total / limit)"
         :is-loading="status === 'pending'"
+        @update:current-page="revealList"
       />
     </KunCard>
   </div>

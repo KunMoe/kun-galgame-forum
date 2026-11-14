@@ -551,6 +551,13 @@ useKunSeoMeta(() => {
   }
   return problem.value ? { noindex: true, title: '未找到该收藏夹' } : {}
 })
+
+const listStart = useTemplateRef('listStart')
+const revealList = useRevealListStart(
+  listStart,
+  page,
+  () => entriesStatus.value === 'pending'
+)
 </script>
 
 <template>
@@ -704,7 +711,11 @@ useKunSeoMeta(() => {
           {{ hiddenNote }}
         </p>
 
-        <div class="flex flex-wrap items-center gap-3">
+        <div
+          ref="listStart"
+          class="flex scroll-mt-20 flex-wrap items-center gap-3 outline-none"
+        >
+          <KunPageLabel :page="page" />
           <GalgameCollectionFollowButton
             v-if="isShared && !isOwner"
             :collection-id="detail.id"
@@ -757,6 +768,7 @@ useKunSeoMeta(() => {
             v-model:current-page="page"
             :total-page="Math.ceil(entries.total / limit)"
             :is-loading="entriesStatus === 'pending'"
+            @update:current-page="revealList"
           />
         </div>
         <KunNull

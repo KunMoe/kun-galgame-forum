@@ -261,10 +261,18 @@ const browsedGroup = ref(props.pinned?.trait_group_id ?? '')
 const pageHref = (n: number) =>
   router.resolve({ query: { ...route.query, page: n > 1 ? n : undefined } })
     .href
+
+const listStart = useTemplateRef('listStart')
+const revealList = useRevealListStart(
+  listStart,
+  page,
+  () => status.value === 'pending'
+)
 </script>
 
 <template>
-  <div class="space-y-4">
+  <div ref="listStart" class="scroll-mt-20 space-y-4">
+    <h2 class="sr-only">角色列表<KunPageLabel :page="page" /></h2>
     <FilterBar
       :chips="chips"
       :total="data ? total : null"
@@ -390,6 +398,7 @@ const pageHref = (n: number) =>
       :total-page="totalPage"
       :is-loading="status === 'pending'"
       :page-href="pageHref"
+      @update:current-page="revealList"
     />
   </div>
 </template>

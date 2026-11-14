@@ -209,3 +209,7 @@ body {
 [data-kun-overlay] .kun-modal-panel {
   background-color: var(--color-content1);
 }
+
+:is(h1, h2, h3, h4, h5, h6)[tabindex='-1']:focus {
+  outline: none;
+}

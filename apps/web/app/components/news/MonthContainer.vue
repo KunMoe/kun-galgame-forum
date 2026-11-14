@@ -124,7 +124,12 @@ const selectDay = (value: number) => {
 // Nuxt's scroll behaviour deliberately stays put when only the query changes,
 // which is right for a filter and wrong for a paginator: turning to page two
 // from the bottom of page one left the reader in the middle of the new page.
-watch(page, () => window.scrollTo({ top: 0, behavior: 'smooth' }))
+const listStart = useTemplateRef('listStart')
+const revealList = useRevealListStart(
+  listStart,
+  page,
+  () => status.value === 'pending'
+)
 </script>
 
 <template>
@@ -189,7 +194,10 @@ watch(page, () => window.scrollTo({ top: 0, behavior: 'smooth' }))
         </div>
       </section>
 
-      <div class="flex flex-wrap items-center gap-2">
+      <div
+        ref="listStart"
+        class="flex scroll-mt-20 flex-wrap items-center gap-2 outline-none"
+      >
         <span class="text-default-500 text-sm">
           {{ `共 ${data?.total ?? 0} 条情报` }}
         </span>
@@ -230,6 +238,7 @@ watch(page, () => window.scrollTo({ top: 0, behavior: 'smooth' }))
         :total-page="totalPage"
         :is-loading="status === 'pending'"
         :page-href="pageHref"
+        @update:current-page="revealList"
       />
 
       <NewsPartners v-if="partners.length" :sources="partners" />

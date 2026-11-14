@@ -136,14 +136,22 @@ watch(selectedIds, () => entityNames.resolve({ tag: selectedIds.value }), {
 })
 
 const isBrowsing = computed(() => !selectedIds.value.length)
+
+const listStart = useTemplateRef('listStart')
+const revealList = useRevealListStart(listStart, page, () =>
+  isBrowsing.value ? status.value === 'pending' : loadingGames.value
+)
 </script>
 
 <template>
   <div class="space-y-6">
     <KunHeader
+      ref="listStart"
+      class="scroll-mt-20"
       name="Galgame 标签资料库"
       description="这里展示了绝大多数 Galgame 的标签, 并附带有标签的别名, 您可以点击标签以查看所有含有这个标签的 Galgame"
     >
+      <template #title><KunPageLabel :page="page" /></template>
       <template #endContent>
         <div class="space-y-3">
           <p class="text-default-500">
@@ -214,6 +222,7 @@ const isBrowsing = computed(() => !selectedIds.value.length)
         v-model:current-page="page"
         :total-page="Math.ceil(data.total / tagsLimit)"
         :is-loading="status === 'pending'"
+        @update:current-page="revealList"
       />
     </template>
 
@@ -232,6 +241,7 @@ const isBrowsing = computed(() => !selectedIds.value.length)
         v-model:current-page="page"
         :total-page="Math.ceil(totalGameCount / gamesLimit)"
         :is-loading="loadingGames"
+        @update:current-page="revealList"
       />
     </template>
   </div>

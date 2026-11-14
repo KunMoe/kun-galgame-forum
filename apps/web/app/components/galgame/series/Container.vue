@@ -62,14 +62,24 @@ const handleSearch = async () => {
 }
 
 watchDebounced(searchQuery, handleSearch, { debounce: 500, maxWait: 1000 })
+
+const listStart = useTemplateRef('listStart')
+const revealList = useRevealListStart(
+  listStart,
+  page,
+  () => status.value === 'pending'
+)
 </script>
 
 <template>
   <div class="space-y-3">
     <KunHeader
+      ref="listStart"
+      class="scroll-mt-20"
       name="Galgame 系列"
       description="Galgame 全系列所有 Galgame 作品。例如美少女万华镜 1, 2, 3, 4, 5, 雪女, 外传 就是一个 Galgame 系列。某个会社制作的所有 Galgame 并不算系列, 请到 Galgame 会社页面中查看"
     >
+      <template #title><KunPageLabel :page="page" /></template>
       <template #endContent>
         <div>
           <KunInput
@@ -115,6 +125,7 @@ watchDebounced(searchQuery, handleSearch, { debounce: 500, maxWait: 1000 })
       v-model:current-page="page"
       :total-page="Math.ceil(data.total / limit)"
       :is-loading="status === 'pending'"
+      @update:current-page="revealList"
     />
   </div>
 </template>

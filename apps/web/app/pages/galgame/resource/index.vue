@@ -41,10 +41,6 @@ watchDebounced(
   { debounce: 500, maxWait: 1000 }
 )
 
-watch(page, () => {
-  window.scrollTo({ top: 0, behavior: 'smooth' })
-})
-
 const resources = computed(() => data.value?.items ?? [])
 const total = computed(() => data.value?.total ?? 0)
 const isPending = computed(() => status.value === 'pending')
@@ -56,11 +52,20 @@ useKunSeoMeta({
   title: '最新 Galgame 资源下载',
   description
 })
+
+const listStart = useTemplateRef('listStart')
+const revealList = useRevealListStart(listStart, page, isPending)
 </script>
 
 <template>
   <div class="space-y-3">
-    <KunHeader name="最新 Galgame 资源下载" :description="description">
+    <KunHeader
+      ref="listStart"
+      class="scroll-mt-20"
+      name="最新 Galgame 资源下载"
+      :description="description"
+    >
+      <template #title><KunPageLabel :page="page" /></template>
       <template #endContent>
         <div>
           <KunInput
@@ -103,6 +108,7 @@ useKunSeoMeta({
       v-model:current-page="page"
       :total-page="Math.ceil(total / LIMIT)"
       :is-loading="isPending"
+      @update:current-page="revealList"
     />
   </div>
 </template>

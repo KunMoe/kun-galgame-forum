@@ -74,11 +74,24 @@ const meta = computed(() => ratedRankingPageMeta(props.site))
 const scoreLabel = computed(() =>
   props.site ? `${RATING_SITE_META[props.site].short} 原分` : '综合评分'
 )
+
+const listStart = useTemplateRef('listStart')
+const revealList = useRevealListStart(
+  listStart,
+  page,
+  () => status.value === 'pending'
+)
 </script>
 
 <template>
   <div class="space-y-3">
-    <KunHeader :name="meta.title" :description="meta.description">
+    <KunHeader
+      ref="listStart"
+      class="scroll-mt-20"
+      :name="meta.title"
+      :description="meta.description"
+    >
+      <template #title><KunPageLabel :page="page" /></template>
       <template #endContent>
         <div class="space-y-3">
           <KunTab
@@ -133,6 +146,7 @@ const scoreLabel = computed(() =>
       v-model:current-page="page"
       :total-page="totalPage"
       :is-loading="status === 'pending'"
+      @update:current-page="revealList"
     />
   </div>
 </template>

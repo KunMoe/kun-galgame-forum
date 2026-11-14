@@ -194,12 +194,21 @@ const actionOptions = TRUST_ACTIONS.map((a) => ({
   value: a.value,
   label: a.label
 }))
+
+const listStart = useTemplateRef('listStart')
+const revealList = useRevealListStart(
+  listStart,
+  () => pageData.page,
+  () => status.value === 'pending'
+)
 </script>
 
 <template>
   <div class="space-y-4">
-    <div>
-      <h2 class="text-xl font-bold">内容审核</h2>
+    <div ref="listStart" class="scroll-mt-20">
+      <h2 class="text-xl font-bold">
+        内容审核<KunPageLabel :page="pageData.page" />
+      </h2>
       <p class="text-default-500 text-sm">
         来自 Trust &amp; Safety 平台的统一审核队列，按优先级排序。
       </p>
@@ -273,6 +282,7 @@ const actionOptions = TRUST_ACTIONS.map((a) => ({
       v-model:current-page="pageData.page"
       :total-page="Math.ceil(total / pageData.limit)"
       :is-loading="status === 'pending'"
+      @update:current-page="revealList"
     />
 
     <KunModal v-model="isDetailOpen" inner-class-name="max-w-2xl w-[94vw]">

@@ -16,12 +16,20 @@ watch(problem, (p) => {
 
 const galgames = useWorkCards(() => data.value?.items)
 const total = computed(() => data.value?.total ?? 0)
+
+const listStart = useTemplateRef('listStart')
+const revealList = useRevealListStart(
+  listStart,
+  page,
+  () => status.value === 'pending'
+)
 </script>
 
 <template>
   <div class="flex flex-col gap-3">
     <div class="z-10">
-      <KunHeader name="Galgame 资源资料库">
+      <KunHeader ref="listStart" class="scroll-mt-20" name="Galgame 资源资料库">
+        <template #title><KunPageLabel :page="page" /></template>
         <template #endContent>
           <GalgameCardNav
             :is-show-advanced="true"
@@ -61,6 +69,7 @@ const total = computed(() => data.value?.total ?? 0)
         v-model:current-page="page"
         :total-page="Math.ceil(total / limit)"
         :is-loading="status === 'pending'"
+        @update:current-page="revealList"
       />
     </KunCard>
   </div>

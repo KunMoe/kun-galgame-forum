@@ -72,10 +72,14 @@ const DELTA_CHIP: Record<
   revoke: { color: 'warning', prefix: '+撤销' },
   removed: { color: 'default', prefix: '移除覆盖' }
 }
+
+const listStart = useTemplateRef('listStart')
+const revealList = useRevealListStart(listStart, page, loading)
 </script>
 
 <template>
-  <div class="space-y-3">
+  <div ref="listStart" class="scroll-mt-20 space-y-3">
+    <h2 class="sr-only">权限变更记录<KunPageLabel :page="page" /></h2>
     <KunLoading v-if="loading && !data" />
     <KunNull v-else-if="!data?.items.length" description="暂无权限变更记录" />
 
@@ -122,6 +126,7 @@ const DELTA_CHIP: Record<
         v-model:current-page="page"
         :total-page="totalPage"
         :is-loading="loading"
+        @update:current-page="revealList"
       />
     </template>
   </div>

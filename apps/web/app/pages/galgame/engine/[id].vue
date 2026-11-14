@@ -72,15 +72,25 @@ useKunSeoMeta(() =>
       }
     : {}
 )
+
+const listStart = useTemplateRef('listStart')
+const revealList = useRevealListStart(
+  listStart,
+  page,
+  () => status.value === 'pending'
+)
 </script>
 
 <template>
   <div>
     <div v-if="data" class="flex flex-col gap-6">
       <KunHeader
+        ref="listStart"
+        class="scroll-mt-20"
         :name="`${data.name} 引擎制作的 Galgame`"
         :description="data.description"
       >
+        <template #title><KunPageLabel :page="page" /></template>
         <template #endContent>
           <div class="space-y-3">
             <p class="text-default-500">
@@ -136,6 +146,7 @@ useKunSeoMeta(() =>
         v-model:current-page="page"
         :total-page="Math.ceil(total / limit)"
         :is-loading="status === 'pending'"
+        @update:current-page="revealList"
       />
     </div>
     <GalgameEntityDetailSkeleton v-else-if="pending" />

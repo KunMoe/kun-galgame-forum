@@ -15,7 +15,6 @@ import type {
 } from '#shared/utils/api/schemas'
 import { problemMessage } from '#shared/utils/api/message'
 
-const route = useRoute()
 const userStore = usePersistUserStore()
 const isLoggedIn = computed(() => !!userStore.id)
 const { allowsNsfw } = useContentStance()
@@ -98,15 +97,6 @@ const { data, status, problem, pending, refresh } = useKunApi<PageListQuizSummar
   }
 )
 
-const listPath = route.path
-watch(
-  () => route.fullPath,
-  () => {
-    if (route.path !== listPath) return
-    if (import.meta.client) window.scrollTo({ top: 0, behavior: 'smooth' })
-  }
-)
-
 const tabItems: KunTabItem[] = [
   { value: 'all', textValue: '全部题库', icon: 'lucide:library-big' },
   { value: 'mine', textValue: '我的答题', icon: 'lucide:history' }
@@ -127,12 +117,20 @@ const onPublished = () => {
   set({ tab: 'all', page: 1 })
   refresh()
 }
+
+const listStart = useTemplateRef('listStart')
+const revealList = useRevealListStart(
+  listStart,
+  page,
+  () => status.value === 'pending'
+)
 </script>
 
 <template>
   <div class="space-y-3">
     <div class="space-y-2">
-      <KunHeader name="Galgame 题库">
+      <KunHeader ref="listStart" class="scroll-mt-20" name="Galgame 题库">
+        <template #title><KunPageLabel :page="page" /></template>
         <template #description>
           <p class="text-default-500">
             由 Galgame 爱好者共同建设的题库, 支持单选、多选、判断等题型。出题可获得萌萌点奖励。
@@ -209,6 +207,7 @@ const onPublished = () => {
       v-model:current-page="page"
       :total-page="Math.ceil((data?.total || 0) / limit)"
       :is-loading="status === 'pending'"
+      @update:current-page="revealList"
     />
 
     <GalgameQuizPublish v-model="showPublish" @on-published="onPublished" />

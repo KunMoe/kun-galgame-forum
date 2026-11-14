@@ -54,12 +54,21 @@ const counts = (fold: WorkMergeFold) =>
     ['合计入保留方', fold.summed_count],
     ['首页动态改指向', fold.repointed_count]
   ].filter(([, n]) => Number(n) > 0) as [string, number][]
+
+const listStart = useTemplateRef('listStart')
+const revealList = useRevealListStart(
+  listStart,
+  page,
+  () => status.value === 'pending'
+)
 </script>
 
 <template>
   <div class="w-full space-y-4">
-    <div>
-      <h1 class="text-2xl font-bold">作品合并记录</h1>
+    <div ref="listStart" class="scroll-mt-20">
+      <h1 class="text-2xl font-bold">
+        作品合并记录<KunPageLabel :page="page" />
+      </h1>
       <p class="text-default-500 text-sm">
         鲲 Galgame 论坛数据合并两部作品后,
         本站把被合并作品上的资源、动态、点赞、收藏、贡献者、题目和浏览量迁到保留方,
@@ -138,6 +147,7 @@ const counts = (fold: WorkMergeFold) =>
         v-model:current-page="page"
         :total-page="totalPage"
         :is-loading="status === 'pending'"
+        @update:current-page="revealList"
       />
     </template>
   </div>

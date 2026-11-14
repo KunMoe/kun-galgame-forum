@@ -105,7 +105,8 @@ watch(
   async (_now, before) => {
     await load()
     if (before && before[2] !== page.value) {
-      top.value?.scrollIntoView({ behavior: 'smooth', block: 'start' })
+      await nextTick()
+      revealListStart(top.value)
     }
   },
   { immediate: true }
@@ -125,7 +126,8 @@ const totalPage = computed(() =>
 </script>
 
 <template>
-  <div ref="top" class="scroll-mt-40 space-y-5">
+  <div ref="top" class="scroll-mt-20 space-y-5 lg:scroll-mt-40">
+    <h2 class="sr-only">搜索结果<KunPageLabel :page="page" /></h2>
     <KunTab
       :items="familyItems"
       :model-value="family"

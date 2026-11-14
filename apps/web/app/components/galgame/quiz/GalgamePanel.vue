@@ -40,12 +40,25 @@ const onPublished = () => {
   page.value = 1
   refresh()
 }
+
+const listStart = useTemplateRef('listStart')
+const revealList = useRevealListStart(
+  listStart,
+  page,
+  () => status.value === 'pending'
+)
 </script>
 
 <template>
   <div class="space-y-3">
     <div class="flex items-center justify-between gap-2">
-      <KunHeader name="本作题库" scale="h3">
+      <KunHeader
+        ref="listStart"
+        class="scroll-mt-20"
+        name="本作题库"
+        scale="h3"
+      >
+        <template #title><KunPageLabel :page="page" /></template>
         <template #description>
           <p class="text-default-500 text-sm">
             与本作相关的题目, 也欢迎为本作出题
@@ -75,6 +88,7 @@ const onPublished = () => {
       v-model:current-page="page"
       :total-page="Math.ceil((data?.total || 0) / limit)"
       :is-loading="status === 'pending'"
+      @update:current-page="revealList"
     />
 
     <GalgameQuizPublish
