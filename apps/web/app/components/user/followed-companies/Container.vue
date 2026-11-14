@@ -33,30 +33,39 @@ const onFollowChange = async (delta: number) => {
   }
   await refresh()
 }
+
+const { paginationPage, isPaginationPending } = usePaginationScroll(
+  toRef(pageData, 'page'),
+  () => status.value === 'pending'
+)
 </script>
 
 <template>
-  <div class="space-y-3">
+  <div ref="paginationStart" class="pagination-results scroll-mt-20 space-y-3">
     <UserListSkeleton v-if="pending" shape="media" />
     <template v-else>
       <div v-if="officials.length" class="flex flex-col gap-3">
-        <div
-          v-for="official in officials"
-          :key="official.id"
-          class="flex flex-wrap items-center gap-3"
-        >
-          <div class="min-w-0 flex-1">
-            <GalgameOfficialCard :official="official" />
+        <KunLoading :loading="isPaginationPending">
+          <div class="flex flex-col gap-3">
+            <div
+              v-for="official in officials"
+              :key="official.id"
+              class="flex flex-wrap items-center gap-3"
+            >
+              <div class="min-w-0 flex-1">
+                <GalgameOfficialCard :official="official" />
+              </div>
+              <GalgameOfficialFollowButton
+                :company-id="official.id"
+                @change="onFollowChange"
+              />
+            </div>
           </div>
-          <GalgameOfficialFollowButton
-            :company-id="official.id"
-            @change="onFollowChange"
-          />
-        </div>
+        </KunLoading>
 
         <KunPagination
           v-if="data && data.total > pageData.limit"
-          v-model:current-page="pageData.page"
+          v-model:current-page="paginationPage"
           :total-page="Math.ceil(data.total / pageData.limit)"
           :is-loading="status === 'pending'"
         />

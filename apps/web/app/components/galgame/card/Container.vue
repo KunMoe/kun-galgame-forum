@@ -16,6 +16,11 @@ watch(problem, (p) => {
 
 const galgames = useWorkCards(() => data.value?.items)
 const total = computed(() => data.value?.total ?? 0)
+
+const { paginationPage } = usePaginationScroll(
+  page,
+  () => status.value === 'pending'
+)
 </script>
 
 <template>
@@ -41,15 +46,17 @@ const total = computed(() => data.value?.total ?? 0)
       </KunHeader>
     </div>
 
-    <GalgameCardGridSkeleton v-if="pending" />
+    <div ref="paginationStart" class="pagination-results scroll-mt-20">
+      <GalgameCardGridSkeleton v-if="pending" />
 
-    <KunLoading v-else :loading="status === 'pending'">
-      <GalgameCard v-if="galgames.length" :galgames="galgames" />
-      <GalgameOriginalLanguageNull
-        v-else
-        description="没有找到符合条件的 Galgame"
-      />
-    </KunLoading>
+      <KunLoading v-else :loading="status === 'pending'">
+        <GalgameCard v-if="galgames.length" :galgames="galgames" />
+        <GalgameOriginalLanguageNull
+          v-else
+          description="没有找到符合条件的 Galgame"
+        />
+      </KunLoading>
+    </div>
 
     <KunCard
       v-if="galgames.length"
@@ -58,7 +65,7 @@ const total = computed(() => data.value?.total ?? 0)
       content-class="gap-3"
     >
       <KunPagination
-        v-model:current-page="page"
+        v-model:current-page="paginationPage"
         :total-page="Math.ceil(total / limit)"
         :is-loading="status === 'pending'"
       />

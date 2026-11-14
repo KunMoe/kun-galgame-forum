@@ -12,6 +12,11 @@ const { data, status, problem, pending } = useKunApi<PageListToolsetSummary>(
       signal
     })
 )
+
+const { paginationPage } = usePaginationScroll(
+  page,
+  () => status.value === 'pending'
+)
 </script>
 
 <template>
@@ -29,12 +34,14 @@ const { data, status, problem, pending } = useKunApi<PageListToolsetSummary>(
         </KunHeader>
       </div>
 
-      <ToolsetCardSkeleton v-if="pending" />
+      <div ref="paginationStart" class="pagination-results scroll-mt-20">
+        <ToolsetCardSkeleton v-if="pending" />
 
-      <KunLoading v-else-if="data" :loading="status === 'pending'">
-        <ToolsetCard v-if="data.items.length" :items="data.items" />
-        <KunNull v-else description="没有找到符合条件的工具资源" />
-      </KunLoading>
+        <KunLoading v-else-if="data" :loading="status === 'pending'">
+          <ToolsetCard v-if="data.items.length" :items="data.items" />
+          <KunNull v-else description="没有找到符合条件的工具资源" />
+        </KunLoading>
+      </div>
 
       <KunCard
         v-if="data?.items.length"
@@ -43,7 +50,7 @@ const { data, status, problem, pending } = useKunApi<PageListToolsetSummary>(
         content-class="gap-3"
       >
         <KunPagination
-          v-model:current-page="page"
+          v-model:current-page="paginationPage"
           :total-page="Math.ceil(data.total / limit)"
           :is-loading="status === 'pending'"
         />

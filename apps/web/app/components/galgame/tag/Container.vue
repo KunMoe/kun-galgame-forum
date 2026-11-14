@@ -136,6 +136,12 @@ watch(selectedIds, () => entityNames.resolve({ tag: selectedIds.value }), {
 })
 
 const isBrowsing = computed(() => !selectedIds.value.length)
+
+const { paginationPage, isPaginationPending } = usePaginationScroll(
+  page,
+  () => (isBrowsing.value ? status.value === 'pending' : loadingGames.value),
+  () => searchQuery.value.trim()
+)
 </script>
 
 <template>
@@ -188,51 +194,64 @@ const isBrowsing = computed(() => !selectedIds.value.length)
       </span>
     </FilterBar>
 
-    <template v-if="isBrowsing">
-      <GalgameEntityGridSkeleton v-if="tagsPending" />
+    <div
+      ref="paginationStart"
+      class="pagination-results scroll-mt-20 space-y-6"
+    >
+      <div v-if="isBrowsing" class="flex flex-col gap-6">
+        <GalgameEntityGridSkeleton v-if="tagsPending" />
 
-      <div
-        v-else
-        class="grid grid-cols-2 gap-3 sm:grid-cols-2 sm:gap-3 lg:grid-cols-3 xl:grid-cols-4"
-      >
-        <GalgameTagCard v-for="tag in displayTags" :key="tag.id" :tag="tag" />
+        <KunLoading
+          v-else
+          :loading="isPaginationPending && !searchQuery.trim()"
+        >
+          <div
+            class="grid grid-cols-2 gap-3 sm:grid-cols-2 sm:gap-3 lg:grid-cols-3 xl:grid-cols-4"
+          >
+            <GalgameTagCard
+              v-for="tag in displayTags"
+              :key="tag.id"
+              :tag="tag"
+            />
+          </div>
+        </KunLoading>
+
+        <KunLoading v-if="isSearching" />
+
+        <KunNull
+          v-else-if="!displayTags.length && !tagsPending"
+          :description="
+            isSfwMode
+              ? '没有匹配的标签。成人标签在 SFW 模式下搜不到, 请在设置面板打开 NSFW 开关'
+              : undefined
+          "
+        />
+
+        <KunPagination
+          v-if="!searchQuery.trim() && data && data.total > tagsLimit"
+          v-model:current-page="paginationPage"
+          :total-page="Math.ceil(data.total / tagsLimit)"
+          :is-loading="status === 'pending'"
+        />
       </div>
 
-      <KunLoading v-if="isSearching" />
+      <template v-else>
+        <KunLoading :loading="loadingGames">
+          <GalgameCard v-if="resultGames.length" :galgames="resultGames" />
+          <GalgameOriginalLanguageNull
+            v-else
+            description="没有同时含有这些标签的 Galgame"
+          />
+        </KunLoading>
 
-      <KunNull
-        v-else-if="!displayTags.length && !tagsPending"
-        :description="
-          isSfwMode
-            ? '没有匹配的标签。成人标签在 SFW 模式下搜不到, 请在设置面板打开 NSFW 开关'
-            : undefined
-        "
-      />
-
-      <KunPagination
-        v-if="!searchQuery.trim() && data && data.total > tagsLimit"
-        v-model:current-page="page"
-        :total-page="Math.ceil(data.total / tagsLimit)"
-        :is-loading="status === 'pending'"
-      />
-    </template>
-
-    <template v-else>
-      <KunLoading :loading="loadingGames">
-        <GalgameCard v-if="resultGames.length" :galgames="resultGames" />
-        <GalgameOriginalLanguageNull
-          v-else
-          description="没有同时含有这些标签的 Galgame"
+        <KunPagination
+          v-if="totalGameCount > gamesLimit"
+          class="mt-3"
+          v-model:current-page="paginationPage"
+          :total-page="Math.ceil(totalGameCount / gamesLimit)"
+          :is-loading="loadingGames"
         />
-      </KunLoading>
-
-      <KunPagination
-        v-if="totalGameCount > gamesLimit"
-        class="mt-3"
-        v-model:current-page="page"
-        :total-page="Math.ceil(totalGameCount / gamesLimit)"
-        :is-loading="loadingGames"
-      />
-    </template>
+      </template>
+    </div>
   </div>
 </template>

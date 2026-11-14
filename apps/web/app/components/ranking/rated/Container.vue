@@ -21,6 +21,10 @@ const { data, status, problem, pending } = useKunApi<RatedWorkRanking>(
       signal
     })
 )
+const { paginationPage } = usePaginationScroll(
+  page,
+  () => status.value === 'pending'
+)
 watch(problem, (p) => {
   if (p) {
     reportProblem(p)
@@ -99,38 +103,40 @@ const scoreLabel = computed(() =>
       </template>
     </KunHeader>
 
-    <RankingListSkeleton v-if="pending" height="5.25rem" />
+    <div ref="paginationStart" class="pagination-results scroll-mt-20">
+      <RankingListSkeleton v-if="pending" height="5.25rem" />
 
-    <KunNull
-      v-else-if="problem && !data"
-      description="评分排行暂时不可用, 请稍后再试"
-    />
-
-    <KunLoading v-else :loading="status === 'pending'">
-      <section v-if="entries.length">
-        <div
-          class="border-default-200 text-default-400 flex items-center gap-3 border-b px-2 pb-2 text-xs sm:gap-4 sm:px-3"
-        >
-          <span class="w-7 shrink-0 text-center sm:w-9">排名</span>
-          <span class="flex-1">作品</span>
-          <span class="w-16 text-right sm:w-28">{{ scoreLabel }}</span>
-          <span class="w-8 shrink-0" />
-        </div>
-        <ol class="divide-default-200 divide-y">
-          <li v-for="entry in entries" :key="entry.work_summary.id">
-            <RankingRatedEntry :entry="entry" :site="site" :sort="sort" />
-          </li>
-        </ol>
-      </section>
-      <GalgameOriginalLanguageNull
-        v-else
-        description="没有找到符合条件的 Galgame"
+      <KunNull
+        v-else-if="problem && !data"
+        description="评分排行暂时不可用, 请稍后再试"
       />
-    </KunLoading>
+
+      <KunLoading v-else :loading="status === 'pending'">
+        <section v-if="entries.length">
+          <div
+            class="border-default-200 text-default-400 flex items-center gap-3 border-b px-2 pb-2 text-xs sm:gap-4 sm:px-3"
+          >
+            <span class="w-7 shrink-0 text-center sm:w-9">排名</span>
+            <span class="flex-1">作品</span>
+            <span class="w-16 text-right sm:w-28">{{ scoreLabel }}</span>
+            <span class="w-8 shrink-0" />
+          </div>
+          <ol class="divide-default-200 divide-y">
+            <li v-for="entry in entries" :key="entry.work_summary.id">
+              <RankingRatedEntry :entry="entry" :site="site" :sort="sort" />
+            </li>
+          </ol>
+        </section>
+        <GalgameOriginalLanguageNull
+          v-else
+          description="没有找到符合条件的 Galgame"
+        />
+      </KunLoading>
+    </div>
 
     <KunPagination
       v-if="totalPage > 1"
-      v-model:current-page="page"
+      v-model:current-page="paginationPage"
       :total-page="totalPage"
       :is-loading="status === 'pending'"
     />

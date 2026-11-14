@@ -261,6 +261,11 @@ const browsedGroup = ref(props.pinned?.trait_group_id ?? '')
 const pageHref = (n: number) =>
   router.resolve({ query: { ...route.query, page: n > 1 ? n : undefined } })
     .href
+
+const { paginationPage } = usePaginationScroll(
+  page,
+  () => status.value === 'pending'
+)
 </script>
 
 <template>
@@ -347,34 +352,36 @@ const pageHref = (n: number) =>
       </KunScrollShadow>
     </div>
 
-    <KunInfo
-      v-if="needsNsfw"
-      color="warning"
-      title="筛选里有成人向属性"
-      description="当前为 SFW 模式, 成人向属性不能用来筛选。请在设置面板开启 NSFW 开关, 或移除这个属性。"
-    />
-
-    <GalgameCharacterCardSkeleton v-else-if="pending" />
-
-    <KunLoading v-else :loading="status === 'pending'">
-      <div
-        v-if="characters.length"
-        class="grid grid-cols-2 gap-3 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6"
-      >
-        <GalgameCharacterCard
-          v-for="character in characters"
-          :key="character.id"
-          :character="character"
-        />
-      </div>
-
-      <KunNull v-else-if="data" :description="emptyText" />
-
-      <KunNull
-        v-else-if="problem"
-        description="角色列表暂时无法加载, 请稍后重试"
+    <div ref="paginationStart" class="pagination-results scroll-mt-20">
+      <KunInfo
+        v-if="needsNsfw"
+        color="warning"
+        title="筛选里有成人向属性"
+        description="当前为 SFW 模式, 成人向属性不能用来筛选。请在设置面板开启 NSFW 开关, 或移除这个属性。"
       />
-    </KunLoading>
+
+      <GalgameCharacterCardSkeleton v-else-if="pending" />
+
+      <KunLoading v-else :loading="status === 'pending'">
+        <div
+          v-if="characters.length"
+          class="grid grid-cols-2 gap-3 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6"
+        >
+          <GalgameCharacterCard
+            v-for="character in characters"
+            :key="character.id"
+            :character="character"
+          />
+        </div>
+
+        <KunNull v-else-if="data" :description="emptyText" />
+
+        <KunNull
+          v-else-if="problem"
+          description="角色列表暂时无法加载, 请稍后重试"
+        />
+      </KunLoading>
+    </div>
 
     <p
       v-if="data?.total_relation === 'gte'"
@@ -386,7 +393,7 @@ const pageHref = (n: number) =>
 
     <KunPagination
       v-if="totalPage > 1"
-      v-model:current-page="page"
+      v-model:current-page="paginationPage"
       :total-page="totalPage"
       :is-loading="status === 'pending'"
       :page-href="pageHref"

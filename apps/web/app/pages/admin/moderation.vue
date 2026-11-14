@@ -62,6 +62,11 @@ const { data, status, pending, refresh } = useKunApi(
       signal
     })
 )
+const { paginationPage, isPaginationPending } = usePaginationScroll(
+  toRef(pageData, 'page'),
+  () => status.value === 'pending',
+  () => JSON.stringify([activeState.value, authorFilter.value?.id])
+)
 
 const items = computed(() => data.value?.items ?? [])
 const total = computed(() => data.value?.total ?? 0)
@@ -225,52 +230,58 @@ const actionOptions = TRUST_ACTIONS.map((a) => ({
       </KunChip>
     </div>
 
-    <AdminListSkeleton v-if="pending" />
+    <div ref="paginationStart" class="pagination-results scroll-mt-20">
+      <AdminListSkeleton v-if="pending" />
 
-    <KunNull v-else-if="!items.length" description="暂无审核条目" />
+      <KunNull v-else-if="!items.length" description="暂无审核条目" />
 
-    <div v-else class="space-y-2">
-      <button
-        v-for="item in items"
-        :key="item.id"
-        class="hover:bg-default-100 border-default-200 w-full rounded-lg border p-3 text-left transition-colors"
-        @click="openDetail(item.id)"
-      >
-        <div class="flex items-center justify-between gap-2">
-          <div class="flex flex-wrap items-center gap-2">
-            <KunChip color="secondary">{{
-              kindLabel(item.subject_kind)
-            }}</KunChip>
-            <span class="text-default-500 text-sm">#{{ item.subject_id }}</span>
-            <KunChip :color="TRUST_REVIEW_STATE[item.state].color">
-              {{ TRUST_REVIEW_STATE[item.state].label }}
-            </KunChip>
-          </div>
-          <span class="text-default-400 shrink-0 text-xs">
-            优先级 {{ item.priority.toFixed(1) }}
-          </span>
-        </div>
-        <div
-          class="text-default-400 mt-1 flex flex-wrap items-center gap-x-3 text-xs"
-        >
-          <span>来源：{{ originLabel(item.opened_by) }}</span>
-          <span v-if="item.report_weight_sum"
-            >举报权重 {{ item.report_weight_sum.toFixed(1) }}</span
+      <KunLoading v-else :loading="isPaginationPending">
+        <div class="space-y-2">
+          <button
+            v-for="item in items"
+            :key="item.id"
+            class="hover:bg-default-100 border-default-200 w-full rounded-lg border p-3 text-left transition-colors"
+            @click="openDetail(item.id)"
           >
-          <KunTime :time="item.created_at" type="datetime" show-year />
+            <div class="flex items-center justify-between gap-2">
+              <div class="flex flex-wrap items-center gap-2">
+                <KunChip color="secondary">{{
+                  kindLabel(item.subject_kind)
+                }}</KunChip>
+                <span class="text-default-500 text-sm"
+                  >#{{ item.subject_id }}</span
+                >
+                <KunChip :color="TRUST_REVIEW_STATE[item.state].color">
+                  {{ TRUST_REVIEW_STATE[item.state].label }}
+                </KunChip>
+              </div>
+              <span class="text-default-400 shrink-0 text-xs">
+                优先级 {{ item.priority.toFixed(1) }}
+              </span>
+            </div>
+            <div
+              class="text-default-400 mt-1 flex flex-wrap items-center gap-x-3 text-xs"
+            >
+              <span>来源：{{ originLabel(item.opened_by) }}</span>
+              <span v-if="item.report_weight_sum"
+                >举报权重 {{ item.report_weight_sum.toFixed(1) }}</span
+              >
+              <KunTime :time="item.created_at" type="datetime" show-year />
+            </div>
+            <p
+              v-if="item.context_note"
+              class="text-default-600 mt-2 line-clamp-2 text-sm break-all whitespace-pre-line"
+            >
+              {{ item.context_note }}
+            </p>
+          </button>
         </div>
-        <p
-          v-if="item.context_note"
-          class="text-default-600 mt-2 line-clamp-2 text-sm break-all whitespace-pre-line"
-        >
-          {{ item.context_note }}
-        </p>
-      </button>
+      </KunLoading>
     </div>
 
     <KunPagination
       v-if="total > pageData.limit"
-      v-model:current-page="pageData.page"
+      v-model:current-page="paginationPage"
       :total-page="Math.ceil(total / pageData.limit)"
       :is-loading="status === 'pending'"
     />

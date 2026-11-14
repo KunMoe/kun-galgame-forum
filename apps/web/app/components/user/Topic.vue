@@ -73,6 +73,11 @@ const handleUpdateTopicHideStatus = async (topicId: string) => {
   useMessage('取消隐藏话题成功', 'success')
   await navigateTo(`/topic/${topicId}`)
 }
+
+const { paginationPage, isPaginationPending } = usePaginationScroll(
+  toRef(pageData, 'page'),
+  () => status.value === 'pending'
+)
 </script>
 
 <template>
@@ -85,60 +90,70 @@ const handleUpdateTopicHideStatus = async (topicId: string) => {
       scrollable
     />
 
-    <UserListSkeleton v-if="pending" />
-    <div class="flex flex-col space-y-3" v-if="data && data.items.length">
-      <template v-if="relation !== 'hidden'">
-        <KunCard
-          v-for="(topic, index) in data.items"
-          :key="index"
-          :href="`/topic/${topic.id}`"
-        >
-          <div>
-            {{ topic.title }}
-          </div>
-          <div class="text-default-500 text-sm">
-            <KunTime :time="topic.created_at" type="date" show-year />
-          </div>
-        </KunCard>
-      </template>
-
-      <template v-else>
-        <KunCard
-          :is-hoverable="false"
-          :is-transparent="true"
-          v-for="(topic, index) in data.items"
-          :key="index"
-        >
-          <KunLink :to="`/topic/${topic.id}`">
-            {{ topic.title }}
-          </KunLink>
-          <div
-            class="text-default-500 flex items-center justify-between text-sm"
-          >
-            <KunTime :time="topic.created_at" type="date" show-year />
-            <KunButton
-              @click="handleUpdateTopicHideStatus(topic.id)"
-              size="sm"
-              variant="flat"
-              color="primary"
+    <div
+      ref="paginationStart"
+      class="pagination-results flex scroll-mt-20 flex-col gap-3"
+    >
+      <UserListSkeleton v-if="pending" />
+      <KunLoading
+        v-if="data && data.items.length"
+        :loading="isPaginationPending"
+      >
+        <div class="flex flex-col space-y-3">
+          <template v-if="relation !== 'hidden'">
+            <KunCard
+              v-for="(topic, index) in data.items"
+              :key="index"
+              :href="`/topic/${topic.id}`"
             >
-              取消隐藏
-            </KunButton>
-          </div>
-        </KunCard>
-      </template>
+              <div>
+                {{ topic.title }}
+              </div>
+              <div class="text-default-500 text-sm">
+                <KunTime :time="topic.created_at" type="date" show-year />
+              </div>
+            </KunCard>
+          </template>
+
+          <template v-else>
+            <KunCard
+              :is-hoverable="false"
+              :is-transparent="true"
+              v-for="(topic, index) in data.items"
+              :key="index"
+            >
+              <KunLink :to="`/topic/${topic.id}`">
+                {{ topic.title }}
+              </KunLink>
+              <div
+                class="text-default-500 flex items-center justify-between text-sm"
+              >
+                <KunTime :time="topic.created_at" type="date" show-year />
+                <KunButton
+                  @click="handleUpdateTopicHideStatus(topic.id)"
+                  size="sm"
+                  variant="flat"
+                  color="primary"
+                >
+                  取消隐藏
+                </KunButton>
+              </div>
+            </KunCard>
+          </template>
+        </div>
+      </KunLoading>
+
+      <KunPagination
+        v-if="data && data.total > pageData.limit"
+        v-model:current-page="paginationPage"
+        :total-page="Math.ceil(data.total / pageData.limit)"
+        :is-loading="status === 'pending'"
+      />
+
+      <KunNull
+        v-if="data && !data.items.length"
+        description="这只笨蛋萝莉没有发布过任何话题"
+      />
     </div>
-
-    <KunPagination
-      v-if="data && data.total > pageData.limit"
-      v-model:current-page="pageData.page"
-      :total-page="Math.ceil(data.total / pageData.limit)"
-      :is-loading="status === 'pending'"
-    />
-
-    <KunNull
-      v-if="data && !data.items.length"
-      description="这只笨蛋萝莉没有发布过任何话题"
-    />
   </div>
 </template>

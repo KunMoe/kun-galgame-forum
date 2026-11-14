@@ -73,6 +73,11 @@ useKunSeoMeta(() =>
       }
     : {}
 )
+
+const { paginationPage } = usePaginationScroll(
+  page,
+  () => status.value === 'pending'
+)
 </script>
 
 <template>
@@ -101,24 +106,26 @@ useKunSeoMeta(() =>
         description="当前为 SFW 模式，该系列含 NSFW 内容的 Galgame 不会显示。如需查看，请在设置面板开启 NSFW 开关。"
       />
 
-      <GalgameCardGridSkeleton v-if="worksPending" />
+      <div ref="paginationStart" class="pagination-results scroll-mt-20">
+        <GalgameCardGridSkeleton v-if="worksPending" />
 
-      <KunLoading v-else :loading="status === 'pending'">
-        <GalgameCard
-          :is-transparent="false"
-          v-if="galgames.length"
-          :galgames="galgames"
-        />
+        <KunLoading v-else :loading="status === 'pending'">
+          <GalgameCard
+            :is-transparent="false"
+            v-if="galgames.length"
+            :galgames="galgames"
+          />
 
-        <GalgameOriginalLanguageNull
-          v-else
-          :description="`${data.name} 系列下暂无 Galgame`"
-        />
-      </KunLoading>
+          <GalgameOriginalLanguageNull
+            v-else
+            :description="`${data.name} 系列下暂无 Galgame`"
+          />
+        </KunLoading>
+      </div>
 
       <KunPagination
         v-if="total > limit"
-        v-model:current-page="page"
+        v-model:current-page="paginationPage"
         :total-page="Math.ceil(total / limit)"
         :is-loading="status === 'pending'"
       />

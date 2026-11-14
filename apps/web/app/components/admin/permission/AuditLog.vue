@@ -13,6 +13,10 @@ const page = ref(1)
 const limit = 20
 const data = ref<ChangePage | null>(null)
 const loading = ref(false)
+const { paginationPage, isPaginationPending } = usePaginationScroll(
+  page,
+  loading
+)
 
 const load = async () => {
   loading.value = true
@@ -75,51 +79,65 @@ const DELTA_CHIP: Record<
 </script>
 
 <template>
-  <div class="space-y-3">
+  <div ref="paginationStart" class="pagination-results scroll-mt-20 space-y-3">
     <KunLoading v-if="loading && !data" />
     <KunNull v-else-if="!data?.items.length" description="暂无权限变更记录" />
 
     <template v-else>
-      <div
-        v-for="entry in data.items"
-        :key="entry.id"
-        class="border-default-200 space-y-2 rounded-lg border p-3"
-      >
-        <div class="flex flex-wrap items-center gap-2">
-          <KunChip size="sm" :color="isReset(entry) ? 'default' : 'primary'">
-            {{ isReset(entry) ? '重置' : '调整' }}
-          </KunChip>
-          <span class="text-sm font-medium">{{ subjectLabel(entry) }}</span>
-          <span class="text-default-400 text-xs">操作人</span>
-          <UserHoverCard :user-id="entry.actor.id">
-            <KunUserChip :user="toKunUser(entry.actor)" size="sm" />
-          </UserHoverCard>
-          <KunTime
-            :time="entry.created_at"
-            type="datetime"
-            show-year
-            class="ml-auto text-xs"
-          />
-        </div>
+      <div>
+        <KunLoading :loading="isPaginationPending">
+          <div class="space-y-3">
+            <div
+              v-for="entry in data.items"
+              :key="entry.id"
+              class="border-default-200 space-y-2 rounded-lg border p-3"
+            >
+              <div class="flex flex-wrap items-center gap-2">
+                <KunChip
+                  size="sm"
+                  :color="isReset(entry) ? 'default' : 'primary'"
+                >
+                  {{ isReset(entry) ? '重置' : '调整' }}
+                </KunChip>
+                <span class="text-sm font-medium">{{
+                  subjectLabel(entry)
+                }}</span>
+                <span class="text-default-400 text-xs">操作人</span>
+                <UserHoverCard :user-id="entry.actor.id">
+                  <KunUserChip :user="toKunUser(entry.actor)" size="sm" />
+                </UserHoverCard>
+                <KunTime
+                  :time="entry.created_at"
+                  type="datetime"
+                  show-year
+                  class="ml-auto text-xs"
+                />
+              </div>
 
-        <div v-if="rowDeltas(entry).length" class="flex flex-wrap gap-1.5">
-          <KunChip
-            v-for="delta in rowDeltas(entry)"
-            :key="delta.permission"
-            size="sm"
-            variant="flat"
-            :color="DELTA_CHIP[delta.kind].color"
-          >
-            {{ DELTA_CHIP[delta.kind].prefix }}
-            {{ permLabel(delta.permission) }}
-          </KunChip>
-        </div>
-        <span v-else class="text-default-400 text-xs">无覆盖变化</span>
+              <div
+                v-if="rowDeltas(entry).length"
+                class="flex flex-wrap gap-1.5"
+              >
+                <KunChip
+                  v-for="delta in rowDeltas(entry)"
+                  :key="delta.permission"
+                  size="sm"
+                  variant="flat"
+                  :color="DELTA_CHIP[delta.kind].color"
+                >
+                  {{ DELTA_CHIP[delta.kind].prefix }}
+                  {{ permLabel(delta.permission) }}
+                </KunChip>
+              </div>
+              <span v-else class="text-default-400 text-xs">无覆盖变化</span>
+            </div>
+          </div>
+        </KunLoading>
       </div>
 
       <KunPagination
         v-if="data && data.total > limit"
-        v-model:current-page="page"
+        v-model:current-page="paginationPage"
         :total-page="totalPage"
         :is-loading="loading"
       />

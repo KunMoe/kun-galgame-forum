@@ -12,21 +12,22 @@ const emit = defineEmits<{
 const page = usePageQuery()
 const limit = 12
 
-const { data, status, problem, pending, refresh } = useKunApi<PageListQuizSummary>(
-  () => `quizzes-work:${workId.value}:${page.value}:${limit}`,
-  (api, { signal }) =>
-    api.GET('/quizzes', {
-      params: {
-        query: {
-          page: page.value,
-          limit,
-          work_id: workId.value,
-          include_nsfw: true
-        }
-      },
-      signal
-    })
-)
+const { data, status, problem, pending, refresh } =
+  useKunApi<PageListQuizSummary>(
+    () => `quizzes-work:${workId.value}:${page.value}:${limit}`,
+    (api, { signal }) =>
+      api.GET('/quizzes', {
+        params: {
+          query: {
+            page: page.value,
+            limit,
+            work_id: workId.value,
+            include_nsfw: true
+          }
+        },
+        signal
+      })
+  )
 watchEffect(() =>
   emit('update:loading', status.value === 'pending' && !pending.value)
 )
@@ -40,6 +41,11 @@ const onPublished = () => {
   page.value = 1
   refresh()
 }
+
+const { paginationPage, isPaginationPending } = usePaginationScroll(
+  page,
+  () => status.value === 'pending'
+)
 </script>
 
 <template>
@@ -59,20 +65,24 @@ const onPublished = () => {
       </KunButton>
     </div>
 
-    <KunNull v-if="problem" :description="problemMessage(problem)" />
-    <GalgameQuizListSkeleton v-else-if="pending" :count="4" />
-    <GalgameQuizList
-      v-else-if="data && data.items.length"
-      :quizzes="data.items"
-    />
-    <KunNull
-      v-else-if="status !== 'pending'"
-      description="本作还没有题目, 快来出第一题吧"
-    />
+    <div ref="paginationStart" class="pagination-results scroll-mt-20">
+      <KunNull v-if="problem" :description="problemMessage(problem)" />
+      <GalgameQuizListSkeleton v-else-if="pending" :count="4" />
+      <KunLoading
+        v-else-if="data && data.items.length"
+        :loading="isPaginationPending"
+      >
+        <GalgameQuizList :quizzes="data.items" />
+      </KunLoading>
+      <KunNull
+        v-else-if="status !== 'pending'"
+        description="本作还没有题目, 快来出第一题吧"
+      />
+    </div>
 
     <KunPagination
       v-if="(data?.total || 0) > limit"
-      v-model:current-page="page"
+      v-model:current-page="paginationPage"
       :total-page="Math.ceil((data?.total || 0) / limit)"
       :is-loading="status === 'pending'"
     />

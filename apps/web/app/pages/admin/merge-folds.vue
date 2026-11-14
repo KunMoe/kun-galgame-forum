@@ -42,6 +42,10 @@ const { data, problem, pending, status } = useKunApi(
       signal
     })
 )
+const { paginationPage, isPaginationPending } = usePaginationScroll(
+  page,
+  () => status.value === 'pending'
+)
 
 const totalPage = computed(() =>
   data.value ? Math.max(1, Math.ceil(data.value.total / limit)) : 1
@@ -69,76 +73,96 @@ const counts = (fold: WorkMergeFold) =>
       </p>
     </div>
 
-    <AdminListSkeleton v-if="pending" />
-    <KunNull v-else-if="problem" :description="problemMessage(problem)" />
-    <KunNull v-else-if="!data?.items.length" description="暂无合并记录" />
+    <div
+      ref="paginationStart"
+      class="pagination-results scroll-mt-20 space-y-4"
+    >
+      <AdminListSkeleton v-if="pending" />
+      <KunNull v-else-if="problem" :description="problemMessage(problem)" />
+      <KunNull v-else-if="!data?.items.length" description="暂无合并记录" />
 
-    <template v-else>
-      <div
-        v-for="fold in data.items"
-        :key="fold.id"
-        class="border-default-200 space-y-2 rounded-lg border p-3"
-      >
-        <div class="flex flex-wrap items-center gap-2 text-sm">
-          <KunChip size="sm" :color="fold.undone_at ? 'warning' : 'primary'">
-            {{ fold.undone_at ? '已撤销' : '生效中' }}
-          </KunChip>
-          <KunLink :to="`/galgame/${fold.old_work_id}`">
-            #{{ fold.old_work_id }}
-          </KunLink>
-          <KunIcon name="lucide:arrow-right" class="text-default-400 size-4" />
-          <KunLink :to="`/galgame/${fold.new_work_id}`">
-            #{{ fold.new_work_id }}
-          </KunLink>
-          <KunTime
-            :time="fold.folded_at"
-            type="datetime"
-            show-year
-            class="ml-auto text-xs"
-          />
+      <template v-else>
+        <div>
+          <KunLoading :loading="isPaginationPending">
+            <div class="space-y-4">
+              <div
+                v-for="fold in data.items"
+                :key="fold.id"
+                class="border-default-200 space-y-2 rounded-lg border p-3"
+              >
+                <div class="flex flex-wrap items-center gap-2 text-sm">
+                  <KunChip
+                    size="sm"
+                    :color="fold.undone_at ? 'warning' : 'primary'"
+                  >
+                    {{ fold.undone_at ? '已撤销' : '生效中' }}
+                  </KunChip>
+                  <KunLink :to="`/galgame/${fold.old_work_id}`">
+                    #{{ fold.old_work_id }}
+                  </KunLink>
+                  <KunIcon
+                    name="lucide:arrow-right"
+                    class="text-default-400 size-4"
+                  />
+                  <KunLink :to="`/galgame/${fold.new_work_id}`">
+                    #{{ fold.new_work_id }}
+                  </KunLink>
+                  <KunTime
+                    :time="fold.folded_at"
+                    type="datetime"
+                    show-year
+                    class="ml-auto text-xs"
+                  />
+                </div>
+
+                <div class="flex flex-wrap gap-1.5">
+                  <KunChip
+                    v-for="[label, n] in counts(fold)"
+                    :key="label"
+                    size="sm"
+                    variant="flat"
+                  >
+                    {{ label }} {{ n }}
+                  </KunChip>
+                  <span v-if="fold.undone_at" class="text-default-500 text-xs">
+                    撤销于
+                    <KunTime :time="fold.undone_at" type="datetime" show-year />
+                  </span>
+                </div>
+
+                <div v-if="fold.problems.length" class="space-y-1">
+                  <p class="text-danger text-xs font-medium">
+                    {{ `有 ${fold.problems.length} 条没能搬回` }}
+                  </p>
+                  <ul class="text-default-600 space-y-0.5 text-xs">
+                    <li
+                      v-for="p in fold.problems"
+                      :key="`${p.table_name}:${p.row_id}`"
+                    >
+                      {{ TABLE_LABELS[p.table_name] }} #{{ p.row_id }}:
+                      {{ CAUSE_LABELS[p.cause] }}
+                      <template v-if="p.current_work_id">
+                        (现在在
+                        <KunLink :to="`/galgame/${p.current_work_id}`">
+                          #{{ p.current_work_id }}
+                        </KunLink>
+                        )
+                      </template>
+                    </li>
+                  </ul>
+                </div>
+              </div>
+            </div>
+          </KunLoading>
         </div>
 
-        <div class="flex flex-wrap gap-1.5">
-          <KunChip
-            v-for="[label, n] in counts(fold)"
-            :key="label"
-            size="sm"
-            variant="flat"
-          >
-            {{ label }} {{ n }}
-          </KunChip>
-          <span v-if="fold.undone_at" class="text-default-500 text-xs">
-            撤销于
-            <KunTime :time="fold.undone_at" type="datetime" show-year />
-          </span>
-        </div>
-
-        <div v-if="fold.problems.length" class="space-y-1">
-          <p class="text-danger text-xs font-medium">
-            {{ `有 ${fold.problems.length} 条没能搬回` }}
-          </p>
-          <ul class="text-default-600 space-y-0.5 text-xs">
-            <li v-for="p in fold.problems" :key="`${p.table_name}:${p.row_id}`">
-              {{ TABLE_LABELS[p.table_name] }} #{{ p.row_id }}:
-              {{ CAUSE_LABELS[p.cause] }}
-              <template v-if="p.current_work_id">
-                (现在在
-                <KunLink :to="`/galgame/${p.current_work_id}`">
-                  #{{ p.current_work_id }}
-                </KunLink>
-                )
-              </template>
-            </li>
-          </ul>
-        </div>
-      </div>
-
-      <KunPagination
-        v-if="totalPage > 1"
-        v-model:current-page="page"
-        :total-page="totalPage"
-        :is-loading="status === 'pending'"
-      />
-    </template>
+        <KunPagination
+          v-if="totalPage > 1"
+          v-model:current-page="paginationPage"
+          :total-page="totalPage"
+          :is-loading="status === 'pending'"
+        />
+      </template>
+    </div>
   </div>
 </template>

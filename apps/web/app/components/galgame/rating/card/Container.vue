@@ -56,7 +56,10 @@ const query = computed<RatingsQuery>(() => {
     page: params.page,
     limit: params.limit,
     sort,
-    spoiler_level: known(params.spoiler_level, KUN_GALGAME_RATING_SPOILER_CONST),
+    spoiler_level: known(
+      params.spoiler_level,
+      KUN_GALGAME_RATING_SPOILER_CONST
+    ),
     play_status: known(params.play_status, KUN_GALGAME_PLAY_STATE_CONST),
     game_type: known(params.galgame_type, KUN_GALGAME_RATING_GAME_TYPE_CONST),
     include_nsfw: allowsNsfw.value
@@ -71,6 +74,11 @@ const { data, status, pending } = useKunApi(
 )
 const ratings = computed(() =>
   (data.value?.items ?? []).map((r) => ratingToCard(r, nameOf))
+)
+
+const { paginationPage, isPaginationPending } = usePaginationScroll(
+  filters.page,
+  () => status.value === 'pending'
 )
 </script>
 
@@ -122,12 +130,16 @@ const ratings = computed(() =>
       </div>
     </div>
 
-    <GalgameRatingCard v-if="data" :ratings="ratings" />
-    <GalgameRatingCardSkeleton v-else-if="pending" />
+    <div ref="paginationStart" class="pagination-results scroll-mt-20">
+      <KunLoading v-if="data" :loading="isPaginationPending">
+        <GalgameRatingCard :ratings="ratings" />
+      </KunLoading>
+      <GalgameRatingCardSkeleton v-else-if="pending" />
+    </div>
 
     <KunPagination
       v-if="(data?.total || 0) > params.limit"
-      v-model:current-page="params.page"
+      v-model:current-page="paginationPage"
       :total-page="Math.ceil((data?.total || 0) / params.limit)"
       :is-loading="status === 'pending'"
     />

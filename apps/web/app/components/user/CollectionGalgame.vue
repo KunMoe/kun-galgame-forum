@@ -26,24 +26,31 @@ const { data, status, pending } = useKunApi<PageListCollectionSummary>(
       signal
     })
 )
+
+const { paginationPage, isPaginationPending } = usePaginationScroll(
+  page,
+  () => status.value === 'pending'
+)
 </script>
 
 <template>
-  <div class="space-y-3">
+  <div ref="paginationStart" class="pagination-results scroll-mt-20 space-y-3">
     <GalgameCollectionRowCardSkeleton v-if="pending" :count="4" />
-    <div v-if="data && data.items.length" class="flex flex-col space-y-3">
-      <div class="grid grid-cols-1 gap-3 md:grid-cols-2">
-        <GalgameCollectionRowCard
-          v-for="c in data.items"
-          :key="c.id"
-          :collection="c"
-          :show-owner="false"
-        />
-      </div>
+    <div v-if="data && data.items.length" class="flex flex-col gap-3">
+      <KunLoading :loading="isPaginationPending">
+        <div class="grid grid-cols-1 gap-3 md:grid-cols-2">
+          <GalgameCollectionRowCard
+            v-for="c in data.items"
+            :key="c.id"
+            :collection="c"
+            :show-owner="false"
+          />
+        </div>
+      </KunLoading>
 
       <KunPagination
         v-if="data.total > limit"
-        v-model:current-page="page"
+        v-model:current-page="paginationPage"
         :total-page="Math.ceil(data.total / limit)"
         :is-loading="status === 'pending'"
       />

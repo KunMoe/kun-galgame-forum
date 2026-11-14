@@ -139,6 +139,11 @@ const loadMoreComments = async () => {
   comments.value.push(...result.data.items.filter((c) => !seen.has(c.id)))
   commentCursor.value = result.data.next_cursor
 }
+
+const { paginationPage, isPaginationPending } = usePaginationScroll(
+  toRef(pageData, 'page'),
+  () => galgameStatus.value === 'pending'
+)
 </script>
 
 <template>
@@ -151,17 +156,23 @@ const loadMoreComments = async () => {
       scrollable
     />
 
-    <template v-if="!isCommentMode">
+    <div
+      v-if="!isCommentMode"
+      ref="paginationStart"
+      class="pagination-results scroll-mt-20 space-y-3"
+    >
       <GalgameCardGridSkeleton v-if="galgamePending" :count="8" />
       <div
         v-if="galgameData && galgameData.items.length"
-        class="flex flex-col space-y-3"
+        class="flex flex-col gap-3"
       >
-        <GalgameCard :is-transparent="false" :galgames="galgameCards" />
+        <KunLoading :loading="isPaginationPending">
+          <GalgameCard :is-transparent="false" :galgames="galgameCards" />
+        </KunLoading>
 
         <KunPagination
           v-if="galgameData.total > pageData.limit"
-          v-model:current-page="pageData.page"
+          v-model:current-page="paginationPage"
           :total-page="Math.ceil(galgameData.total / pageData.limit)"
           :is-loading="galgameStatus === 'pending'"
         />
@@ -171,7 +182,7 @@ const loadMoreComments = async () => {
         v-if="galgameData && !galgameData.items.length"
         description="这只笨蛋萝莉没有相关的 Galgame"
       />
-    </template>
+    </div>
 
     <template v-else>
       <div

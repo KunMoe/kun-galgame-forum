@@ -6,7 +6,10 @@ const [
   { galgames, total, status, own, imprint, pending: worksPending }
 ] = await Promise.all([
   useGalgameOfficialDetail('/game'),
-  useCompanyWorks(Number((useRoute().params as { id: string }).id), () => query.value)
+  useCompanyWorks(
+    Number((useRoute().params as { id: string }).id),
+    () => query.value
+  )
 ])
 
 const { allowsNsfw } = useContentStance()
@@ -21,6 +24,11 @@ useKunSeoMeta(() => {
       }
     : {}
 })
+
+const { paginationPage } = usePaginationScroll(
+  page,
+  () => status.value === 'pending'
+)
 </script>
 
 <template>
@@ -57,32 +65,34 @@ useKunSeoMeta(() => {
         description="当前为 SFW 模式，该会社含 NSFW 内容的 Galgame 不会显示。如需查看，请在设置面板开启 NSFW 开关。"
       />
 
-      <GalgameCardGridSkeleton v-if="worksPending" />
+      <div ref="paginationStart" class="pagination-results scroll-mt-20">
+        <GalgameCardGridSkeleton v-if="worksPending" />
 
-      <KunLoading v-else :loading="status === 'pending'">
-        <GalgameCard
-          :is-transparent="false"
-          v-if="galgames.length"
-          :galgames="galgames"
-          :hide-company="data.name"
-        >
-          <template #meta="{ galgame }">
-            <GalgameOfficialViaImprint
-              v-if="galgame.via_official"
-              :name="galgame.via_official.name"
-            />
-          </template>
-        </GalgameCard>
+        <KunLoading v-else :loading="status === 'pending'">
+          <GalgameCard
+            :is-transparent="false"
+            v-if="galgames.length"
+            :galgames="galgames"
+            :hide-company="data.name"
+          >
+            <template #meta="{ galgame }">
+              <GalgameOfficialViaImprint
+                v-if="galgame.via_official"
+                :name="galgame.via_official.name"
+              />
+            </template>
+          </GalgameCard>
 
-        <GalgameOriginalLanguageNull
-          v-else
-          :description="`${data.name} 会社下暂无 Galgame`"
-        />
-      </KunLoading>
+          <GalgameOriginalLanguageNull
+            v-else
+            :description="`${data.name} 会社下暂无 Galgame`"
+          />
+        </KunLoading>
+      </div>
 
       <KunPagination
         v-if="total > limit"
-        v-model:current-page="page"
+        v-model:current-page="paginationPage"
         :total-page="Math.ceil(total / limit)"
         :is-loading="status === 'pending'"
       />
