@@ -551,6 +551,11 @@ useKunSeoMeta(() => {
   }
   return problem.value ? { noindex: true, title: '未找到该收藏夹' } : {}
 })
+
+const { paginationPage, isPaginationPending } = usePaginationScroll(
+  page,
+  () => entriesStatus.value === 'pending'
+)
 </script>
 
 <template>
@@ -732,39 +737,45 @@ useKunSeoMeta(() => {
           />
         </div>
 
-        <GalgameCollectionEntryListSkeleton v-if="entriesPending && !entries" />
-
-        <div
-          v-else-if="entries && entries.items.length"
-          class="flex flex-col space-y-3"
-        >
-          <GalgameCollectionEntryList
-            :collection-id="detail.id"
-            :entries="entries.items"
-            :can-edit-notes="canEdit"
-            :can-reorder="canReorder"
-            :can-report="isShared && !isOwner"
-            :can-set-cover="isOwner"
-            :cover-work-id="detail.cover_work?.id ?? null"
-            :marks="marks"
-            :can-mark="isSignedIn"
-            @changed="refreshEntries"
-            @marked="onMarked"
-            @set-cover="setCover"
+        <div ref="paginationStart" class="pagination-results scroll-mt-20">
+          <GalgameCollectionEntryListSkeleton
+            v-if="entriesPending && !entries"
           />
-          <KunPagination
-            v-if="entries.total > limit"
-            v-model:current-page="page"
-            :total-page="Math.ceil(entries.total / limit)"
-            :is-loading="entriesStatus === 'pending'"
+
+          <div
+            v-else-if="entries && entries.items.length"
+            class="flex flex-col gap-3"
+          >
+            <KunLoading :loading="isPaginationPending">
+              <GalgameCollectionEntryList
+                :collection-id="detail.id"
+                :entries="entries.items"
+                :can-edit-notes="canEdit"
+                :can-reorder="canReorder"
+                :can-report="isShared && !isOwner"
+                :can-set-cover="isOwner"
+                :cover-work-id="detail.cover_work?.id ?? null"
+                :marks="marks"
+                :can-mark="isSignedIn"
+                @changed="refreshEntries"
+                @marked="onMarked"
+                @set-cover="setCover"
+              />
+            </KunLoading>
+            <KunPagination
+              v-if="entries.total > limit"
+              v-model:current-page="paginationPage"
+              :total-page="Math.ceil(entries.total / limit)"
+              :is-loading="entriesStatus === 'pending'"
+            />
+          </div>
+          <KunNull
+            v-else-if="entries"
+            :description="
+              hiddenCount > 0 ? hiddenNote : '这个收藏夹还没有收藏任何 Galgame'
+            "
           />
         </div>
-        <KunNull
-          v-else-if="entries"
-          :description="
-            hiddenCount > 0 ? hiddenNote : '这个收藏夹还没有收藏任何 Galgame'
-          "
-        />
       </div>
 
       <div

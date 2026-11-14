@@ -42,6 +42,11 @@ const { data, status, pending } = useKunApi<PageListUserReplyItem>(
       signal
     })
 )
+
+const { paginationPage, isPaginationPending } = usePaginationScroll(
+  toRef(pageData, 'page'),
+  () => status.value === 'pending'
+)
 </script>
 
 <template>
@@ -54,32 +59,41 @@ const { data, status, pending } = useKunApi<PageListUserReplyItem>(
       scrollable
     />
 
-    <UserListSkeleton v-if="pending" />
-    <div v-if="data" class="flex flex-col space-y-3">
-      <KunCard
-        v-for="(reply, index) in data.items"
-        :key="index"
-        :href="replyPermalink(`/topic/${reply.topic_id}`, reply.floor)"
-      >
-        <div>
-          {{ reply.excerpt }}
-        </div>
-        <div class="text-default-500 text-sm">
-          <KunTime :time="reply.created_at" type="date" show-year />
-        </div>
-      </KunCard>
+    <div
+      ref="paginationStart"
+      class="pagination-results scroll-mt-20 space-y-6"
+    >
+      <UserListSkeleton v-if="pending" />
+      <div v-if="data" class="flex flex-col gap-3">
+        <KunLoading :loading="isPaginationPending">
+          <div class="flex flex-col space-y-3">
+            <KunCard
+              v-for="(reply, index) in data.items"
+              :key="index"
+              :href="replyPermalink(`/topic/${reply.topic_id}`, reply.floor)"
+            >
+              <div>
+                {{ reply.excerpt }}
+              </div>
+              <div class="text-default-500 text-sm">
+                <KunTime :time="reply.created_at" type="date" show-year />
+              </div>
+            </KunCard>
+          </div>
+        </KunLoading>
 
-      <KunPagination
-        v-if="data.total > pageData.limit"
-        v-model:current-page="pageData.page"
-        :total-page="Math.ceil(data.total / pageData.limit)"
-        :is-loading="status === 'pending'"
+        <KunPagination
+          v-if="data.total > pageData.limit"
+          v-model:current-page="paginationPage"
+          :total-page="Math.ceil(data.total / pageData.limit)"
+          :is-loading="status === 'pending'"
+        />
+      </div>
+
+      <KunNull
+        v-if="data && !data.items.length"
+        description="这只笨蛋萝莉没有发布过任何回复"
       />
     </div>
-
-    <KunNull
-      v-if="data && !data.items.length"
-      description="这只笨蛋萝莉没有发布过任何回复"
-    />
   </div>
 </template>

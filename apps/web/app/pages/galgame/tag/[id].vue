@@ -102,6 +102,11 @@ useKunSeoMeta(() => {
     ogImage: galgames.value[0]?.effective_banner_url || undefined
   }
 })
+
+const { paginationPage } = usePaginationScroll(
+  page,
+  () => status.value === 'pending'
+)
 </script>
 
 <template>
@@ -156,24 +161,26 @@ useKunSeoMeta(() => {
 
       <GalgameTagBlockNotice :tag="tag" :name="data.name" :sfw="!includeNsfw" />
 
-      <GalgameCardGridSkeleton v-if="worksPending" />
+      <div ref="paginationStart" class="pagination-results scroll-mt-20">
+        <GalgameCardGridSkeleton v-if="worksPending" />
 
-      <KunLoading v-else :loading="status === 'pending'">
-        <GalgameCard
-          :is-transparent="false"
-          v-if="galgames.length"
-          :galgames="galgames"
-        />
+        <KunLoading v-else :loading="status === 'pending'">
+          <GalgameCard
+            :is-transparent="false"
+            v-if="galgames.length"
+            :galgames="galgames"
+          />
 
-        <GalgameOriginalLanguageNull
-          v-else-if="!isHiddenByBlock"
-          :description="`${data.name} 标签下暂无 Galgame`"
-        />
-      </KunLoading>
+          <GalgameOriginalLanguageNull
+            v-else-if="!isHiddenByBlock"
+            :description="`${data.name} 标签下暂无 Galgame`"
+          />
+        </KunLoading>
+      </div>
 
       <KunPagination
         v-if="total > limit"
-        v-model:current-page="page"
+        v-model:current-page="paginationPage"
         :total-page="Math.ceil(total / limit)"
         :is-loading="status === 'pending'"
       />

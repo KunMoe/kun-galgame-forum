@@ -82,6 +82,11 @@ const { data, status, pending, refresh } = useKunApi(
       signal
     })
 )
+const { paginationPage, isPaginationPending } = usePaginationScroll(
+  toRef(pageData, 'page'),
+  () => status.value === 'pending',
+  () => JSON.stringify([activeFilter.value, searchQuery.value.trim()])
+)
 
 const topics = computed(() => data.value?.items ?? [])
 const total = computed(() => data.value?.total ?? 0)
@@ -175,71 +180,75 @@ const handlePurge = async () => {
 
     <KunDivider />
 
-    <EditGalgameClaimRowSkeleton v-if="pending" />
+    <div ref="paginationStart" class="pagination-results scroll-mt-20">
+      <EditGalgameClaimRowSkeleton v-if="pending" />
 
-    <KunNull v-else-if="!topics.length" description="暂无被隐藏的话题" />
+      <KunNull v-else-if="!topics.length" description="暂无被隐藏的话题" />
 
-    <div v-else class="flex flex-col gap-3">
-      <div
-        v-for="topic in topics"
-        :key="topic.id"
-        class="dark:border-default-200 flex flex-col gap-3 rounded-lg border border-transparent p-3 sm:flex-row sm:items-start"
-      >
-        <div class="min-w-0 flex-1 space-y-2">
-          <div class="flex flex-wrap items-center gap-2">
-            <KunLink :to="`/topic/${topic.id}`" target="_blank">
-              {{ topic.title }}
-            </KunLink>
-            <KunChip
-              size="xs"
-              variant="flat"
-              :color="topicHiddenByMeta(topic.hidden_by ?? '').color"
-            >
-              {{ topicHiddenByMeta(topic.hidden_by ?? '').label }}
-            </KunChip>
-          </div>
-
-          <UserHoverCard :user-id="topic.author.id">
-            <KunUserChip :user="toKunUser(topic.author)" size="xs" />
-          </UserHoverCard>
-
+      <KunLoading v-else :loading="isPaginationPending">
+        <div class="flex flex-col gap-3">
           <div
-            class="text-default-500 flex flex-wrap items-center gap-x-3 gap-y-1 text-sm"
+            v-for="topic in topics"
+            :key="topic.id"
+            class="dark:border-default-200 flex flex-col gap-3 rounded-lg border border-transparent p-3 sm:flex-row sm:items-start"
           >
-            <span class="flex items-center gap-1">
-              <KunIcon name="carbon:reply" class="size-4" />
-              {{ topic.reply_count }}
-            </span>
-            <span class="flex items-center gap-1">
-              <KunIcon name="lucide:eye-off" class="size-4" />
-              隐藏于
-              <KunTime :time="topic.bumped_at" type="datetime" show-year />
-            </span>
-            <span class="flex items-center gap-1">
-              <KunIcon name="lucide:clock" class="size-4" />
-              发布于
-              <KunTime :time="topic.created_at" type="date" show-year />
-            </span>
+            <div class="min-w-0 flex-1 space-y-2">
+              <div class="flex flex-wrap items-center gap-2">
+                <KunLink :to="`/topic/${topic.id}`" target="_blank">
+                  {{ topic.title }}
+                </KunLink>
+                <KunChip
+                  size="xs"
+                  variant="flat"
+                  :color="topicHiddenByMeta(topic.hidden_by ?? '').color"
+                >
+                  {{ topicHiddenByMeta(topic.hidden_by ?? '').label }}
+                </KunChip>
+              </div>
+
+              <UserHoverCard :user-id="topic.author.id">
+                <KunUserChip :user="toKunUser(topic.author)" size="xs" />
+              </UserHoverCard>
+
+              <div
+                class="text-default-500 flex flex-wrap items-center gap-x-3 gap-y-1 text-sm"
+              >
+                <span class="flex items-center gap-1">
+                  <KunIcon name="carbon:reply" class="size-4" />
+                  {{ topic.reply_count }}
+                </span>
+                <span class="flex items-center gap-1">
+                  <KunIcon name="lucide:eye-off" class="size-4" />
+                  隐藏于
+                  <KunTime :time="topic.bumped_at" type="datetime" show-year />
+                </span>
+                <span class="flex items-center gap-1">
+                  <KunIcon name="lucide:clock" class="size-4" />
+                  发布于
+                  <KunTime :time="topic.created_at" type="date" show-year />
+                </span>
+              </div>
+            </div>
+
+            <KunButton
+              v-if="canDeleteTopic"
+              size="sm"
+              color="danger"
+              variant="flat"
+              class-name="shrink-0"
+              @click="openPurge(topic)"
+            >
+              <KunIcon name="lucide:trash-2" />
+              彻底删除
+            </KunButton>
           </div>
         </div>
-
-        <KunButton
-          v-if="canDeleteTopic"
-          size="sm"
-          color="danger"
-          variant="flat"
-          class-name="shrink-0"
-          @click="openPurge(topic)"
-        >
-          <KunIcon name="lucide:trash-2" />
-          彻底删除
-        </KunButton>
-      </div>
+      </KunLoading>
     </div>
 
     <KunPagination
       v-if="total > pageData.limit"
-      v-model:current-page="pageData.page"
+      v-model:current-page="paginationPage"
       :total-page="Math.ceil(total / pageData.limit)"
       :is-loading="status === 'pending'"
     />

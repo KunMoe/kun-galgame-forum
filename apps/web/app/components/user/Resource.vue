@@ -122,6 +122,11 @@ const openEdit = (res: GalgameResource) => {
   editingResourceId.value = res.id
   editOpen.value = true
 }
+
+const { paginationPage, isPaginationPending } = usePaginationScroll(
+  toRef(pageData, 'page'),
+  () => status.value === 'pending'
+)
 </script>
 
 <template>
@@ -134,96 +139,115 @@ const openEdit = (res: GalgameResource) => {
       scrollable
     />
 
-    <UserListSkeleton v-if="pending" />
-    <div class="flex flex-col space-y-3" v-if="data && data.items.length">
-      <KunCard
-        v-for="res in data.items"
-        :key="res.id"
-        :is-hoverable="!canEdit"
-        :href="canEdit ? undefined : workHref(res)"
-      >
-        <KunLink
-          v-if="canEdit && res.work"
-          :to="workHref(res)"
-          underline="hover"
-          color="default"
-          class-name="mb-2 inline-flex items-center gap-1 text-lg font-medium hover:text-primary"
-        >
-          {{ workTitle(res) }}
-          <KunIcon name="lucide:arrow-up-right" class="text-base opacity-60" />
-        </KunLink>
-        <div v-else class="mb-2 text-lg font-medium">
-          {{ workTitle(res) }}
-        </div>
+    <div
+      ref="paginationStart"
+      class="pagination-results scroll-mt-20 space-y-3"
+    >
+      <UserListSkeleton v-if="pending" />
+      <div v-if="data && data.items.length" class="flex flex-col gap-3">
+        <KunLoading :loading="isPaginationPending">
+          <div class="flex flex-col space-y-3">
+            <KunCard
+              v-for="res in data.items"
+              :key="res.id"
+              :is-hoverable="!canEdit"
+              :href="canEdit ? undefined : workHref(res)"
+            >
+              <KunLink
+                v-if="canEdit && res.work"
+                :to="workHref(res)"
+                underline="hover"
+                color="default"
+                class-name="mb-2 inline-flex items-center gap-1 text-lg font-medium hover:text-primary"
+              >
+                {{ workTitle(res) }}
+                <KunIcon
+                  name="lucide:arrow-up-right"
+                  class="text-base opacity-60"
+                />
+              </KunLink>
+              <div v-else class="mb-2 text-lg font-medium">
+                {{ workTitle(res) }}
+              </div>
 
-        <div class="mb-2 flex flex-wrap items-center gap-2">
-          <KunChip color="primary">
-            <KunIcon
-              :name="GALGAME_RESOURCE_TYPE_ICON_MAP[res.resource_type]"
-            />
-            {{ resourceTypeLabel(res.resource_type) }}
-          </KunChip>
-          <KunChip v-if="res.size" color="warning">
-            <KunIcon name="lucide:database" />
-            {{ res.size }}
-          </KunChip>
-          <KunChip
-            v-for="platform in res.resource_platforms"
-            :key="platform"
-            color="success"
-          >
-            <KunIcon
-              v-if="GALGAME_RESOURCE_PLATFORM_ICON_MAP[platform]"
-              :name="GALGAME_RESOURCE_PLATFORM_ICON_MAP[platform]"
-            />
-            {{ resourcePlatformLabel(platform) }}
-          </KunChip>
-          <KunChip
-            v-for="language in res.resource_languages"
-            :key="language"
-            color="secondary"
-          >
-            {{ resourceLanguageLabel(language) }}
-          </KunChip>
-          <KunChip :color="res.state === 'expired' ? 'danger' : 'success'">
-            {{ res.state === 'expired' ? '链接过期' : '链接有效' }}
-          </KunChip>
-          <div class="text-default-500 text-sm">
-            创建于 <KunTime :time="res.created_at" type="date" show-year />
+              <div class="mb-2 flex flex-wrap items-center gap-2">
+                <KunChip color="primary">
+                  <KunIcon
+                    :name="GALGAME_RESOURCE_TYPE_ICON_MAP[res.resource_type]"
+                  />
+                  {{ resourceTypeLabel(res.resource_type) }}
+                </KunChip>
+                <KunChip v-if="res.size" color="warning">
+                  <KunIcon name="lucide:database" />
+                  {{ res.size }}
+                </KunChip>
+                <KunChip
+                  v-for="platform in res.resource_platforms"
+                  :key="platform"
+                  color="success"
+                >
+                  <KunIcon
+                    v-if="GALGAME_RESOURCE_PLATFORM_ICON_MAP[platform]"
+                    :name="GALGAME_RESOURCE_PLATFORM_ICON_MAP[platform]"
+                  />
+                  {{ resourcePlatformLabel(platform) }}
+                </KunChip>
+                <KunChip
+                  v-for="language in res.resource_languages"
+                  :key="language"
+                  color="secondary"
+                >
+                  {{ resourceLanguageLabel(language) }}
+                </KunChip>
+                <KunChip
+                  :color="res.state === 'expired' ? 'danger' : 'success'"
+                >
+                  {{ res.state === 'expired' ? '链接过期' : '链接有效' }}
+                </KunChip>
+                <div class="text-default-500 text-sm">
+                  创建于
+                  <KunTime :time="res.created_at" type="date" show-year />
+                </div>
+              </div>
+
+              <div v-if="canEdit" class="flex justify-end gap-2">
+                <KunButton
+                  v-if="res.state === 'expired'"
+                  variant="flat"
+                  color="success"
+                  @click="handleMarkValid(res)"
+                >
+                  标记为有效
+                </KunButton>
+                <KunButton
+                  :color="props.type === 'expire' ? 'success' : 'primary'"
+                  :disabled="!res.work"
+                  @click="openEdit(res)"
+                >
+                  {{
+                    props.type === 'expire'
+                      ? '更改链接并标记为有效'
+                      : '更改链接'
+                  }}
+                </KunButton>
+              </div>
+            </KunCard>
           </div>
-        </div>
+        </KunLoading>
 
-        <div v-if="canEdit" class="flex justify-end gap-2">
-          <KunButton
-            v-if="res.state === 'expired'"
-            variant="flat"
-            color="success"
-            @click="handleMarkValid(res)"
-          >
-            标记为有效
-          </KunButton>
-          <KunButton
-            :color="props.type === 'expire' ? 'success' : 'primary'"
-            :disabled="!res.work"
-            @click="openEdit(res)"
-          >
-            {{ props.type === 'expire' ? '更改链接并标记为有效' : '更改链接' }}
-          </KunButton>
-        </div>
-      </KunCard>
+        <KunPagination
+          v-if="data.total > pageData.limit"
+          v-model:current-page="paginationPage"
+          :total-page="Math.ceil(data.total / pageData.limit)"
+          :is-loading="status === 'pending'"
+        />
+      </div>
 
-      <KunPagination
-        v-if="data.total > pageData.limit"
-        v-model:current-page="pageData.page"
-        :total-page="Math.ceil(data.total / pageData.limit)"
-        :is-loading="status === 'pending'"
+      <KunNull
+        v-if="data && !data.items.length"
+        description="这里暂无相关 Galgame 资源"
       />
     </div>
-
-    <KunNull
-      v-if="data && !data.items.length"
-      description="这里暂无相关 Galgame 资源"
-    />
 
     <GalgameResourceLinkEditModal
       v-model="editOpen"

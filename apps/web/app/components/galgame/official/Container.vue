@@ -47,6 +47,12 @@ watchDebounced(
   },
   { debounce: 500, maxWait: 1000 }
 )
+
+const { paginationPage, isPaginationPending } = usePaginationScroll(
+  page,
+  () => status.value === 'pending',
+  () => searchQuery.value.trim()
+)
 </script>
 
 <template>
@@ -73,17 +79,20 @@ watchDebounced(
       </template>
     </KunHeader>
 
-    <GalgameEntityGridSkeleton v-if="pending && !searchQuery.trim()" />
+    <div ref="paginationStart" class="pagination-results scroll-mt-20">
+      <GalgameEntityGridSkeleton v-if="pending && !searchQuery.trim()" />
 
-    <div
-      v-else
-      class="grid grid-cols-2 gap-3 sm:grid-cols-2 sm:gap-3 lg:grid-cols-3 xl:grid-cols-4"
-    >
-      <GalgameOfficialCard
-        v-for="official in displayOfficials"
-        :key="official.id"
-        :official="official"
-      />
+      <KunLoading v-else :loading="isPaginationPending && !searchQuery.trim()">
+        <div
+          class="grid grid-cols-2 gap-3 sm:grid-cols-2 sm:gap-3 lg:grid-cols-3 xl:grid-cols-4"
+        >
+          <GalgameOfficialCard
+            v-for="official in displayOfficials"
+            :key="official.id"
+            :official="official"
+          />
+        </div>
+      </KunLoading>
     </div>
 
     <KunNull
@@ -94,7 +103,7 @@ watchDebounced(
 
     <KunPagination
       v-if="data && data.total > limit && !searchQuery.trim()"
-      v-model:current-page="page"
+      v-model:current-page="paginationPage"
       :total-page="Math.ceil(data.total / limit)"
       :is-loading="status === 'pending'"
     />

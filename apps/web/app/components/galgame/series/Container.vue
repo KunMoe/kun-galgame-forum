@@ -62,6 +62,12 @@ const handleSearch = async () => {
 }
 
 watchDebounced(searchQuery, handleSearch, { debounce: 500, maxWait: 1000 })
+
+const { paginationPage, isPaginationPending } = usePaginationScroll(
+  page,
+  () => status.value === 'pending',
+  () => searchQuery.value.trim()
+)
 </script>
 
 <template>
@@ -95,15 +101,19 @@ watchDebounced(searchQuery, handleSearch, { debounce: 500, maxWait: 1000 })
       description="当前为 SFW 模式, 只列出全部作品均为全年龄的系列。本站收录的 Galgame 系列绝大多数含有 R18 作品, 如需查看, 请在设置面板开启 NSFW 开关。"
     />
 
-    <GalgameSeriesCardSkeleton v-if="pending && !isSearchMode" />
+    <div ref="paginationStart" class="pagination-results scroll-mt-20">
+      <GalgameSeriesCardSkeleton v-if="pending && !isSearchMode" />
 
-    <div v-else class="grid grid-cols-1 gap-6 lg:grid-cols-2">
-      <GalgameSeriesCard
-        v-for="(series, index) in displaySeries"
-        :key="series.id"
-        :style="{ animationDelay: `${index * 50}ms` }"
-        :series="series"
-      />
+      <KunLoading v-else :loading="isPaginationPending && !isSearchMode">
+        <div class="grid grid-cols-1 gap-6 lg:grid-cols-2">
+          <GalgameSeriesCard
+            v-for="(series, index) in displaySeries"
+            :key="series.id"
+            :style="{ animationDelay: `${index * 50}ms` }"
+            :series="series"
+          />
+        </div>
+      </KunLoading>
     </div>
 
     <KunNull v-if="isSearchMode && !isSearching && !searchResult.length" />
@@ -112,7 +122,7 @@ watchDebounced(searchQuery, handleSearch, { debounce: 500, maxWait: 1000 })
 
     <KunPagination
       v-if="data && data.total > limit && !isSearchMode"
-      v-model:current-page="page"
+      v-model:current-page="paginationPage"
       :total-page="Math.ceil(data.total / limit)"
       :is-loading="status === 'pending'"
     />

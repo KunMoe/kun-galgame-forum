@@ -37,17 +37,24 @@ const { data, status, problem, pending } = useKunApi<PageListToolsetSummary>(
 const emptyDescription = computed(() =>
   props.relation === 'favorited' ? '这只笨蛋萝莉还没有收藏任何工具' : '暂无工具'
 )
+
+const { paginationPage, isPaginationPending } = usePaginationScroll(
+  toRef(pageData, 'page'),
+  () => status.value === 'pending'
+)
 </script>
 
 <template>
-  <div class="space-y-3">
+  <div ref="paginationStart" class="pagination-results scroll-mt-20 space-y-3">
     <KunNull v-if="problem" :description="problemMessage(problem)" />
-    <div v-else-if="data && data.items.length" class="space-y-3">
-      <ToolsetCard :items="data.items" />
+    <div v-else-if="data && data.items.length" class="flex flex-col gap-3">
+      <KunLoading :loading="isPaginationPending">
+        <ToolsetCard :items="data.items" />
+      </KunLoading>
 
       <KunPagination
         v-if="data.total > pageData.limit"
-        v-model:current-page="pageData.page"
+        v-model:current-page="paginationPage"
         :total-page="Math.ceil(data.total / pageData.limit)"
         :is-loading="status === 'pending'"
       />

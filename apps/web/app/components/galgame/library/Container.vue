@@ -23,6 +23,11 @@ const releaseLabel = (galgame: GalgameCard) => {
   }
   return galgame.release_date?.slice(0, 10) || '发售日期未知'
 }
+
+const { paginationPage } = usePaginationScroll(
+  page,
+  () => status.value === 'pending'
+)
 </script>
 
 <template>
@@ -46,21 +51,23 @@ const releaseLabel = (galgame: GalgameCard) => {
       </KunHeader>
     </div>
 
-    <GalgameCardGridSkeleton v-if="pending" />
+    <div ref="paginationStart" class="pagination-results scroll-mt-20">
+      <GalgameCardGridSkeleton v-if="pending" />
 
-    <KunLoading v-else :loading="status === 'pending'">
-      <GalgameCard v-if="galgames.length" :galgames="galgames">
-        <template #meta="{ galgame }">
-          <p class="text-default-500 mt-1 text-xs">
-            {{ releaseLabel(galgame) }}
-          </p>
-        </template>
-      </GalgameCard>
-      <GalgameOriginalLanguageNull
-        v-else
-        description="没有找到符合条件的 Galgame"
-      />
-    </KunLoading>
+      <KunLoading v-else :loading="status === 'pending'">
+        <GalgameCard v-if="galgames.length" :galgames="galgames">
+          <template #meta="{ galgame }">
+            <p class="text-default-500 mt-1 text-xs">
+              {{ releaseLabel(galgame) }}
+            </p>
+          </template>
+        </GalgameCard>
+        <GalgameOriginalLanguageNull
+          v-else
+          description="没有找到符合条件的 Galgame"
+        />
+      </KunLoading>
+    </div>
 
     <KunCard
       v-if="galgames.length"
@@ -69,7 +76,7 @@ const releaseLabel = (galgame: GalgameCard) => {
       content-class="gap-3"
     >
       <KunPagination
-        v-model:current-page="page"
+        v-model:current-page="paginationPage"
         :total-page="Math.ceil(total / limit)"
         :is-loading="status === 'pending'"
       />

@@ -34,17 +34,24 @@ const { data, status, pending } = useKunApi<RatingPage>(
 const ratings = computed(() =>
   (data.value?.items ?? []).map((r) => ratingToCard(r, nameOf))
 )
+
+const { paginationPage, isPaginationPending } = usePaginationScroll(
+  toRef(pageData, 'page'),
+  () => status.value === 'pending'
+)
 </script>
 
 <template>
-  <div class="space-y-3">
+  <div ref="paginationStart" class="pagination-results scroll-mt-20 space-y-3">
     <GalgameRatingCardSkeleton v-if="pending" :count="8" />
-    <div v-if="data && data.items.length" class="space-y-3">
-      <GalgameRatingCard :ratings="ratings" :is-transparent="false" />
+    <div v-if="data && data.items.length" class="flex flex-col gap-3">
+      <KunLoading :loading="isPaginationPending">
+        <GalgameRatingCard :ratings="ratings" :is-transparent="false" />
+      </KunLoading>
 
       <KunPagination
         v-if="data.total > pageData.limit"
-        v-model:current-page="pageData.page"
+        v-model:current-page="paginationPage"
         :total-page="Math.ceil(data.total / pageData.limit)"
         :is-loading="status === 'pending'"
       />

@@ -47,6 +47,11 @@ const coverOf = (item: Item) =>
     : item.work_summary.cover
 const stateLabel = (state: string) =>
   KUN_GALGAME_PLAY_STATE_MAP[state as KunGalgamePlayStateRead] ?? state
+
+const { paginationPage, isPaginationPending } = usePaginationScroll(
+  toRef(pageData, 'page'),
+  () => status.value === 'pending'
+)
 </script>
 
 <template>
@@ -80,88 +85,98 @@ const stateLabel = (state: string) =>
       </p>
     </div>
 
-    <template v-if="data && data.items.length">
-      <ul class="grid gap-x-6 gap-y-1 md:grid-cols-2">
-        <li v-for="item in data.items" :key="item.work_summary.id">
-          <NuxtLink
-            :to="`/galgame/${item.work_summary.id}`"
-            class="hover:bg-default-100 flex items-center gap-3 rounded-lg p-2 transition-colors"
-          >
-            <div
-              class="bg-default-100 w-14 shrink-0 overflow-hidden rounded-md"
-            >
-              <KunImage
-                v-if="coverOf(item)?.url"
-                :src="coverOf(item)!.url"
-                :alt="nameOf(item.work_summary).name"
-                :thumbhash="coverOf(item)?.thumbhash ?? undefined"
-                aspect-ratio="5 / 7"
-                loading="lazy"
-              />
-              <div
-                v-else
-                class="text-default-400 flex items-center justify-center"
-                style="aspect-ratio: 5 / 7"
+    <div
+      ref="paginationStart"
+      class="pagination-results flex scroll-mt-20 flex-col gap-6"
+    >
+      <template v-if="data && data.items.length">
+        <KunLoading :loading="isPaginationPending">
+          <ul class="grid gap-x-6 gap-y-1 md:grid-cols-2">
+            <li v-for="item in data.items" :key="item.work_summary.id">
+              <NuxtLink
+                :to="`/galgame/${item.work_summary.id}`"
+                class="hover:bg-default-100 flex items-center gap-3 rounded-lg p-2 transition-colors"
               >
-                <KunIcon name="lucide:image-off" class="size-5" />
-              </div>
-            </div>
+                <div
+                  class="bg-default-100 w-14 shrink-0 overflow-hidden rounded-md"
+                >
+                  <KunImage
+                    v-if="coverOf(item)?.url"
+                    :src="coverOf(item)!.url"
+                    :alt="nameOf(item.work_summary).name"
+                    :thumbhash="coverOf(item)?.thumbhash ?? undefined"
+                    aspect-ratio="5 / 7"
+                    loading="lazy"
+                  />
+                  <div
+                    v-else
+                    class="text-default-400 flex items-center justify-center"
+                    style="aspect-ratio: 5 / 7"
+                  >
+                    <KunIcon name="lucide:image-off" class="size-5" />
+                  </div>
+                </div>
 
-            <div class="min-w-0 flex-1 space-y-1">
-              <p class="line-clamp-1 font-medium">
-                {{ nameOf(item.work_summary).name }}
-              </p>
-              <p
-                v-if="nameOf(item.work_summary).original"
-                class="text-default-500 line-clamp-1 text-sm"
-              >
-                {{ nameOf(item.work_summary).original }}
-              </p>
-              <KunChip
-                v-if="item.play_state"
-                size="xs"
-                variant="flat"
-                :color="kunPlayStateColor(item.play_state)"
-              >
-                {{ stateLabel(item.play_state) }}
-              </KunChip>
-            </div>
+                <div class="min-w-0 flex-1 space-y-1">
+                  <p class="line-clamp-1 font-medium">
+                    {{ nameOf(item.work_summary).name }}
+                  </p>
+                  <p
+                    v-if="nameOf(item.work_summary).original"
+                    class="text-default-500 line-clamp-1 text-sm"
+                  >
+                    {{ nameOf(item.work_summary).original }}
+                  </p>
+                  <KunChip
+                    v-if="item.play_state"
+                    size="xs"
+                    variant="flat"
+                    :color="kunPlayStateColor(item.play_state)"
+                  >
+                    {{ stateLabel(item.play_state) }}
+                  </KunChip>
+                </div>
 
-            <div class="shrink-0 text-right">
-              <p
-                v-if="item.minutes > 0"
-                class="text-lg font-semibold tabular-nums"
-              >
-                {{ formatDurationMinutes(item.minutes) }}
-              </p>
-              <p v-else class="text-default-400 text-sm">未记录时长</p>
-              <p v-if="item.client_count > 1" class="text-default-400 text-xs">
-                {{ item.client_count }} 个应用上报
-              </p>
-            </div>
-          </NuxtLink>
-        </li>
-      </ul>
+                <div class="shrink-0 text-right">
+                  <p
+                    v-if="item.minutes > 0"
+                    class="text-lg font-semibold tabular-nums"
+                  >
+                    {{ formatDurationMinutes(item.minutes) }}
+                  </p>
+                  <p v-else class="text-default-400 text-sm">未记录时长</p>
+                  <p
+                    v-if="item.client_count > 1"
+                    class="text-default-400 text-xs"
+                  >
+                    {{ item.client_count }} 个应用上报
+                  </p>
+                </div>
+              </NuxtLink>
+            </li>
+          </ul>
+        </KunLoading>
 
-      <KunPagination
-        v-if="data.total > pageData.limit"
-        v-model:current-page="pageData.page"
-        :total-page="Math.ceil(data.total / pageData.limit)"
-        :is-loading="status === 'pending'"
+        <KunPagination
+          v-if="data.total > pageData.limit"
+          v-model:current-page="paginationPage"
+          :total-page="Math.ceil(data.total / pageData.limit)"
+          :is-loading="status === 'pending'"
+        />
+      </template>
+
+      <UserListSkeleton v-else-if="pending" shape="media" />
+      <KunInfo
+        v-else-if="problem && status !== 'pending'"
+        color="danger"
+        title="读取失败"
+        description="暂时读不到你的游玩记录。"
       />
-    </template>
-
-    <UserListSkeleton v-else-if="pending" shape="media" />
-    <KunInfo
-      v-else-if="problem && status !== 'pending'"
-      color="danger"
-      title="读取失败"
-      description="暂时读不到你的游玩记录。"
-    />
-    <KunNull
-      v-else-if="data"
-      description="还没有游玩记录, 在任意 Galgame 页面点「标记」或「评分」即可记录游玩状态和时长"
-    />
+      <KunNull
+        v-else-if="data"
+        description="还没有游玩记录, 在任意 Galgame 页面点「标记」或「评分」即可记录游玩状态和时长"
+      />
+    </div>
 
     <p class="text-default-500 text-sm">
       想让桌面客户端自动记录游玩时长?

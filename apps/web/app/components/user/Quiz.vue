@@ -64,6 +64,11 @@ const { data, status, problem, pending } = useKunApi<PageListQuizSummary>(
 const onTab = (v: string) => {
   set({ tab: v })
 }
+
+const { paginationPage, isPaginationPending } = usePaginationScroll(
+  page,
+  () => status.value === 'pending'
+)
 </script>
 
 <template>
@@ -77,21 +82,28 @@ const onTab = (v: string) => {
       @update:model-value="onTab"
     />
 
-    <KunNull v-if="problem" :description="problemMessage(problem)" />
-    <template v-else-if="data && data.items.length">
-      <GalgameQuizList :quizzes="data.items" />
-      <KunPagination
-        v-if="data.total > limit"
-        v-model:current-page="page"
-        :total-page="Math.ceil(data.total / limit)"
-        :is-loading="status === 'pending'"
-      />
-    </template>
+    <div
+      ref="paginationStart"
+      class="pagination-results flex scroll-mt-20 flex-col gap-3"
+    >
+      <KunNull v-if="problem" :description="problemMessage(problem)" />
+      <template v-else-if="data && data.items.length">
+        <KunLoading :loading="isPaginationPending">
+          <GalgameQuizList :quizzes="data.items" />
+        </KunLoading>
+        <KunPagination
+          v-if="data.total > limit"
+          v-model:current-page="paginationPage"
+          :total-page="Math.ceil(data.total / limit)"
+          :is-loading="status === 'pending'"
+        />
+      </template>
 
-    <UserListSkeleton v-else-if="pending" />
-    <KunNull
-      v-else-if="status !== 'pending'"
-      :description="tab === 'answered' ? '还没有作答记录' : '还没有出过题'"
-    />
+      <UserListSkeleton v-else-if="pending" />
+      <KunNull
+        v-else-if="status !== 'pending'"
+        :description="tab === 'answered' ? '还没有作答记录' : '还没有出过题'"
+      />
+    </div>
   </div>
 </template>

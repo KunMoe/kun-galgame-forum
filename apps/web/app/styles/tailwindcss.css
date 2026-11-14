@@ -209,3 +209,9 @@ body {
 [data-kun-overlay] .kun-modal-panel {
   background-color: var(--color-content1);
 }
+
+/* KunLoading centers its artwork in the list, above the viewport when a long list is paged from the bottom. */
+.pagination-results [role='status'][aria-busy='true'].absolute > div:has(img) {
+  position: sticky;
+  top: max(5rem, calc(50dvh - 8rem));
+}

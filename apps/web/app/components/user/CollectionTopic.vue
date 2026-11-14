@@ -26,26 +26,35 @@ const { data, status, pending } = useKunApi<PageListUserTopicItem>(
       signal
     })
 )
+
+const { paginationPage, isPaginationPending } = usePaginationScroll(
+  page,
+  () => status.value === 'pending'
+)
 </script>
 
 <template>
-  <div class="space-y-3">
+  <div ref="paginationStart" class="pagination-results scroll-mt-20 space-y-3">
     <UserListSkeleton v-if="pending" />
-    <div v-if="data && data.items.length" class="flex flex-col space-y-3">
-      <KunCard
-        v-for="topic in data.items"
-        :key="topic.id"
-        :href="`/topic/${topic.id}`"
-      >
-        <div>{{ topic.title }}</div>
-        <div class="text-default-500 text-sm">
-          <KunTime :time="topic.created_at" type="date" show-year />
+    <div v-if="data && data.items.length" class="flex flex-col gap-3">
+      <KunLoading :loading="isPaginationPending">
+        <div class="flex flex-col space-y-3">
+          <KunCard
+            v-for="topic in data.items"
+            :key="topic.id"
+            :href="`/topic/${topic.id}`"
+          >
+            <div>{{ topic.title }}</div>
+            <div class="text-default-500 text-sm">
+              <KunTime :time="topic.created_at" type="date" show-year />
+            </div>
+          </KunCard>
         </div>
-      </KunCard>
+      </KunLoading>
 
       <KunPagination
         v-if="data.total > limit"
-        v-model:current-page="page"
+        v-model:current-page="paginationPage"
         :total-page="Math.ceil(data.total / limit)"
         :is-loading="status === 'pending'"
       />
