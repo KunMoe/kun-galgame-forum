@@ -1,11 +1,25 @@
 <script setup lang="ts">
 import type { FollowingActivityItem } from '#shared/utils/api/schemas'
+import { workReleaseText } from '~/utils/galgame/releaseDate'
 
 const props = defineProps<{ item: FollowingActivityItem }>()
 
 const { isBlurred } = useContentStance()
-const masked = computed(() => props.item.is_nsfw && isBlurred.value)
+const nameOf = useCatalogName()
+const masked = computed(
+  () => (props.item.is_nsfw || !!props.item.work?.is_nsfw) && isBlurred.value
+)
 const coverFailed = ref(false)
+const work = computed(() => props.item.work)
+const cover = computed(() => props.item.cover ?? work.value?.cover ?? null)
+const release = computed(() =>
+  work.value?.release_date
+    ? workReleaseText(
+        work.value.release_date,
+        work.value.release_date_precision
+      )
+    : ''
+)
 const to = computed(() => props.item.in_site_path ?? props.item.url)
 const external = computed(() => props.item.in_site_path === null)
 </script>
@@ -13,14 +27,21 @@ const external = computed(() => props.item.in_site_path === null)
 <template>
   <div class="flex gap-3">
     <KunLink
-      v-if="item.cover && !coverFailed"
+      v-if="cover && !coverFailed"
       :to="to"
       :target="external ? '_blank' : undefined"
       class-name="shrink-0"
     >
-      <div class="bg-default-100 aspect-[3/4] w-12 overflow-hidden rounded-md">
+      <div
+        :class="
+          cn(
+            'bg-default-100 aspect-[3/4] overflow-hidden rounded-md',
+            work ? 'w-20 sm:w-24' : 'w-12'
+          )
+        "
+      >
         <KunImage
-          :src="item.cover.url"
+          :src="cover.url"
           :alt="item.title"
           loading="lazy"
           aspect-ratio="3 / 4"
@@ -49,6 +70,34 @@ const external = computed(() => props.item.in_site_path === null)
         <KunChip v-if="item.is_nsfw" size="xs" color="danger" variant="flat">
           NSFW
         </KunChip>
+      </div>
+      <p
+        v-if="work?.maker || release"
+        class="text-default-500 flex flex-wrap items-center gap-x-2 text-xs"
+      >
+        <KunLink
+          v-if="work?.maker"
+          :to="`/galgame/official/${work.maker.id}`"
+          underline="none"
+          color="default"
+          class-name="text-default-500 hover:text-primary"
+        >
+          {{ nameOf(work.maker).name }}
+        </KunLink>
+        <span v-if="release" class="flex items-center gap-1">
+          <KunIcon name="lucide:calendar" class="size-3" />
+          {{ release }}
+        </span>
+      </p>
+      <div v-if="work?.top_tags.length" class="flex flex-wrap gap-1">
+        <NuxtLink
+          v-for="tag in work.top_tags"
+          :key="tag.id"
+          :to="`/galgame/tag/${tag.id}`"
+          class="bg-default-100 text-default-600 hover:bg-primary/15 hover:text-primary rounded-md px-1.5 py-0.5 text-xs transition-colors"
+        >
+          {{ nameOf(tag).name }}
+        </NuxtLink>
       </div>
       <p
         v-if="item.excerpt"
