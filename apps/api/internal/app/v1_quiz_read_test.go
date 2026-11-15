@@ -225,7 +225,7 @@ func TestV1ListQuizAnswersHidesKey(t *testing.T) {
 
 func TestV1ListQuizAnswersWalkTiedCreated(t *testing.T) {
 	f := newQuizFix(t, nil)
-	want := f.sqlIDs(t, `SELECT id::text FROM galgame_quiz_answer
+	want := f.sqlIDs(t, `SELECT id::text AS id_text FROM galgame_quiz_answer
 		WHERE quiz_id = ? AND role = 'answerer'
 		ORDER BY created DESC, id DESC`, g2QMain)
 	if len(want) != 4 {

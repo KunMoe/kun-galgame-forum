@@ -13,7 +13,7 @@ func TestV1WebsitesWalk(t *testing.T) {
 		{"", "WHERE age_limit = 'all'"},
 		{fmt.Sprintf("&include_nsfw=true&website_category_id=%d", wsCatMain), fmt.Sprintf("WHERE category_id = %d", wsCatMain)},
 	} {
-		want := f.sqlIDs(t, `SELECT id::text FROM galgame_website `+c.where+` ORDER BY created DESC, id DESC`)
+		want := f.sqlIDs(t, `SELECT id::text AS id_text FROM galgame_website `+c.where+` ORDER BY created DESC, id DESC`)
 		if len(want) < 4 {
 			t.Fatalf("%q: seed too thin %v", c.query, want)
 		}

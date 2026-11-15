@@ -40,7 +40,7 @@ func TestV1PermChangesWalk(t *testing.T) {
 	f := newPermFix(t)
 	f.seedChanges(t)
 	var want []string
-	rows, err := f.db.Raw(`SELECT id::text FROM permission_audit_log ORDER BY created_at DESC, id DESC`).Rows()
+	rows, err := f.db.Raw(`SELECT id::text AS id_text FROM permission_audit_log ORDER BY created_at DESC, id DESC`).Rows()
 	if err != nil {
 		t.Fatal(err)
 	}

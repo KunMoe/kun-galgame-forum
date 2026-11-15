@@ -33,9 +33,9 @@ func (f *writeFix) walkVocabulary(t *testing.T, path string, limit int) []string
 func TestV1WebsiteVocabulariesWalk(t *testing.T) {
 	f := newWebsiteFix(t)
 	for _, c := range []struct{ path, sql string }{
-		{"/website-categories", `SELECT id::text FROM galgame_website_category ORDER BY sort_order, id`},
-		{"/website-tag-groups", `SELECT id::text FROM galgame_website_tag_group ORDER BY sort_order, id`},
-		{"/website-tags", `SELECT id::text FROM galgame_website_tag ORDER BY id`},
+		{"/website-categories", `SELECT id::text AS id_text FROM galgame_website_category ORDER BY sort_order, id`},
+		{"/website-tag-groups", `SELECT id::text AS id_text FROM galgame_website_tag_group ORDER BY sort_order, id`},
+		{"/website-tags", `SELECT id::text AS id_text FROM galgame_website_tag ORDER BY id`},
 	} {
 		want := f.sqlIDs(t, c.sql)
 		for _, limit := range []int{1, 2} {

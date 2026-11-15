@@ -45,7 +45,7 @@ func TestV1TopicRankingVisibility(t *testing.T) {
 func TestV1TopicRankingTieWalk(t *testing.T) {
 	f := newRankingFix(t)
 	var want []string
-	rows, err := f.db.Raw(`SELECT id::text FROM topic WHERE status != 1 AND access_scope = 'public' AND is_nsfw = false
+	rows, err := f.db.Raw(`SELECT id::text AS id_text FROM topic WHERE status != 1 AND access_scope = 'public' AND is_nsfw = false
 		AND user_id <> ? ORDER BY view DESC, id DESC`, rkUserBanned).Rows()
 	if err != nil {
 		t.Fatal(err)

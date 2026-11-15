@@ -17,7 +17,7 @@ func TestV1TodosWalk(t *testing.T) {
 		{"?state=pending", "WHERE status = 0"},
 		{"?state=in_progress", "WHERE status = 1"},
 	} {
-		want := f.sqlIDs(t, `SELECT id::text FROM todo `+c.where+` ORDER BY created DESC, id DESC`)
+		want := f.sqlIDs(t, `SELECT id::text AS id_text FROM todo `+c.where+` ORDER BY created DESC, id DESC`)
 		for _, limit := range []int{2, 3} {
 			got := f.walkIDs(t, "/api/v1/todos"+c.query, "/todos", "", limit)
 			if fmt.Sprint(got) != fmt.Sprint(want) {

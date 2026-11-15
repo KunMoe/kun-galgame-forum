@@ -9,7 +9,7 @@ import (
 
 func TestV1UpdateLogsWalk(t *testing.T) {
 	f := newUpdateFix(t, nil)
-	want := f.sqlIDs(t, `SELECT id::text FROM update_log ORDER BY created DESC, id DESC`)
+	want := f.sqlIDs(t, `SELECT id::text AS id_text FROM update_log ORDER BY created DESC, id DESC`)
 	if len(want) < 12 {
 		t.Fatalf("seed too thin: %v", want)
 	}

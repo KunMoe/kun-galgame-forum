@@ -203,7 +203,7 @@ func TestV1ListUserFavoritedToolsets(t *testing.T) {
 
 	resp, body := f.ts(t, http.MethodGet, fmt.Sprintf("/api/v1/users/%d/toolsets?limit=100", w3UserBob),
 		"/users/{user_id}/toolsets", "", "", nil)
-	authored := f.sqlIDs(t, `SELECT id::text FROM galgame_toolset
+	authored := f.sqlIDs(t, `SELECT id::text AS id_text FROM galgame_toolset
 		WHERE user_id = ? AND id BETWEEN 930002201 AND 930002299 ORDER BY created DESC, id DESC`, w3UserBob)
 	if resp.StatusCode != http.StatusOK || fmt.Sprint(adminItemIDs(body)) != fmt.Sprint(authored) {
 		t.Errorf("default relation %d %v, want authored %v", resp.StatusCode, adminItemIDs(body), authored)

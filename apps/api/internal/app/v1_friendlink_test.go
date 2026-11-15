@@ -52,7 +52,7 @@ func newFriendLinkFix(t *testing.T) *writeFix {
 	return f
 }
 
-const linkOrderSQL = `SELECT id::text FROM friend_link %s ORDER BY array_position(ARRAY['official','galgame','others']::text[], category), sort_order, id`
+const linkOrderSQL = `SELECT id::text AS id_text FROM friend_link %s ORDER BY array_position(ARRAY['official','galgame','others']::text[], category), sort_order, id`
 
 func (f *writeFix) walkLinks(t *testing.T, q url.Values) []string {
 	t.Helper()
@@ -244,7 +244,7 @@ func TestV1FriendLinkCreateAndPatch(t *testing.T) {
 
 func TestV1FriendLinkOrderReplacesTheShelf(t *testing.T) {
 	f := newFriendLinkFix(t)
-	shelf := f.sqlIDs(t, `SELECT id::text FROM friend_link WHERE category = 'galgame' ORDER BY id DESC`)
+	shelf := f.sqlIDs(t, `SELECT id::text AS id_text FROM friend_link WHERE category = 'galgame' ORDER BY id DESC`)
 	if resp, body := f.linkOrder(t, "sess-staff", "galgame", shelf); resp.StatusCode != http.StatusNoContent {
 		t.Fatalf("reorder %d %+v", resp.StatusCode, body)
 	}
@@ -252,7 +252,7 @@ func TestV1FriendLinkOrderReplacesTheShelf(t *testing.T) {
 		t.Errorf("order %v, want %v", got, shelf)
 	}
 	stamp := func() string {
-		return joinIDs(f.sqlIDs(t, `SELECT id::text FROM friend_link ORDER BY category, sort_order, id`))
+		return joinIDs(f.sqlIDs(t, `SELECT id::text AS id_text FROM friend_link ORDER BY category, sort_order, id`))
 	}
 	before := stamp()
 

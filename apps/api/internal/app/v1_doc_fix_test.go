@@ -160,7 +160,7 @@ func firstFieldError(body map[string]any) map[string]any {
 
 func docSQLOrder(t *testing.T, f *writeFix, order string) []string {
 	t.Helper()
-	return f.sqlIDs(t, `SELECT id::text FROM doc_article ORDER BY `+order)
+	return f.sqlIDs(t, `SELECT id::text AS id_text FROM doc_article ORDER BY `+order)
 }
 
 func joinIDs(ids []string) string {

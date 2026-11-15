@@ -145,7 +145,7 @@ func TestV1LotteryEntriesWalkTiedTimestamps(t *testing.T) {
 	}
 
 	var want []string
-	rows, err := f.db.Raw(`SELECT id::text FROM topic_lottery_entry WHERE lottery_id = ? ORDER BY created, id`, id).Rows()
+	rows, err := f.db.Raw(`SELECT id::text AS id_text FROM topic_lottery_entry WHERE lottery_id = ? ORDER BY created, id`, id).Rows()
 	if err != nil {
 		t.Fatal(err)
 	}

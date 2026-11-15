@@ -72,7 +72,7 @@ func (f *writeFix) sqlIDs(t *testing.T, query string, args ...any) []string {
 
 func TestV1AdminHiddenTopicsWalk(t *testing.T) {
 	f := newAdminTopicFix(t)
-	want := f.sqlIDs(t, `SELECT id::text FROM topic WHERE status = 1 ORDER BY status_update_time DESC, id DESC`)
+	want := f.sqlIDs(t, `SELECT id::text AS id_text FROM topic WHERE status = 1 ORDER BY status_update_time DESC, id DESC`)
 	if len(want) < 8 {
 		t.Fatalf("seed too thin: %v", want)
 	}
@@ -107,7 +107,7 @@ func TestV1AdminHiddenTopicsFilter(t *testing.T) {
 	if resp.StatusCode != http.StatusOK {
 		t.Fatalf("filter %d %+v", resp.StatusCode, body)
 	}
-	want := f.sqlIDs(t, `SELECT id::text FROM topic WHERE status = 1 AND hidden_by = 'moderator' ORDER BY status_update_time DESC, id DESC`)
+	want := f.sqlIDs(t, `SELECT id::text AS id_text FROM topic WHERE status = 1 AND hidden_by = 'moderator' ORDER BY status_update_time DESC, id DESC`)
 	if fmt.Sprint(adminItemIDs(body)) != fmt.Sprint(want) || asInt(body["total"]) != len(want) {
 		t.Errorf("moderator-hidden %v total %v, want %v", adminItemIDs(body), body["total"], want)
 	}

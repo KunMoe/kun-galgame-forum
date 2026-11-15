@@ -11,7 +11,7 @@ import (
 
 func TestV1ToolsetsWalkTiedSort(t *testing.T) {
 	f := newToolsetFix(t, nil)
-	want := f.sqlIDs(t, `SELECT id::text FROM galgame_toolset
+	want := f.sqlIDs(t, `SELECT id::text AS id_text FROM galgame_toolset
 		WHERE id BETWEEN 930002201 AND 930002299 AND user_id IN (`+renderableAuthorsSQL()+`)
 		ORDER BY resource_update_time DESC, id DESC`)
 	if len(want) < 7 {
@@ -22,7 +22,7 @@ func TestV1ToolsetsWalkTiedSort(t *testing.T) {
 			t.Errorf("limit %d walked %v, want %v", limit, got, want)
 		}
 	}
-	wantCreated := f.sqlIDs(t, `SELECT id::text FROM galgame_toolset
+	wantCreated := f.sqlIDs(t, `SELECT id::text AS id_text FROM galgame_toolset
 		WHERE id BETWEEN 930002201 AND 930002299 AND user_id IN (`+renderableAuthorsSQL()+`)
 		ORDER BY created DESC, id DESC`)
 	if got := f.walkToolsets(t, "&sort=created_desc", 2); fmt.Sprint(got) != fmt.Sprint(wantCreated) {
