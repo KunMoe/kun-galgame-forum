@@ -87,11 +87,6 @@ add `CREATE DATABASE kungalgame;` to infra's `docker/initdb.d/`.
 running them early would backfill cursors / state against pre-remap user IDs.
 `015` ALTERs `kungal_user_state`, which `007` creates, so it must run after `007`.
 
-`225` drops the legacy like, favorite, collection-item and empty tables. It is a
-deploy-then-drop: deploy the API that no longer touches them, run
-`$C run --rm migrate --only=225`, then restart the API so pgx drops prepared
-statements that still name the dropped columns.
-
 ```bash
 # 1) routine first pass (everything except the deferred five)
 $C run --rm migrate
