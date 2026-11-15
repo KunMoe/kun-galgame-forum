@@ -65,6 +65,14 @@ const {
   }
 )
 
+const sentinel = useTemplateRef('sentinel')
+const { loadNext } = useAutoLoadMore(sentinel, {
+  hasMore,
+  loading: loadingMore,
+  loadMore,
+  resetOn: state
+})
+
 const totalOf = (counts: WorkStateCounts) =>
   counts.wish + counts.doing + counts.done + counts.on_hold + counts.dropped
 
@@ -178,14 +186,16 @@ const emptyText = computed(() => {
 
       <KunNull v-else-if="status !== 'pending'" :description="emptyText" />
 
-      <KunButton
-        v-if="hasMore"
-        variant="flat"
-        :loading="loadingMore"
-        @click="loadMore"
-      >
-        加载更多
-      </KunButton>
+      <div v-if="items.length" ref="sentinel" class="flex justify-center">
+        <KunButton
+          v-if="hasMore"
+          variant="flat"
+          :loading="loadingMore"
+          @click="loadNext"
+        >
+          加载更多
+        </KunButton>
+      </div>
     </template>
   </div>
 </template>

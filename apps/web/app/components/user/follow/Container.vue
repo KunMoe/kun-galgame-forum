@@ -83,6 +83,14 @@ const loadMore = async () => {
   nextCursor.value = result.data.next_cursor
 }
 
+const sentinel = useTemplateRef('sentinel')
+const { loadNext } = useAutoLoadMore(sentinel, {
+  hasMore: () => Boolean(nextCursor.value),
+  loading: loadingMore,
+  loadMore,
+  resetOn: () => props.type
+})
+
 const emptyDescription = computed(() =>
   props.type === 'followers' ? '还没有粉丝' : '还没有关注任何人'
 )
@@ -121,16 +129,18 @@ const emptyDescription = computed(() =>
 
     <KunNull v-else-if="status !== 'pending'" :description="emptyDescription" />
 
-    <KunButton
-      v-if="nextCursor"
-      variant="light"
-      color="primary"
-      full-width
-      :loading="loadingMore"
-      @click="loadMore"
-    >
-      <KunIcon name="lucide:chevron-down" />
-      加载更多
-    </KunButton>
+    <div ref="sentinel">
+      <KunButton
+        v-if="nextCursor"
+        variant="light"
+        color="primary"
+        full-width
+        :loading="loadingMore"
+        @click="loadNext"
+      >
+        <KunIcon name="lucide:chevron-down" />
+        加载更多
+      </KunButton>
+    </div>
   </div>
 </template>

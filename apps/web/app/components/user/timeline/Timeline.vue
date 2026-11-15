@@ -1,5 +1,4 @@
 <script setup lang="ts">
-import { settle } from '#shared/utils/api/problem'
 import type { UserActivityGroup } from '#shared/utils/api/schemas'
 import {
   TIMELINE_VERBS,
@@ -16,83 +15,45 @@ const LIMIT = 20
 
 const { verb } = useQueryState({ verb: queryEnum(TIMELINE_VERBS, 'all') })
 const { allowsNsfw } = useContentStance()
-const api = useApiClient()
 
-const query = computed(() => ({
-  include_nsfw: allowsNsfw.value,
-  limit: LIMIT,
-  ...(verb.value === 'all' ? {} : { verbs: [verb.value] })
-}))
-
-const { data, status, problem, pending } = useKunApi(
-  () => `user-activities:${props.userId}:${verb.value}:${allowsNsfw.value}`,
-  (client, { signal }) =>
-    client.GET('/users/{user_id}/activities', {
-      params: { path: { user_id: String(props.userId) }, query: query.value },
-      signal
-    })
-)
-
-const more = ref<UserActivityGroup[]>([])
-const moreCursor = ref<string>()
-const loadedMore = ref(false)
-const loadingMore = ref(false)
-const gone = ref(new Set<string>())
-
-watch(
-  data,
-  () => {
-    more.value = []
-    moreCursor.value = undefined
-    loadedMore.value = false
-  },
-  { flush: 'sync' }
-)
-
-const groups = computed(() =>
-  [...(data.value?.items ?? []), ...more.value].filter(
-    (group) => !gone.value.has(group.id)
+const { items, status, problem, pending, hasMore, loadingMore, loadMore } =
+  useCursorList<UserActivityGroup>(
+    () => `user-activities:${props.userId}:${verb.value}:${allowsNsfw.value}`,
+    (client, cursor, { signal }) =>
+      client.GET('/users/{user_id}/activities', {
+        params: {
+          path: { user_id: String(props.userId) },
+          query: {
+            include_nsfw: allowsNsfw.value,
+            limit: LIMIT,
+            ...(verb.value === 'all' ? {} : { verbs: [verb.value] }),
+            ...(cursor ? { cursor } : {})
+          }
+        },
+        signal
+      })
   )
+
+const gone = ref(new Set<string>())
+const groups = computed(() =>
+  items.value.filter((group) => !gone.value.has(group.id))
 )
 const days = computed(() => groupTimelineByDay(groups.value))
 const newestYear = computed(
   () => groups.value[0]?.calendar_date.slice(0, 4) ?? ''
 )
-const nextCursor = computed(() =>
-  loadedMore.value ? moreCursor.value : data.value?.next_cursor
-)
-
-const loadMore = async () => {
-  const cursor = nextCursor.value
-  if (!cursor || loadingMore.value) {
-    return
-  }
-  const page = data.value
-  loadingMore.value = true
-  const result = await settle(
-    api.GET('/users/{user_id}/activities', {
-      params: {
-        path: { user_id: String(props.userId) },
-        query: { ...query.value, cursor }
-      }
-    })
-  )
-  loadingMore.value = false
-  if (data.value !== page) {
-    return
-  }
-  if (!result.ok) {
-    reportProblem(result.problem)
-    return
-  }
-  more.value = [...more.value, ...result.data.items]
-  moreCursor.value = result.data.next_cursor
-  loadedMore.value = true
-}
 
 const markGone = (id: string) => {
   gone.value = new Set(gone.value).add(id)
 }
+
+const sentinel = useTemplateRef('sentinel')
+const { loadNext } = useAutoLoadMore(sentinel, {
+  hasMore,
+  loading: loadingMore,
+  loadMore,
+  resetOn: verb
+})
 </script>
 
 <template>
@@ -108,7 +69,7 @@ const markGone = (id: string) => {
     <UserListSkeleton v-if="pending" shape="media" />
 
     <KunInfo
-      v-else-if="problem && !data"
+      v-else-if="problem && !items.length"
       color="danger"
       title="读取失败"
       description="动态暂时读不到，请稍后再试。"
@@ -130,7 +91,7 @@ const markGone = (id: string) => {
             {{ timelineDayLabel(day.date, newestYear) }}
           </h3>
           <ol
-            class="before:bg-default-200 relative space-y-3 before:absolute before:top-4 before:bottom-4 before:left-4 before:w-px"
+            class="before:bg-default-200 relative space-y-6 before:absolute before:top-4 before:bottom-4 before:left-4 before:w-px"
           >
             <li v-for="group in day.groups" :key="group.id">
               <UserTimelineEntry
@@ -142,15 +103,17 @@ const markGone = (id: string) => {
           </ol>
         </section>
 
-        <KunButton
-          v-if="nextCursor"
-          variant="flat"
-          class-name="w-full"
-          :loading="loadingMore"
-          @click="loadMore"
-        >
-          加载更多
-        </KunButton>
+        <div ref="sentinel" class="flex justify-center">
+          <KunButton
+            v-if="hasMore"
+            variant="light"
+            :loading="loadingMore"
+            @click="loadNext"
+          >
+            加载更多
+          </KunButton>
+          <span v-else class="text-default-400 text-sm">没有更多动态了</span>
+        </div>
       </div>
     </KunLoading>
   </div>
