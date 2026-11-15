@@ -49,6 +49,8 @@ const interactionBlocks: {
 
 const displayCount = (value: number | null) => (value === null ? '—' : value)
 
+const playtime = useUserPlaytimeTotal(() => props.user.id)
+
 const infoList = [
   { label: '注册序号', value: (u: UserProfile) => u.id },
   {
@@ -64,6 +66,29 @@ const infoList = [
 
 <template>
   <div v-if="user" class="w-full space-y-4">
+    <KunCard v-if="playtime" :is-hoverable="false">
+      <h3 class="text-default-500 mb-4 text-sm font-medium">游玩</h3>
+      <div class="flex flex-wrap items-end justify-between gap-3">
+        <div class="flex items-center gap-3">
+          <KunIcon name="lucide:clock" class="text-primary size-8 shrink-0" />
+          <div>
+            <div class="text-2xl font-bold tabular-nums">
+              {{ playtimeHeadline(playtime).value }}
+              <span class="text-default-500 text-base font-normal">
+                {{ playtimeHeadline(playtime).unit }}
+              </span>
+            </div>
+            <div class="text-default-500 text-xs">
+              总游玩时长 · {{ formatDurationMinutes(playtime) }}
+            </div>
+          </div>
+        </div>
+        <KunLink :to="`/user/${user.id}/library`" size="sm" underline="hover">
+          查看游戏库
+        </KunLink>
+      </div>
+    </KunCard>
+
     <KunCard :is-hoverable="false">
       <h3 class="text-default-500 mb-4 text-sm font-medium">内容统计</h3>
       <div

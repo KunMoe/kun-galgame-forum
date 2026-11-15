@@ -39,6 +39,11 @@ type Metric = {
   href?: string
 }
 
+const playtime = useUserPlaytimeTotal(() => props.user.id)
+const playtimeShown = computed(() =>
+  playtime.value ? playtimeHeadline(playtime.value) : null
+)
+
 const metrics = computed<Metric[]>(() => [
   { label: '萌萌点', value: props.user.moemoepoint, accent: true },
   { label: '话题', value: props.user.counts.topic_count },
@@ -131,6 +136,25 @@ useIntersectionObserver(
           :subject-url="`${kungal.domain.main}/user/${user.id}`"
         />
       </div>
+
+      <KunLink
+        v-if="playtimeShown"
+        :to="`/user/${user.id}/library`"
+        color="default"
+        underline="none"
+        class-name="bg-default-100 hover:bg-default-200 flex items-center gap-3 rounded-lg px-3 py-2.5 transition-colors"
+      >
+        <KunIcon name="lucide:clock" class="text-primary size-6 shrink-0" />
+        <span class="flex flex-col">
+          <span class="text-xl font-bold tabular-nums">
+            {{ playtimeShown.value }}
+            <span class="text-default-500 text-sm font-normal">
+              {{ playtimeShown.unit }}
+            </span>
+          </span>
+          <span class="text-default-500 text-xs">总游玩时长</span>
+        </span>
+      </KunLink>
 
       <dl
         class="grid grid-cols-4 gap-x-4 gap-y-3 sm:grid-cols-8 lg:grid-cols-2"

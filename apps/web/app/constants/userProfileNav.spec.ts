@@ -24,9 +24,7 @@ const user = (counts: Partial<UserProfile['counts']> = {}) =>
   }) as UserProfile
 
 const sectionValues = (nav: ReturnType<typeof userProfileNav>, item: string) =>
-  nav
-    .find((i) => i.value === item)!
-    .groups.flatMap((g) => g.sections.map((s) => s.value))
+  nav.find((i) => i.value === item)!.sections.map((s) => s.value)
 
 describe('userProfileNav', () => {
   it('hides only the sections a count fully covers, and only from visitors', () => {
@@ -74,11 +72,14 @@ describe('userProfileNav', () => {
 
   it('labels a section with its count when one is known', () => {
     const nav = userProfileNav(user(), false)
-    const discussion = nav.find((i) => i.value === 'publish')!.groups[0]!
-    expect(userSectionTabs(discussion).map((t) => t.textValue)).toEqual([
+    const publish = nav.find((i) => i.value === 'publish')!
+    expect(userSectionTabs(publish).map((t) => t.textValue)).toEqual([
       '话题 3',
       '回复 0',
-      '评论 0'
+      '评论 0',
+      'Galgame 0',
+      '题库',
+      '资源 0'
     ])
   })
 })

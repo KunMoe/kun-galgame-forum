@@ -76,11 +76,9 @@ const nav = computed(() =>
   data.value ? userProfileNav(data.value, isOwner.value) : []
 )
 const active = computed(() => findUserNavSection(nav.value, route.path))
-const sectionGroups = computed(() => {
-  const groups = active.value?.item.groups ?? []
-  const count = groups.reduce((n, group) => n + group.sections.length, 0)
-  return count > 1 ? groups : []
-})
+const hasSectionTabs = computed(
+  () => (active.value?.item.sections.length ?? 0) > 1
+)
 
 useKunSeoMeta(() => {
   if (data.value) {
@@ -110,29 +108,15 @@ useKunSeoMeta(() => {
           scrollable
         />
 
-        <div v-if="sectionGroups.length" class="space-y-2">
-          <div
-            v-for="group in sectionGroups"
-            :key="group.label ?? 'sections'"
-            class="flex items-center gap-3"
-          >
-            <span
-              v-if="group.label"
-              class="text-default-500 shrink-0 text-xs font-medium"
-            >
-              {{ group.label }}
-            </span>
-            <div class="min-w-0 flex-1">
-              <KunTab
-                :items="userSectionTabs(group)"
-                :model-value="active?.section.value ?? ''"
-                variant="pills"
-                color="primary"
-                size="sm"
-                scrollable
-              />
-            </div>
-          </div>
+        <div v-if="hasSectionTabs && active">
+          <KunTab
+            :items="userSectionTabs(active.item)"
+            :model-value="active.section.value"
+            variant="pills"
+            color="primary"
+            size="sm"
+            scrollable
+          />
         </div>
 
         <KunLoadingDim :loading="isNavLoading" :delay="0">
