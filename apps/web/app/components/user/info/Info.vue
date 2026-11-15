@@ -85,7 +85,11 @@ const infoList = [
             </div>
           </div>
         </div>
-        <KunLink :to="`/user/${user.id}/library`" size="sm" underline="hover">
+        <KunLink
+          :to="`/user/${user.id}/library?sort=playtime_desc`"
+          size="sm"
+          underline="hover"
+        >
           查看游戏库
         </KunLink>
       </div>

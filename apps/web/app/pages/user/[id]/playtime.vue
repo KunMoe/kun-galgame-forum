@@ -1,21 +1,12 @@
 <script setup lang="ts">
-import type { UserProfile } from '#shared/utils/api/schemas'
-
 definePageMeta({
-  middleware: 'auth'
+  redirect: (to) => ({
+    path: `/user/${String(to.params.id)}/library`,
+    query: { sort: 'playtime_desc' }
+  })
 })
-
-const props = defineProps<{
-  user: UserProfile
-}>()
-
-const { id } = usePersistUserStore()
-const isOwner = computed(() => id === Number(props.user.id))
-
-useKunDisableSeo('游玩时长')
 </script>
 
 <template>
-  <UserPlaytime v-if="isOwner" />
-  <KunNull v-else description="这一页只对本人显示" />
+  <div />
 </template>

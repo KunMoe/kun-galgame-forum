@@ -50,10 +50,7 @@ export const userProfileNav = (
       value: 'library',
       label: '游戏库',
       icon: 'lucide:library',
-      sections: [
-        section('library', '游戏记录', 'library'),
-        ...(isOwner ? [section('playtime', '游玩时长', 'playtime')] : [])
-      ]
+      sections: [section('library', '游戏库', 'library')]
     },
     {
       value: 'collection',
@@ -76,9 +73,7 @@ export const userProfileNav = (
         section('followers', '粉丝', 'follow/followers', {
           count: c.follower_count
         }),
-        ...(isOwner
-          ? [section('followed-companies', '会社', 'followed-companies')]
-          : [])
+        section('followed-companies', '会社', 'followed-companies')
       ]
     },
     {

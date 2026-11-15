@@ -127,11 +127,24 @@ export const KUN_GALGAME_LIBRARY_TABS = [
   { value: 'doing', label: '在玩', icon: 'lucide:play' },
   { value: 'done', label: '玩过', icon: 'lucide:flag' },
   { value: 'on_hold', label: '搁置', icon: 'lucide:pause' },
-  { value: 'dropped', label: '弃坑', icon: 'lucide:x' }
+  { value: 'dropped', label: '弃坑', icon: 'lucide:x' },
+  { value: 'none', label: '未标记', icon: 'lucide:circle-dashed' }
 ] as const
 
 export type KunGalgameLibraryTab =
   (typeof KUN_GALGAME_LIBRARY_TABS)[number]['value']
+
+export const KUN_GALGAME_LIBRARY_SORTS = [
+  { value: 'updated_desc', label: '最近更新' },
+  { value: 'updated_asc', label: '最早更新' },
+  { value: 'playtime_desc', label: '时长最长' },
+  { value: 'playtime_asc', label: '时长最短' },
+  { value: 'rating_desc', label: '评分最高' },
+  { value: 'rating_asc', label: '评分最低' }
+] as const
+
+export type KunGalgameLibrarySort =
+  (typeof KUN_GALGAME_LIBRARY_SORTS)[number]['value']
 
 // Both floors are catalog's, not ours: it refuses anything above the ceiling,
 // and its aggregate ignores anything under the floor.

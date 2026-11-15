@@ -42,15 +42,18 @@ describe('userProfileNav', () => {
     expect(sectionValues(owner, 'publish')).toContain('toolset')
   })
 
-  it('keeps the owner-only sections and the settings tab to the owner', () => {
+  it('shows the library and followed companies to everyone, settings to the owner', () => {
     const visitor = userProfileNav(user(), false)
     expect(sectionValues(visitor, 'library')).toEqual(['library'])
-    expect(sectionValues(visitor, 'follow')).toEqual(['following', 'followers'])
+    expect(sectionValues(visitor, 'follow')).toEqual([
+      'following',
+      'followers',
+      'followed-companies'
+    ])
     expect(visitor.map((i) => i.value)).not.toContain('setting')
 
     const owner = userProfileNav(user(), true)
-    expect(sectionValues(owner, 'library')).toEqual(['library', 'playtime'])
-    expect(sectionValues(owner, 'follow')).toContain('followed-companies')
+    expect(sectionValues(owner, 'library')).toEqual(['library'])
     expect(owner.map((i) => i.value)).toContain('setting')
   })
 

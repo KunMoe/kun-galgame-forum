@@ -139,7 +139,7 @@ useIntersectionObserver(
 
       <KunLink
         v-if="playtimeShown"
-        :to="`/user/${user.id}/library`"
+        :to="`/user/${user.id}/library?sort=playtime_desc`"
         color="default"
         underline="none"
         class-name="bg-default-100 hover:bg-default-200 flex items-center gap-3 rounded-lg px-3 py-2.5 transition-colors"

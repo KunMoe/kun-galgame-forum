@@ -94,6 +94,7 @@ const external = computed(() => props.item.in_site_path === null)
         <KunLink
           v-if="work?.maker"
           :to="`/galgame/official/${work.maker.id}`"
+          size="xs"
           underline="none"
           color="default"
           class-name="text-default-500 hover:text-primary"

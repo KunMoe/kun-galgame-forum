@@ -5,7 +5,9 @@ import type {
   WorkStateCounts
 } from '#shared/utils/api/schemas'
 import {
+  KUN_GALGAME_LIBRARY_SORTS,
   KUN_GALGAME_LIBRARY_TABS,
+  type KunGalgameLibrarySort,
   type KunGalgameLibraryTab
 } from '~/constants/galgame-playtime'
 
@@ -26,10 +28,23 @@ const { state: query, set } = useQueryState({
   state: queryEnum(
     KUN_GALGAME_LIBRARY_TABS.map((tab) => tab.value),
     'all'
+  ),
+  sort: queryEnum(
+    KUN_GALGAME_LIBRARY_SORTS.map((sort) => sort.value),
+    'updated_desc'
   )
 })
 
 const state = computed(() => query.value.state)
+const sort = computed({
+  get: () => query.value.sort,
+  set: (value: KunGalgameLibrarySort) => set({ sort: value })
+})
+const sortOptions = KUN_GALGAME_LIBRARY_SORTS.map((option) => ({
+  value: option.value,
+  label: option.label
+}))
+const listKey = computed(() => `${state.value}:${sort.value}`)
 
 const {
   items,
@@ -41,13 +56,15 @@ const {
   status,
   pending
 } = useCursorList<LibraryItem, LibraryPage>(
-  () => `user-library:${props.userId}:${state.value}:${stanceKey.value}`,
+  () => `user-library:${props.userId}:${listKey.value}:${stanceKey.value}`,
   async (client, cursor, { signal }) => {
     const res = await client.GET('/users/{user_id}/work-records', {
       params: {
         path: { user_id: String(props.userId) },
         query: {
           include_nsfw: allowsNsfw.value,
+          record: 'any',
+          sort: sort.value,
           ...(state.value === 'all' ? {} : { state: [state.value] }),
           ...(cursor ? { cursor } : {})
         }
@@ -70,11 +87,32 @@ const { loadNext } = useAutoLoadMore(sentinel, {
   hasMore,
   loading: loadingMore,
   loadMore,
-  resetOn: state
+  resetOn: listKey
 })
 
 const totalOf = (counts: WorkStateCounts) =>
-  counts.wish + counts.doing + counts.done + counts.on_hold + counts.dropped
+  counts.wish +
+  counts.doing +
+  counts.done +
+  counts.on_hold +
+  counts.dropped +
+  counts.none
+
+const playtime = useUserPlaytimeTotal(() => String(props.userId))
+const stats = computed(() => {
+  const counts = head.value?.state_counts
+  if (!counts || !totalOf(counts)) {
+    return []
+  }
+  return [
+    { label: '部作品', value: String(totalOf(counts)) },
+    {
+      label: '合计时长',
+      value: playtime.value ? formatDurationMinutes(playtime.value) : '—'
+    },
+    { label: '部玩过', value: String(counts.done) }
+  ]
+})
 
 const tabs = computed(() => {
   const counts = head.value?.state_counts
@@ -83,8 +121,11 @@ const tabs = computed(() => {
       return { value: tab.value, label: tab.label, icon: tab.icon }
     }
     const n = tab.value === 'all' ? totalOf(counts) : counts[tab.value]
+    if (tab.value === 'none' && !n && state.value !== 'none') {
+      return null
+    }
     return { value: tab.value, label: `${tab.label} ${n}`, icon: tab.icon }
-  })
+  }).filter((tab) => tab !== null)
 })
 
 const selectTab = (value: string) => {
@@ -116,8 +157,8 @@ const emptyText = computed(() => {
     return '这里还没有作品'
   }
   return props.isOwner
-    ? '还没有游玩记录, 在任意 Galgame 页面点「评分」即可标记游玩状态'
-    : 'TA 还没有标记过游玩状态'
+    ? '还没有游玩记录, 在任意 Galgame 页面点「评分」即可标记游玩状态和时长'
+    : 'TA 还没有游玩记录'
 })
 </script>
 
@@ -152,15 +193,35 @@ const emptyText = computed(() => {
         </KunLink>
       </p>
 
-      <KunRadioGroup
-        :model-value="state"
-        :options="tabs"
-        variant="pill"
-        orientation="horizontal"
-        color="primary"
-        size="sm"
-        @change="selectTab"
-      />
+      <div v-if="stats.length" class="grid grid-cols-3 gap-3">
+        <div
+          v-for="stat in stats"
+          :key="stat.label"
+          class="bg-default-100 rounded-lg px-4 py-3"
+        >
+          <p class="text-2xl font-bold tabular-nums">{{ stat.value }}</p>
+          <p class="text-default-500 text-sm">{{ stat.label }}</p>
+        </div>
+      </div>
+
+      <div class="flex flex-wrap items-center justify-between gap-3">
+        <KunRadioGroup
+          :model-value="state"
+          :options="tabs"
+          variant="pill"
+          orientation="horizontal"
+          color="primary"
+          size="sm"
+          @change="selectTab"
+        />
+        <KunSelect
+          v-model="sort"
+          :options="sortOptions"
+          size="sm"
+          class-name="w-32"
+          aria-label="排序"
+        />
+      </div>
 
       <p v-if="!allowsNsfw" class="text-default-500 text-sm">
         未开启 NSFW 显示，成人作品不在这里，也不计入数量
@@ -196,6 +257,19 @@ const emptyText = computed(() => {
           加载更多
         </KunButton>
       </div>
+
+      <p v-if="isOwner" class="text-default-500 text-sm">
+        想让桌面客户端自动记录游玩时长?
+        <KunLink
+          to="https://developer.nextmoe.dev/docs/playtime"
+          target="_blank"
+          underline="hover"
+          size="sm"
+        >
+          在 NextMoe 开发者平台创建一个应用
+        </KunLink>
+        即可, playtime 权限无需审批, 它上报的记录会和这里合并显示。
+      </p>
     </template>
   </div>
 </template>
