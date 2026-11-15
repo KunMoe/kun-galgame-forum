@@ -1,13 +1,19 @@
 <script setup lang="ts">
 import type { FollowingActivityItem } from '#shared/utils/api/schemas'
 import { workReleaseText } from '~/utils/galgame/releaseDate'
+import { entityTitle } from '~/utils/entityTarget'
 
 const props = defineProps<{ item: FollowingActivityItem }>()
 
 const { isBlurred } = useContentStance()
 const nameOf = useCatalogName()
+const { showKUNGalgamePreferOriginalName } = storeToRefs(
+  usePersistSettingsStore()
+)
 const masked = computed(
-  () => (props.item.is_nsfw || !!props.item.work_preview?.is_nsfw) && isBlurred.value
+  () =>
+    (props.item.is_nsfw || !!props.item.work_preview?.is_nsfw) &&
+    isBlurred.value
 )
 const coverFailed = ref(false)
 const work = computed(() => props.item.work_preview)
@@ -20,6 +26,16 @@ const release = computed(() =>
       )
     : ''
 )
+const title = computed(() => {
+  const target = props.item.object_target
+  if (target && target.object !== 'unavailable_entity') {
+    return entityTitle(target, showKUNGalgamePreferOriginalName.value)
+  }
+  if (work.value && props.item.object_ref?.startsWith('work:')) {
+    return nameOf(work.value).name
+  }
+  return props.item.title || props.item.object_label
+})
 const to = computed(() => props.item.in_site_path ?? props.item.url)
 const external = computed(() => props.item.in_site_path === null)
 </script>
@@ -42,7 +58,7 @@ const external = computed(() => props.item.in_site_path === null)
       >
         <KunImage
           :src="cover.url"
-          :alt="item.title"
+          :alt="title"
           loading="lazy"
           aspect-ratio="3 / 4"
           :image-class-name="masked ? 'blur-xl' : undefined"
@@ -60,7 +76,7 @@ const external = computed(() => props.item.in_site_path === null)
           color="default"
           class-name="text-default-800 hover:text-primary min-w-0 truncate text-sm font-medium"
         >
-          {{ item.title }}
+          {{ title }}
         </KunLink>
         <KunIcon
           v-if="external"

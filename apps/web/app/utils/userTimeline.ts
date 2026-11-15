@@ -9,7 +9,11 @@ export const TIMELINE_VERBS = [
   'comment',
   'rate',
   'like',
-  'edit'
+  'edit',
+  'favorite',
+  'follow',
+  'mark',
+  'play'
 ] as const
 
 export type TimelineFilter = (typeof TIMELINE_VERBS)[number]
@@ -21,7 +25,11 @@ const FILTER_LABEL: Record<TimelineFilter, string> = {
   comment: '评论',
   rate: '评分',
   like: '推荐',
-  edit: '编辑'
+  edit: '编辑',
+  favorite: '收藏',
+  follow: '关注',
+  mark: '标记',
+  play: '游玩'
 }
 
 const VERB_ICON: Record<Verb, string> = {
@@ -30,7 +38,11 @@ const VERB_ICON: Record<Verb, string> = {
   comment: 'lucide:message-circle',
   rate: 'lucide:star',
   like: 'lucide:thumbs-up',
-  edit: 'lucide:pencil-line'
+  edit: 'lucide:pencil-line',
+  favorite: 'lucide:bookmark',
+  follow: 'lucide:user-plus',
+  mark: 'lucide:flag',
+  play: 'lucide:gamepad-2'
 }
 
 export const timelineFilterTabs = () =>

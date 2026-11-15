@@ -19,6 +19,8 @@ const item = (id: string) => ({
   cover: null,
   related_work_id: null,
   work_preview: null,
+  object_ref: null,
+  object_target: null,
   is_nsfw: false,
   occurred_at: '2026-11-14T08:00:00Z',
   topic_times: null
