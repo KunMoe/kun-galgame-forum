@@ -21,6 +21,7 @@ type ActivityWriteItem struct {
 	URL            string `json:"url,omitempty"`
 	CoverImageHash string `json:"cover_image_hash,omitempty"`
 	WorkID         int64  `json:"work_id,omitempty"`
+	ObjectRef      string `json:"object_ref,omitempty"`
 	ContentLimit   string `json:"content_limit,omitempty"`
 	Notify         bool   `json:"notify,omitempty"`
 	OccurredAt     string `json:"occurred_at,omitempty"`
@@ -55,6 +56,7 @@ type SiteActivityView struct {
 	URL            string  `json:"url"`
 	CoverImageHash *string `json:"cover_image_hash"`
 	WorkID         *int64  `json:"work_id"`
+	ObjectRef      *string `json:"object_ref"`
 	ContentLimit   string  `json:"content_limit"`
 	Notify         bool    `json:"notify"`
 	OccurredAt     string  `json:"occurred_at"`

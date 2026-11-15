@@ -31,6 +31,7 @@ type spec struct {
 	Notify      bool
 	WorkTied    bool
 	TopicKind   bool
+	TopicRef    bool
 }
 
 var pushed = map[string]spec{
@@ -53,6 +54,7 @@ var pushed = map[string]spec{
 	"GALGAME_LIKE":              {Verb: "like", ObjectKind: "galgame", ObjectLabel: "Galgame", WorkTied: true},
 	"GALGAME_RESOURCE_LIKE":     {Verb: "like", ObjectKind: "galgame_resource", ObjectLabel: "Galgame 资源", WorkTied: true},
 	"GALGAME_RATING_LIKE":       {Verb: "like", ObjectKind: "galgame_rating", ObjectLabel: "评分", WorkTied: true},
+	"TOPIC_FAVORITE":            {Verb: "favorite", ObjectKind: "topic", ObjectLabel: "话题", TopicKind: true, TopicRef: true},
 }
 
 var neverPushed = map[string]struct{}{
@@ -118,6 +120,11 @@ func MapLive(feedType string, sourceID int, a *activityapiv1.Activity, isNSFW, b
 			item.CoverImageHash = hash
 		}
 	}
+	if sp.TopicRef && a.Topic != nil {
+		if id := mustID(a.Topic.ID); id > 0 {
+			item.ObjectRef = "topic:" + strconv.Itoa(id)
+		}
+	}
 	if sp.TopicKind {
 		if hash := topicCover(a); hash != "" {
 			item.CoverImageHash = hash
@@ -139,7 +146,7 @@ func Tombstone(key string, actorID int64, rev int64) communityclient.ActivityWri
 
 func pageTitle(feedType string, a *activityapiv1.Activity) string {
 	switch feedType {
-	case "TOPIC_CREATION", "TOPIC_UPVOTE", "TOPIC_LIKE", "TOPIC_REPLY_LIKE", "TOPIC_COMMENT_LIKE":
+	case "TOPIC_CREATION", "TOPIC_UPVOTE", "TOPIC_LIKE", "TOPIC_REPLY_LIKE", "TOPIC_COMMENT_LIKE", "TOPIC_FAVORITE":
 		if a.Topic != nil {
 			return a.Topic.Title
 		}

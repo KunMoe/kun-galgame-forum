@@ -103,7 +103,7 @@ func (s *Service) load(ctx context.Context, rows []repository.FeedRow, includeNS
 			topicIDs.add(r.SourceID)
 		case "TOPIC_UPVOTE":
 			upvoteIDs.add(r.SourceID)
-		case "TOPIC_LIKE", "TOPIC_REPLY_LIKE", "TOPIC_COMMENT_LIKE":
+		case "TOPIC_LIKE", "TOPIC_REPLY_LIKE", "TOPIC_COMMENT_LIKE", "TOPIC_FAVORITE":
 			if m := topicLinkRe.FindStringSubmatch(r.Link); m != nil {
 				id, _ := strconv.Atoi(m[1])
 				topicIDs.add(id)
@@ -365,7 +365,7 @@ func (s *Service) build(ctx context.Context, r repository.FeedRow, b *batch) *Ac
 		if !s.fillTopic(a, b, b.topicOf[r.SourceID]) {
 			return nil
 		}
-	case "TOPIC_LIKE", "TOPIC_REPLY_LIKE", "TOPIC_COMMENT_LIKE":
+	case "TOPIC_LIKE", "TOPIC_REPLY_LIKE", "TOPIC_COMMENT_LIKE", "TOPIC_FAVORITE":
 		m := topicLinkRe.FindStringSubmatch(r.Link)
 		if m == nil {
 			return nil

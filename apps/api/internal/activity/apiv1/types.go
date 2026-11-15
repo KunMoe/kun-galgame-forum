@@ -58,6 +58,7 @@ var pushOnlyFeedTypes = []struct{ kind, feed string }{
 	{"galgame_like", "GALGAME_LIKE"},
 	{"galgame_resource_like", "GALGAME_RESOURCE_LIKE"},
 	{"galgame_rating_like", "GALGAME_RATING_LIKE"},
+	{"topic_favorite", "TOPIC_FAVORITE"},
 }
 
 func init() {

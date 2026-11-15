@@ -92,7 +92,7 @@ func TestMapLiveEveryPushedType(t *testing.T) {
 	note := "publisher note"
 	cover := &repr.Image{Hash: testHash}
 	work := &repr.WorkRef{ID: repr.ID(88), CatalogName: repr.NewCatalogName("Work 88", "", nil), Cover: cover, IsNSFW: false}
-	topic := &topicapiv1.TopicSummary{Title: "Topic title", IsNSFW: false, CoverImages: []repr.Image{*cover}}
+	topic := &topicapiv1.TopicSummary{ID: "123", Title: "Topic title", IsNSFW: false, CoverImages: []repr.Image{*cover}}
 	digest := &activityapiv1.TopicDigest{ExcerptMarkdown: "body **md**"}
 	performer := &repr.UserRef{Object: "user", ID: repr.ID(7)}
 	toolset := &activityapiv1.ActivityToolset{Title: "Toolset title"}
@@ -170,6 +170,9 @@ func TestMapLiveEveryPushedType(t *testing.T) {
 		{"GALGAME_RATING_LIKE", 36, false, false, &activityapiv1.Activity{
 			Performer: performer, Path: "/galgame/88", Work: work,
 		}, want{"galgame_rating_like:36", "like", "galgame_rating", "评分", "Work 88", "empty", false, true, true, "sfw"}},
+		{"TOPIC_FAVORITE", 37, false, false, &activityapiv1.Activity{
+			Performer: performer, Path: "/topic/123", Topic: topic,
+		}, want{"topic_favorite:37", "favorite", "topic", "话题", "Topic title", "empty", false, false, true, "sfw"}},
 	}
 
 	if len(cases) != len(pushed) {
@@ -208,6 +211,13 @@ func TestMapLiveEveryPushedType(t *testing.T) {
 		}
 		if item.URL != testOrigin+tc.a.Path {
 			t.Errorf("%s url = %s", tc.feed, item.URL)
+		}
+		wantRef := ""
+		if tc.feed == "TOPIC_FAVORITE" {
+			wantRef = "topic:123"
+		}
+		if item.ObjectRef != wantRef {
+			t.Errorf("%s object_ref = %q, want %q", tc.feed, item.ObjectRef, wantRef)
 		}
 		if item.ActorID != 7 || item.Revision != testRev {
 			t.Errorf("%s actor/rev = %d %d", tc.feed, item.ActorID, item.Revision)

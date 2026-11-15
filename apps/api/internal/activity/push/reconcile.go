@@ -167,6 +167,9 @@ func itemDiffers(want communityclient.ActivityWriteItem, have communityclient.Si
 	if !sameOptInt(want.WorkID, have.WorkID) {
 		return true
 	}
+	if !sameOptString(want.ObjectRef, have.ObjectRef) {
+		return true
+	}
 	return !sameTime(want.OccurredAt, have.OccurredAt)
 }
 
