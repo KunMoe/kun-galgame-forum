@@ -88,6 +88,7 @@ type g6User struct {
 	fullFolder     map[int64]bool
 	unfoldable     map[int64]bool
 	ownPatch403    bool
+	noTotal        bool
 	private        map[int64]bool
 	privacyAt      *time.Time
 	recordCalls    []g6RecordCall

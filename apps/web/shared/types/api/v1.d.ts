@@ -5249,6 +5249,26 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/users/{user_id}/playtime-total": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Get a user's total playtime
+         * @description The total playtime a user has recorded across NextMoe, under the same privacy switch as listUserWorkRecords: public unless the user turns play records off, and always readable by the user. PROFILE_SIGN_IN_REQUIRED when the caller is anonymous and user_id names a user who shows their profile to signed-in users only.
+         */
+        get: operations["getUserPlaytimeTotal"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/users/{user_id}/replies": {
         parameters: {
             query?: never;
@@ -8577,6 +8597,8 @@ export interface components {
             url: string;
             /** @description What the performer did. */
             verb: components["schemas"]["ActivityVerb"];
+            /** @description The work related_work_id names. null when there is none, when catalog does not show it under include_nsfw, and when catalog is unreachable. */
+            work: components["schemas"]["WorkPreview"] | null;
         };
         FollowingActivityReadMarker: {
             /**
@@ -15806,6 +15828,18 @@ export interface components {
         UserPermissionsViewer: {
             /** @description Whether the caller may replace this user's overrides: the user is not locked and ranks below the caller. Each key is still subject to the caller holding it. */
             can_edit: boolean;
+        };
+        UserPlaytimeTotal: {
+            /**
+             * Format: int64
+             * @description The user's playtime summed over every work they have one on, each work counted once at the most minutes any application reported. null when catalog does not report a total yet.
+             */
+            minutes: number | null;
+            /**
+             * @description Type discriminant. Always user_playtime_total.
+             * @constant
+             */
+            object: "user_playtime_total";
         };
         /** @enum {string} */
         UserPostRelation: "authored" | "received" | "liked";
@@ -45783,6 +45817,86 @@ export interface operations {
                 };
             };
             /** @description SERVICE_UNAVAILABLE when the account service or catalog cannot be reached. */
+            503: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+        };
+    };
+    getUserPlaytimeTotal: {
+        parameters: {
+            query?: {
+                /** @description When true, playtime on adult works counts toward minutes. Default false. */
+                include_nsfw?: boolean;
+            };
+            header?: never;
+            path: {
+                /** @description User id. */
+                user_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["UserPlaytimeTotal"];
+                };
+            };
+            /** @description Bad Request */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description INVALID_CREDENTIAL for a bad Bearer. */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description ACCOUNT_BANNED when the caller's account is banned. PLAY_RECORDS_PRIVATE when the user keeps their play records private and the caller is not that user. PROFILE_SIGN_IN_REQUIRED when the caller is anonymous and user_id names a user who shows their profile to signed-in users only. */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description NOT_FOUND when the account does not exist or is not renderable. */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Internal Server Error */
+            500: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description SERVICE_UNAVAILABLE when the catalog or the account service cannot be reached. */
             503: {
                 headers: {
                     [name: string]: unknown;

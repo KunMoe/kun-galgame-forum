@@ -1,9 +1,12 @@
 package content
 
 import (
+	"context"
+
 	"github.com/danielgtaylor/huma/v2"
 
 	"kun-galgame-api/internal/apiv1/repr"
+	"kun-galgame-api/internal/galgame/client"
 	"kun-galgame-api/internal/galgame/workrepr"
 )
 
@@ -13,6 +16,18 @@ type WorkPreview struct {
 	TopTags              []workrepr.TagRef    `json:"top_tags" maxItems:"4" doc:"Up to four of the work's tags, in the order its page lists them, leaving out spoiler and adult tags. Empty array, never null."`
 	ReleaseDate          *string              `json:"release_date" format:"date" maxLength:"10" doc:"Release date. A month- or year-precise date is the first day of that month or year. null when catalog has none."`
 	ReleaseDatePrecision *string              `json:"release_date_precision" enum:"day,month,year" maxLength:"5" doc:"How much of release_date is known. null when release_date is null."`
+}
+
+// NewWorkPreview reads a catalog row fetched with workrepr.RowInclude plus tags.
+func NewWorkPreview(ctx context.Context, row *client.CatalogWorkListItem, cdn string) WorkPreview {
+	date, precision := workrepr.Release(row.ReleaseDate)
+	return WorkPreview{
+		WorkRef:              workrepr.Ref(ctx, row, cdn),
+		Maker:                workrepr.Maker(row),
+		TopTags:              workrepr.TopTags(row, false, 4),
+		ReleaseDate:          date,
+		ReleaseDatePrecision: precision,
+	}
 }
 
 type CharacterPreview struct {

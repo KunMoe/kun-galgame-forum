@@ -14,6 +14,7 @@ import (
 	v1 "kun-galgame-api/internal/apiv1"
 	"kun-galgame-api/internal/apiv1/content"
 	"kun-galgame-api/internal/galgame/client"
+	"kun-galgame-api/internal/galgame/workrepr"
 	"kun-galgame-api/pkg/communityclient"
 	legacyErrors "kun-galgame-api/pkg/errors"
 	"kun-galgame-api/pkg/problem"
@@ -56,8 +57,9 @@ func (s *Service) WithCollections(fn CollectionsFunc) *Service {
 }
 
 type workKey struct {
-	id  int
-	sfw bool
+	id      int
+	sfw     bool
+	include string
 }
 
 type workEntry struct {
@@ -88,18 +90,19 @@ const (
 	workCacheTTL        = 2 * time.Minute
 	workCacheMaxEntries = 20000
 	catalogInclude      = "names,intros,labels,covers,refs"
+	previewInclude      = workrepr.RowInclude + ",tags"
 )
 
 // The home page renders this collection for every visitor, and catalog's /v2
 // limiter counts per client IP: this forum has one. Rows are cached like the
 // galgame client caches its briefs.
-func (s *Service) catalogRows(ctx context.Context, ids []int, sfw bool) (map[int]client.CatalogWorkListItem, *problem.Problem) {
+func (s *Service) catalogRows(ctx context.Context, ids []int, sfw bool, include string) (map[int]client.CatalogWorkListItem, *problem.Problem) {
 	out := make(map[int]client.CatalogWorkListItem, len(ids))
 	var missing []int
 	now := time.Now()
 	s.mu.Lock()
 	for _, id := range ids {
-		if e, ok := s.works[workKey{id, sfw}]; ok && now.Before(e.expires) {
+		if e, ok := s.works[workKey{id, sfw, include}]; ok && now.Before(e.expires) {
 			if e.found {
 				out[id] = e.row
 			}
@@ -116,13 +119,13 @@ func (s *Service) catalogRows(ctx context.Context, ids []int, sfw bool) (map[int
 		limit = "sfw"
 	}
 	slices.Sort(missing)
-	key := make([]string, 0, len(missing)+1)
-	key = append(key, limit)
+	key := make([]string, 0, len(missing)+2)
+	key = append(key, limit, include)
 	for _, id := range missing {
 		key = append(key, strconv.Itoa(id))
 	}
 	shared, err, _ := s.flight.Do(strings.Join(key, ","), func() (any, error) {
-		rows, appErr := s.catalog.CatalogRowsByWorkIDs(context.WithoutCancel(ctx), missing, catalogInclude, limit)
+		rows, appErr := s.catalog.CatalogRowsByWorkIDs(context.WithoutCancel(ctx), missing, include, limit)
 		if appErr != nil {
 			return nil, appErr
 		}
@@ -132,7 +135,7 @@ func (s *Service) catalogRows(ctx context.Context, ids []int, sfw bool) (map[int
 		}
 		for _, id := range missing {
 			row, ok := rows[id]
-			s.works[workKey{id, sfw}] = workEntry{row: row, found: ok, expires: now.Add(workCacheTTL)}
+			s.works[workKey{id, sfw, include}] = workEntry{row: row, found: ok, expires: now.Add(workCacheTTL)}
 		}
 		s.mu.Unlock()
 		return rows, nil

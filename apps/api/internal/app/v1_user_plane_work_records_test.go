@@ -18,6 +18,8 @@ type g6RecordCall struct {
 	userID int64
 	states []string
 	counts bool
+	record string
+	total  bool
 }
 
 func g6Records() []catalogclient.AccountWorkRecord {
@@ -48,7 +50,7 @@ func (u *g6User) WorkRecords(_ context.Context, token string, q catalogclient.Wo
 			Status: http.StatusForbidden, ProblemCode: catalogclient.CodePlayRecordsPrivate, Message: "private",
 		}
 	}
-	u.recordCalls = append(u.recordCalls, g6RecordCall{token: token, userID: uid, states: q.States, counts: q.Counts})
+	u.recordCalls = append(u.recordCalls, g6RecordCall{token: token, userID: uid, states: q.States, counts: q.Counts, record: q.Record, total: q.PlaytimeTotal})
 
 	var matched []catalogclient.AccountWorkRecord
 	if uid == w3UserAlice {
@@ -71,6 +73,15 @@ func (u *g6User) WorkRecords(_ context.Context, token string, q catalogclient.Wo
 		for _, r := range matched {
 			out.StateCounts[r.State]++
 		}
+	}
+	if q.PlaytimeTotal && !u.noTotal {
+		var sum int64
+		for _, r := range matched {
+			if r.PlaytimeMinutes != nil {
+				sum += int64(*r.PlaytimeMinutes)
+			}
+		}
+		out.PlaytimeTotalMinutes = &sum
 	}
 	start := 0
 	if q.Cursor != "" {
@@ -302,5 +313,40 @@ func TestV1PrivacySettings(t *testing.T) {
 	resp, body = f.call(t, http.MethodGet, path, spec, "", "", nil)
 	if resp.StatusCode != http.StatusUnauthorized {
 		t.Errorf("anonymous %d %+v", resp.StatusCode, body)
+	}
+}
+
+const g6TotalSpec = "/users/{user_id}/playtime-total"
+
+func g6TotalPath(uid int, query string) string {
+	return "/api/v1/users/" + idStr(uid) + "/playtime-total?" + query
+}
+
+func TestV1UserPlaytimeTotal(t *testing.T) {
+	f := newG6Fix(t)
+	resp, body := f.call(t, http.MethodGet, g6TotalPath(w3UserAlice, ""), g6TotalSpec, "sess-bob", "", nil)
+	if resp.StatusCode != http.StatusOK || body["object"] != "user_playtime_total" || asInt(body["minutes"]) != 125 {
+		t.Fatalf("visitor %d %+v", resp.StatusCode, body)
+	}
+	calls := f.recordCalls()
+	last := calls[len(calls)-1]
+	if last.token != "" || last.record != "playtime" || !last.total {
+		t.Errorf("a visitor's total must ask catalog with the app key for record=playtime and the total: %+v", last)
+	}
+
+	f.setPrivate(w3UserAlice)
+	resp, body = f.call(t, http.MethodGet, g6TotalPath(w3UserAlice, ""), g6TotalSpec, "", "", nil)
+	wantCode(t, resp, body, http.StatusForbidden, problem.CodePlayRecordsPrivate)
+	resp, body = f.call(t, http.MethodGet, g6TotalPath(w3UserAlice, "include_nsfw=true"), g6TotalSpec, "sess-alice", "", nil)
+	if resp.StatusCode != http.StatusOK || asInt(body["minutes"]) != 125 {
+		t.Fatalf("the owner reads a private total: %d %+v", resp.StatusCode, body)
+	}
+
+	f.user.mu.Lock()
+	f.user.noTotal = true
+	f.user.mu.Unlock()
+	resp, body = f.call(t, http.MethodGet, g6TotalPath(w3UserBob, ""), g6TotalSpec, "", "", nil)
+	if resp.StatusCode != http.StatusOK || body["minutes"] != nil {
+		t.Fatalf("a catalog without the total reads null: %d %+v", resp.StatusCode, body)
 	}
 }

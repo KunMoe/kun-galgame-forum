@@ -20,6 +20,7 @@ func (f *followingFix) userActivities(t *testing.T, session string, userID int, 
 func TestV1UserActivitiesMapsGroupsWithoutActor(t *testing.T) {
 	f := newFollowingFix(t)
 	work := int64(77)
+	f.catalog.items[77] = catalogItem(t, 77, "sfw")
 	f.cm.groups = []communityclient.ActivityGroupView{
 		faGroup(11, int64(w3UserOther), "kungal", "publish", "2026-09-25",
 			faItem(101, int64(w3UserOther), "kungal", "publish", "Hello", "https://www.kungal.com/topic/42", "sfw", &work, "")),
@@ -55,8 +56,37 @@ func TestV1UserActivitiesMapsGroupsWithoutActor(t *testing.T) {
 	if it["object"] != "following_activity_item" || it["in_site_path"] != "/topic/42" || fmt.Sprint(it["related_work_id"]) != "77" {
 		t.Fatalf("item %+v", it)
 	}
+	w, _ := it["work"].(map[string]any)
+	maker, _ := w["maker"].(map[string]any)
+	if fmt.Sprint(w["id"]) != "77" || w["release_date"] != "2024-05-01" || w["release_date_precision"] != "month" ||
+		maker["display_name"] != "Brand" || w["top_tags"] == nil {
+		t.Fatalf("work %+v", it["work"])
+	}
 	if groups[1]["site"] != "moyu" {
 		t.Fatalf("moyu group %+v", groups[1])
+	}
+	moyu, _ := groups[1]["items"].([]any)
+	if m, _ := moyu[0].(map[string]any); m["work"] != nil {
+		t.Fatalf("an item without a work has one: %+v", m)
+	}
+}
+
+func TestV1UserActivitiesSurviveACatalogOutage(t *testing.T) {
+	f := newFollowingFix(t)
+	work := int64(78)
+	f.catalog.items[78] = catalogItem(t, 78, "sfw")
+	f.catalog.fail.Store(true)
+	f.cm.groups = []communityclient.ActivityGroupView{
+		faGroup(13, int64(w3UserOther), "kungal", "rate", "2026-09-25",
+			faItem(103, int64(w3UserOther), "kungal", "rate", "Work 78", "https://www.kungal.com/galgame-rating/5", "sfw", &work, "")),
+	}
+	resp, body := f.userActivities(t, "", w3UserOther, url.Values{})
+	if resp.StatusCode != http.StatusOK {
+		t.Fatalf("list %d %+v", resp.StatusCode, body)
+	}
+	row, _ := listItems(t, body)[0]["items"].([]any)
+	if it, _ := row[0].(map[string]any); it["work"] != nil || fmt.Sprint(it["related_work_id"]) != "78" {
+		t.Fatalf("item %+v", it)
 	}
 }
 

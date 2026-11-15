@@ -10,9 +10,9 @@ import (
 	"strings"
 	"time"
 
-	"kun-galgame-api/internal/activity/repository"
 	v1 "kun-galgame-api/internal/apiv1"
 	"kun-galgame-api/internal/apiv1/collect"
+	"kun-galgame-api/internal/apiv1/content"
 	"kun-galgame-api/internal/apiv1/repr"
 	"kun-galgame-api/pkg/communityclient"
 	"kun-galgame-api/pkg/imageclient"
@@ -92,6 +92,7 @@ type FollowingActivityItem struct {
 	InSitePath    *string              `json:"in_site_path" pattern:"^/" maxLength:"512" doc:"Path and query of url when site is kungal. null for other sites."`
 	Cover         *repr.Image          `json:"cover" doc:"Cover from community's cover_image_hash. null when none."`
 	RelatedWorkID *repr.DecimalID      `json:"related_work_id" doc:"Catalog work id when the item names one. null when none."`
+	Work          *content.WorkPreview `json:"work" doc:"The work related_work_id names. null when there is none, when catalog does not show it under include_nsfw, and when catalog is unreachable."`
 	IsNSFW        bool                 `json:"is_nsfw" doc:"Whether the item is not sfw."`
 	OccurredAt    repr.DateTime        `json:"occurred_at" doc:"When it happened."`
 	TopicTimes    *FollowingTopicTimes `json:"topic_times" doc:"The topic a kungal publish item names, as this forum stores it now. null for every other item, and when the topic no longer exists."`
@@ -287,7 +288,7 @@ func (s *Service) listFollowingActivities(ctx context.Context, in *followingList
 	for _, g := range page.Groups {
 		shown = append(shown, g.Items[:min(len(g.Items), 3)]...)
 	}
-	times, prob := s.topicTimes(shown)
+	extras, prob := s.itemExtras(ctx, shown, in.IncludeNSFW)
 	if prob != nil {
 		return nil, prob
 	}
@@ -299,7 +300,7 @@ func (s *Service) listFollowingActivities(ctx context.Context, in *followingList
 		}
 		items := make([]FollowingActivityItem, 0, min(len(g.Items), 3))
 		for _, it := range g.Items[:min(len(g.Items), 3)] {
-			items = append(items, s.followingItem(it, times))
+			items = append(items, s.followingItem(it, extras))
 		}
 		out = append(out, FollowingActivityGroup{
 			Object:       "following_activity_group",
@@ -354,13 +355,13 @@ func (s *Service) listActivityGroupItems(ctx context.Context, in *groupItemsInpu
 			return nil, followingNotFound()
 		}
 	}
-	times, prob := s.topicTimes(page.Items)
+	extras, prob := s.itemExtras(ctx, page.Items, in.IncludeNSFW)
 	if prob != nil {
 		return nil, prob
 	}
 	out := make([]FollowingActivityItem, 0, len(page.Items))
 	for _, it := range page.Items {
-		out = append(out, s.followingItem(it, times))
+		out = append(out, s.followingItem(it, extras))
 	}
 	return &groupItemsOutput{Body: repr.NewList(out, wrapCursor(fp, page.NextCursor))}, nil
 }
@@ -396,7 +397,7 @@ func (s *Service) markFollowingActivitiesSeen(ctx context.Context, in *following
 	}}, nil
 }
 
-func (s *Service) followingItem(it communityclient.ActivityItemView, times map[int]repository.TopicTimesRow) FollowingActivityItem {
+func (s *Service) followingItem(it communityclient.ActivityItemView, x itemExtras) FollowingActivityItem {
 	return FollowingActivityItem{
 		Object:        "following_activity_item",
 		ID:            decimalID(it.ID),
@@ -411,9 +412,10 @@ func (s *Service) followingItem(it communityclient.ActivityItemView, times map[i
 		InSitePath:    inSitePath(it.Site, it.URL),
 		Cover:         s.coverImage(it.CoverImageHash),
 		RelatedWorkID: workIDPtr(it.WorkID),
+		Work:          x.work(it),
 		IsNSFW:        it.ContentLimit != "sfw",
 		OccurredAt:    parseDateTime(it.OccurredAt),
-		TopicTimes:    topicTimesOf(it, times),
+		TopicTimes:    topicTimesOf(it, x.times),
 	}
 }
 

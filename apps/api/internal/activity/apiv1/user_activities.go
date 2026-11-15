@@ -87,7 +87,7 @@ func (s *Service) listUserActivities(ctx context.Context, in *userActivitiesInpu
 	for _, g := range page.Groups {
 		shown = append(shown, g.Items[:min(len(g.Items), 3)]...)
 	}
-	times, prob := s.topicTimes(shown)
+	extras, prob := s.itemExtras(ctx, shown, in.IncludeNSFW)
 	if prob != nil {
 		return nil, prob
 	}
@@ -95,7 +95,7 @@ func (s *Service) listUserActivities(ctx context.Context, in *userActivitiesInpu
 	for _, g := range page.Groups {
 		items := make([]FollowingActivityItem, 0, min(len(g.Items), 3))
 		for _, it := range g.Items[:min(len(g.Items), 3)] {
-			items = append(items, s.followingItem(it, times))
+			items = append(items, s.followingItem(it, extras))
 		}
 		out = append(out, UserActivityGroup{
 			Object:       "user_activity_group",

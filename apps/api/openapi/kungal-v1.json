@@ -6740,6 +6740,17 @@
           "verb": {
             "$ref": "#/components/schemas/ActivityVerb",
             "description": "What the performer did."
+          },
+          "work": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/WorkPreview"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "The work related_work_id names. null when there is none, when catalog does not show it under include_nsfw, and when catalog is unreachable."
           }
         },
         "required": [
@@ -6756,6 +6767,7 @@
           "in_site_path",
           "cover",
           "related_work_id",
+          "work",
           "is_nsfw",
           "occurred_at",
           "topic_times"
@@ -25933,6 +25945,30 @@
         },
         "required": [
           "can_edit"
+        ],
+        "type": "object"
+      },
+      "UserPlaytimeTotal": {
+        "properties": {
+          "minutes": {
+            "description": "The user's playtime summed over every work they have one on, each work counted once at the most minutes any application reported. null when catalog does not report a total yet.",
+            "format": "int64",
+            "minimum": 0,
+            "type": [
+              "integer",
+              "null"
+            ]
+          },
+          "object": {
+            "const": "user_playtime_total",
+            "description": "Type discriminant. Always user_playtime_total.",
+            "maxLength": 19,
+            "type": "string"
+          }
+        },
+        "required": [
+          "object",
+          "minutes"
         ],
         "type": "object"
       },
@@ -72698,6 +72734,122 @@
           {}
         ],
         "summary": "List a user's galgame resources",
+        "tags": [
+          "users"
+        ]
+      }
+    },
+    "/users/{user_id}/playtime-total": {
+      "get": {
+        "description": "The total playtime a user has recorded across NextMoe, under the same privacy switch as listUserWorkRecords: public unless the user turns play records off, and always readable by the user. PROFILE_SIGN_IN_REQUIRED when the caller is anonymous and user_id names a user who shows their profile to signed-in users only.",
+        "operationId": "getUserPlaytimeTotal",
+        "parameters": [
+          {
+            "description": "User id.",
+            "in": "path",
+            "name": "user_id",
+            "required": true,
+            "schema": {
+              "description": "User id.",
+              "maxLength": 19,
+              "pattern": "^[1-9][0-9]{0,18}$",
+              "type": "string"
+            }
+          },
+          {
+            "description": "When true, playtime on adult works counts toward minutes. Default false.",
+            "explode": false,
+            "in": "query",
+            "name": "include_nsfw",
+            "schema": {
+              "default": false,
+              "description": "When true, playtime on adult works counts toward minutes. Default false.",
+              "type": "boolean"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/UserPlaytimeTotal"
+                }
+              }
+            },
+            "description": "OK"
+          },
+          "400": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            },
+            "description": "Bad Request"
+          },
+          "401": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            },
+            "description": "INVALID_CREDENTIAL for a bad Bearer."
+          },
+          "403": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            },
+            "description": "ACCOUNT_BANNED when the caller's account is banned. PLAY_RECORDS_PRIVATE when the user keeps their play records private and the caller is not that user. PROFILE_SIGN_IN_REQUIRED when the caller is anonymous and user_id names a user who shows their profile to signed-in users only."
+          },
+          "404": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            },
+            "description": "NOT_FOUND when the account does not exist or is not renderable."
+          },
+          "500": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            },
+            "description": "Internal Server Error"
+          },
+          "503": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            },
+            "description": "SERVICE_UNAVAILABLE when the catalog or the account service cannot be reached."
+          }
+        },
+        "security": [
+          {
+            "session": []
+          },
+          {
+            "bearer": []
+          },
+          {}
+        ],
+        "summary": "Get a user's total playtime",
         "tags": [
           "users"
         ]

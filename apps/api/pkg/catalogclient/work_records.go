@@ -26,10 +26,12 @@ type WorkRecordsQuery struct {
 	States []string
 	// SFWOnly asks for content_limit=sfw, which catalog also applies to the
 	// state counts.
-	SFWOnly bool
-	Cursor  string
-	Limit   int
-	Counts  bool
+	SFWOnly       bool
+	Cursor        string
+	Limit         int
+	Counts        bool
+	Record        string
+	PlaytimeTotal bool
 }
 
 // AccountWorkRecord is one work on an account's library: a work-state always,
@@ -48,6 +50,9 @@ type WorkRecordsPage struct {
 	NextCursor string
 	// StateCounts holds every state, 0 included, when Counts was asked for.
 	StateCounts map[string]int
+	// PlaytimeTotalMinutes is nil when catalog sent no total: it was not
+	// asked for, or catalog predates spec 2.87.0.
+	PlaytimeTotalMinutes *int64
 }
 
 type v2FacetValue struct {
@@ -56,9 +61,10 @@ type v2FacetValue struct {
 }
 
 type v2WorkRecordsList struct {
-	Items      []v2WorkRecord            `json:"items"`
-	NextCursor *string                   `json:"next_cursor"`
-	Facets     map[string][]v2FacetValue `json:"facets"`
+	Items                []v2WorkRecord            `json:"items"`
+	NextCursor           *string                   `json:"next_cursor"`
+	Facets               map[string][]v2FacetValue `json:"facets"`
+	PlaytimeTotalMinutes *int64                    `json:"playtime_total_minutes"`
 }
 
 // WorkRecords lists an account's library. With a token it reads the token
@@ -82,6 +88,12 @@ func (c *Client) WorkRecords(ctx context.Context, token string, in WorkRecordsQu
 	if in.Counts {
 		q.Set("facets", "state")
 	}
+	if in.Record != "" {
+		q.Set("record", in.Record)
+	}
+	if in.PlaytimeTotal {
+		q.Set("include_playtime_total", "true")
+	}
 
 	var got v2WorkRecordsList
 	var err error
@@ -95,7 +107,7 @@ func (c *Client) WorkRecords(ctx context.Context, token string, in WorkRecordsQu
 		return WorkRecordsPage{}, err
 	}
 
-	out := WorkRecordsPage{Items: make([]AccountWorkRecord, 0, len(got.Items))}
+	out := WorkRecordsPage{Items: make([]AccountWorkRecord, 0, len(got.Items)), PlaytimeTotalMinutes: got.PlaytimeTotalMinutes}
 	if got.NextCursor != nil {
 		out.NextCursor = *got.NextCursor
 	}

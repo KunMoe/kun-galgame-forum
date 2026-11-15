@@ -7,7 +7,6 @@ import (
 	"time"
 
 	"kun-galgame-api/internal/apiv1/content"
-	galgameapiv1 "kun-galgame-api/internal/galgame/apiv1"
 	"kun-galgame-api/internal/galgame/client"
 	galgameRepo "kun-galgame-api/internal/galgame/repository"
 	resourceapiv1 "kun-galgame-api/internal/galgame/resourceapiv1"
@@ -112,14 +111,7 @@ func (a *App) buildEntityResolver(cdn string) content.EntityResolver {
 			if !client.CatalogItemRenderable(&row) {
 				continue
 			}
-			date, precision := workrepr.Release(row.ReleaseDate)
-			out[id] = content.WorkTarget(content.WorkPreview{
-				WorkRef:              galgameapiv1.WorkRefOf(ctx, &row, cdn),
-				Maker:                workrepr.Maker(&row),
-				TopTags:              workrepr.TopTags(&row, false, 4),
-				ReleaseDate:          date,
-				ReleaseDatePrecision: precision,
-			})
+			out[id] = content.WorkTarget(content.NewWorkPreview(ctx, &row, cdn))
 		}
 		return out, nil
 	}

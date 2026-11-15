@@ -252,7 +252,7 @@ func (s *Service) load(ctx context.Context, rows []repository.FeedRow, includeNS
 	}
 
 	var prob *problem.Problem
-	if b.works, prob = s.catalogRows(ctx, workIDs.list(), !includeNSFW); prob != nil {
+	if b.works, prob = s.catalogRows(ctx, workIDs.list(), !includeNSFW, catalogInclude); prob != nil {
 		return nil, prob
 	}
 	if b.users, prob = s.lookupUsers(ctx, userIDs.list()); prob != nil {

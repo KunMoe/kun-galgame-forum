@@ -33,7 +33,7 @@ func TestCatalogRowsCoalescesConcurrentMisses(t *testing.T) {
 	var wg sync.WaitGroup
 	for _, ids := range orders {
 		wg.Go(func() {
-			rows, prob := s.catalogRows(context.Background(), ids, true)
+			rows, prob := s.catalogRows(context.Background(), ids, true, catalogInclude)
 			if prob != nil || len(rows) != 3 {
 				t.Errorf("catalogRows(%v) = %d rows, %v", ids, len(rows), prob)
 			}

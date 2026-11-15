@@ -352,6 +352,7 @@ func (s *Service) registerUserPlane(api huma.API) {
 			503: "SERVICE_UNAVAILABLE when the catalog or the account service cannot be reached.",
 		}),
 	}), "user_id"), s.listUserWorkRecords)
+	registerUserPlaytimeTotal(api, s)
 
 	huma.Register(api, v1.Required(huma.Operation{
 		OperationID: "getMyPrivacySettings",
