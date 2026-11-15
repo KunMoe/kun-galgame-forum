@@ -79,7 +79,9 @@ const infoList = [
               </span>
             </div>
             <div class="text-default-500 text-xs">
-              总游玩时长 · {{ formatDurationMinutes(playtime) }}
+              总游玩时长<template v-if="playtime >= 60">
+                · {{ formatDurationMinutes(playtime) }}
+              </template>
             </div>
           </div>
         </div>

@@ -43,6 +43,15 @@ describe('UserInfo', () => {
     expect(text).toContain('125 小时 30 分钟')
   })
 
+  it('states a total under an hour once', async () => {
+    serveMinutes(12)
+    const wrapper = await mountSuspended(Info, { props: { user: user('93') } })
+    await flushPromises()
+    const text = wrapper.text()
+    expect(text).toContain('总游玩时长')
+    expect(text.match(/12/g)).toHaveLength(1)
+  })
+
   it('leaves the card out while catalog reports no total', async () => {
     serveMinutes(null)
     const wrapper = await mountSuspended(Info, { props: { user: user('92') } })
