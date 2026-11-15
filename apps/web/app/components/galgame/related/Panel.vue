@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import type { RelatedWork, WorkMedium } from '#shared/utils/api/schemas'
 import { relatedWorkToCard } from '~/utils/galgame/workCard'
+import { isLineageLabel, relationLabels } from '~/utils/galgame/relationLabel'
 
 const props = defineProps<{
   works: RelatedWork[]
@@ -20,14 +21,9 @@ const MEDIUM_LABELS: Partial<Record<WorkMedium, string>> = {
 
 const nameOf = useCatalogName()
 
-const phrasesOf = computed(
+const labelsOf = computed(
   () =>
-    new Map(
-      props.works.map((w) => [
-        Number(w.id),
-        w.relations.map((r) => r.phrase).join(' · ')
-      ])
-    )
+    new Map(props.works.map((w) => [Number(w.id), relationLabels(w.relations)]))
 )
 
 const games = computed(() =>
@@ -56,10 +52,20 @@ const shownOthers = computed(() =>
     <KunHeader name="关联作品" scale="h3" />
 
     <GalgameCard v-if="shownGames.length" :galgames="shownGames">
-      <template #meta="{ galgame }">
-        <p class="text-default-500 mt-1 line-clamp-2 text-xs">
-          {{ phrasesOf.get(galgame.id) }}
-        </p>
+      <template #cover="{ galgame }">
+        <div
+          class="absolute right-1.5 bottom-1.5 left-1.5 flex flex-wrap gap-1"
+        >
+          <KunChip
+            v-for="label in labelsOf.get(galgame.id)"
+            :key="label"
+            size="xs"
+            variant="solid"
+            :color="isLineageLabel(label) ? 'primary' : 'secondary'"
+          >
+            {{ label }}
+          </KunChip>
+        </div>
       </template>
     </GalgameCard>
     <KunButton

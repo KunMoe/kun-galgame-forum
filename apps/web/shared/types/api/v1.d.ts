@@ -8409,7 +8409,7 @@ export interface components {
         /** @enum {string} */
         EntityType: "topic" | "work" | "galgame_resource" | "character" | "company" | "tag" | "series" | "credit_name" | "rating";
         /** @enum {string} */
-        ExpiryVerdict: "alive" | "dead" | "unchecked";
+        ExpiryVerdict: "alive" | "partial" | "dead" | "unchecked";
         FacetedWorkPage: {
             /** @description The tags and companies most common in the whole filtered result set, not only this page. */
             facets: components["schemas"]["WorkFacets"];
@@ -8841,6 +8841,8 @@ export interface components {
             archive_password: string;
             /** @description Stored download links, in row order. Never null. */
             download_urls: string[];
+            /** @description The resource's links that a link check found dead, in row order. A client strikes them through. Empty array when none, never null. */
+            expired_download_urls: string[];
             /** @description Extraction code. Empty string when none. Free text; never use it as a decision input. */
             extraction_code: string;
             /**
@@ -8870,6 +8872,8 @@ export interface components {
             has_liked: boolean;
         };
         GalgameResourceExpiryReport: {
+            /** @description The resource's links that a link check found dead, in row order. A client strikes them through. Empty array when none, never null. */
+            expired_download_urls: string[];
             /**
              * @description Type discriminant. Always galgame_resource_expiry_report.
              * @constant
@@ -8879,7 +8883,7 @@ export interface components {
             resource_id: string;
             /** @description The resource's state after this request. */
             state: components["schemas"]["GalgameResourceState"];
-            /** @description Link-check outcome. */
+            /** @description Link-check outcome, each link checked on its own. alive: no link found dead. partial: some links found dead and at least one alive; those links are marked and the resource stays valid. dead: no link left alive, every link found dead. unchecked: no link alive and some could not be checked; the resource is marked expired on the reporter's word. */
             verdict: components["schemas"]["ExpiryVerdict"];
         };
         GalgameResourcePatch: {
@@ -12520,6 +12524,8 @@ export interface components {
             localized: {
                 [key: string]: components["schemas"]["LocalizedName"];
             };
+            /** @description The credited company a card names as the maker: developer, then circle, then brand, then publisher. null when no credited company has a name. */
+            maker: components["schemas"]["CompanyRef"] | null;
             /** @description What kind of work it is. Only a galgame has a page on this forum; link nothing else. */
             medium: components["schemas"]["WorkMedium"];
             /**

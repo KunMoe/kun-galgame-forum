@@ -22,7 +22,8 @@ const work = (
   medium,
   release_date: null,
   release_date_precision: null,
-  relations: phrases.map((phrase) => ({ relation_type: 'x', phrase }))
+  relations: phrases.map((phrase) => ({ relation_type: 'x', phrase })),
+  maker: null
 })
 
 const cardNames = (wrapper: VueWrapper) =>
@@ -42,6 +43,16 @@ describe('related works', () => {
             '有续作',
             '有 Fandisc'
           ]),
+          {
+            ...work(198, 'galgame', 'Rewrite', ['是…的续作']),
+            maker: {
+              object: 'company',
+              id: '7',
+              display_name: 'Key',
+              latin: null,
+              localized: {}
+            }
+          },
           work(213783, 'anime', 'Rewrite'),
           work(213225, 'manga', 'Rewrite: SIDE-B'),
           work(9, 'doujin_game', 'Fan Game')
@@ -49,8 +60,13 @@ describe('related works', () => {
       }
     })
 
-    expect(cardNames(wrapper)).toEqual(['Rewrite: Cradles Tale'])
-    expect(wrapper.text()).toContain('有续作 · 有 Fandisc')
+    expect(cardNames(wrapper)).toEqual(['Rewrite: Cradles Tale', 'Rewrite'])
+    expect(wrapper.text()).toContain('前作')
+    expect(wrapper.text()).toContain('Key')
+    expect(wrapper.text()).not.toContain('…')
+    expect(wrapper.text()).toContain('续作')
+    expect(wrapper.text()).toContain('FD')
+    expect(wrapper.text()).not.toContain('有续作')
     expect(wrapper.find('a[href="/galgame/2679"]').exists()).toBe(true)
     expect(wrapper.find('a[href="/galgame/213783"]').exists()).toBe(false)
     expect(wrapper.text()).toContain(

@@ -63,10 +63,16 @@ const handleDeleteResource = async () => {
   }
 }
 
+const isLinkExpired = (url: string) =>
+  download.value?.expired_download_urls.includes(url) ?? false
+
 const { status: reportStatus, report: reportExpire } =
   useReportResourceExpired()
 const handleReportExpire = () =>
-  reportExpire(props.resource.id, () => props.refresh())
+  reportExpire(props.resource.id, (expiredUrls) => {
+    if (download.value) download.value.expired_download_urls = expiredUrls
+    props.refresh()
+  })
 
 const handleGetResourceLink = async () => {
   if (download.value) return
@@ -155,17 +161,36 @@ const handleEditDone = () => {
           </p>
           <template v-else>
             <p class="text-default-500 text-sm">点击下面的链接以下载</p>
-            <KunLink
+            <div
               v-for="(kun, index) in download.download_urls"
               :key="index"
-              :to="kun"
-              target="_blank"
-              rel="noopener noreferrer"
-              :is-show-anchor-icon="true"
-              class-name="break-all"
+              class="flex items-start gap-2"
             >
-              {{ kun }}
-            </KunLink>
+              <KunLink
+                :to="kun"
+                target="_blank"
+                rel="noopener noreferrer"
+                :is-show-anchor-icon="true"
+                :color="isLinkExpired(kun) ? 'default' : 'primary'"
+                :class-name="
+                  cn(
+                    'break-all',
+                    isLinkExpired(kun) && 'text-default-400 line-through'
+                  )
+                "
+              >
+                {{ kun }}
+              </KunLink>
+              <KunChip
+                v-if="isLinkExpired(kun)"
+                color="danger"
+                variant="flat"
+                size="sm"
+                class-name="shrink-0"
+              >
+                已失效
+              </KunChip>
+            </div>
           </template>
 
           <div class="flex flex-wrap items-center gap-2">

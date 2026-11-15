@@ -58,6 +58,15 @@ export const userProfileNav = (
       icon: 'lucide:heart',
       sections: [
         section('collection-galgame', '游戏收藏夹', 'collection/galgame'),
+        ...(isOwner
+          ? [
+              section(
+                'followed-collections',
+                '关注的收藏夹',
+                'followed-collections'
+              )
+            ]
+          : []),
         section('collection-topic', '话题收藏', 'collection/topic'),
         section('collection-toolset', '工具收藏', 'collection/toolset')
       ]

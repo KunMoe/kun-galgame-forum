@@ -17,6 +17,7 @@ const props = defineProps<{
 defineSlots<{
   name?: (props: { galgame: T }) => unknown
   meta?: (props: { galgame: T }) => unknown
+  cover?: (props: { galgame: T }) => unknown
 }>()
 
 // The column count below is a CONTAINER query, but the reader's choice is about
@@ -196,6 +197,8 @@ const cards = computed(() =>
                 :time="card.updateTime"
               />
             </div>
+
+            <slot name="cover" :galgame="card.galgame" />
           </div>
 
           <div class="flex flex-auto flex-col p-2">

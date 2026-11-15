@@ -67,6 +67,7 @@ export const relatedWorkToCard = (
     effective_portrait_url: w.cover?.url,
     effective_portrait_width: w.cover?.width ?? undefined,
     effective_portrait_height: w.cover?.height ?? undefined,
-    effective_portrait_thumbhash: w.cover?.thumbhash ?? undefined
+    effective_portrait_thumbhash: w.cover?.thumbhash ?? undefined,
+    company: w.maker ? nameOf(w.maker).name : ''
   }
 }

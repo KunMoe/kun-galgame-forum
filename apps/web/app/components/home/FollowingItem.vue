@@ -18,6 +18,11 @@ const masked = computed(
 const coverFailed = ref(false)
 const work = computed(() => props.item.work_preview)
 const cover = computed(() => props.item.cover ?? work.value?.cover ?? null)
+const coverRatio = computed(() => {
+  const c = cover.value
+  if (work.value || !c?.width || !c.height) return '3 / 4'
+  return `${Math.max(c.width / c.height, 3 / 4)}`
+})
 const release = computed(() =>
   work.value?.release_date
     ? workReleaseText(
@@ -51,17 +56,22 @@ const external = computed(() => props.item.in_site_path === null)
       <div
         :class="
           cn(
-            'bg-default-100 aspect-[3/4] overflow-hidden rounded-md',
-            work ? 'w-20 sm:w-24' : 'w-12'
+            'bg-default-100 overflow-hidden rounded-md',
+            work
+              ? 'aspect-[3/4] w-20 sm:w-24'
+              : 'h-[calc(5rem*4/3)] max-w-36 sm:h-32 sm:max-w-56'
           )
         "
+        :style="work ? undefined : { aspectRatio: coverRatio }"
       >
         <KunImage
           :src="cover.url"
           :alt="title"
           loading="lazy"
-          aspect-ratio="3 / 4"
-          :image-class-name="masked ? 'blur-xl' : undefined"
+          :aspect-ratio="work ? '3 / 4' : undefined"
+          object-fit="cover"
+          class-name="size-full"
+          :image-class-name="cn('size-full', masked && 'blur-xl')"
           @error="coverFailed = true"
         />
       </div>

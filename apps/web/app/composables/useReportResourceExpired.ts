@@ -3,6 +3,7 @@ import { settle } from '#shared/utils/api/problem'
 export type ReportExpireStatus =
   | 'idle'
   | 'checking'
+  | 'partial'
   | 'expired'
   | 'alive'
   | 'unchecked'
@@ -12,7 +13,10 @@ export const useReportResourceExpired = () => {
   const status = ref<ReportExpireStatus>('idle')
   const api = useApiClient()
 
-  const report = async (resourceId: string, onMarked?: () => void) => {
+  const report = async (
+    resourceId: string,
+    onMarked?: (expiredUrls: string[]) => void
+  ) => {
     if (!usePersistUserStore().id) {
       useAuthModal().open()
       return
@@ -20,7 +24,7 @@ export const useReportResourceExpired = () => {
 
     const confirmed = await useComponentMessageStore().alert(
       '您确定报告资源链接失效吗？',
-      '系统会先用网盘官方接口核验链接是否真的失效: 确认失效才会标记并通知发布者; 若链接仍可访问则不会标记。恶意报告将被处罚。'
+      '系统会用网盘官方接口逐条核验每个链接: 确认失效的链接会加删除线并通知发布者, 全部链接都失效时资源才会被标记失效; 仍可访问的链接不会被标记。恶意报告将被处罚。'
     )
     if (!confirmed) return
 
@@ -37,17 +41,18 @@ export const useReportResourceExpired = () => {
       return
     }
 
-    if (result.data.verdict === 'alive') {
+    const { verdict, expired_download_urls } = result.data
+    if (verdict === 'alive') {
       status.value = 'alive'
       return
     }
-    if (result.data.verdict === 'unchecked') {
-      status.value = 'unchecked'
-      onMarked?.()
-      return
-    }
-    status.value = 'expired'
-    onMarked?.()
+    status.value =
+      verdict === 'partial'
+        ? 'partial'
+        : verdict === 'unchecked'
+          ? 'unchecked'
+          : 'expired'
+    onMarked?.(expired_download_urls)
   }
 
   return { status, report }

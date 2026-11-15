@@ -57,6 +57,24 @@ describe('userProfileNav', () => {
     expect(owner.map((i) => i.value)).toContain('setting')
   })
 
+  it('lists followed collections under 收藏 for the owner only', () => {
+    expect(sectionValues(userProfileNav(user(), false), 'collection')).toEqual([
+      'collection-galgame',
+      'collection-topic',
+      'collection-toolset'
+    ])
+    const owner = userProfileNav(user(), true)
+    expect(sectionValues(owner, 'collection')).toEqual([
+      'collection-galgame',
+      'followed-collections',
+      'collection-topic',
+      'collection-toolset'
+    ])
+    expect(
+      findUserNavSection(owner, '/user/7/followed-collections')?.section.value
+    ).toBe('followed-collections')
+  })
+
   it('resolves sub-pages to their section without prefix collisions', () => {
     const nav = userProfileNav(user(), true)
     const at = (path: string) => {

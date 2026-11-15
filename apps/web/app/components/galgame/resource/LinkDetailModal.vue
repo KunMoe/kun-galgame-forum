@@ -112,10 +112,16 @@ const fetchDownload = async () => {
 
 defineExpose({ prefetch: fetchDownload })
 
+const isLinkExpired = (url: string) =>
+  download.value?.expired_download_urls.includes(url) ?? false
+
 const { status: reportStatus, report: reportExpire } =
   useReportResourceExpired()
 const handleReportExpire = () =>
-  reportExpire(props.resource.id, () => props.refresh())
+  reportExpire(props.resource.id, (expiredUrls) => {
+    if (download.value) download.value.expired_download_urls = expiredUrls
+    props.refresh()
+  })
 
 const handleDelete = async () => {
   const res = await useComponentMessageStore().alert(
@@ -286,18 +292,42 @@ const handleEditDone = () => {
                 class="flex items-start gap-2"
               >
                 <KunIcon
-                  name="lucide:external-link"
-                  class="text-primary mt-1 shrink-0"
+                  :name="
+                    isLinkExpired(kun)
+                      ? 'lucide:link-2-off'
+                      : 'lucide:external-link'
+                  "
+                  :class="
+                    cn(
+                      'mt-1 shrink-0',
+                      isLinkExpired(kun) ? 'text-default-400' : 'text-primary'
+                    )
+                  "
                 />
                 <KunLink
                   :to="kun"
                   target="_blank"
                   rel="noopener noreferrer"
                   size="sm"
-                  class-name="break-all"
+                  :color="isLinkExpired(kun) ? 'default' : 'primary'"
+                  :class-name="
+                    cn(
+                      'break-all',
+                      isLinkExpired(kun) && 'text-default-400 line-through'
+                    )
+                  "
                 >
                   {{ kun }}
                 </KunLink>
+                <KunChip
+                  v-if="isLinkExpired(kun)"
+                  color="danger"
+                  variant="flat"
+                  size="sm"
+                  class-name="shrink-0"
+                >
+                  已失效
+                </KunChip>
               </div>
             </div>
           </KunInfo>
