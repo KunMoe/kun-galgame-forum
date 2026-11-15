@@ -5,7 +5,9 @@ import (
 	"encoding/json"
 	"testing"
 
+	"kun-galgame-api/internal/apiv1/repr"
 	"kun-galgame-api/internal/galgame/client"
+	legacyErrors "kun-galgame-api/pkg/errors"
 )
 
 // The relation ends of work 198 (Rewrite) as catalog sent them on 2026-10-13,
@@ -80,5 +82,47 @@ func TestRelatedWorksOfIsAnEmptyArrayWhenThereAreNone(t *testing.T) {
 	b, _ := json.Marshal(got)
 	if string(b) != "[]" {
 		t.Errorf("encodes as %s, want []", b)
+	}
+}
+
+type rowsCatalog struct {
+	rows    map[int]client.CatalogWorkListItem
+	include string
+	asked   []int
+}
+
+func (c *rowsCatalog) CatalogWorkExists(context.Context, int) (bool, *legacyErrors.AppError) {
+	return true, nil
+}
+
+func (c *rowsCatalog) CatalogRowsByWorkIDs(_ context.Context, ids []int, include, _ string) (map[int]client.CatalogWorkListItem, *legacyErrors.AppError) {
+	c.asked, c.include = ids, include
+	return c.rows, nil
+}
+
+func TestFillRelatedMakersReadsGalgameEndsOnce(t *testing.T) {
+	var row client.CatalogWorkListItem
+	if err := json.Unmarshal([]byte(`{"id": 849, "labels": [
+		{"id": 7, "display_name": "Key", "role": "developer"}
+	]}`), &row); err != nil {
+		t.Fatal(err)
+	}
+	cat := &rowsCatalog{rows: map[int]client.CatalogWorkListItem{849: row}}
+	s := &Service{works: cat}
+	works := []RelatedWork{
+		{WorkRef: repr.WorkRef{ID: "849"}, Medium: "galgame"},
+		{WorkRef: repr.WorkRef{ID: "213783"}, Medium: "anime"},
+		{WorkRef: repr.WorkRef{ID: "2679"}, Medium: "galgame"},
+	}
+	s.fillRelatedMakers(context.Background(), works)
+
+	if len(cat.asked) != 2 || cat.asked[0] != 849 || cat.asked[1] != 2679 || cat.include != "labels" {
+		t.Errorf("asked %v include %q, want the two galgame ends with labels", cat.asked, cat.include)
+	}
+	if works[0].Maker == nil || works[0].Maker.DisplayName != "Key" {
+		t.Errorf("maker of 849 = %+v", works[0].Maker)
+	}
+	if works[1].Maker != nil || works[2].Maker != nil {
+		t.Errorf("a work without a row got a maker: %+v %+v", works[1].Maker, works[2].Maker)
 	}
 }

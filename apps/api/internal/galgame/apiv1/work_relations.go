@@ -4,6 +4,7 @@ import (
 	"cmp"
 	"context"
 	"slices"
+	"strconv"
 
 	"kun-galgame-api/internal/apiv1/repr"
 	"kun-galgame-api/internal/galgame/client"
@@ -12,10 +13,11 @@ import (
 
 type RelatedWork struct {
 	repr.WorkRef
-	Medium               string         `json:"medium" enum:"galgame,manga,novel,anime,asmr,doujin_game,music" maxLength:"11" doc:"What kind of work it is. Only a galgame has a page on this forum; link nothing else."`
-	ReleaseDate          *string        `json:"release_date" format:"date" maxLength:"10" doc:"Release date. A month- or year-precise date is the first day of that month or year. null when catalog has none."`
-	ReleaseDatePrecision *string        `json:"release_date_precision" enum:"day,month,year" maxLength:"5" doc:"How much of release_date is known. null when release_date is null."`
-	Relations            []WorkRelation `json:"relations" minItems:"1" doc:"How the work relates to this one, most significant first. Never empty."`
+	Medium               string               `json:"medium" enum:"galgame,manga,novel,anime,asmr,doujin_game,music" maxLength:"11" doc:"What kind of work it is. Only a galgame has a page on this forum; link nothing else."`
+	ReleaseDate          *string              `json:"release_date" format:"date" maxLength:"10" doc:"Release date. A month- or year-precise date is the first day of that month or year. null when catalog has none."`
+	ReleaseDatePrecision *string              `json:"release_date_precision" enum:"day,month,year" maxLength:"5" doc:"How much of release_date is known. null when release_date is null."`
+	Relations            []WorkRelation       `json:"relations" minItems:"1" doc:"How the work relates to this one, most significant first. Never empty."`
+	Maker                *workrepr.CompanyRef `json:"maker" doc:"The credited company a card names as the maker: developer, then circle, then brand, then publisher. null when no credited company has a name."`
 }
 
 type WorkRelation struct {
@@ -115,4 +117,34 @@ func compareReleaseDate(a, b *string) int {
 		return -1
 	}
 	return cmp.Compare(*a, *b)
+}
+
+// fillRelatedMakers names each related galgame's maker. Catalog sends relation
+// ends without companies, so they are read in one batch; on failure the makers
+// stay null and the page still renders.
+func (s *Service) fillRelatedMakers(ctx context.Context, works []RelatedWork) {
+	ids := make([]int, 0, len(works))
+	for _, w := range works {
+		if w.Medium == "galgame" {
+			if id, err := strconv.Atoi(string(w.ID)); err == nil {
+				ids = append(ids, id)
+			}
+		}
+	}
+	if len(ids) == 0 || s.works == nil {
+		return
+	}
+	rows, appErr := s.works.CatalogRowsByWorkIDs(ctx, ids, "labels", "all")
+	if appErr != nil {
+		return
+	}
+	for i := range works {
+		id, err := strconv.Atoi(string(works[i].ID))
+		if err != nil {
+			continue
+		}
+		if row, ok := rows[id]; ok {
+			works[i].Maker = workrepr.Maker(&row)
+		}
+	}
 }

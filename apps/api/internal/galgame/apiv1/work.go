@@ -75,6 +75,8 @@ func (s *Service) assembleWork(
 	lookups.Go(func() { series = s.seriesOf(ctx, d) })
 	lookups.Go(func() { companies = s.companiesOf(ctx, d) })
 	lookups.Go(func() { tallies = s.coverTallies(ctx, workID) })
+	related := relatedWorksOf(ctx, d, s.cdn)
+	lookups.Go(func() { s.fillRelatedMakers(ctx, related) })
 	defer lookups.Wait()
 
 	item := d.ListItem()
@@ -106,7 +108,7 @@ func (s *Service) assembleWork(
 		Intros:           workrepr.Intros(d.IntroRows()),
 		Links:            linksOf(d),
 		ExternalRefs:     externalRefsOf(d),
-		RelatedWorks:     relatedWorksOf(ctx, d, s.cdn),
+		RelatedWorks:     related,
 		Tags:             tagsOf(d, includeNSFW),
 		Credits:          creditsOf(d),
 		Roster:           charactersOf(ctx, d, s.cdn, includeNSFW),

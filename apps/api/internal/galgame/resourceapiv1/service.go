@@ -34,7 +34,7 @@ type Catalog interface {
 type ClaimFunc func(ctx context.Context, accessToken string, workID int64) *legacyErrors.AppError
 
 type ShareChecker interface {
-	CheckShare(ctx context.Context, urls []string, passcode string) linkcheck.Status
+	CheckEach(ctx context.Context, urls []string, passcode string) []linkcheck.Status
 }
 
 type AwardFunc func(userID, delta int, reason, ref, idempotencyKey string)

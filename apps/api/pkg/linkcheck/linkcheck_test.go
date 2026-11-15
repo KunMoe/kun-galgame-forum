@@ -1,28 +1,30 @@
 package linkcheck
 
-import "testing"
+import (
+	"slices"
+	"testing"
+)
 
-func TestAggregate(t *testing.T) {
+func TestStatuses(t *testing.T) {
 	d := Result{Status: StatusDead}
 	a := Result{Status: StatusAlive}
 	u := Result{Status: StatusUnknown}
+	odd := Result{Status: "weird"}
 
 	cases := []struct {
 		name string
 		in   []Result
-		want Status
+		n    int
+		want []Status
 	}{
-		{"empty → unknown (never a default-dead wipe)", nil, StatusUnknown},
-		{"single dead → dead", []Result{d}, StatusDead},
-		{"all dead → dead", []Result{d, d}, StatusDead},
-		{"any alive wins over dead → alive", []Result{d, a}, StatusAlive},
-		{"any alive wins over unknown → alive", []Result{u, a}, StatusAlive},
-		{"dead + unknown (not all dead, no alive) → unknown", []Result{d, u}, StatusUnknown},
-		{"all unknown → unknown", []Result{u, u}, StatusUnknown},
+		{"each link keeps its own verdict", []Result{d, a, u}, 3, []Status{StatusDead, StatusAlive, StatusUnknown}},
+		{"an unknown token reads unknown", []Result{odd, d}, 2, []Status{StatusUnknown, StatusDead}},
+		{"a short answer is not trusted", []Result{d}, 2, []Status{StatusUnknown, StatusUnknown}},
+		{"no answer is all unknown", nil, 1, []Status{StatusUnknown}},
 	}
 	for _, tc := range cases {
-		if got := aggregate(tc.in); got != tc.want {
-			t.Errorf("%s: aggregate=%q want %q", tc.name, got, tc.want)
+		if got := statuses(tc.in, tc.n); !slices.Equal(got, tc.want) {
+			t.Errorf("%s: statuses=%v want %v", tc.name, got, tc.want)
 		}
 	}
 }

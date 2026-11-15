@@ -6243,6 +6243,7 @@
       "ExpiryVerdict": {
         "enum": [
           "alive",
+          "partial",
           "dead",
           "unchecked"
         ],
@@ -7390,6 +7391,17 @@
             "minItems": 1,
             "type": "array"
           },
+          "expired_download_urls": {
+            "description": "The resource's links that a link check found dead, in row order. A client strikes them through. Empty array when none, never null.",
+            "items": {
+              "description": "A download URL: http, https, ftp, ftps, magnet, ed2k or thunder, at most 4096 characters. A link to an image file (a picture of a netdisk's QR code) or to a WeChat mini program is refused with NOT_ALLOWED_VALUE: publish the plain-text share link.",
+              "maxLength": 4096,
+              "pattern": "^(https?|ftps?|magnet|ed2k|thunder):",
+              "type": "string"
+            },
+            "maxItems": 20,
+            "type": "array"
+          },
           "extraction_code": {
             "description": "Extraction code. Empty string when none. Free text; never use it as a decision input.",
             "maxLength": 1007,
@@ -7405,6 +7417,7 @@
         "required": [
           "object",
           "download_urls",
+          "expired_download_urls",
           "extraction_code",
           "archive_password"
         ],
@@ -7465,6 +7478,17 @@
       },
       "GalgameResourceExpiryReport": {
         "properties": {
+          "expired_download_urls": {
+            "description": "The resource's links that a link check found dead, in row order. A client strikes them through. Empty array when none, never null.",
+            "items": {
+              "description": "A download URL: http, https, ftp, ftps, magnet, ed2k or thunder, at most 4096 characters. A link to an image file (a picture of a netdisk's QR code) or to a WeChat mini program is refused with NOT_ALLOWED_VALUE: publish the plain-text share link.",
+              "maxLength": 4096,
+              "pattern": "^(https?|ftps?|magnet|ed2k|thunder):",
+              "type": "string"
+            },
+            "maxItems": 20,
+            "type": "array"
+          },
           "object": {
             "const": "galgame_resource_expiry_report",
             "description": "Type discriminant. Always galgame_resource_expiry_report.",
@@ -7484,14 +7508,15 @@
           },
           "verdict": {
             "$ref": "#/components/schemas/ExpiryVerdict",
-            "description": "Link-check outcome."
+            "description": "Link-check outcome, each link checked on its own. alive: no link found dead. partial: some links found dead and at least one alive; those links are marked and the resource stays valid. dead: no link left alive, every link found dead. unchecked: no link alive and some could not be checked; the resource is marked expired on the reporter's word."
           }
         },
         "required": [
           "object",
           "resource_id",
           "verdict",
-          "state"
+          "state",
+          "expired_download_urls"
         ],
         "type": "object"
       },
@@ -17090,6 +17115,17 @@
             "description": "Names by BCP-47 tag, sparse. Empty object when there are none, never null.",
             "type": "object"
           },
+          "maker": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/CompanyRef"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "The credited company a card names as the maker: developer, then circle, then brand, then publisher. null when no credited company has a name."
+          },
           "medium": {
             "$ref": "#/components/schemas/WorkMedium",
             "description": "What kind of work it is. Only a galgame has a page on this forum; link nothing else."
@@ -17134,6 +17170,7 @@
           "release_date",
           "release_date_precision",
           "relations",
+          "maker",
           "object",
           "id",
           "cover",

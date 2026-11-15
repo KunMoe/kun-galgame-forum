@@ -380,7 +380,7 @@ func New(cfg *config.Config) *App {
 		},
 	))
 
-	var linkChecker *linkcheck.Client
+	var linkChecker resourceapiv1.ShareChecker
 	if cfg.LinkChecker.BaseURL != "" && cfg.LinkChecker.APIKey != "" {
 		linkChecker = linkcheck.New(linkcheck.Config{
 			BaseURL:              cfg.LinkChecker.BaseURL,

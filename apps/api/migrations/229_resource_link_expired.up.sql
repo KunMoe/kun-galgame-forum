@@ -1,0 +1,14 @@
+-- 229: an expiry report checks each download link of a resource on its own.
+--
+-- Until now the report sent all links to the link checker and collapsed the
+-- answers: one live link made the whole report "alive", so a resource whose
+-- Baidu link was dead and whose Quark link still worked never told anyone
+-- which link had died. expired_at records the time the checker found this
+-- link dead; NULL means it has not been found dead. The web strikes such a
+-- link through, and the resource itself is marked expired only once no link
+-- is left alive.
+--
+-- Existing rows stay NULL: the old reports never recorded which link failed.
+-- Additive; the deploy's migrate step runs it before the new API starts, and
+-- the old API never reads the column.
+ALTER TABLE galgame_resource_link ADD COLUMN IF NOT EXISTS expired_at timestamptz(3);

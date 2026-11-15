@@ -115,10 +115,11 @@ type GalgameResourceViewer struct {
 }
 
 type GalgameResourceDownload struct {
-	Object          string        `json:"object" enum:"galgame_resource_download" maxLength:"25" doc:"Type discriminant. Always galgame_resource_download."`
-	DownloadURLs    []DownloadURL `json:"download_urls" minItems:"1" maxItems:"20" doc:"Stored download links, in row order. Never null."`
-	ExtractionCode  string        `json:"extraction_code" maxLength:"1007" doc:"Extraction code. Empty string when none. Free text; never use it as a decision input."`
-	ArchivePassword string        `json:"archive_password" maxLength:"1007" doc:"Archive password. Empty string when none. Free text; never use it as a decision input."`
+	Object              string        `json:"object" enum:"galgame_resource_download" maxLength:"25" doc:"Type discriminant. Always galgame_resource_download."`
+	DownloadURLs        []DownloadURL `json:"download_urls" minItems:"1" maxItems:"20" doc:"Stored download links, in row order. Never null."`
+	ExpiredDownloadURLs []DownloadURL `json:"expired_download_urls" maxItems:"20" doc:"The resource's links that a link check found dead, in row order. A client strikes them through. Empty array when none, never null."`
+	ExtractionCode      string        `json:"extraction_code" maxLength:"1007" doc:"Extraction code. Empty string when none. Free text; never use it as a decision input."`
+	ArchivePassword     string        `json:"archive_password" maxLength:"1007" doc:"Archive password. Empty string when none. Free text; never use it as a decision input."`
 }
 
 type GalgameResourceSource struct {
@@ -149,10 +150,11 @@ type GalgameResourceEngagementViewer struct {
 }
 
 type GalgameResourceExpiryReport struct {
-	Object     string         `json:"object" enum:"galgame_resource_expiry_report" maxLength:"30" doc:"Type discriminant. Always galgame_resource_expiry_report."`
-	ResourceID repr.DecimalID `json:"resource_id" doc:"Id of the resource."`
-	Verdict    string         `json:"verdict" enum:"alive,dead,unchecked" maxLength:"9" doc:"Link-check outcome."`
-	State      string         `json:"state" enum:"valid,expired" maxLength:"7" doc:"The resource's state after this request."`
+	Object              string         `json:"object" enum:"galgame_resource_expiry_report" maxLength:"30" doc:"Type discriminant. Always galgame_resource_expiry_report."`
+	ResourceID          repr.DecimalID `json:"resource_id" doc:"Id of the resource."`
+	Verdict             string         `json:"verdict" enum:"alive,partial,dead,unchecked" maxLength:"9" doc:"Link-check outcome, each link checked on its own. alive: no link found dead. partial: some links found dead and at least one alive; those links are marked and the resource stays valid. dead: no link left alive, every link found dead. unchecked: no link alive and some could not be checked; the resource is marked expired on the reporter's word."`
+	State               string         `json:"state" enum:"valid,expired" maxLength:"7" doc:"The resource's state after this request."`
+	ExpiredDownloadURLs []DownloadURL  `json:"expired_download_urls" maxItems:"20" doc:"The resource's links that a link check found dead, in row order. A client strikes them through. Empty array when none, never null."`
 }
 
 type GalgameResourceRelocation struct {

@@ -2,7 +2,9 @@ package apiv1
 
 import (
 	"context"
+	"slices"
 	"strconv"
+	"time"
 
 	"kun-galgame-api/internal/apiv1/repr"
 	"kun-galgame-api/internal/moemoepoint"
@@ -127,44 +129,84 @@ func (s *Service) createGalgameResourceExpiryReport(ctx context.Context, in *exp
 	if p != nil {
 		return nil, p
 	}
-	if row.Status == 1 {
-		return &expiryReportOutput{Body: GalgameResourceExpiryReport{
-			Object: "galgame_resource_expiry_report", ResourceID: repr.ID(row.ID),
-			Verdict: "dead", State: "expired",
-		}}, nil
-	}
-	links, err := s.store.Links(row.ID)
+	links, err := s.store.LinkRows(row.ID)
 	if err != nil {
 		return nil, problem.Internal(err)
 	}
-	verdict := "unchecked"
-	checker := s.shareCheck()
-	if checker != nil && len(links) > 0 {
-		switch checker.CheckShare(ctx, links, row.Code) {
-		case linkcheck.StatusAlive:
-			return &expiryReportOutput{Body: GalgameResourceExpiryReport{
-				Object: "galgame_resource_expiry_report", ResourceID: repr.ID(row.ID),
-				Verdict: "alive", State: "valid",
-			}}, nil
-		case linkcheck.StatusDead:
-			verdict = "dead"
-		default:
+	report := func(verdict, state string) *expiryReportOutput {
+		return &expiryReportOutput{Body: GalgameResourceExpiryReport{
+			Object: "galgame_resource_expiry_report", ResourceID: repr.ID(row.ID),
+			Verdict: verdict, State: state, ExpiredDownloadURLs: expiredURLs(links),
+		}}
+	}
+	if row.Status == 1 {
+		return report("dead", "expired"), nil
+	}
+
+	var pending []int
+	for i, l := range links {
+		if l.ExpiredAt == nil {
+			pending = append(pending, i)
+		}
+	}
+	alive, unknown := false, len(links) == 0
+	var deadURLs []string
+	var deadLinkIDs []int
+	if checker := s.shareCheck(); checker != nil && len(pending) > 0 {
+		urls := make([]string, len(pending))
+		for j, i := range pending {
+			urls[j] = links[i].URL
+		}
+		for j, st := range checker.CheckEach(ctx, urls, row.Code) {
+			switch st {
+			case linkcheck.StatusAlive:
+				alive = true
+			case linkcheck.StatusDead:
+				deadLinkIDs = append(deadLinkIDs, links[pending[j]].ID)
+				deadURLs = append(deadURLs, urls[j])
+			default:
+				unknown = true
+			}
+		}
+	} else if len(pending) > 0 {
+		unknown = true
+	}
+
+	if alive && len(deadLinkIDs) == 0 {
+		return report("alive", "valid"), nil
+	}
+	verdict, state := "partial", "valid"
+	if !alive {
+		verdict, state = "dead", "expired"
+		if unknown {
 			verdict = "unchecked"
 		}
 	}
+	preview := deadURLs
+	if len(preview) == 0 {
+		preview = linkURLs(links)
+	}
+	now := time.Now()
 	err = s.store.InTx(func(tx *gorm.DB) error {
-		if err := s.store.SetStatus(tx, row.ID, 1); err != nil {
+		if err := s.store.MarkLinksExpired(tx, deadLinkIDs, now); err != nil {
 			return err
 		}
-		return s.store.CreateResourceMessage(tx, user.ID, row.UserID, "expired", previewOf(links), row.WorkID, row.ID)
+		if state == "expired" {
+			if err := s.store.SetStatus(tx, row.ID, 1); err != nil {
+				return err
+			}
+		}
+		return s.store.CreateResourceMessage(tx, user.ID, row.UserID, "expired", previewOf(preview), row.WorkID, row.ID)
 	})
 	if err != nil {
 		return nil, problem.Internal(err)
 	}
-	return &expiryReportOutput{Body: GalgameResourceExpiryReport{
-		Object: "galgame_resource_expiry_report", ResourceID: repr.ID(row.ID),
-		Verdict: verdict, State: "expired",
-	}}, nil
+	for i := range links {
+		if links[i].ExpiredAt == nil && slices.Contains(deadLinkIDs, links[i].ID) {
+			links[i].ExpiredAt = &now
+		}
+	}
+	return report(verdict, state), nil
 }
 
 func (s *Service) putWorkResourcePublishBan(ctx context.Context, in *workIDInput) (*publishBanOutput, error) {

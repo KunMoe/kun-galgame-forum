@@ -319,16 +319,18 @@ func (s *Service) updateGalgameResource(ctx context.Context, in *patchResourceIn
 			return err
 		}
 		if patch.DownloadURLs != nil {
-			if err := s.store.DeleteLinks(tx, row.ID); err != nil {
-				return err
-			}
-			if err := s.store.CreateLinks(tx, row.ID, urls); err != nil {
+			if err := s.store.ReplaceLinks(tx, row.ID, urls); err != nil {
 				return err
 			}
 			if err := s.store.ReplaceProviders(tx, row.ID, utils.DetectProvidersFromURLs(urls)); err != nil {
 				return err
 			}
 			if err := s.store.ReplaceProviderNames(tx, row.ID, utils.DetectProviderNamesFromURLs(urls)); err != nil {
+				return err
+			}
+		}
+		if patch.State != nil {
+			if err := s.store.ClearLinkExpiry(tx, row.ID); err != nil {
 				return err
 			}
 		}

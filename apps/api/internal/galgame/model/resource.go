@@ -36,9 +36,10 @@ type GalgameResource struct {
 func (GalgameResource) TableName() string { return "galgame_resource" }
 
 type GalgameResourceLink struct {
-	ID                int    `gorm:"primaryKey;autoIncrement" json:"id"`
-	URL               string `gorm:"column:url" json:"url"`
-	GalgameResourceID int    `gorm:"column:galgame_resource_id;not null" json:"galgame_resource_id"`
+	ID                int        `gorm:"primaryKey;autoIncrement" json:"id"`
+	URL               string     `gorm:"column:url" json:"url"`
+	GalgameResourceID int        `gorm:"column:galgame_resource_id;not null" json:"galgame_resource_id"`
+	ExpiredAt         *time.Time `gorm:"column:expired_at" json:"expired_at"`
 
 	CreatedAt time.Time `gorm:"column:created" json:"created"`
 	UpdatedAt time.Time `gorm:"column:updated" json:"updated"`

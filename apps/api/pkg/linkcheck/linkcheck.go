@@ -68,9 +68,15 @@ type batchResponse struct {
 	Results []Result `json:"results"`
 }
 
-func (c *Client) CheckShare(ctx context.Context, urls []string, passcode string) Status {
+// CheckEach checks every URL on its own and returns one status per URL, in
+// input order. Any failure of the call itself reports every URL unknown.
+func (c *Client) CheckEach(ctx context.Context, urls []string, passcode string) []Status {
+	out := make([]Status, len(urls))
+	for i := range out {
+		out[i] = StatusUnknown
+	}
 	if len(urls) == 0 {
-		return StatusUnknown
+		return out
 	}
 	items := make([]checkItem, len(urls))
 	for i, u := range urls {
@@ -78,11 +84,11 @@ func (c *Client) CheckShare(ctx context.Context, urls []string, passcode string)
 	}
 	body, err := json.Marshal(batchRequest{Items: items})
 	if err != nil {
-		return StatusUnknown
+		return out
 	}
 	req, err := http.NewRequestWithContext(ctx, http.MethodPost, c.baseURL+"/v1/check/batch", bytes.NewReader(body))
 	if err != nil {
-		return StatusUnknown
+		return out
 	}
 	req.Header.Set("Content-Type", "application/json")
 	req.Header.Set("Authorization", "Bearer "+c.apiKey)
@@ -93,34 +99,31 @@ func (c *Client) CheckShare(ctx context.Context, urls []string, passcode string)
 
 	resp, err := c.http.Do(req)
 	if err != nil {
-		return StatusUnknown
+		return out
 	}
 	defer resp.Body.Close()
 	if resp.StatusCode != http.StatusOK {
-		return StatusUnknown
+		return out
 	}
-	var out batchResponse
-	if err := json.NewDecoder(resp.Body).Decode(&out); err != nil {
-		return StatusUnknown
+	var res batchResponse
+	if err := json.NewDecoder(resp.Body).Decode(&res); err != nil {
+		return out
 	}
-	return aggregate(out.Results)
+	return statuses(res.Results, len(urls))
 }
 
-func aggregate(results []Result) Status {
-	if len(results) == 0 {
-		return StatusUnknown
+func statuses(results []Result, n int) []Status {
+	out := make([]Status, n)
+	for i := range out {
+		out[i] = StatusUnknown
 	}
-	allDead := true
-	for _, r := range results {
-		if r.Status == StatusAlive {
-			return StatusAlive
+	if len(results) != n {
+		return out
+	}
+	for i, r := range results {
+		if r.Status == StatusAlive || r.Status == StatusDead {
+			out[i] = r.Status
 		}
-		if r.Status != StatusDead {
-			allDead = false
-		}
 	}
-	if allDead {
-		return StatusDead
-	}
-	return StatusUnknown
+	return out
 }

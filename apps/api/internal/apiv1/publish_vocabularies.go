@@ -32,7 +32,7 @@ var vocabularies = []vocabulary{
 	{"DocSort", []string{"position_asc", "published_desc", "views_desc"}},
 	{"EnterBlockedReason", []string{"not_open", "past_closes_at", "no_signup", "own_lottery", "reply_required", "moemoepoint_below_minimum", "account_too_new"}},
 	{"EntityType", []string{"topic", "work", "galgame_resource", "character", "company", "tag", "series", "credit_name", "rating"}},
-	{"ExpiryVerdict", []string{"alive", "dead", "unchecked"}},
+	{"ExpiryVerdict", []string{"alive", "partial", "dead", "unchecked"}},
 	{"FlagReason", []string{"spam", "abuse", "off_topic", "other", "nsfw_mislabel"}},
 	{"FollowNotifyLevel", []string{"all", "feed"}},
 	{"FriendLinkCategory", []string{"official", "galgame", "others"}},

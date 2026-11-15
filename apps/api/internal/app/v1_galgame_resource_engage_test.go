@@ -94,8 +94,92 @@ func TestV1CreateGalgameResourceExpiryReport(t *testing.T) {
 	if resp.StatusCode != http.StatusOK || got["verdict"] != "unchecked" || got["state"] != "expired" {
 		t.Errorf("unchecked %d %+v", resp.StatusCode, got)
 	}
+	if urls, _ := got["expired_download_urls"].([]any); urls == nil || len(urls) != 0 {
+		t.Errorf("unchecked marked links %+v", got["expired_download_urls"])
+	}
 	wantNotifRefs(t, f.db, []string{notifRef("expired", "resource", g3ResMain, "work", g3WorkSFW)},
 		"sender_id = ? AND receiver_id = ? AND type = 'expired'", w3UserBob, w3UserAlice)
+}
+
+func TestV1ExpiryReportChecksEachLink(t *testing.T) {
+	f := newResourceFix(t, nil)
+	report := func(sess string) map[string]any {
+		t.Helper()
+		resp, got := f.rs(t, http.MethodPost, "/api/v1/galgame-resources/"+idStr(g3ResMain)+"/expiry-reports",
+			"/galgame-resources/{resource_id}/expiry-reports", sess, "", nil)
+		if resp.StatusCode != http.StatusOK {
+			t.Fatalf("report %d %+v", resp.StatusCode, got)
+		}
+		return got
+	}
+	deadOnly := func(got map[string]any, want ...string) {
+		t.Helper()
+		urls, _ := got["expired_download_urls"].([]any)
+		if len(urls) != len(want) {
+			t.Fatalf("expired_download_urls %+v want %v", got["expired_download_urls"], want)
+		}
+		for i, u := range want {
+			if urls[i] != u {
+				t.Errorf("expired_download_urls[%d] = %v want %s", i, urls[i], u)
+			}
+		}
+	}
+
+	f.shares.status = linkcheck.StatusAlive
+	f.shares.byURL = map[string]linkcheck.Status{g3SecretURL: linkcheck.StatusDead}
+	got := report("sess-bob")
+	if got["verdict"] != "partial" || got["state"] != "valid" {
+		t.Fatalf("one dead, one alive: %+v", got)
+	}
+	deadOnly(got, g3SecretURL)
+	if n := f.scalar(t, `SELECT status FROM galgame_resource WHERE id = ?`, g3ResMain); n != 0 {
+		t.Errorf("partial expired the resource, status %d", n)
+	}
+	wantNotifRefs(t, f.db, []string{notifRef("expired", "resource", g3ResMain, "work", g3WorkSFW)},
+		"sender_id = ? AND receiver_id = ? AND type = 'expired'", w3UserBob, w3UserAlice)
+
+	resp, dl := f.rs(t, http.MethodPost, "/api/v1/galgame-resources/"+idStr(g3ResMain)+"/downloads",
+		"/galgame-resources/{resource_id}/downloads", "", "", nil)
+	if resp.StatusCode != http.StatusOK {
+		t.Fatalf("download %d %+v", resp.StatusCode, dl)
+	}
+	deadOnly(dl, g3SecretURL)
+
+	f.shares.asked = nil
+	got = report("sess-other")
+	if got["verdict"] != "alive" || got["state"] != "valid" {
+		t.Errorf("only the marked link is dead: %+v", got)
+	}
+	if len(f.shares.asked) != 1 || f.shares.asked[0] != g3OtherURL {
+		t.Errorf("a marked link was checked again: %v", f.shares.asked)
+	}
+
+	f.shares.byURL = map[string]linkcheck.Status{g3OtherURL: linkcheck.StatusDead}
+	got = report("sess-other")
+	if got["verdict"] != "dead" || got["state"] != "expired" {
+		t.Fatalf("last live link died: %+v", got)
+	}
+	deadOnly(got, g3SecretURL, g3OtherURL)
+
+	resp, got = f.rs(t, http.MethodPatch, "/api/v1/galgame-resources/"+idStr(g3ResMain),
+		"/galgame-resources/{resource_id}", "sess-alice", "", map[string]any{
+			"download_urls": []string{g3OtherURL, "https://fresh.example.invalid/new"},
+		})
+	if resp.StatusCode != http.StatusOK {
+		t.Fatalf("patch links %d %+v", resp.StatusCode, got)
+	}
+	if n := f.scalar(t, `SELECT COUNT(*) FROM galgame_resource_link WHERE galgame_resource_id = ? AND expired_at IS NOT NULL`, g3ResMain); n != 1 {
+		t.Errorf("after replacing links %d marked, want the kept dead link only", n)
+	}
+
+	resp, got = f.rs(t, http.MethodPatch, "/api/v1/galgame-resources/"+idStr(g3ResMain),
+		"/galgame-resources/{resource_id}", "sess-alice", "", map[string]any{"state": "valid"})
+	if resp.StatusCode != http.StatusOK {
+		t.Fatalf("mark valid %d %+v", resp.StatusCode, got)
+	}
+	if n := f.scalar(t, `SELECT COUNT(*) FROM galgame_resource_link WHERE galgame_resource_id = ? AND expired_at IS NOT NULL`, g3ResMain); n != 0 {
+		t.Errorf("state valid left %d links marked", n)
+	}
 }
 
 func TestV1WorkResourcePublishBan(t *testing.T) {

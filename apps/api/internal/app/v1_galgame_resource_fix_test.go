@@ -61,13 +61,20 @@ func (f *fakeClaim) call(_ context.Context, _ string, _ int64) *legacyErrors.App
 
 type fakeShare struct {
 	status linkcheck.Status
+	byURL  map[string]linkcheck.Status
+	asked  []string
 }
 
-func (f *fakeShare) CheckShare(context.Context, []string, string) linkcheck.Status {
-	if f == nil {
-		return linkcheck.StatusUnknown
+func (f *fakeShare) CheckEach(_ context.Context, urls []string, _ string) []linkcheck.Status {
+	out := make([]linkcheck.Status, len(urls))
+	for i, u := range urls {
+		f.asked = append(f.asked, u)
+		out[i] = f.status
+		if st, ok := f.byURL[u]; ok {
+			out[i] = st
+		}
 	}
-	return f.status
+	return out
 }
 
 func newResourceFix(t *testing.T, checker gate.Checker) *resourceFix {

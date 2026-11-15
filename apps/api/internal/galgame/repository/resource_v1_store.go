@@ -257,9 +257,14 @@ func (s *ResourceV1Store) ProviderNames(ids []int) (map[int][]string, error) {
 	return out, nil
 }
 
-func (s *ResourceV1Store) Links(resourceID int) ([]string, error) {
+func (s *ResourceV1Store) LinkRows(resourceID int) ([]model.GalgameResourceLink, error) {
 	var rows []model.GalgameResourceLink
 	err := s.db.Where("galgame_resource_id = ?", resourceID).Order("id ASC").Find(&rows).Error
+	return rows, err
+}
+
+func (s *ResourceV1Store) Links(resourceID int) ([]string, error) {
+	rows, err := s.LinkRows(resourceID)
 	out := make([]string, len(rows))
 	for i, r := range rows {
 		out[i] = r.URL
@@ -336,8 +341,42 @@ func (s *ResourceV1Store) CreateLinks(tx *gorm.DB, resourceID int, urls []string
 	return tx.Create(&links).Error
 }
 
-func (s *ResourceV1Store) DeleteLinks(tx *gorm.DB, resourceID int) error {
-	return tx.Where("galgame_resource_id = ?", resourceID).Delete(&model.GalgameResourceLink{}).Error
+// ReplaceLinks swaps the whole list in the given order. A URL that stays keeps
+// the time a check found it dead.
+func (s *ResourceV1Store) ReplaceLinks(tx *gorm.DB, resourceID int, urls []string) error {
+	var dead []model.GalgameResourceLink
+	if err := tx.Where("galgame_resource_id = ? AND expired_at IS NOT NULL", resourceID).Find(&dead).Error; err != nil {
+		return err
+	}
+	if err := tx.Where("galgame_resource_id = ?", resourceID).Delete(&model.GalgameResourceLink{}).Error; err != nil {
+		return err
+	}
+	if len(urls) == 0 {
+		return nil
+	}
+	expiredAt := make(map[string]*time.Time, len(dead))
+	for _, d := range dead {
+		expiredAt[d.URL] = d.ExpiredAt
+	}
+	links := make([]model.GalgameResourceLink, len(urls))
+	now := time.Now()
+	for i, u := range urls {
+		links[i] = model.GalgameResourceLink{GalgameResourceID: resourceID, URL: u, ExpiredAt: expiredAt[u], CreatedAt: now, UpdatedAt: now}
+	}
+	return tx.Create(&links).Error
+}
+
+func (s *ResourceV1Store) MarkLinksExpired(tx *gorm.DB, linkIDs []int, at time.Time) error {
+	if len(linkIDs) == 0 {
+		return nil
+	}
+	return tx.Model(&model.GalgameResourceLink{}).Where("id IN ? AND expired_at IS NULL", linkIDs).
+		Updates(map[string]any{"expired_at": at, "updated": at}).Error
+}
+
+func (s *ResourceV1Store) ClearLinkExpiry(tx *gorm.DB, resourceID int) error {
+	return tx.Model(&model.GalgameResourceLink{}).Where("galgame_resource_id = ? AND expired_at IS NOT NULL", resourceID).
+		Updates(map[string]any{"expired_at": nil, "updated": time.Now()}).Error
 }
 
 func (s *ResourceV1Store) Patch(tx *gorm.DB, id int, fields map[string]any) error {

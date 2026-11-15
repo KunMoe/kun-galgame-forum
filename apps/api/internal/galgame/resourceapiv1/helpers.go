@@ -403,6 +403,24 @@ func dlsiteOf(links storelink.Links) *workrepr.DlsiteOffer {
 	return workrepr.DlsiteOf(links)
 }
 
+func linkURLs(links []model.GalgameResourceLink) []string {
+	out := make([]string, len(links))
+	for i, l := range links {
+		out[i] = l.URL
+	}
+	return out
+}
+
+func expiredURLs(links []model.GalgameResourceLink) []DownloadURL {
+	out := []DownloadURL{}
+	for _, l := range links {
+		if l.ExpiredAt != nil {
+			out = append(out, DownloadURL(l.URL))
+		}
+	}
+	return out
+}
+
 func previewOf(links []string) string {
 	if len(links) == 0 {
 		return ""
