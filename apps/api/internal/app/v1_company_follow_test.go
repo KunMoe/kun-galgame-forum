@@ -137,3 +137,40 @@ func assertHydratedIDs(t *testing.T, f *g6Fix, ids string) {
 		t.Fatalf("hydrated queries %+v, want ids %s", f.cat.taxonomyQ, ids)
 	}
 }
+
+func TestV1ListUserFollowedCompaniesFollowsThePrivacySwitch(t *testing.T) {
+	f := newG6Fix(t)
+	f.user.companyFollows = []catalogclient.CompanyFollowRecord{{CompanyID: 880301, CreatedAt: "2026-09-04T00:00:00Z"}}
+	f.cat.taxonomy = map[string][]client.CatalogTaxonomyItem{
+		"labels": {{ID: 880301, DisplayName: "Brand 880301", Kind: "game_brand", WorkCount: 1}},
+	}
+	const spec = "/users/{user_id}/followed-companies"
+	path := "/api/v1/users/" + idStr(w3UserAlice) + "/followed-companies"
+
+	resp, body := f.call(t, http.MethodGet, path, spec, "sess-bob", "", nil)
+	wantCode(t, resp, body, http.StatusForbidden, problem.CodeFollowedCompaniesPrivate)
+
+	resp, body = f.call(t, http.MethodGet, path, spec, "sess-alice", "", nil)
+	geStatus(t, resp, body, http.StatusOK, "")
+	assertFollowedPage(t, body, 1, false)
+
+	const privacy, privacySpec = "/api/v1/me/privacy-settings", "/me/privacy-settings"
+	resp, body = f.call(t, http.MethodGet, privacy, privacySpec, "sess-alice", "", nil)
+	if resp.StatusCode != http.StatusOK || body["is_followed_companies_public"] != false {
+		t.Fatalf("default privacy %d %+v", resp.StatusCode, body)
+	}
+	resp, body = f.call(t, http.MethodPatch, privacy, privacySpec, "sess-alice", "", map[string]any{"is_followed_companies_public": true})
+	if resp.StatusCode != http.StatusOK || body["is_followed_companies_public"] != true || body["is_play_records_public"] != true {
+		t.Fatalf("make public %d %+v", resp.StatusCode, body)
+	}
+
+	for _, session := range []string{"sess-bob", ""} {
+		resp, body = f.call(t, http.MethodGet, path, spec, session, "", nil)
+		geStatus(t, resp, body, http.StatusOK, "")
+		assertFollowedPage(t, body, 1, false)
+		assertFollowedCompany(t, body["items"].([]any)[0], "880301", "2026-09-04T00:00:00Z")
+	}
+
+	resp, body = f.call(t, http.MethodGet, "/api/v1/users/930999999/followed-companies", spec, "sess-bob", "", nil)
+	wantCode(t, resp, body, http.StatusNotFound, problem.CodeNotFound)
+}

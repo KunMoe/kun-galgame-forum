@@ -1,6 +1,7 @@
 package apiv1
 
 import (
+	"cmp"
 	"context"
 	"errors"
 	"net/http"
@@ -23,14 +24,32 @@ const workRecordsScope = "user_work_records"
 type WorkStateFilter string
 
 func (WorkStateFilter) Schema(huma.Registry) *huma.Schema {
-	s := repr.ClosedEnum(catalogclient.WorkStates()...)
-	s.Description = "A play state on catalog's coarse axis. done covers every finish, whatever its completion."
+	s := repr.ClosedEnum(append(catalogclient.WorkStates(), catalogclient.WorkStateNone)...)
+	s.Description = "A play state on catalog's coarse axis. done covers every finish, whatever its completion. none is a work without a play state, which only record=playtime and record=any list."
+	return s
+}
+
+type WorkRecordSet string
+
+func (WorkRecordSet) Schema(huma.Registry) *huma.Schema {
+	s := repr.ClosedEnum(catalogclient.RecordState, catalogclient.RecordPlaytime, catalogclient.RecordAny)
+	s.Description = "Which works make up the list: state, the works with a play state; playtime, the works with a playtime, play state or not; any, the works with a play state, a playtime or a rating."
+	return s
+}
+
+type WorkRecordSort string
+
+func (WorkRecordSort) Schema(huma.Registry) *huma.Schema {
+	s := repr.ClosedEnum(catalogclient.WorkRecordSorts()...)
+	s.Description = "updated is the latest change to the work's play state, or for a work without one, to its playtime or rating. playtime is the most minutes any application reported; rating is the overall score. Works without the value come last in both directions."
 	return s
 }
 
 type listUserWorkRecordsInput struct {
 	UserID      string            `path:"user_id" pattern:"^[1-9][0-9]{0,18}$" maxLength:"19" doc:"User id."`
-	State       []WorkStateFilter `query:"state" maxItems:"5" doc:"Only works in these play states, comma-separated. Omitted lists every state."`
+	Record      WorkRecordSet     `query:"record" default:"state" doc:"Which works make up the list. Default state."`
+	Sort        WorkRecordSort    `query:"sort" default:"updated_desc" doc:"Item order. Default updated_desc. The cursor is bound to it."`
+	State       []WorkStateFilter `query:"state" maxItems:"6" doc:"Only works in these play states, comma-separated. Omitted lists every state. none needs record=playtime or record=any."`
 	Cursor      string            `query:"cursor" pattern:"^cur_[A-Za-z0-9_-]+$" maxLength:"512" doc:"Opaque keyset cursor from a previous page of this collection."`
 	Limit       int               `query:"limit" minimum:"1" maximum:"100" default:"24" doc:"Page size. 1–100, default 24. Values above 100 are rejected, not clamped."`
 	IncludeNSFW bool              `query:"include_nsfw" default:"false" doc:"When true, adult works are included, in items and in state_counts. Default false."`
@@ -39,8 +58,8 @@ type listUserWorkRecordsInput struct {
 type UserWorkRecord struct {
 	Object          string               `json:"object" enum:"work_record" maxLength:"11" doc:"Type discriminant. Always work_record."`
 	WorkSummary     workrepr.WorkSummary `json:"work_summary" doc:"The work this record is about."`
-	PlayState       *string              `json:"play_state" enum:"wish,doing,done_one_route,done_main,done_all,on_hold,dropped,done" maxLength:"14" doc:"The account's play state. done is a finish whose completion another application left unstated. Never null on this list, which holds only works with a play state."`
-	StateUpdatedAt  repr.DateTime        `json:"state_updated_at" doc:"When the play state last changed. Items are ordered by it, newest first."`
+	PlayState       *string              `json:"play_state" enum:"wish,doing,done_one_route,done_main,done_all,on_hold,dropped,done" maxLength:"14" doc:"The account's play state. done is a finish whose completion another application left unstated. null only for a work record=playtime or record=any lists without a play state."`
+	StateUpdatedAt  *repr.DateTime       `json:"state_updated_at" doc:"When the play state last changed. null exactly when play_state is null."`
 	PlaytimeMinutes *int                 `json:"playtime_minutes" minimum:"10" doc:"The most minutes any application reported for the account. null when none is recorded or the report was withdrawn."`
 	UserRating      *WorkRecordRating    `json:"user_rating" doc:"The account's rating of the work. null when it has none."`
 }
@@ -56,6 +75,7 @@ type WorkStateCounts struct {
 	Done    int `json:"done" minimum:"0" doc:"Works the account finished, whatever the completion."`
 	OnHold  int `json:"on_hold" minimum:"0" doc:"Works the account put on hold."`
 	Dropped int `json:"dropped" minimum:"0" doc:"Works the account dropped."`
+	None    int `json:"none" minimum:"0" doc:"Works listed without a play state. Always 0 under record=state."`
 }
 
 type UserWorkRecordList struct {
@@ -70,13 +90,15 @@ type userWorkRecordListOutput struct {
 }
 
 type PrivacySettings struct {
-	Object              string         `json:"object" enum:"privacy_settings" maxLength:"16" doc:"Type discriminant. Always privacy_settings."`
-	IsPlayRecordsPublic bool           `json:"is_play_records_public" doc:"Whether everyone can read the caller's play states and playtimes on every NextMoe site. true until the caller first turns it off. Ratings are public either way."`
-	ChangedAt           *repr.DateTime `json:"changed_at" doc:"When the caller last changed a switch. null when never."`
+	Object                    string         `json:"object" enum:"privacy_settings" maxLength:"16" doc:"Type discriminant. Always privacy_settings."`
+	IsPlayRecordsPublic       bool           `json:"is_play_records_public" doc:"Whether everyone can read the caller's play states and playtimes on every NextMoe site. true until the caller first turns it off. Ratings are public either way."`
+	IsFollowedCompaniesPublic bool           `json:"is_followed_companies_public" doc:"Whether everyone can read the companies the caller follows on every NextMoe site. false until the caller turns it on."`
+	ChangedAt                 *repr.DateTime `json:"changed_at" doc:"When the caller last changed a switch. null when never."`
 }
 
 type PrivacySettingsWrite struct {
-	IsPlayRecordsPublic *bool `json:"is_play_records_public,omitempty" doc:"false keeps the caller's play states and playtimes to themselves on every NextMoe site; true makes them public again. Omitted leaves it unchanged."`
+	IsPlayRecordsPublic       *bool `json:"is_play_records_public,omitempty" doc:"false keeps the caller's play states and playtimes to themselves on every NextMoe site; true makes them public again. Omitted leaves it unchanged."`
+	IsFollowedCompaniesPublic *bool `json:"is_followed_companies_public,omitempty" doc:"true lets everyone read the companies the caller follows on every NextMoe site, and new follows appear in the caller's activity; false makes them private again. Omitted leaves it unchanged."`
 }
 
 type privacySettingsOutput struct {
@@ -112,7 +134,12 @@ func (s *Service) listUserWorkRecords(ctx context.Context, in *listUserWorkRecor
 		}
 	}
 	slices.Sort(states)
-	fp := collect.Fingerprint(strconv.Itoa(ownerID), strings.Join(states, ","), strconv.FormatBool(in.IncludeNSFW))
+	record, sort := cmp.Or(string(in.Record), catalogclient.RecordState), cmp.Or(string(in.Sort), catalogclient.WorkRecordSorts()[0])
+	if record == catalogclient.RecordState && slices.Contains(states, catalogclient.WorkStateNone) {
+		return nil, problem.New(problem.CodeInvalidParameter, "state=none lists works without a play state, which record=state leaves out.",
+			problem.AtParameter("state", problem.ReasonInconsistentWith, "send record=playtime or record=any with state=none", nil))
+	}
+	fp := collect.Fingerprint(strconv.Itoa(ownerID), strings.Join(states, ","), strconv.FormatBool(in.IncludeNSFW), record, sort)
 	upstreamCursor, p := unwrapUpstreamCursor(in.Cursor, workRecordsScope, fp)
 	if p != nil {
 		return nil, p
@@ -132,6 +159,8 @@ func (s *Service) listUserWorkRecords(ctx context.Context, in *listUserWorkRecor
 		Cursor:  upstreamCursor,
 		Limit:   in.Limit,
 		Counts:  firstPage && len(states) == 0,
+		Record:  record,
+		Sort:    sort,
 	}
 	page, err := s.catalog.WorkRecords(ctx, token, q)
 	if err != nil {
@@ -142,7 +171,7 @@ func (s *Service) listUserWorkRecords(ctx context.Context, in *listUserWorkRecor
 	// filtered tab's own page would read zero for every other tab.
 	if firstPage && len(states) > 0 {
 		all, err := s.catalog.WorkRecords(ctx, token, catalogclient.WorkRecordsQuery{
-			UserID: int64(ownerID), SFWOnly: !in.IncludeNSFW, Limit: 1, Counts: true,
+			UserID: int64(ownerID), SFWOnly: !in.IncludeNSFW, Limit: 1, Counts: true, Record: record,
 		})
 		if err != nil {
 			return nil, mapWorkRecordsErr(err, isOwner)
@@ -171,13 +200,14 @@ func (s *Service) listUserWorkRecords(ctx context.Context, in *listUserWorkRecor
 		if !ok || (!in.IncludeNSFW && sum.IsNSFW) {
 			continue
 		}
-		state := playstate.FromCatalog(rec.State, rec.Completion)
-		if state == "" {
-			continue
-		}
-		item := UserWorkRecord{
-			Object: "work_record", WorkSummary: sum, PlayState: &state,
-			StateUpdatedAt: repr.Timestamp(rec.StateUpdatedAt),
+		item := UserWorkRecord{Object: "work_record", WorkSummary: sum}
+		if rec.State != "" {
+			state := playstate.FromCatalog(rec.State, rec.Completion)
+			if state == "" {
+				continue
+			}
+			at := repr.Timestamp(rec.StateUpdatedAt)
+			item.PlayState, item.StateUpdatedAt = &state, &at
 		}
 		if m := rec.PlaytimeMinutes; m != nil && !playtimeWithdrawn(*m) {
 			item.PlaytimeMinutes = m
@@ -200,6 +230,7 @@ func (s *Service) listUserWorkRecords(ctx context.Context, in *listUserWorkRecor
 			Done:    counts[catalogclient.WorkStateDone],
 			OnHold:  counts[catalogclient.WorkStateOnHold],
 			Dropped: counts[catalogclient.WorkStateDropped],
+			None:    counts[catalogclient.WorkStateNone],
 		}
 	}
 	return &userWorkRecordListOutput{Body: out}, nil
@@ -239,27 +270,37 @@ func (s *Service) updateMyPrivacySettings(ctx context.Context, in *updatePrivacy
 	if p != nil {
 		return nil, p
 	}
-	if in.Body.IsPlayRecordsPublic == nil {
+	if in.Body.IsPlayRecordsPublic == nil && in.Body.IsFollowedCompaniesPublic == nil {
 		return nil, validationFailed(problem.AtPointer("", problem.ReasonRequired, "send at least one switch", nil))
 	}
 	if s.catalog == nil {
 		return nil, problem.Unavailable(errUnconfigured)
 	}
-	value := catalogclient.PlayRecordsPrivate
-	if *in.Body.IsPlayRecordsPublic {
-		value = catalogclient.PlayRecordsPublic
-	}
-	got, err := s.catalog.PatchMyPrivacy(ctx, token, value)
+	got, err := s.catalog.PatchMyPrivacy(ctx, token, catalogclient.PrivacyPatch{
+		PlayRecords:       visibility(in.Body.IsPlayRecordsPublic),
+		FollowedCompanies: visibility(in.Body.IsFollowedCompaniesPublic),
+	})
 	if err != nil {
 		return nil, mapUserPlane(err, true)
 	}
 	return &privacySettingsOutput{Body: privacySettingsOf(got)}, nil
 }
 
+func visibility(public *bool) string {
+	switch {
+	case public == nil:
+		return ""
+	case *public:
+		return catalogclient.PlayRecordsPublic
+	}
+	return catalogclient.PlayRecordsPrivate
+}
+
 func privacySettingsOf(p catalogclient.PrivacySettings) PrivacySettings {
 	return PrivacySettings{
-		Object:              "privacy_settings",
-		IsPlayRecordsPublic: p.PlayRecords != catalogclient.PlayRecordsPrivate,
-		ChangedAt:           repr.TimestampPtr(p.UpdatedAt),
+		Object:                    "privacy_settings",
+		IsPlayRecordsPublic:       p.PlayRecords != catalogclient.PlayRecordsPrivate,
+		IsFollowedCompaniesPublic: p.FollowedCompanies == catalogclient.PlayRecordsPublic,
+		ChangedAt:                 repr.TimestampPtr(p.UpdatedAt),
 	}
 }

@@ -339,13 +339,14 @@ func (s *Service) registerUserPlane(api huma.API) {
 		Method:      http.MethodGet,
 		Path:        "/users/{user_id}/work-records",
 		Summary:     "List a user's play records",
-		Description: "A cursor collection of the works a user has a play state on, newest state change first, each with the user's playtime and rating. " +
-			"A work with only a playtime or only a rating is not listed. Play records are public on every NextMoe site unless the user turns them off; " +
+		Description: "A cursor collection of a user's works, each with the user's play state, playtime and rating, in sort order (default: newest change first). " +
+			"record=state, the default, lists the works with a play state; record=playtime adds works with only a playtime, and record=any works with only a rating too. " +
+			"Play records are public on every NextMoe site unless the user turns them off; " +
 			"the user always reads their own. state_counts comes with the first page and ignores the state filter, so one request fills a row of tabs.",
 		Tags:        []string{"users"},
 		Middlewares: huma.Middlewares{withAccessToken},
 		Responses: problemResponses(map[int]string{
-			400: "UNKNOWN_ENUM_VALUE for an unknown state; INVALID_CURSOR, including a cursor from another user, state or include_nsfw; LIMIT_TOO_LARGE.",
+			400: "UNKNOWN_ENUM_VALUE for an unknown state, record or sort; INVALID_PARAMETER for state=none under record=state; INVALID_CURSOR, including a cursor from another user, state, record, sort or include_nsfw; LIMIT_TOO_LARGE.",
 			401: "INVALID_CREDENTIAL for a bad Bearer.",
 			403: "ACCOUNT_BANNED when the caller's account is banned. PLAY_RECORDS_PRIVATE when the user keeps their play records private and the caller is not that user.",
 			404: "NOT_FOUND when the account does not exist or is not renderable.",
@@ -374,7 +375,8 @@ func (s *Service) registerUserPlane(api huma.API) {
 		Path:        "/me/privacy-settings",
 		Summary:     "Change the caller's privacy switches",
 		Description: "Partial update: only the switches sent change. An empty body is VALIDATION_FAILED. " +
-			"Turning is_play_records_public off makes listUserWorkRecords answer PLAY_RECORDS_PRIVATE to everyone but the caller, here and on every other NextMoe site.",
+			"Turning is_play_records_public off makes listUserWorkRecords answer PLAY_RECORDS_PRIVATE to everyone but the caller, here and on every other NextMoe site. " +
+			"listUserFollowedCompanies answers FOLLOWED_COMPANIES_PRIVATE to everyone but the caller until is_followed_companies_public is turned on.",
 		Tags:        []string{"me"},
 		Middlewares: huma.Middlewares{withAccessToken},
 		Responses: problemResponses(map[int]string{

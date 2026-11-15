@@ -227,8 +227,12 @@ func (f *fakeCatalogUser) MyPrivacy(context.Context, string) (catalogclient.Priv
 	return catalogclient.PrivacySettings{}, nil
 }
 
-func (f *fakeCatalogUser) PatchMyPrivacy(context.Context, string, string) (catalogclient.PrivacySettings, error) {
+func (f *fakeCatalogUser) PatchMyPrivacy(context.Context, string, catalogclient.PrivacyPatch) (catalogclient.PrivacySettings, error) {
 	return catalogclient.PrivacySettings{}, nil
+}
+
+func (f *fakeCatalogUser) UserCompanyFollows(context.Context, int64, string, int) ([]catalogclient.CompanyFollowRecord, string, error) {
+	return nil, "", nil
 }
 
 func newWorkFix(t *testing.T) *workFix {

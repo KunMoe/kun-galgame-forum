@@ -70,6 +70,7 @@ var requiredCodes = []struct {
 	{CodeShopOfferUnlimited, DomainKungal, 409},
 	{CodeProfileSignInRequired, DomainKungal, 403},
 	{CodePlayRecordsPrivate, DomainKungal, 403},
+	{CodeFollowedCompaniesPrivate, DomainKungal, 403},
 	{CodeCatalogModerationRequired, DomainModeration, 403},
 }
 

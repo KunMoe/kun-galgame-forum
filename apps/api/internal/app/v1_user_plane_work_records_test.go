@@ -1,6 +1,7 @@
 package app
 
 import (
+	"cmp"
 	"context"
 	"net/http"
 	"slices"
@@ -19,14 +20,17 @@ type g6RecordCall struct {
 	states []string
 	counts bool
 	record string
+	sort   string
 	total  bool
 }
 
-func g6Records() []catalogclient.AccountWorkRecord {
+// Under record=playtime or record=any, g6WorkExtra is a work with only a
+// playtime: it has no state there.
+func g6Records(record string) []catalogclient.AccountWorkRecord {
 	at := func(day int) time.Time { return time.Date(2026, 10, day, 8, 0, 0, 0, time.UTC) }
 	mins := func(n int) *int { return &n }
 	main := "main"
-	return []catalogclient.AccountWorkRecord{
+	recs := []catalogclient.AccountWorkRecord{
 		{WorkID: g6WorkLive, State: "doing", StateUpdatedAt: at(5), PlaytimeMinutes: mins(120),
 			Rating: &catalogclient.Rating{ID: 5001, WorkID: g6WorkLive, Overall: 8}},
 		{WorkID: g6WorkOwner, State: "done", Completion: &main, StateUpdatedAt: at(4), PlaytimeMinutes: mins(5)},
@@ -34,6 +38,10 @@ func g6Records() []catalogclient.AccountWorkRecord {
 		{WorkID: g6WorkHidden, State: "dropped", StateUpdatedAt: at(2)},
 		{WorkID: g6WorkExtra, State: "done", StateUpdatedAt: at(1)},
 	}
+	if record == catalogclient.RecordPlaytime || record == catalogclient.RecordAny {
+		recs[4] = catalogclient.AccountWorkRecord{WorkID: g6WorkExtra, PlaytimeMinutes: mins(300)}
+	}
+	return recs
 }
 
 func (u *g6User) WorkRecords(_ context.Context, token string, q catalogclient.WorkRecordsQuery) (catalogclient.WorkRecordsPage, error) {
@@ -50,15 +58,16 @@ func (u *g6User) WorkRecords(_ context.Context, token string, q catalogclient.Wo
 			Status: http.StatusForbidden, ProblemCode: catalogclient.CodePlayRecordsPrivate, Message: "private",
 		}
 	}
-	u.recordCalls = append(u.recordCalls, g6RecordCall{token: token, userID: uid, states: q.States, counts: q.Counts, record: q.Record, total: q.PlaytimeTotal})
+	u.recordCalls = append(u.recordCalls, g6RecordCall{token: token, userID: uid, states: q.States, counts: q.Counts, record: q.Record, sort: q.Sort, total: q.PlaytimeTotal})
 
 	var matched []catalogclient.AccountWorkRecord
 	if uid == w3UserAlice {
-		for _, r := range g6Records() {
+		for _, r := range g6Records(q.Record) {
 			if q.SFWOnly && r.WorkID == g6WorkNSFW {
 				continue
 			}
-			if len(q.States) > 0 && !slices.Contains(q.States, r.State) {
+			state := cmp.Or(r.State, catalogclient.WorkStateNone)
+			if len(q.States) > 0 && !slices.Contains(q.States, state) {
 				continue
 			}
 			matched = append(matched, r)
@@ -71,7 +80,7 @@ func (u *g6User) WorkRecords(_ context.Context, token string, q catalogclient.Wo
 			out.StateCounts[s] = 0
 		}
 		for _, r := range matched {
-			out.StateCounts[r.State]++
+			out.StateCounts[cmp.Or(r.State, catalogclient.WorkStateNone)]++
 		}
 	}
 	if q.PlaytimeTotal && !u.noTotal {
@@ -82,6 +91,15 @@ func (u *g6User) WorkRecords(_ context.Context, token string, q catalogclient.Wo
 			}
 		}
 		out.PlaytimeTotalMinutes = &sum
+	}
+	if q.Sort == "playtime_desc" {
+		minutes := func(r catalogclient.AccountWorkRecord) int {
+			if r.PlaytimeMinutes == nil {
+				return -1
+			}
+			return *r.PlaytimeMinutes
+		}
+		slices.SortStableFunc(matched, func(a, b catalogclient.AccountWorkRecord) int { return minutes(b) - minutes(a) })
 	}
 	start := 0
 	if q.Cursor != "" {
@@ -110,7 +128,7 @@ func (u *g6User) MyPrivacy(_ context.Context, token string) (catalogclient.Priva
 	return u.privacyOf(u.uid(token)), nil
 }
 
-func (u *g6User) PatchMyPrivacy(_ context.Context, token, playRecords string) (catalogclient.PrivacySettings, error) {
+func (u *g6User) PatchMyPrivacy(_ context.Context, token string, patch catalogclient.PrivacyPatch) (catalogclient.PrivacySettings, error) {
 	if err := u.gate(token); err != nil {
 		return catalogclient.PrivacySettings{}, err
 	}
@@ -120,17 +138,31 @@ func (u *g6User) PatchMyPrivacy(_ context.Context, token, playRecords string) (c
 	if u.private == nil {
 		u.private = map[int64]bool{}
 	}
-	u.private[uid] = playRecords == catalogclient.PlayRecordsPrivate
+	if u.companiesPublic == nil {
+		u.companiesPublic = map[int64]bool{}
+	}
+	if patch.PlayRecords != "" {
+		u.private[uid] = patch.PlayRecords == catalogclient.PlayRecordsPrivate
+	}
+	if patch.FollowedCompanies != "" {
+		u.companiesPublic[uid] = patch.FollowedCompanies == catalogclient.PlayRecordsPublic
+	}
 	at := time.Date(2026, 10, 14, 9, 0, 0, 0, time.UTC)
 	u.privacyAt = &at
 	return u.privacyOf(uid), nil
 }
 
 func (u *g6User) privacyOf(uid int64) catalogclient.PrivacySettings {
-	if u.private[uid] {
-		return catalogclient.PrivacySettings{PlayRecords: catalogclient.PlayRecordsPrivate, UpdatedAt: u.privacyAt}
+	out := catalogclient.PrivacySettings{
+		PlayRecords: catalogclient.PlayRecordsPublic, FollowedCompanies: catalogclient.PlayRecordsPrivate, UpdatedAt: u.privacyAt,
 	}
-	return catalogclient.PrivacySettings{PlayRecords: catalogclient.PlayRecordsPublic, UpdatedAt: u.privacyAt}
+	if u.private[uid] {
+		out.PlayRecords = catalogclient.PlayRecordsPrivate
+	}
+	if u.companiesPublic[uid] {
+		out.FollowedCompanies = catalogclient.PlayRecordsPublic
+	}
+	return out
 }
 
 func (f *g6Fix) setPrivate(uid int64) {
@@ -325,7 +357,7 @@ func g6TotalPath(uid int, query string) string {
 func TestV1UserPlaytimeTotal(t *testing.T) {
 	f := newG6Fix(t)
 	resp, body := f.call(t, http.MethodGet, g6TotalPath(w3UserAlice, ""), g6TotalSpec, "sess-bob", "", nil)
-	if resp.StatusCode != http.StatusOK || body["object"] != "user_playtime_total" || asInt(body["total_playtime_minutes"]) != 125 {
+	if resp.StatusCode != http.StatusOK || body["object"] != "user_playtime_total" || asInt(body["total_playtime_minutes"]) != 425 {
 		t.Fatalf("visitor %d %+v", resp.StatusCode, body)
 	}
 	calls := f.recordCalls()
@@ -338,7 +370,7 @@ func TestV1UserPlaytimeTotal(t *testing.T) {
 	resp, body = f.call(t, http.MethodGet, g6TotalPath(w3UserAlice, ""), g6TotalSpec, "", "", nil)
 	wantCode(t, resp, body, http.StatusForbidden, problem.CodePlayRecordsPrivate)
 	resp, body = f.call(t, http.MethodGet, g6TotalPath(w3UserAlice, "include_nsfw=true"), g6TotalSpec, "sess-alice", "", nil)
-	if resp.StatusCode != http.StatusOK || asInt(body["total_playtime_minutes"]) != 125 {
+	if resp.StatusCode != http.StatusOK || asInt(body["total_playtime_minutes"]) != 425 {
 		t.Fatalf("the owner reads a private total: %d %+v", resp.StatusCode, body)
 	}
 
@@ -349,4 +381,46 @@ func TestV1UserPlaytimeTotal(t *testing.T) {
 	if resp.StatusCode != http.StatusOK || body["total_playtime_minutes"] != nil {
 		t.Fatalf("a catalog without the total reads null: %d %+v", resp.StatusCode, body)
 	}
+}
+
+func TestV1ListUserWorkRecordsAnyRecordSorted(t *testing.T) {
+	f := newG6Fix(t)
+	resp, body := f.call(t, http.MethodGet, g6RecordsPath(w3UserAlice, "record=any&sort=playtime_desc"), g6RecordsSpec, "sess-bob", "", nil)
+	if resp.StatusCode != http.StatusOK {
+		t.Fatalf("list %d %+v", resp.StatusCode, body)
+	}
+	want := []string{idStr(g6WorkExtra), idStr(g6WorkLive), idStr(g6WorkOwner)}
+	if got := recordWorkIDs(t, body); !slices.Equal(got, want) {
+		t.Fatalf("items %v, want %v: longest playtime first", got, want)
+	}
+	extra := body["items"].([]any)[0].(map[string]any)
+	if extra["play_state"] != nil || extra["state_updated_at"] != nil || asInt(extra["playtime_minutes"]) != 300 {
+		t.Errorf("a work with only a playtime %+v", extra)
+	}
+	if counts := body["state_counts"].(map[string]any); asInt(counts["none"]) != 1 || asInt(counts["done"]) != 1 {
+		t.Errorf("counts %+v", counts)
+	}
+	calls := f.recordCalls()
+	if c := calls[0]; c.record != "any" || c.sort != "playtime_desc" {
+		t.Errorf("catalog asked for record %q sort %q", c.record, c.sort)
+	}
+
+	resp, body = f.call(t, http.MethodGet, g6RecordsPath(w3UserAlice, "record=any&state=none"), g6RecordsSpec, "sess-bob", "", nil)
+	if resp.StatusCode != http.StatusOK || !slices.Equal(recordWorkIDs(t, body), []string{idStr(g6WorkExtra)}) {
+		t.Fatalf("state=none %d %+v", resp.StatusCode, body)
+	}
+	if counts := body["state_counts"].(map[string]any); asInt(counts["none"]) != 1 || asInt(counts["doing"]) != 1 {
+		t.Errorf("a filtered tab still counts every state under the same record: %+v", counts)
+	}
+
+	resp, body = f.call(t, http.MethodGet, g6RecordsPath(w3UserAlice, "state=none"), g6RecordsSpec, "sess-bob", "", nil)
+	wantCode(t, resp, body, http.StatusBadRequest, problem.CodeInvalidParameter)
+
+	resp, body = f.call(t, http.MethodGet, g6RecordsPath(w3UserAlice, "record=any&limit=1"), g6RecordsSpec, "sess-bob", "", nil)
+	if resp.StatusCode != http.StatusOK {
+		t.Fatalf("page 1 %d %+v", resp.StatusCode, body)
+	}
+	next, _ := body["next_cursor"].(string)
+	resp, body = f.call(t, http.MethodGet, g6RecordsPath(w3UserAlice, "record=any&sort=playtime_desc&limit=1&cursor="+next), g6RecordsSpec, "sess-bob", "", nil)
+	wantCode(t, resp, body, http.StatusBadRequest, problem.CodeInvalidCursor)
 }

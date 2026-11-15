@@ -2679,7 +2679,7 @@ export interface paths {
         head?: never;
         /**
          * Change the caller's privacy switches
-         * @description Partial update: only the switches sent change. An empty body is VALIDATION_FAILED. Turning is_play_records_public off makes listUserWorkRecords answer PLAY_RECORDS_PRIVATE to everyone but the caller, here and on every other NextMoe site.
+         * @description Partial update: only the switches sent change. An empty body is VALIDATION_FAILED. Turning is_play_records_public off makes listUserWorkRecords answer PLAY_RECORDS_PRIVATE to everyone but the caller, here and on every other NextMoe site. listUserFollowedCompanies answers FOLLOWED_COMPANIES_PRIVATE to everyone but the caller until is_followed_companies_public is turned on.
          */
         patch: operations["updateMyPrivacySettings"];
         trace?: never;
@@ -5189,6 +5189,26 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/users/{user_id}/followed-companies": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * List a user's followed companies
+         * @description A page-number collection of the companies a user follows, newest follow first, in the shape of listMyFollowedCompanies. Followed companies are private on every NextMoe site until the user makes them public; the user always reads their own. PROFILE_SIGN_IN_REQUIRED when the caller is anonymous and user_id names a user who shows their profile to signed-in users only.
+         */
+        get: operations["listUserFollowedCompanies"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/users/{user_id}/followers": {
         parameters: {
             query?: never;
@@ -5358,7 +5378,7 @@ export interface paths {
         };
         /**
          * List a user's play records
-         * @description A cursor collection of the works a user has a play state on, newest state change first, each with the user's playtime and rating. A work with only a playtime or only a rating is not listed. Play records are public on every NextMoe site unless the user turns them off; the user always reads their own. state_counts comes with the first page and ignores the state filter, so one request fills a row of tabs. PROFILE_SIGN_IN_REQUIRED when the caller is anonymous and user_id names a user who shows their profile to signed-in users only.
+         * @description A cursor collection of a user's works, each with the user's play state, playtime and rating, in sort order (default: newest change first). record=state, the default, lists the works with a play state; record=playtime adds works with only a playtime, and record=any works with only a rating too. Play records are public on every NextMoe site unless the user turns them off; the user always reads their own. state_counts comes with the first page and ignores the state filter, so one request fills a row of tabs. PROFILE_SIGN_IN_REQUIRED when the caller is anonymous and user_id names a user who shows their profile to signed-in users only.
          */
         get: operations["listUserWorkRecords"];
         put?: never;
@@ -11568,6 +11588,8 @@ export interface components {
              * @description When the caller last changed a switch. null when never.
              */
             changed_at: string | null;
+            /** @description Whether everyone can read the companies the caller follows on every NextMoe site. false until the caller turns it on. */
+            is_followed_companies_public: boolean;
             /** @description Whether everyone can read the caller's play states and playtimes on every NextMoe site. true until the caller first turns it off. Ratings are public either way. */
             is_play_records_public: boolean;
             /**
@@ -11577,6 +11599,8 @@ export interface components {
             object: "privacy_settings";
         };
         PrivacySettingsWrite: {
+            /** @description true lets everyone read the companies the caller follows on every NextMoe site, and new follows appear in the caller's activity; false makes them private again. Omitted leaves it unchanged. */
+            is_followed_companies_public?: boolean;
             /** @description false keeps the caller's play states and playtimes to themselves on every NextMoe site; true makes them public again. Omitted leaves it unchanged. */
             is_play_records_public?: boolean;
         };
@@ -16009,7 +16033,7 @@ export interface components {
              * @constant
              */
             object: "work_record";
-            /** @description The account's play state. done is a finish whose completion another application left unstated. Never null on this list, which holds only works with a play state. */
+            /** @description The account's play state. done is a finish whose completion another application left unstated. null only for a work record=playtime or record=any lists without a play state. */
             play_state: components["schemas"]["PlayState"] | null;
             /**
              * Format: int64
@@ -16018,9 +16042,9 @@ export interface components {
             playtime_minutes: number | null;
             /**
              * Format: date-time
-             * @description When the play state last changed. Items are ordered by it, newest first.
+             * @description When the play state last changed. null exactly when play_state is null.
              */
-            state_updated_at: string;
+            state_updated_at: string | null;
             /** @description The account's rating of the work. null when it has none. */
             user_rating: components["schemas"]["WorkRecordRating"] | null;
             /** @description The work this record is about. */
@@ -17309,6 +17333,10 @@ export interface components {
              */
             overall: number;
         };
+        /** @enum {string} */
+        WorkRecordSet: "state" | "playtime" | "any";
+        /** @enum {string} */
+        WorkRecordSort: "updated_desc" | "updated_asc" | "playtime_desc" | "playtime_asc" | "rating_desc" | "rating_asc";
         WorkRef: {
             /** @description The portrait cover at its original size, never the 16:9 crop. null when the work has none. */
             cover: components["schemas"]["Image"] | null;
@@ -17381,7 +17409,7 @@ export interface components {
         /** @enum {string} */
         WorkSort: "resource_updated_desc" | "resource_updated_asc" | "created_desc" | "created_asc" | "view_desc" | "view_asc" | "view_1d_desc" | "view_1d_asc" | "view_7d_desc" | "view_7d_asc" | "view_30d_desc" | "view_30d_asc" | "release_date_desc" | "release_date_asc" | "rating_desc" | "rating_asc";
         /** @enum {string} */
-        WorkState: "wish" | "doing" | "done" | "on_hold" | "dropped";
+        WorkState: "wish" | "doing" | "done" | "on_hold" | "dropped" | "none";
         WorkStateCounts: {
             /**
              * Format: int64
@@ -17398,6 +17426,11 @@ export interface components {
              * @description Works the account dropped.
              */
             dropped: number;
+            /**
+             * Format: int64
+             * @description Works listed without a play state. Always 0 under record=state.
+             */
+            none: number;
             /**
              * Format: int64
              * @description Works the account put on hold.
@@ -45579,6 +45612,88 @@ export interface operations {
             };
         };
     };
+    listUserFollowedCompanies: {
+        parameters: {
+            query?: {
+                /** @description 1-based page number. page × limit may not exceed 10000. */
+                page?: number;
+                /** @description Page size. 1–100, default 24. Values above 100 are rejected, not clamped. */
+                limit?: number;
+            };
+            header?: never;
+            path: {
+                /** @description User id. */
+                user_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["FollowedCompanyList"];
+                };
+            };
+            /** @description LIMIT_TOO_LARGE or INVALID_PARAMETER when page × limit is too deep. */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description INVALID_CREDENTIAL for a bad Bearer. */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description ACCOUNT_BANNED when the caller's account is banned. FOLLOWED_COMPANIES_PRIVATE when the user has not made them public and the caller is not that user. PROFILE_SIGN_IN_REQUIRED when the caller is anonymous and user_id names a user who shows their profile to signed-in users only. */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description NOT_FOUND when the account does not exist or is not renderable. */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Internal Server Error */
+            500: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description SERVICE_UNAVAILABLE when the catalog or the account service cannot be reached. */
+            503: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+        };
+    };
     listUserFollowers: {
         parameters: {
             query?: {
@@ -46256,7 +46371,11 @@ export interface operations {
     listUserWorkRecords: {
         parameters: {
             query?: {
-                /** @description Only works in these play states, comma-separated. Omitted lists every state. */
+                /** @description Which works make up the list. Default state. */
+                record?: components["schemas"]["WorkRecordSet"];
+                /** @description Item order. Default updated_desc. The cursor is bound to it. */
+                sort?: components["schemas"]["WorkRecordSort"];
+                /** @description Only works in these play states, comma-separated. Omitted lists every state. none needs record=playtime or record=any. */
                 state?: components["schemas"]["WorkState"][];
                 /** @description Opaque keyset cursor from a previous page of this collection. */
                 cursor?: string;
@@ -46283,7 +46402,7 @@ export interface operations {
                     "application/json": components["schemas"]["UserWorkRecordList"];
                 };
             };
-            /** @description UNKNOWN_ENUM_VALUE for an unknown state; INVALID_CURSOR, including a cursor from another user, state or include_nsfw; LIMIT_TOO_LARGE. */
+            /** @description UNKNOWN_ENUM_VALUE for an unknown state, record or sort; INVALID_PARAMETER for state=none under record=state; INVALID_CURSOR, including a cursor from another user, state, record, sort or include_nsfw; LIMIT_TOO_LARGE. */
             400: {
                 headers: {
                     [name: string]: unknown;

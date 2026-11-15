@@ -236,6 +236,7 @@ GET    /api/v1/users/:user_id                         cors.New → v1Headers →
 GET    /api/v1/users/:user_id/activities              cors.New → v1Headers → fiberAdapter.Handle
 GET    /api/v1/users/:user_id/collections             cors.New → v1Headers → fiberAdapter.Handle
 GET    /api/v1/users/:user_id/comments                cors.New → v1Headers → fiberAdapter.Handle
+GET    /api/v1/users/:user_id/followed-companies      cors.New → v1Headers → fiberAdapter.Handle
 GET    /api/v1/users/:user_id/followers               cors.New → v1Headers → fiberAdapter.Handle
 GET    /api/v1/users/:user_id/following               cors.New → v1Headers → fiberAdapter.Handle
 GET    /api/v1/users/:user_id/galgame-resources       cors.New → v1Headers → fiberAdapter.Handle

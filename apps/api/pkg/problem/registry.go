@@ -101,6 +101,7 @@ const (
 	CodeShopOfferUnlimited           = "SHOP_OFFER_UNLIMITED"
 	CodeProfileSignInRequired        = "PROFILE_SIGN_IN_REQUIRED"
 	CodePlayRecordsPrivate           = "PLAY_RECORDS_PRIVATE"
+	CodeFollowedCompaniesPrivate     = "FOLLOWED_COMPANIES_PRIVATE"
 	CodeCatalogModerationRequired    = "CATALOG_MODERATION_REQUIRED"
 )
 
@@ -192,6 +193,7 @@ var Codes = []Def{
 	{CodeShopOfferUnlimited, DomainKungal, http.StatusConflict, "Shop offer unlimited", "The offer has no stock limit and no code pool, so it never sells out and there is no restock to be told about.", nil},
 	{CodeProfileSignInRequired, DomainKungal, http.StatusForbidden, "Profile sign-in required", "The user shows their profile to signed-in users only, and the request has no signed-in user. Signing in, as anyone, is enough.", nil},
 	{CodePlayRecordsPrivate, DomainKungal, http.StatusForbidden, "Play records private", "The account keeps its play states and playtimes private on every NextMoe site. Only the account itself can read them. Its ratings stay public.", nil},
+	{CodeFollowedCompaniesPrivate, DomainKungal, http.StatusForbidden, "Followed companies private", "The account has not made the companies it follows public. Only the account itself can read them.", nil},
 	{CodeCatalogModerationRequired, DomainModeration, http.StatusForbidden, "Catalog moderation required", "The deletion removes the rating from every NextMoe site, and NextMoe allows it only to a holder of catalog moderation standing. The forum's own staff permission is not enough.", nil},
 }
 

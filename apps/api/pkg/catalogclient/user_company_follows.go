@@ -72,3 +72,26 @@ func (c *Client) ListMyCompanyFollows(ctx context.Context, accessToken, cursor s
 	}
 	return items, out.cursor(), nil
 }
+
+// UserCompanyFollows reads another account's followed companies with the app
+// key. An account that has not made them public answers 403
+// FOLLOWED_COMPANIES_PRIVATE.
+func (c *Client) UserCompanyFollows(ctx context.Context, userID int64, cursor string, limit int) ([]CompanyFollowRecord, string, error) {
+	q := url.Values{"user_id": {strconv.FormatInt(userID, 10)}}
+	if cursor != "" {
+		q.Set("cursor", cursor)
+	}
+	if limit > 0 {
+		q.Set("limit", strconv.Itoa(limit))
+	}
+	var out v2List[v2CompanyFollow]
+	if err := c.appV2JSON(ctx, "/v2/followed-companies", q, &out); err != nil {
+		return nil, "", err
+	}
+	rows := out.rows()
+	items := make([]CompanyFollowRecord, 0, len(rows))
+	for _, it := range rows {
+		items = append(items, CompanyFollowRecord{CompanyID: parseFlexID(it.CompanyID), CreatedAt: it.CreatedAt})
+	}
+	return items, out.cursor(), nil
+}

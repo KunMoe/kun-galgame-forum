@@ -56,49 +56,50 @@ type g6Fix struct {
 }
 
 type g6User struct {
-	mu             sync.Mutex
-	folders        map[int64]catalogclient.Folder
-	items          map[int64][]catalogclient.FolderItem
-	votes          map[int64]int64
-	voteCount      map[int64]int
-	play           map[string]map[int64]catalogclient.PlaytimeSelf
-	states         map[string]map[int64]catalogclient.WorkStateRecord
-	nextFolder     int64
-	creates        int
-	deletePlay     []int64
-	otherApp       map[int64]int
-	putStates      []int64
-	modPatch       int
-	modDelete      int
-	putItems       []string
-	deleteItems    []string
-	tallyErr       error
-	itemsErr       error
-	pubReads       int
-	myReads        int
-	playSweeps     int
-	folderLists    int
-	holdReads      int
-	worksCalls     int
-	coverVoteReads int
-	previewRead    int
-	clock          int
-	folderReads    int
-	containRead    int
-	fullFolder     map[int64]bool
-	unfoldable     map[int64]bool
-	ownPatch403    bool
-	noTotal        bool
-	private        map[int64]bool
-	privacyAt      *time.Time
-	recordCalls    []g6RecordCall
-	companyFollows []catalogclient.CompanyFollowRecord
-	followState    map[string]map[int64]string
-	followNotFound int64
-	followCapped   int64
-	folderFollows  map[int64]map[int64]bool
-	reports        []catalogclient.FolderReport
-	modItemPatch   int
+	mu              sync.Mutex
+	folders         map[int64]catalogclient.Folder
+	items           map[int64][]catalogclient.FolderItem
+	votes           map[int64]int64
+	voteCount       map[int64]int
+	play            map[string]map[int64]catalogclient.PlaytimeSelf
+	states          map[string]map[int64]catalogclient.WorkStateRecord
+	nextFolder      int64
+	creates         int
+	deletePlay      []int64
+	otherApp        map[int64]int
+	putStates       []int64
+	modPatch        int
+	modDelete       int
+	putItems        []string
+	deleteItems     []string
+	tallyErr        error
+	itemsErr        error
+	pubReads        int
+	myReads         int
+	playSweeps      int
+	folderLists     int
+	holdReads       int
+	worksCalls      int
+	coverVoteReads  int
+	previewRead     int
+	clock           int
+	folderReads     int
+	containRead     int
+	fullFolder      map[int64]bool
+	unfoldable      map[int64]bool
+	ownPatch403     bool
+	noTotal         bool
+	private         map[int64]bool
+	companiesPublic map[int64]bool
+	privacyAt       *time.Time
+	recordCalls     []g6RecordCall
+	companyFollows  []catalogclient.CompanyFollowRecord
+	followState     map[string]map[int64]string
+	followNotFound  int64
+	followCapped    int64
+	folderFollows   map[int64]map[int64]bool
+	reports         []catalogclient.FolderReport
+	modItemPatch    int
 }
 
 func newG6Fix(t *testing.T) *g6Fix {
@@ -902,6 +903,17 @@ func (u *g6User) ListMyCompanyFollows(_ context.Context, token, _ string, _ int)
 	}
 	u.mu.Lock()
 	defer u.mu.Unlock()
+	return append([]catalogclient.CompanyFollowRecord(nil), u.companyFollows...), "", nil
+}
+
+func (u *g6User) UserCompanyFollows(_ context.Context, userID int64, _ string, _ int) ([]catalogclient.CompanyFollowRecord, string, error) {
+	u.mu.Lock()
+	defer u.mu.Unlock()
+	if !u.companiesPublic[userID] {
+		return nil, "", &catalogclient.UserAPIError{
+			Status: http.StatusForbidden, ProblemCode: catalogclient.CodeFollowedCompaniesPrivate, Message: "private",
+		}
+	}
 	return append([]catalogclient.CompanyFollowRecord(nil), u.companyFollows...), "", nil
 }
 

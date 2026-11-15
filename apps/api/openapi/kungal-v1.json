@@ -14587,6 +14587,10 @@
               "null"
             ]
           },
+          "is_followed_companies_public": {
+            "description": "Whether everyone can read the companies the caller follows on every NextMoe site. false until the caller turns it on.",
+            "type": "boolean"
+          },
           "is_play_records_public": {
             "description": "Whether everyone can read the caller's play states and playtimes on every NextMoe site. true until the caller first turns it off. Ratings are public either way.",
             "type": "boolean"
@@ -14601,12 +14605,17 @@
         "required": [
           "object",
           "is_play_records_public",
+          "is_followed_companies_public",
           "changed_at"
         ],
         "type": "object"
       },
       "PrivacySettingsWrite": {
         "properties": {
+          "is_followed_companies_public": {
+            "description": "true lets everyone read the companies the caller follows on every NextMoe site, and new follows appear in the caller's activity; false makes them private again. Omitted leaves it unchanged.",
+            "type": "boolean"
+          },
           "is_play_records_public": {
             "description": "false keeps the caller's play states and playtimes to themselves on every NextMoe site; true makes them public again. Omitted leaves it unchanged.",
             "type": "boolean"
@@ -26478,7 +26487,7 @@
                 "type": "null"
               }
             ],
-            "description": "The account's play state. done is a finish whose completion another application left unstated. Never null on this list, which holds only works with a play state."
+            "description": "The account's play state. done is a finish whose completion another application left unstated. null only for a work record=playtime or record=any lists without a play state."
           },
           "playtime_minutes": {
             "description": "The most minutes any application reported for the account. null when none is recorded or the report was withdrawn.",
@@ -26490,12 +26499,15 @@
             ]
           },
           "state_updated_at": {
-            "description": "When the play state last changed. Items are ordered by it, newest first.",
+            "description": "When the play state last changed. null exactly when play_state is null.",
             "format": "date-time",
             "maxLength": 20,
             "minLength": 20,
             "pattern": "^[0-9]{4}-[0-9]{2}-[0-9]{2}T[0-9]{2}:[0-9]{2}:[0-9]{2}Z$",
-            "type": "string"
+            "type": [
+              "string",
+              "null"
+            ]
           },
           "user_rating": {
             "anyOf": [
@@ -30216,6 +30228,29 @@
         ],
         "type": "object"
       },
+      "WorkRecordSet": {
+        "enum": [
+          "state",
+          "playtime",
+          "any"
+        ],
+        "maxLength": 8,
+        "type": "string",
+        "x-vocabulary-closed": true
+      },
+      "WorkRecordSort": {
+        "enum": [
+          "updated_desc",
+          "updated_asc",
+          "playtime_desc",
+          "playtime_asc",
+          "rating_desc",
+          "rating_asc"
+        ],
+        "maxLength": 13,
+        "type": "string",
+        "x-vocabulary-closed": true
+      },
       "WorkRef": {
         "properties": {
           "cover": {
@@ -30452,7 +30487,8 @@
           "doing",
           "done",
           "on_hold",
-          "dropped"
+          "dropped",
+          "none"
         ],
         "maxLength": 7,
         "type": "string",
@@ -30478,6 +30514,12 @@
             "minimum": 0,
             "type": "integer"
           },
+          "none": {
+            "description": "Works listed without a play state. Always 0 under record=state.",
+            "format": "int64",
+            "minimum": 0,
+            "type": "integer"
+          },
           "on_hold": {
             "description": "Works the account put on hold.",
             "format": "int64",
@@ -30496,7 +30538,8 @@
           "doing",
           "done",
           "on_hold",
-          "dropped"
+          "dropped",
+          "none"
         ],
         "type": "object"
       },
@@ -52043,7 +52086,7 @@
         ]
       },
       "patch": {
-        "description": "Partial update: only the switches sent change. An empty body is VALIDATION_FAILED. Turning is_play_records_public off makes listUserWorkRecords answer PLAY_RECORDS_PRIVATE to everyone but the caller, here and on every other NextMoe site.",
+        "description": "Partial update: only the switches sent change. An empty body is VALIDATION_FAILED. Turning is_play_records_public off makes listUserWorkRecords answer PLAY_RECORDS_PRIVATE to everyone but the caller, here and on every other NextMoe site. listUserFollowedCompanies answers FOLLOWED_COMPANIES_PRIVATE to everyone but the caller until is_followed_companies_public is turned on.",
         "operationId": "updateMyPrivacySettings",
         "requestBody": {
           "content": {
@@ -72339,6 +72382,138 @@
         ]
       }
     },
+    "/users/{user_id}/followed-companies": {
+      "get": {
+        "description": "A page-number collection of the companies a user follows, newest follow first, in the shape of listMyFollowedCompanies. Followed companies are private on every NextMoe site until the user makes them public; the user always reads their own. PROFILE_SIGN_IN_REQUIRED when the caller is anonymous and user_id names a user who shows their profile to signed-in users only.",
+        "operationId": "listUserFollowedCompanies",
+        "parameters": [
+          {
+            "description": "User id.",
+            "in": "path",
+            "name": "user_id",
+            "required": true,
+            "schema": {
+              "description": "User id.",
+              "maxLength": 19,
+              "pattern": "^[1-9][0-9]{0,18}$",
+              "type": "string"
+            }
+          },
+          {
+            "description": "1-based page number. page × limit may not exceed 10000.",
+            "explode": false,
+            "in": "query",
+            "name": "page",
+            "schema": {
+              "default": 1,
+              "description": "1-based page number. page × limit may not exceed 10000.",
+              "format": "int64",
+              "minimum": 1,
+              "type": "integer"
+            }
+          },
+          {
+            "description": "Page size. 1–100, default 24. Values above 100 are rejected, not clamped.",
+            "explode": false,
+            "in": "query",
+            "name": "limit",
+            "schema": {
+              "default": 24,
+              "description": "Page size. 1–100, default 24. Values above 100 are rejected, not clamped.",
+              "format": "int64",
+              "maximum": 100,
+              "minimum": 1,
+              "type": "integer"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/FollowedCompanyList"
+                }
+              }
+            },
+            "description": "OK"
+          },
+          "400": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            },
+            "description": "LIMIT_TOO_LARGE or INVALID_PARAMETER when page × limit is too deep."
+          },
+          "401": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            },
+            "description": "INVALID_CREDENTIAL for a bad Bearer."
+          },
+          "403": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            },
+            "description": "ACCOUNT_BANNED when the caller's account is banned. FOLLOWED_COMPANIES_PRIVATE when the user has not made them public and the caller is not that user. PROFILE_SIGN_IN_REQUIRED when the caller is anonymous and user_id names a user who shows their profile to signed-in users only."
+          },
+          "404": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            },
+            "description": "NOT_FOUND when the account does not exist or is not renderable."
+          },
+          "500": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            },
+            "description": "Internal Server Error"
+          },
+          "503": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            },
+            "description": "SERVICE_UNAVAILABLE when the catalog or the account service cannot be reached."
+          }
+        },
+        "security": [
+          {
+            "session": []
+          },
+          {
+            "bearer": []
+          },
+          {}
+        ],
+        "summary": "List a user's followed companies",
+        "tags": [
+          "users"
+        ]
+      }
+    },
     "/users/{user_id}/followers": {
       "get": {
         "description": "Accounts that follow this user, newest first, as a cursor page. An account the forum cannot resolve is still listed, with a null name. The last page omits next_cursor. NOT_FOUND when the account does not exist or is not renderable. PROFILE_SIGN_IN_REQUIRED when the caller is anonymous and user_id names a user who shows their profile to signed-in users only.",
@@ -73486,7 +73661,7 @@
     },
     "/users/{user_id}/work-records": {
       "get": {
-        "description": "A cursor collection of the works a user has a play state on, newest state change first, each with the user's playtime and rating. A work with only a playtime or only a rating is not listed. Play records are public on every NextMoe site unless the user turns them off; the user always reads their own. state_counts comes with the first page and ignores the state filter, so one request fills a row of tabs. PROFILE_SIGN_IN_REQUIRED when the caller is anonymous and user_id names a user who shows their profile to signed-in users only.",
+        "description": "A cursor collection of a user's works, each with the user's play state, playtime and rating, in sort order (default: newest change first). record=state, the default, lists the works with a play state; record=playtime adds works with only a playtime, and record=any works with only a rating too. Play records are public on every NextMoe site unless the user turns them off; the user always reads their own. state_counts comes with the first page and ignores the state filter, so one request fills a row of tabs. PROFILE_SIGN_IN_REQUIRED when the caller is anonymous and user_id names a user who shows their profile to signed-in users only.",
         "operationId": "listUserWorkRecords",
         "parameters": [
           {
@@ -73502,17 +73677,39 @@
             }
           },
           {
-            "description": "Only works in these play states, comma-separated. Omitted lists every state.",
+            "description": "Which works make up the list. Default state.",
+            "explode": false,
+            "in": "query",
+            "name": "record",
+            "schema": {
+              "$ref": "#/components/schemas/WorkRecordSet",
+              "default": "state",
+              "description": "Which works make up the list. Default state."
+            }
+          },
+          {
+            "description": "Item order. Default updated_desc. The cursor is bound to it.",
+            "explode": false,
+            "in": "query",
+            "name": "sort",
+            "schema": {
+              "$ref": "#/components/schemas/WorkRecordSort",
+              "default": "updated_desc",
+              "description": "Item order. Default updated_desc. The cursor is bound to it."
+            }
+          },
+          {
+            "description": "Only works in these play states, comma-separated. Omitted lists every state. none needs record=playtime or record=any.",
             "explode": false,
             "in": "query",
             "name": "state",
             "schema": {
-              "description": "Only works in these play states, comma-separated. Omitted lists every state.",
+              "description": "Only works in these play states, comma-separated. Omitted lists every state. none needs record=playtime or record=any.",
               "items": {
                 "$ref": "#/components/schemas/WorkState",
-                "description": "A play state on catalog's coarse axis. done covers every finish, whatever its completion."
+                "description": "A play state on catalog's coarse axis. done covers every finish, whatever its completion. none is a work without a play state, which only record=playtime and record=any list."
               },
-              "maxItems": 5,
+              "maxItems": 6,
               "type": "array"
             }
           },
@@ -73573,7 +73770,7 @@
                 }
               }
             },
-            "description": "UNKNOWN_ENUM_VALUE for an unknown state; INVALID_CURSOR, including a cursor from another user, state or include_nsfw; LIMIT_TOO_LARGE."
+            "description": "UNKNOWN_ENUM_VALUE for an unknown state, record or sort; INVALID_PARAMETER for state=none under record=state; INVALID_CURSOR, including a cursor from another user, state, record, sort or include_nsfw; LIMIT_TOO_LARGE."
           },
           "401": {
             "content": {

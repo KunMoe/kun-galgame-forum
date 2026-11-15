@@ -2,6 +2,7 @@ package apiv1
 
 import (
 	"context"
+	"errors"
 	"log/slog"
 	"net/http"
 	"net/url"
@@ -43,6 +44,12 @@ type CompanyFollowState struct {
 
 type companyFollowStateOutput struct {
 	Body CompanyFollowState
+}
+
+type listUserFollowedCompaniesInput struct {
+	UserID string `path:"user_id" pattern:"^[1-9][0-9]{0,18}$" maxLength:"19" doc:"User id."`
+	Page   int    `query:"page" minimum:"1" default:"1" doc:"1-based page number. page × limit may not exceed 10000."`
+	Limit  int    `query:"limit" minimum:"1" maximum:"100" default:"24" doc:"Page size. 1–100, default 24. Values above 100 are rejected, not clamped."`
 }
 
 type listMyFollowedCompaniesInput struct {
@@ -132,6 +139,24 @@ func (s *Service) registerCompanyFollows(api huma.API) {
 			503: "SERVICE_UNAVAILABLE when the catalog cannot be reached.",
 		}),
 	}), s.listMyFollowedCompanies)
+
+	huma.Register(api, v1.ProfileGated(v1.Optional(huma.Operation{
+		OperationID: "listUserFollowedCompanies",
+		Method:      http.MethodGet,
+		Path:        "/users/{user_id}/followed-companies",
+		Summary:     "List a user's followed companies",
+		Description: "A page-number collection of the companies a user follows, newest follow first, in the shape of listMyFollowedCompanies. " +
+			"Followed companies are private on every NextMoe site until the user makes them public; the user always reads their own.",
+		Tags:        []string{"users"},
+		Middlewares: huma.Middlewares{withAccessToken},
+		Responses: problemResponses(map[int]string{
+			400: "LIMIT_TOO_LARGE or INVALID_PARAMETER when page × limit is too deep.",
+			401: "INVALID_CREDENTIAL for a bad Bearer.",
+			403: "ACCOUNT_BANNED when the caller's account is banned. FOLLOWED_COMPANIES_PRIVATE when the user has not made them public and the caller is not that user.",
+			404: "NOT_FOUND when the account does not exist or is not renderable.",
+			503: "SERVICE_UNAVAILABLE when the catalog or the account service cannot be reached.",
+		}),
+	}), "user_id"), s.listUserFollowedCompanies)
 }
 
 func (s *Service) getMyCompanyFollow(ctx context.Context, in *companyFollowPathInput) (*companyFollowStateOutput, error) {
@@ -197,13 +222,55 @@ func (s *Service) listMyFollowedCompanies(ctx context.Context, in *listMyFollowe
 	if s.catalog == nil {
 		return nil, problem.Internal(errUnconfigured)
 	}
+	return s.followedCompanies(ctx, in, func(cursor string) ([]catalogclient.CompanyFollowRecord, string, error) {
+		return s.catalog.ListMyCompanyFollows(ctx, token, cursor, companyFollowSweepPage)
+	}, func(err error) error { return mapUserPlane(err, false) })
+}
+
+func (s *Service) listUserFollowedCompanies(ctx context.Context, in *listUserFollowedCompaniesInput) (*listMyFollowedCompaniesOutput, error) {
+	ownerID, ok := parseWorkID(in.UserID)
+	if !ok {
+		return nil, notFound()
+	}
+	if s.users == nil || s.catalog == nil {
+		return nil, problem.Internal(errUnconfigured)
+	}
+	_, renderable, p := s.lookupOwner(ctx, int64(ownerID))
+	if p != nil {
+		return nil, p
+	}
+	user := callerUser(ctx)
+	isOwner := user != nil && user.ID == ownerID
+	if !renderable && !isOwner {
+		return nil, notFound()
+	}
+	page := &listMyFollowedCompaniesInput{Page: in.Page, Limit: in.Limit}
+	if isOwner {
+		return s.listMyFollowedCompanies(ctx, page)
+	}
+	return s.followedCompanies(ctx, page, func(cursor string) ([]catalogclient.CompanyFollowRecord, string, error) {
+		return s.catalog.UserCompanyFollows(ctx, int64(ownerID), cursor, companyFollowSweepPage)
+	}, mapCompanyFollowsErr)
+}
+
+func mapCompanyFollowsErr(err error) error {
+	var api *catalogclient.UserAPIError
+	if errors.As(err, &api) && api.Status == http.StatusForbidden && api.ProblemCode == catalogclient.CodeFollowedCompaniesPrivate {
+		return problem.New(problem.CodeFollowedCompaniesPrivate, "The account keeps the companies it follows private.")
+	}
+	return mapUserPlane(err, false)
+}
+
+type companyFollowPage func(cursor string) ([]catalogclient.CompanyFollowRecord, string, error)
+
+func (s *Service) followedCompanies(ctx context.Context, in *listMyFollowedCompaniesInput, page companyFollowPage, mapErr func(error) error) (*listMyFollowedCompaniesOutput, error) {
 	pg := browsePage(in.Page, in.Limit)
 	if prob := pg.CheckDepth(); prob != nil {
 		return nil, prob
 	}
-	rows, truncated, err := s.sweepCompanyFollows(ctx, token)
+	rows, truncated, err := sweepCompanyFollows(page)
 	if err != nil {
-		return nil, mapUserPlane(err, false)
+		return nil, mapErr(err)
 	}
 	byID, err := s.followedCompanySummaries(ctx, rows)
 	if err != nil {
@@ -238,11 +305,11 @@ func (s *Service) listMyFollowedCompanies(ctx context.Context, in *listMyFollowe
 	}}, nil
 }
 
-func (s *Service) sweepCompanyFollows(ctx context.Context, token string) ([]catalogclient.CompanyFollowRecord, bool, error) {
+func sweepCompanyFollows(page companyFollowPage) ([]catalogclient.CompanyFollowRecord, bool, error) {
 	var all []catalogclient.CompanyFollowRecord
 	cursor := ""
 	for i := 0; i < companyFollowSweepPages; i++ {
-		rows, next, err := s.catalog.ListMyCompanyFollows(ctx, token, cursor, companyFollowSweepPage)
+		rows, next, err := page(cursor)
 		if err != nil {
 			return nil, false, err
 		}

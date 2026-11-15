@@ -10,11 +10,26 @@ import (
 )
 
 const (
-	CodePlayRecordsPrivate = "PLAY_RECORDS_PRIVATE"
+	CodePlayRecordsPrivate       = "PLAY_RECORDS_PRIVATE"
+	CodeFollowedCompaniesPrivate = "FOLLOWED_COMPANIES_PRIVATE"
 
 	PlayRecordsPublic  = "public"
 	PlayRecordsPrivate = "private"
+
+	// WorkStateNone filters and counts the works record=playtime and
+	// record=any list without a play state.
+	WorkStateNone = "none"
+
+	RecordState    = "state"
+	RecordPlaytime = "playtime"
+	RecordAny      = "any"
 )
+
+// WorkRecordSorts is catalog's closed sort vocabulary for work-records, the
+// default first.
+func WorkRecordSorts() []string {
+	return []string{"updated_desc", "updated_asc", "playtime_desc", "playtime_asc", "rating_desc", "rating_asc"}
+}
 
 // WorkStates is catalog's closed play-state vocabulary, in its facet order.
 func WorkStates() []string {
@@ -31,11 +46,16 @@ type WorkRecordsQuery struct {
 	Limit         int
 	Counts        bool
 	Record        string
+	Sort          string
 	PlaytimeTotal bool
 }
 
-// AccountWorkRecord is one work on an account's library: a work-state always,
-// playtime and rating when the account has them.
+func (q WorkRecordsQuery) listsStateless() bool {
+	return q.Record == RecordPlaytime || q.Record == RecordAny
+}
+
+// AccountWorkRecord is one work on an account's library. State is empty only
+// for a work record=playtime or record=any lists without a play state.
 type AccountWorkRecord struct {
 	WorkID          int64
 	State           string
@@ -48,7 +68,8 @@ type AccountWorkRecord struct {
 type WorkRecordsPage struct {
 	Items      []AccountWorkRecord
 	NextCursor string
-	// StateCounts holds every state, 0 included, when Counts was asked for.
+	// StateCounts holds every state, 0 included, when Counts was asked for,
+	// and none when the query lists works without a play state.
 	StateCounts map[string]int
 	// PlaytimeTotalMinutes is nil when catalog sent no total: it was not
 	// asked for, or catalog predates spec 2.87.0.
@@ -91,6 +112,9 @@ func (c *Client) WorkRecords(ctx context.Context, token string, in WorkRecordsQu
 	if in.Record != "" {
 		q.Set("record", in.Record)
 	}
+	if in.Sort != "" {
+		q.Set("sort", in.Sort)
+	}
 	if in.PlaytimeTotal {
 		q.Set("include_playtime_total", "true")
 	}
@@ -112,16 +136,15 @@ func (c *Client) WorkRecords(ctx context.Context, token string, in WorkRecordsQu
 		out.NextCursor = *got.NextCursor
 	}
 	for _, r := range got.Items {
-		if r.WorkState == nil || r.WorkState.State == "" {
+		stateless := r.WorkState == nil || r.WorkState.State == ""
+		if stateless && !in.listsStateless() {
 			continue
 		}
-		rec := AccountWorkRecord{
-			WorkID:     parseFlexID(r.WorkID),
-			State:      r.WorkState.State,
-			Completion: r.WorkState.Completion,
-			Rating:     r.Rating.rating(),
+		rec := AccountWorkRecord{WorkID: parseFlexID(r.WorkID), Rating: r.Rating.rating()}
+		if !stateless {
+			rec.State, rec.Completion = r.WorkState.State, r.WorkState.Completion
+			rec.StateUpdatedAt, _ = time.Parse(time.RFC3339Nano, r.WorkState.UpdatedAt)
 		}
-		rec.StateUpdatedAt, _ = time.Parse(time.RFC3339Nano, r.WorkState.UpdatedAt)
 		if r.Playtime != nil {
 			m := r.Playtime.Minutes
 			rec.PlaytimeMinutes = &m
@@ -133,6 +156,9 @@ func (c *Client) WorkRecords(ctx context.Context, token string, in WorkRecordsQu
 		for _, s := range WorkStates() {
 			out.StateCounts[s] = 0
 		}
+		if in.listsStateless() {
+			out.StateCounts[WorkStateNone] = 0
+		}
 		for _, b := range got.Facets["state"] {
 			if _, ok := out.StateCounts[b.Value]; ok {
 				out.StateCounts[b.Value] = b.Count
@@ -143,17 +169,25 @@ func (c *Client) WorkRecords(ctx context.Context, token string, in WorkRecordsQu
 }
 
 type PrivacySettings struct {
-	PlayRecords string
-	UpdatedAt   *time.Time
+	PlayRecords       string
+	FollowedCompanies string
+	UpdatedAt         *time.Time
+}
+
+// PrivacyPatch changes only the switches it names; each is public or private.
+type PrivacyPatch struct {
+	PlayRecords       string `json:"play_records,omitempty"`
+	FollowedCompanies string `json:"followed_companies,omitempty"`
 }
 
 type v2Privacy struct {
-	PlayRecords string  `json:"play_records"`
-	UpdatedAt   *string `json:"updated_at"`
+	PlayRecords       string  `json:"play_records"`
+	FollowedCompanies string  `json:"followed_companies"`
+	UpdatedAt         *string `json:"updated_at"`
 }
 
 func (p v2Privacy) settings() PrivacySettings {
-	out := PrivacySettings{PlayRecords: p.PlayRecords}
+	out := PrivacySettings{PlayRecords: p.PlayRecords, FollowedCompanies: p.FollowedCompanies}
 	if p.UpdatedAt != nil {
 		if t, err := time.Parse(time.RFC3339Nano, *p.UpdatedAt); err == nil {
 			out.UpdatedAt = &t
@@ -170,10 +204,9 @@ func (c *Client) MyPrivacy(ctx context.Context, token string) (PrivacySettings, 
 	return out.settings(), nil
 }
 
-func (c *Client) PatchMyPrivacy(ctx context.Context, token, playRecords string) (PrivacySettings, error) {
+func (c *Client) PatchMyPrivacy(ctx context.Context, token string, patch PrivacyPatch) (PrivacySettings, error) {
 	var out v2Privacy
-	body := map[string]string{"play_records": playRecords}
-	if err := c.userV2JSON(ctx, http.MethodPatch, token, "/v2/me/privacy", body, &out, nil); err != nil {
+	if err := c.userV2JSON(ctx, http.MethodPatch, token, "/v2/me/privacy", patch, &out, nil); err != nil {
 		return PrivacySettings{}, err
 	}
 	return out.settings(), nil
