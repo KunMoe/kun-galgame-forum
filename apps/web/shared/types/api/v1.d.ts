@@ -6358,7 +6358,7 @@ export interface components {
             update_log_id: string;
         };
         /** @enum {string} */
-        ActivityVerb: "publish" | "reply" | "comment" | "rate" | "like" | "edit";
+        ActivityVerb: "publish" | "reply" | "comment" | "rate" | "like" | "edit" | "favorite" | "follow" | "mark" | "play";
         AdminDoc: {
             /** @description Banner image. null when the doc has none. */
             banner: components["schemas"]["Image"] | null;
@@ -8562,7 +8562,7 @@ export interface components {
             excerpt: string;
             /** @description Community item id. */
             id: string;
-            /** @description Path and query of url when site is kungal. null for other sites. */
+            /** @description This forum's path for the item: the object's page when object_ref is set, else the path and query of url when site is kungal. null otherwise. */
             in_site_path: string | null;
             /** @description Whether the item is not sfw. */
             is_nsfw: boolean;
@@ -8577,6 +8577,10 @@ export interface components {
             object_kind: string;
             /** @description Display name of object_kind. Show as it is. Free text; never use it as a decision input. */
             object_label: string;
+            /** @description The object the item is about, as kind:id, when the site named it that way. folder ids are collection ids. null when absent. */
+            object_ref: string | null;
+            /** @description The company, user or topic object_ref names, as of this read. null for other kinds, when object_ref is null, and when the lookup fails; a work is in work_preview. */
+            object_target: components["schemas"]["EntityTarget"] | null;
             /**
              * Format: date-time
              * @description When it happened.
@@ -8586,13 +8590,13 @@ export interface components {
             related_work_id: string | null;
             /** @description The NextMoe site the item happened on. kungal is this forum. An open vocabulary: show an unknown token as it is. */
             site: string;
-            /** @description Plain-text title. Free text; never use it as a decision input. */
+            /** @description Plain-text title as the site wrote it. May be stale or empty when object_ref is set: name the object from object_target or work_preview instead. Free text; never use it as a decision input. */
             title: string;
             /** @description The topic a kungal publish item names, as this forum stores it now. null for every other item, and when the topic no longer exists. */
             topic_times: components["schemas"]["FollowingTopicTimes"] | null;
             /**
              * Format: uri
-             * @description Absolute https URL of the item.
+             * @description Absolute https URL of the item. For an item that names its object only through object_ref, this forum's page of the object.
              */
             url: string;
             /** @description What the performer did. */

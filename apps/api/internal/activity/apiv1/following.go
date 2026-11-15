@@ -34,11 +34,11 @@ const (
 
 type ActivityVerb string
 
-var activityVerbs = []string{"publish", "reply", "comment", "rate", "like", "edit"}
+var activityVerbs = []string{"publish", "reply", "comment", "rate", "like", "edit", "favorite", "follow", "mark", "play"}
 
-// Community appends verbs (favorite, follow, mark, play) ahead of this list, and
-// the web looks every verb up in a phrase table; an unknown one is left out
-// here instead of breaking the page.
+// Community appends verbs ahead of this list, and the web looks every verb up
+// in a phrase table; an unknown one is left out here instead of breaking the
+// page.
 func knownVerb(v string) bool { return slices.Contains(activityVerbs, v) }
 
 func knownGroups(groups []communityclient.ActivityGroupView) []communityclient.ActivityGroupView {
@@ -51,7 +51,7 @@ func knownItems(items []communityclient.ActivityItemView) []communityclient.Acti
 
 func (ActivityVerb) Schema(huma.Registry) *huma.Schema {
 	s := repr.ClosedEnum(activityVerbs...)
-	s.Description = "What the performer did: publish, reply, comment, rate, like or edit."
+	s.Description = "What the performer did: publish, reply, comment, rate, like, edit, favorite, follow, mark (set a play state; object_kind names it) or play (logged playtime)."
 	return s
 }
 
@@ -79,23 +79,25 @@ type FollowingActivityGroup struct {
 }
 
 type FollowingActivityItem struct {
-	Object        string               `json:"object" enum:"following_activity_item" maxLength:"23" doc:"Type discriminant. Always following_activity_item."`
-	ID            repr.DecimalID       `json:"id" doc:"Community item id."`
-	Site          string               `json:"site" maxLength:"64" pattern:"^[a-z0-9][a-z0-9_-]*$" doc:"The NextMoe site the item happened on. kungal is this forum. An open vocabulary: show an unknown token as it is."`
-	Key           string               `json:"key" maxLength:"128" doc:"Community's idempotency key for the item. Free text; never use it as a decision input."`
-	Verb          ActivityVerb         `json:"verb" doc:"What the performer did."`
-	ObjectKind    string               `json:"object_kind" pattern:"^[a-z0-9_]{1,32}$" maxLength:"32" doc:"The site's type name for the object. An open vocabulary."`
-	ObjectLabel   string               `json:"object_label" maxLength:"16" doc:"Display name of object_kind. Show as it is. Free text; never use it as a decision input."`
-	Title         string               `json:"title" maxLength:"200" doc:"Plain-text title. Free text; never use it as a decision input."`
-	Excerpt       string               `json:"excerpt" maxLength:"300" doc:"Plain-text excerpt, may be empty. Free text; never use it as a decision input."`
-	URL           string               `json:"url" format:"uri" maxLength:"2048" doc:"Absolute https URL of the item."`
-	InSitePath    *string              `json:"in_site_path" pattern:"^/" maxLength:"512" doc:"Path and query of url when site is kungal. null for other sites."`
-	Cover         *repr.Image          `json:"cover" doc:"Cover from community's cover_image_hash. null when none."`
-	RelatedWorkID *repr.DecimalID      `json:"related_work_id" doc:"Catalog work id when the item names one. null when none."`
-	WorkPreview   *content.WorkPreview `json:"work_preview" doc:"The work related_work_id names. null when there is none, when catalog does not show it under include_nsfw, and when catalog is unreachable."`
-	IsNSFW        bool                 `json:"is_nsfw" doc:"Whether the item is not sfw."`
-	OccurredAt    repr.DateTime        `json:"occurred_at" doc:"When it happened."`
-	TopicTimes    *FollowingTopicTimes `json:"topic_times" doc:"The topic a kungal publish item names, as this forum stores it now. null for every other item, and when the topic no longer exists."`
+	Object        string                `json:"object" enum:"following_activity_item" maxLength:"23" doc:"Type discriminant. Always following_activity_item."`
+	ID            repr.DecimalID        `json:"id" doc:"Community item id."`
+	Site          string                `json:"site" maxLength:"64" pattern:"^[a-z0-9][a-z0-9_-]*$" doc:"The NextMoe site the item happened on. kungal is this forum. An open vocabulary: show an unknown token as it is."`
+	Key           string                `json:"key" maxLength:"128" doc:"Community's idempotency key for the item. Free text; never use it as a decision input."`
+	Verb          ActivityVerb          `json:"verb" doc:"What the performer did."`
+	ObjectKind    string                `json:"object_kind" pattern:"^[a-z0-9_]{1,32}$" maxLength:"32" doc:"The site's type name for the object. An open vocabulary."`
+	ObjectLabel   string                `json:"object_label" maxLength:"16" doc:"Display name of object_kind. Show as it is. Free text; never use it as a decision input."`
+	Title         string                `json:"title" maxLength:"200" doc:"Plain-text title as the site wrote it. May be stale or empty when object_ref is set: name the object from object_target or work_preview instead. Free text; never use it as a decision input."`
+	Excerpt       string                `json:"excerpt" maxLength:"300" doc:"Plain-text excerpt, may be empty. Free text; never use it as a decision input."`
+	URL           string                `json:"url" format:"uri" maxLength:"2048" doc:"Absolute https URL of the item. For an item that names its object only through object_ref, this forum's page of the object."`
+	InSitePath    *string               `json:"in_site_path" pattern:"^/" maxLength:"512" doc:"This forum's path for the item: the object's page when object_ref is set, else the path and query of url when site is kungal. null otherwise."`
+	ObjectRef     *string               `json:"object_ref" pattern:"^(work|company|folder|user|topic):[1-9][0-9]{0,18}$" maxLength:"27" doc:"The object the item is about, as kind:id, when the site named it that way. folder ids are collection ids. null when absent."`
+	ObjectTarget  *content.EntityTarget `json:"object_target" doc:"The company, user or topic object_ref names, as of this read. null for other kinds, when object_ref is null, and when the lookup fails; a work is in work_preview."`
+	Cover         *repr.Image           `json:"cover" doc:"Cover from community's cover_image_hash. null when none."`
+	RelatedWorkID *repr.DecimalID       `json:"related_work_id" doc:"Catalog work id when the item names one. null when none."`
+	WorkPreview   *content.WorkPreview  `json:"work_preview" doc:"The work related_work_id names. null when there is none, when catalog does not show it under include_nsfw, and when catalog is unreachable."`
+	IsNSFW        bool                  `json:"is_nsfw" doc:"Whether the item is not sfw."`
+	OccurredAt    repr.DateTime         `json:"occurred_at" doc:"When it happened."`
+	TopicTimes    *FollowingTopicTimes  `json:"topic_times" doc:"The topic a kungal publish item names, as this forum stores it now. null for every other item, and when the topic no longer exists."`
 }
 
 type FollowingActivitySummary struct {
@@ -115,7 +117,7 @@ type FollowingActivityReadMarkerWrite struct {
 
 type FollowingFilters struct {
 	IncludeNSFW bool           `query:"include_nsfw" default:"false" doc:"When true, NSFW groups are included. Default false."`
-	Verbs       []ActivityVerb `query:"verbs" required:"false" maxItems:"6" doc:"Only these verbs, comma-separated. Absent means every verb."`
+	Verbs       []ActivityVerb `query:"verbs" required:"false" maxItems:"10" doc:"Only these verbs, comma-separated. Absent means every verb."`
 	Sites       []ActivitySite `query:"sites" required:"false" doc:"Only these NextMoe sites, comma-separated. Absent means every site."`
 }
 
@@ -405,7 +407,7 @@ func (s *Service) markFollowingActivitiesSeen(ctx context.Context, in *following
 }
 
 func (s *Service) followingItem(it communityclient.ActivityItemView, x itemExtras) FollowingActivityItem {
-	return FollowingActivityItem{
+	item := FollowingActivityItem{
 		Object:        "following_activity_item",
 		ID:            decimalID(it.ID),
 		Site:          it.Site,
@@ -417,13 +419,22 @@ func (s *Service) followingItem(it communityclient.ActivityItemView, x itemExtra
 		Excerpt:       it.Excerpt,
 		URL:           it.URL,
 		InSitePath:    inSitePath(it.Site, it.URL),
+		ObjectTarget:  x.target(it),
 		Cover:         s.coverImage(it.CoverImageHash),
-		RelatedWorkID: workIDPtr(it.WorkID),
+		RelatedWorkID: workIDPtr(int64(itemWorkID(it))),
 		WorkPreview:   x.work(it),
 		IsNSFW:        it.ContentLimit != "sfw",
 		OccurredAt:    parseDateTime(it.OccurredAt),
 		TopicTimes:    topicTimesOf(it, x.times),
 	}
+	if ref, ok := parseObjectRef(it.ObjectRef); ok {
+		path, raw := ref.path(), ref.String()
+		item.InSitePath, item.ObjectRef = &path, &raw
+		if item.URL == "" {
+			item.URL = s.convert.SiteBase + path
+		}
+	}
+	return item
 }
 
 func (s *Service) coverImage(hash string) *repr.Image {
@@ -506,11 +517,11 @@ func decimalID(id int64) repr.DecimalID {
 	return repr.DecimalID(strconv.FormatInt(id, 10))
 }
 
-func workIDPtr(id *int64) *repr.DecimalID {
-	if id == nil || *id <= 0 {
+func workIDPtr(id int64) *repr.DecimalID {
+	if id <= 0 {
 		return nil
 	}
-	d := decimalID(*id)
+	d := decimalID(id)
 	return &d
 }
 

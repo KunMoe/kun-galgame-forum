@@ -800,9 +800,13 @@
           "comment",
           "rate",
           "like",
-          "edit"
+          "edit",
+          "favorite",
+          "follow",
+          "mark",
+          "play"
         ],
-        "maxLength": 7,
+        "maxLength": 8,
         "type": "string",
         "x-vocabulary-closed": true
       },
@@ -6657,7 +6661,7 @@
             "type": "string"
           },
           "in_site_path": {
-            "description": "Path and query of url when site is kungal. null for other sites.",
+            "description": "This forum's path for the item: the object's page when object_ref is set, else the path and query of url when site is kungal. null otherwise.",
             "maxLength": 512,
             "pattern": "^/",
             "type": [
@@ -6691,6 +6695,26 @@
             "maxLength": 16,
             "type": "string"
           },
+          "object_ref": {
+            "description": "The object the item is about, as kind:id, when the site named it that way. folder ids are collection ids. null when absent.",
+            "maxLength": 27,
+            "pattern": "^(work|company|folder|user|topic):[1-9][0-9]{0,18}$",
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "object_target": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/EntityTarget"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "The company, user or topic object_ref names, as of this read. null for other kinds, when object_ref is null, and when the lookup fails; a work is in work_preview."
+          },
           "occurred_at": {
             "description": "When it happened.",
             "format": "date-time",
@@ -6716,7 +6740,7 @@
             "type": "string"
           },
           "title": {
-            "description": "Plain-text title. Free text; never use it as a decision input.",
+            "description": "Plain-text title as the site wrote it. May be stale or empty when object_ref is set: name the object from object_target or work_preview instead. Free text; never use it as a decision input.",
             "maxLength": 200,
             "type": "string"
           },
@@ -6732,7 +6756,7 @@
             "description": "The topic a kungal publish item names, as this forum stores it now. null for every other item, and when the topic no longer exists."
           },
           "url": {
-            "description": "Absolute https URL of the item.",
+            "description": "Absolute https URL of the item. For an item that names its object only through object_ref, this forum's page of the object.",
             "format": "uri",
             "maxLength": 2048,
             "type": "string"
@@ -6765,6 +6789,8 @@
           "excerpt",
           "url",
           "in_site_path",
+          "object_ref",
+          "object_target",
           "cover",
           "related_work_id",
           "work_preview",
@@ -48835,9 +48861,9 @@
               "description": "Only these verbs, comma-separated. Absent means every verb.",
               "items": {
                 "$ref": "#/components/schemas/ActivityVerb",
-                "description": "What the performer did: publish, reply, comment, rate, like or edit."
+                "description": "What the performer did: publish, reply, comment, rate, like, edit, favorite, follow, mark (set a play state; object_kind names it) or play (logged playtime)."
               },
-              "maxItems": 6,
+              "maxItems": 10,
               "type": "array"
             }
           },
@@ -49081,9 +49107,9 @@
               "description": "Only these verbs, comma-separated. Absent means every verb.",
               "items": {
                 "$ref": "#/components/schemas/ActivityVerb",
-                "description": "What the performer did: publish, reply, comment, rate, like or edit."
+                "description": "What the performer did: publish, reply, comment, rate, like, edit, favorite, follow, mark (set a play state; object_kind names it) or play (logged playtime)."
               },
-              "maxItems": 6,
+              "maxItems": 10,
               "type": "array"
             }
           },
@@ -71904,9 +71930,9 @@
               "description": "Only these verbs, comma-separated. Absent means every verb.",
               "items": {
                 "$ref": "#/components/schemas/ActivityVerb",
-                "description": "What the performer did: publish, reply, comment, rate, like or edit."
+                "description": "What the performer did: publish, reply, comment, rate, like, edit, favorite, follow, mark (set a play state; object_kind names it) or play (logged playtime)."
               },
-              "maxItems": 6,
+              "maxItems": 10,
               "type": "array"
             }
           },

@@ -5,6 +5,7 @@ import (
 	"net/http"
 	"net/url"
 	"strconv"
+	"strings"
 	"testing"
 
 	"kun-galgame-api/pkg/communityclient"
@@ -140,8 +141,8 @@ func TestV1UserActivitiesCommunityDown(t *testing.T) {
 func TestV1UserActivitiesSkipsAVerbItDoesNotKnow(t *testing.T) {
 	f := newFollowingFix(t)
 	f.cm.groups = []communityclient.ActivityGroupView{
-		faGroup(11, int64(w3UserOther), "catalog", "favorite", "2026-09-25",
-			faItem(101, int64(w3UserOther), "catalog", "favorite", "Work", "https://www.kungal.com/galgame/1", "sfw", nil, "")),
+		faGroup(11, int64(w3UserOther), "catalog", "wishlist", "2026-09-25",
+			faItem(101, int64(w3UserOther), "catalog", "wishlist", "Work", "https://www.kungal.com/galgame/1", "sfw", nil, "")),
 		faGroup(12, int64(w3UserOther), "kungal", "publish", "2026-09-24",
 			faItem(102, int64(w3UserOther), "kungal", "publish", "Topic", "https://www.kungal.com/topic/1", "sfw", nil, "")),
 	}
@@ -152,5 +153,66 @@ func TestV1UserActivitiesSkipsAVerbItDoesNotKnow(t *testing.T) {
 	groups := listItems(t, body)
 	if len(groups) != 1 || fmt.Sprint(groups[0]["id"]) != "12" {
 		t.Fatalf("groups %+v, want only the publish group", groups)
+	}
+}
+
+func TestV1UserActivitiesNameObjectsFromObjectRef(t *testing.T) {
+	f := newFollowingFix(t)
+	f.ActivityV1.WithEntities(f.entityResolver(f.Config.NextMoeAPI.ImageCDNBase))
+	f.catalog.items[77] = catalogItem(t, 77, "sfw")
+	withRef := func(it communityclient.ActivityItemView, kind, ref string) communityclient.ActivityItemView {
+		it.ObjectKind, it.ObjectRef = kind, &ref
+		return it
+	}
+	grant, topic := strconv.Itoa(w3UserGrant), strconv.Itoa(w3TopicPub)
+	follow := withRef(faItem(301, int64(w3UserOther), "moyu", "follow", "", "", "sfw", nil, ""), "user", "user:"+grant)
+	mark := withRef(faItem(302, int64(w3UserOther), "catalog", "mark", "Old name", "", "sfw", nil, ""), "work_done", "work:77")
+	folder := withRef(faItem(303, int64(w3UserOther), "catalog", "publish", "My folder", "", "sfw", nil, ""), "folder", "folder:5")
+	fav := withRef(faItem(304, int64(w3UserOther), "kungal", "favorite", "t", "https://www.kungal.com/topic/"+topic, "sfw", nil, ""), "topic", "topic:"+topic)
+	f.cm.groups = []communityclient.ActivityGroupView{
+		faGroup(21, int64(w3UserOther), "moyu", "follow", "2026-09-25", follow),
+		faGroup(22, int64(w3UserOther), "catalog", "mark", "2026-09-25", mark),
+		faGroup(23, int64(w3UserOther), "catalog", "publish", "2026-09-25", folder),
+		faGroup(24, int64(w3UserOther), "kungal", "favorite", "2026-09-25", fav),
+	}
+
+	resp, body := f.userActivities(t, "", w3UserOther, url.Values{})
+	if resp.StatusCode != http.StatusOK {
+		t.Fatalf("list %d %+v", resp.StatusCode, body)
+	}
+	groups := listItems(t, body)
+	if len(groups) != 4 {
+		t.Fatalf("groups %+v", groups)
+	}
+	item := func(i int) map[string]any {
+		row, _ := groups[i]["items"].([]any)
+		it, _ := row[0].(map[string]any)
+		return it
+	}
+	for i, want := range []struct{ ref, path, target string }{
+		{"user:" + grant, "/user/" + grant, "user"},
+		{"work:77", "/galgame/77", ""},
+		{"folder:5", "/collection/5", ""},
+		{"topic:" + topic, "/topic/" + topic, "topic"},
+	} {
+		it := item(i)
+		if it["object_ref"] != want.ref || it["in_site_path"] != want.path {
+			t.Errorf("item %d object_ref %v in_site_path %v, want %s %s", i, it["object_ref"], it["in_site_path"], want.ref, want.path)
+		}
+		u, _ := it["url"].(string)
+		if !strings.HasPrefix(u, "https://") || !strings.HasSuffix(u, want.path) {
+			t.Errorf("item %d url %q does not open %s", i, u, want.path)
+		}
+		target, _ := it["object_target"].(map[string]any)
+		if got, _ := target["object"].(string); got != want.target {
+			t.Errorf("item %d object_target %+v, want object %q", i, it["object_target"], want.target)
+		}
+	}
+	if fmt.Sprint(item(0)["object_target"].(map[string]any)["id"]) != grant {
+		t.Errorf("follow target %+v", item(0)["object_target"])
+	}
+	w, _ := item(1)["work_preview"].(map[string]any)
+	if fmt.Sprint(w["id"]) != "77" || fmt.Sprint(item(1)["related_work_id"]) != "77" {
+		t.Errorf("mark item work %+v related %v", item(1)["work_preview"], item(1)["related_work_id"])
 	}
 }

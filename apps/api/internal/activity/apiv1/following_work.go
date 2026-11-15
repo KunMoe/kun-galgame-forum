@@ -12,8 +12,9 @@ import (
 )
 
 type itemExtras struct {
-	times map[int]repository.TopicTimesRow
-	works map[int]content.WorkPreview
+	times   map[int]repository.TopicTimesRow
+	works   map[int]content.WorkPreview
+	targets map[objectRef]content.EntityTarget
 }
 
 func (s *Service) itemExtras(ctx context.Context, items []communityclient.ActivityItemView, includeNSFW bool) (itemExtras, *problem.Problem) {
@@ -21,7 +22,7 @@ func (s *Service) itemExtras(ctx context.Context, items []communityclient.Activi
 	if prob != nil {
 		return itemExtras{}, prob
 	}
-	return itemExtras{times: times, works: s.workPreviews(ctx, items, includeNSFW)}, nil
+	return itemExtras{times: times, works: s.workPreviews(ctx, items, includeNSFW), targets: s.objectTargets(ctx, items)}, nil
 }
 
 // A work preview only decorates an item, so a catalog outage leaves the items
@@ -32,8 +33,8 @@ func (s *Service) workPreviews(ctx context.Context, items []communityclient.Acti
 	}
 	workIDs := ids{}
 	for _, it := range items {
-		if it.WorkID != nil && *it.WorkID > 0 {
-			workIDs.add(int(*it.WorkID))
+		if id := itemWorkID(it); id > 0 {
+			workIDs.add(id)
 		}
 	}
 	if len(workIDs) == 0 {
@@ -54,10 +55,7 @@ func (s *Service) workPreviews(ctx context.Context, items []communityclient.Acti
 }
 
 func (x itemExtras) work(it communityclient.ActivityItemView) *content.WorkPreview {
-	if it.WorkID == nil {
-		return nil
-	}
-	if p, ok := x.works[int(*it.WorkID)]; ok {
+	if p, ok := x.works[itemWorkID(it)]; ok {
 		return &p
 	}
 	return nil

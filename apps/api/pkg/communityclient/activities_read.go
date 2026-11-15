@@ -7,20 +7,21 @@ import (
 )
 
 type ActivityItemView struct {
-	ID             int64  `json:"id"`
-	Site           string `json:"site"`
-	Key            string `json:"key"`
-	ActorID        int64  `json:"actor_id"`
-	Verb           string `json:"verb"`
-	ObjectKind     string `json:"object_kind"`
-	ObjectLabel    string `json:"object_label"`
-	Title          string `json:"title"`
-	Excerpt        string `json:"excerpt"`
-	URL            string `json:"url"`
-	CoverImageHash string `json:"cover_image_hash"`
-	WorkID         *int64 `json:"work_id"`
-	ContentLimit   string `json:"content_limit"`
-	OccurredAt     string `json:"occurred_at"`
+	ID             int64   `json:"id"`
+	Site           string  `json:"site"`
+	Key            string  `json:"key"`
+	ActorID        int64   `json:"actor_id"`
+	Verb           string  `json:"verb"`
+	ObjectKind     string  `json:"object_kind"`
+	ObjectLabel    string  `json:"object_label"`
+	Title          string  `json:"title"`
+	Excerpt        string  `json:"excerpt"`
+	URL            string  `json:"url"`
+	CoverImageHash string  `json:"cover_image_hash"`
+	WorkID         *int64  `json:"work_id"`
+	ObjectRef      *string `json:"object_ref"`
+	ContentLimit   string  `json:"content_limit"`
+	OccurredAt     string  `json:"occurred_at"`
 }
 
 type ActivityGroupView struct {
