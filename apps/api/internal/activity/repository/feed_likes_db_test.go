@@ -34,8 +34,10 @@ func TestLikeRowsFollowTheirTopicAndReply(t *testing.T) {
 	}
 	rows := func(kind string) (n int, scope string) {
 		t.Helper()
-		db.Raw(`SELECT count(*), COALESCE(max(access_scope), '') FROM feed_activity WHERE type = ? AND user_id = ?`, kind, liker).
-			Row().Scan(&n, &scope)
+		if err := db.Raw(`SELECT count(*), COALESCE(max(access_scope), '') FROM feed_activity WHERE type = ? AND user_id = ?`, kind, liker).
+			Row().Scan(&n, &scope); err != nil {
+			t.Fatal(err)
+		}
 		return n, scope
 	}
 
