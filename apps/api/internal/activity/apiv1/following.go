@@ -92,7 +92,7 @@ type FollowingActivityItem struct {
 	InSitePath    *string              `json:"in_site_path" pattern:"^/" maxLength:"512" doc:"Path and query of url when site is kungal. null for other sites."`
 	Cover         *repr.Image          `json:"cover" doc:"Cover from community's cover_image_hash. null when none."`
 	RelatedWorkID *repr.DecimalID      `json:"related_work_id" doc:"Catalog work id when the item names one. null when none."`
-	Work          *content.WorkPreview `json:"work" doc:"The work related_work_id names. null when there is none, when catalog does not show it under include_nsfw, and when catalog is unreachable."`
+	WorkPreview   *content.WorkPreview `json:"work_preview" doc:"The work related_work_id names. null when there is none, when catalog does not show it under include_nsfw, and when catalog is unreachable."`
 	IsNSFW        bool                 `json:"is_nsfw" doc:"Whether the item is not sfw."`
 	OccurredAt    repr.DateTime        `json:"occurred_at" doc:"When it happened."`
 	TopicTimes    *FollowingTopicTimes `json:"topic_times" doc:"The topic a kungal publish item names, as this forum stores it now. null for every other item, and when the topic no longer exists."`
@@ -412,7 +412,7 @@ func (s *Service) followingItem(it communityclient.ActivityItemView, x itemExtra
 		InSitePath:    inSitePath(it.Site, it.URL),
 		Cover:         s.coverImage(it.CoverImageHash),
 		RelatedWorkID: workIDPtr(it.WorkID),
-		Work:          x.work(it),
+		WorkPreview:   x.work(it),
 		IsNSFW:        it.ContentLimit != "sfw",
 		OccurredAt:    parseDateTime(it.OccurredAt),
 		TopicTimes:    topicTimesOf(it, x.times),

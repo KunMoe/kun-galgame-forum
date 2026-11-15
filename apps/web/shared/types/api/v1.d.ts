@@ -8598,7 +8598,7 @@ export interface components {
             /** @description What the performer did. */
             verb: components["schemas"]["ActivityVerb"];
             /** @description The work related_work_id names. null when there is none, when catalog does not show it under include_nsfw, and when catalog is unreachable. */
-            work: components["schemas"]["WorkPreview"] | null;
+            work_preview: components["schemas"]["WorkPreview"] | null;
         };
         FollowingActivityReadMarker: {
             /**
@@ -15831,15 +15831,15 @@ export interface components {
         };
         UserPlaytimeTotal: {
             /**
-             * Format: int64
-             * @description The user's playtime summed over every work they have one on, each work counted once at the most minutes any application reported. null when catalog does not report a total yet.
-             */
-            minutes: number | null;
-            /**
              * @description Type discriminant. Always user_playtime_total.
              * @constant
              */
             object: "user_playtime_total";
+            /**
+             * Format: int64
+             * @description The user's playtime summed over every work they have one on, each work counted once at the most minutes any application reported. null when catalog does not report a total yet.
+             */
+            total_playtime_minutes: number | null;
         };
         /** @enum {string} */
         UserPostRelation: "authored" | "received" | "liked";

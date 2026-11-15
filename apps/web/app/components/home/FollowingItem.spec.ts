@@ -33,7 +33,7 @@ const base: FollowingActivityItem = {
   in_site_path: '/galgame-rating/5',
   cover: null,
   related_work_id: null,
-  work: null,
+  work_preview: null,
   is_nsfw: false,
   occurred_at: '2026-11-14T08:00:00Z',
   topic_times: null
@@ -46,7 +46,7 @@ describe('HomeFollowingItem', () => {
         item: {
           ...base,
           related_work_id: '77',
-          work: {
+          work_preview: {
             object: 'work',
             id: '77',
             ...name('Work 77'),

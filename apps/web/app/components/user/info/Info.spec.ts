@@ -19,7 +19,10 @@ const serveMinutes = (minutes: number | null) =>
     vi.fn(
       async () =>
         new Response(
-          JSON.stringify({ object: 'user_playtime_total', minutes }),
+          JSON.stringify({
+            object: 'user_playtime_total',
+            total_playtime_minutes: minutes
+          }),
           { status: 200, headers: { 'content-type': 'application/json' } }
         )
     )

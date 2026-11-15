@@ -56,17 +56,17 @@ func TestV1UserActivitiesMapsGroupsWithoutActor(t *testing.T) {
 	if it["object"] != "following_activity_item" || it["in_site_path"] != "/topic/42" || fmt.Sprint(it["related_work_id"]) != "77" {
 		t.Fatalf("item %+v", it)
 	}
-	w, _ := it["work"].(map[string]any)
+	w, _ := it["work_preview"].(map[string]any)
 	maker, _ := w["maker"].(map[string]any)
 	if fmt.Sprint(w["id"]) != "77" || w["release_date"] != "2024-05-01" || w["release_date_precision"] != "month" ||
 		maker["display_name"] != "Brand" || w["top_tags"] == nil {
-		t.Fatalf("work %+v", it["work"])
+		t.Fatalf("work %+v", it["work_preview"])
 	}
 	if groups[1]["site"] != "moyu" {
 		t.Fatalf("moyu group %+v", groups[1])
 	}
 	moyu, _ := groups[1]["items"].([]any)
-	if m, _ := moyu[0].(map[string]any); m["work"] != nil {
+	if m, _ := moyu[0].(map[string]any); m["work_preview"] != nil {
 		t.Fatalf("an item without a work has one: %+v", m)
 	}
 }
@@ -85,7 +85,7 @@ func TestV1UserActivitiesSurviveACatalogOutage(t *testing.T) {
 		t.Fatalf("list %d %+v", resp.StatusCode, body)
 	}
 	row, _ := listItems(t, body)[0]["items"].([]any)
-	if it, _ := row[0].(map[string]any); it["work"] != nil || fmt.Sprint(it["related_work_id"]) != "78" {
+	if it, _ := row[0].(map[string]any); it["work_preview"] != nil || fmt.Sprint(it["related_work_id"]) != "78" {
 		t.Fatalf("item %+v", it)
 	}
 }

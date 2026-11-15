@@ -6741,7 +6741,7 @@
             "$ref": "#/components/schemas/ActivityVerb",
             "description": "What the performer did."
           },
-          "work": {
+          "work_preview": {
             "anyOf": [
               {
                 "$ref": "#/components/schemas/WorkPreview"
@@ -6767,7 +6767,7 @@
           "in_site_path",
           "cover",
           "related_work_id",
-          "work",
+          "work_preview",
           "is_nsfw",
           "occurred_at",
           "topic_times"
@@ -25950,7 +25950,13 @@
       },
       "UserPlaytimeTotal": {
         "properties": {
-          "minutes": {
+          "object": {
+            "const": "user_playtime_total",
+            "description": "Type discriminant. Always user_playtime_total.",
+            "maxLength": 19,
+            "type": "string"
+          },
+          "total_playtime_minutes": {
             "description": "The user's playtime summed over every work they have one on, each work counted once at the most minutes any application reported. null when catalog does not report a total yet.",
             "format": "int64",
             "minimum": 0,
@@ -25958,17 +25964,11 @@
               "integer",
               "null"
             ]
-          },
-          "object": {
-            "const": "user_playtime_total",
-            "description": "Type discriminant. Always user_playtime_total.",
-            "maxLength": 19,
-            "type": "string"
           }
         },
         "required": [
           "object",
-          "minutes"
+          "total_playtime_minutes"
         ],
         "type": "object"
       },

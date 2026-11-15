@@ -325,7 +325,7 @@ func g6TotalPath(uid int, query string) string {
 func TestV1UserPlaytimeTotal(t *testing.T) {
 	f := newG6Fix(t)
 	resp, body := f.call(t, http.MethodGet, g6TotalPath(w3UserAlice, ""), g6TotalSpec, "sess-bob", "", nil)
-	if resp.StatusCode != http.StatusOK || body["object"] != "user_playtime_total" || asInt(body["minutes"]) != 125 {
+	if resp.StatusCode != http.StatusOK || body["object"] != "user_playtime_total" || asInt(body["total_playtime_minutes"]) != 125 {
 		t.Fatalf("visitor %d %+v", resp.StatusCode, body)
 	}
 	calls := f.recordCalls()
@@ -338,7 +338,7 @@ func TestV1UserPlaytimeTotal(t *testing.T) {
 	resp, body = f.call(t, http.MethodGet, g6TotalPath(w3UserAlice, ""), g6TotalSpec, "", "", nil)
 	wantCode(t, resp, body, http.StatusForbidden, problem.CodePlayRecordsPrivate)
 	resp, body = f.call(t, http.MethodGet, g6TotalPath(w3UserAlice, "include_nsfw=true"), g6TotalSpec, "sess-alice", "", nil)
-	if resp.StatusCode != http.StatusOK || asInt(body["minutes"]) != 125 {
+	if resp.StatusCode != http.StatusOK || asInt(body["total_playtime_minutes"]) != 125 {
 		t.Fatalf("the owner reads a private total: %d %+v", resp.StatusCode, body)
 	}
 
@@ -346,7 +346,7 @@ func TestV1UserPlaytimeTotal(t *testing.T) {
 	f.user.noTotal = true
 	f.user.mu.Unlock()
 	resp, body = f.call(t, http.MethodGet, g6TotalPath(w3UserBob, ""), g6TotalSpec, "", "", nil)
-	if resp.StatusCode != http.StatusOK || body["minutes"] != nil {
+	if resp.StatusCode != http.StatusOK || body["total_playtime_minutes"] != nil {
 		t.Fatalf("a catalog without the total reads null: %d %+v", resp.StatusCode, body)
 	}
 }

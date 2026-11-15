@@ -14,7 +14,7 @@ export const useUserPlaytimeTotal = (userId: MaybeRefOrGetter<string>) => {
       }),
     { server: false }
   )
-  return computed(() => data.value?.minutes || null)
+  return computed(() => data.value?.total_playtime_minutes || null)
 }
 
 export const playtimeHeadline = (minutes: number) =>

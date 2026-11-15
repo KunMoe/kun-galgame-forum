@@ -17,8 +17,8 @@ type getUserPlaytimeTotalInput struct {
 }
 
 type UserPlaytimeTotal struct {
-	Object  string `json:"object" enum:"user_playtime_total" maxLength:"19" doc:"Type discriminant. Always user_playtime_total."`
-	Minutes *int64 `json:"minutes" minimum:"0" doc:"The user's playtime summed over every work they have one on, each work counted once at the most minutes any application reported. null when catalog does not report a total yet."`
+	Object               string `json:"object" enum:"user_playtime_total" maxLength:"19" doc:"Type discriminant. Always user_playtime_total."`
+	TotalPlaytimeMinutes *int64 `json:"total_playtime_minutes" minimum:"0" doc:"The user's playtime summed over every work they have one on, each work counted once at the most minutes any application reported. null when catalog does not report a total yet."`
 }
 
 type userPlaytimeTotalOutput struct {
@@ -77,5 +77,5 @@ func (s *Service) getUserPlaytimeTotal(ctx context.Context, in *getUserPlaytimeT
 	if err != nil {
 		return nil, mapWorkRecordsErr(err, isOwner)
 	}
-	return &userPlaytimeTotalOutput{Body: UserPlaytimeTotal{Object: "user_playtime_total", Minutes: page.PlaytimeTotalMinutes}}, nil
+	return &userPlaytimeTotalOutput{Body: UserPlaytimeTotal{Object: "user_playtime_total", TotalPlaytimeMinutes: page.PlaytimeTotalMinutes}}, nil
 }

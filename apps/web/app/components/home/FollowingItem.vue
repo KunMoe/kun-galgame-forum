@@ -7,10 +7,10 @@ const props = defineProps<{ item: FollowingActivityItem }>()
 const { isBlurred } = useContentStance()
 const nameOf = useCatalogName()
 const masked = computed(
-  () => (props.item.is_nsfw || !!props.item.work?.is_nsfw) && isBlurred.value
+  () => (props.item.is_nsfw || !!props.item.work_preview?.is_nsfw) && isBlurred.value
 )
 const coverFailed = ref(false)
-const work = computed(() => props.item.work)
+const work = computed(() => props.item.work_preview)
 const cover = computed(() => props.item.cover ?? work.value?.cover ?? null)
 const release = computed(() =>
   work.value?.release_date
