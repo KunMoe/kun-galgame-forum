@@ -452,6 +452,9 @@ func TestV1FollowingActivitySummary(t *testing.T) {
 	if resp.StatusCode != http.StatusOK || body["last_seen_at"] != at {
 		t.Fatalf("seen summary %d %+v", resp.StatusCode, body)
 	}
+	if got := f.cm.query().Get("verbs"); got != "publish,reply,comment,rate,like,edit" {
+		t.Fatalf("no verbs asked sent verbs=%q; community counts verbs the forum drops", got)
+	}
 }
 
 func TestV1FollowingActivityReadMarker(t *testing.T) {

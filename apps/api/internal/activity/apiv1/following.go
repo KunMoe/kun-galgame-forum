@@ -134,6 +134,13 @@ func (f FollowingFilters) verbList() []string {
 	return out
 }
 
+func (f FollowingFilters) upstreamVerbs() []string {
+	if len(f.Verbs) == 0 {
+		return activityVerbs
+	}
+	return f.verbList()
+}
+
 func (f FollowingFilters) siteList() []string {
 	out := make([]string, len(f.Sites))
 	for i, s := range f.Sites {
@@ -271,7 +278,7 @@ func (s *Service) listFollowingActivities(ctx context.Context, in *followingList
 	if prob != nil {
 		return nil, prob
 	}
-	page, err := s.community.ListFollowingActivities(ctx, int64(v1.User(ctx).ID), upstream, in.Limit, in.contentLimit(), in.siteList(), in.verbList())
+	page, err := s.community.ListFollowingActivities(ctx, int64(v1.User(ctx).ID), upstream, in.Limit, in.contentLimit(), in.siteList(), in.upstreamVerbs())
 	if err != nil {
 		return nil, communityReadProblem(err, true)
 	}
@@ -370,7 +377,7 @@ func (s *Service) getFollowingActivitySummary(ctx context.Context, in *following
 	if prob := s.readyFollowing(); prob != nil {
 		return nil, prob
 	}
-	page, err := s.community.GetFollowingActivitiesUnseen(ctx, int64(v1.User(ctx).ID), in.contentLimit(), in.siteList(), in.verbList())
+	page, err := s.community.GetFollowingActivitiesUnseen(ctx, int64(v1.User(ctx).ID), in.contentLimit(), in.siteList(), in.upstreamVerbs())
 	if err != nil {
 		return nil, communityReadProblem(err, false)
 	}

@@ -78,7 +78,7 @@ func (s *Service) listUserActivities(ctx context.Context, in *userActivitiesInpu
 	if u := v1.User(ctx); u != nil {
 		viewer = int64(u.ID)
 	}
-	page, err := s.community.ListUserActivities(ctx, int64(ownerID), viewer, upstream, in.Limit, in.contentLimit(), in.siteList(), in.verbList())
+	page, err := s.community.ListUserActivities(ctx, int64(ownerID), viewer, upstream, in.Limit, in.contentLimit(), in.siteList(), in.upstreamVerbs())
 	if err != nil {
 		return nil, communityReadProblem(err, true)
 	}
