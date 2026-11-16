@@ -29,6 +29,16 @@ export const COLLECTION_DIRECTORY_SORTS = [
   { value: 'created_desc', textValue: '最新创建', icon: 'lucide:sparkles' }
 ] as const
 
+export const COLLECTION_ENTRY_SORTS = [
+  { value: 'position_asc', label: '自定义顺序' },
+  { value: 'favorited_desc', label: '最近收藏' },
+  { value: 'favorited_asc', label: '最早收藏' },
+  { value: 'released_desc', label: '发售日期 (新到旧)' },
+  { value: 'released_asc', label: '发售日期 (旧到新)' }
+] as const
+export type CollectionEntrySortValue =
+  (typeof COLLECTION_ENTRY_SORTS)[number]['value']
+
 export const COLLECTION_REPORT_CATEGORIES = [
   { value: 'spam', label: '垃圾广告' },
   { value: 'abuse', label: '辱骂 / 人身攻击' },

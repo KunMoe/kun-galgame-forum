@@ -23,15 +23,6 @@ const { allowsNsfw, stanceKey } = useContentStance()
 const api = useApiClient()
 const limit = 24
 
-const SORT_OPTIONS = [
-  { value: 'position_asc', label: '自定义顺序' },
-  { value: 'favorited_desc', label: '最近收藏' },
-  { value: 'favorited_asc', label: '最早收藏' },
-  { value: 'released_desc', label: '发售日期 (新到旧)' },
-  { value: 'released_asc', label: '发售日期 (旧到新)' }
-] as const
-type EntrySort = (typeof SORT_OPTIONS)[number]['value']
-
 const { sort, page } = useQueryState(
   {
     sort: queryString(),
@@ -56,8 +47,8 @@ const collectionRead = useKunApi<Collection>(
 const { data: detail, problem, pending, refresh } = await collectionRead
 useKunNotFound(() => isMissingProblem(problem.value), '未找到这个合集')
 
-const effectiveSort = computed<EntrySort>(() => {
-  const picked = SORT_OPTIONS.find((o) => o.value === sort.value)
+const effectiveSort = computed<CollectionEntrySortValue>(() => {
+  const picked = COLLECTION_ENTRY_SORTS.find((o) => o.value === sort.value)
   if (picked) {
     return picked.value
   }
@@ -98,6 +89,8 @@ const { data: related } = useKunApi<ListCollectionSummary>(
       signal
     })
 )
+
+const quickView = useTemplateRef('quickView')
 
 const ownerName = computed(() => detail.value?.owner.name ?? deletedUserName)
 const displayName = computed(() =>
@@ -582,7 +575,21 @@ const revealList = useRevealListStart(
       <div class="min-w-0 space-y-6">
         <div class="space-y-4">
           <div class="space-y-2">
-            <h1 class="text-3xl font-bold break-words">{{ displayName }}</h1>
+            <div class="flex items-start gap-3">
+              <h1 class="min-w-0 flex-1 text-3xl font-bold break-words">
+                {{ displayName }}
+              </h1>
+              <KunButton
+                v-if="detail.item_count"
+                variant="flat"
+                size="sm"
+                class-name="mt-1 shrink-0 gap-1.5"
+                @click="quickView?.show()"
+              >
+                <KunIcon name="lucide:layout-grid" />
+                快速查看
+              </KunButton>
+            </div>
             <p
               v-if="copySource"
               class="text-default-500 flex flex-wrap items-center gap-1 text-sm"
@@ -736,7 +743,7 @@ const revealList = useRevealListStart(
           <KunSelect
             v-if="detail.item_count > 1"
             :model-value="effectiveSort"
-            :options="[...SORT_OPTIONS]"
+            :options="[...COLLECTION_ENTRY_SORTS]"
             class-name="ml-auto w-48"
             aria-label="排序"
             @update:model-value="(value) => (sort = String(value))"
@@ -784,6 +791,13 @@ const revealList = useRevealListStart(
       >
         <GalgameCollectionComment v-if="isShared" :collection-id="detail.id" />
       </div>
+
+      <GalgameCollectionQuickView
+        ref="quickView"
+        :collection-id="detail.id"
+        :title="displayName"
+        :default-sort="effectiveSort"
+      />
 
       <GalgameCollectionEditModal
         v-if="canEdit"
