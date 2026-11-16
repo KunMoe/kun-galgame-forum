@@ -142,10 +142,7 @@ describe('merged-id pages stop rendering after the hop', () => {
   const DETAIL_PAGES: Record<TaxonomyFamily, string[]> = {
     tag: ['app/pages/galgame/tag/[id].vue'],
     engine: ['app/pages/galgame/engine/[id].vue'],
-    official: [
-      'app/pages/galgame/official/[id]/index.vue',
-      'app/pages/galgame/official/[id]/game.vue'
-    ]
+    official: ['app/pages/galgame/official/[id]/index.vue']
   }
 
   const HOP_COMPOSABLE = 'app/composables/useGalgameOfficialDetail.ts'
@@ -166,6 +163,13 @@ describe('merged-id pages stop rendering after the hop', () => {
     // A merged id leaves data null after the hop, so the gate on data is what
     // keeps the page from rendering a half-empty body under the 301.
     expect(source).toMatch(/<template>\s*<div>\s*<div v-if="data[" ]/)
+  })
+
+  it('the old 会社 games sub-page forwards to the one 会社 page, query kept', () => {
+    const source = read('app/pages/galgame/official/[id]/game.vue')
+    expect(source).toMatch(/taxonomyDetailPath\(\s*'official'/)
+    expect(source).toContain('query: route.query')
+    expect(source).toContain('redirectCode: 301')
   })
 
   it('the shared 会社 hop is the one that parks the 301', () => {
