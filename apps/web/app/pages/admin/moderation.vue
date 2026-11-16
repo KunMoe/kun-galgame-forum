@@ -280,7 +280,7 @@ const revealList = useRevealListStart(
     <KunPagination
       v-if="total > pageData.limit"
       v-model:current-page="pageData.page"
-      :total-page="Math.ceil(total / pageData.limit)"
+      :total-page="pageCountOf(total, pageData.limit)"
       :is-loading="status === 'pending'"
       @update:current-page="revealList"
     />

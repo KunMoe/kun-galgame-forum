@@ -33,7 +33,7 @@ onMounted(load)
 watch(page, load)
 
 const totalPage = computed(() =>
-  data.value ? Math.max(1, Math.ceil(data.value.total / limit)) : 1
+  data.value ? Math.max(1, pageCountOf(data.value.total, limit)) : 1
 )
 
 const permLabel = (permission: string) =>

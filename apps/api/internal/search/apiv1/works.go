@@ -6,7 +6,6 @@ import (
 	"strconv"
 	"strings"
 
-	"kun-galgame-api/internal/apiv1/collect"
 	"kun-galgame-api/internal/galgame/client"
 	"kun-galgame-api/internal/galgame/workrepr"
 	"kun-galgame-api/pkg/problem"
@@ -78,7 +77,7 @@ func (s *Service) searchWorks(ctx context.Context, in *worksInput) (*worksOutput
 	if prob != nil {
 		return nil, prob
 	}
-	total, relation := collect.ClampTotal(int(res.Total))
+	total, relation := int(res.Total), "eq"
 	facets := workrepr.NewWorkFacets(res.Facets.Tags(), res.Facets.Companies())
 	return &worksOutput{Body: workrepr.NewFacetedWorkPage(items, total, relation, facets)}, nil
 }

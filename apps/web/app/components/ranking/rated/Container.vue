@@ -29,12 +29,7 @@ watch(problem, (p) => {
 
 const entries = computed(() => data.value?.items ?? [])
 const total = computed(() => data.value?.total ?? 0)
-const totalPage = computed(() =>
-  Math.min(
-    Math.ceil(total.value / RATED_RANKING_LIMIT),
-    Math.floor(10000 / RATED_RANKING_LIMIT)
-  )
-)
+const totalPage = computed(() => pageCountOf(total.value, RATED_RANKING_LIMIT))
 
 const siteHref = (target: RatingSite | null) => {
   const params = new URLSearchParams()

@@ -220,7 +220,7 @@ const revealList = useRevealListStart(listStart, page, () =>
       <KunPagination
         v-if="!searchQuery.trim() && data && data.total > tagsLimit"
         v-model:current-page="page"
-        :total-page="Math.ceil(data.total / tagsLimit)"
+        :total-page="pageCountOf(data.total, tagsLimit)"
         :is-loading="status === 'pending'"
         @update:current-page="revealList"
       />
@@ -239,7 +239,7 @@ const revealList = useRevealListStart(listStart, page, () =>
         v-if="totalGameCount > gamesLimit"
         class="mt-3"
         v-model:current-page="page"
-        :total-page="Math.ceil(totalGameCount / gamesLimit)"
+        :total-page="pageCountOf(totalGameCount, gamesLimit)"
         :is-loading="loadingGames"
         @update:current-page="revealList"
       />

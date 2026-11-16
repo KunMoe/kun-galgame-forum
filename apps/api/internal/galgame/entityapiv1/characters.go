@@ -5,7 +5,6 @@ import (
 	"context"
 	"strconv"
 
-	"kun-galgame-api/internal/apiv1/collect"
 	"kun-galgame-api/internal/apiv1/repr"
 	"kun-galgame-api/internal/galgame/client"
 	"kun-galgame-api/internal/galgame/workrepr"
@@ -97,7 +96,7 @@ func (s *Service) listCharacters(ctx context.Context, in *listCharactersInput) (
 	for i := range page.Items {
 		rows = append(rows, s.characterSummary(&page.Items[i], vocab, in.IncludeNSFW))
 	}
-	total, relation := collect.ClampTotal(page.Total)
+	total, relation := page.Total, "eq"
 	return &listCharactersOutput{Body: repr.NewPageList(rows, total, relation)}, nil
 }
 

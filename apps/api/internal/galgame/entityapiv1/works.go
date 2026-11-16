@@ -6,7 +6,6 @@ import (
 	"strconv"
 	"strings"
 
-	"kun-galgame-api/internal/apiv1/collect"
 	"kun-galgame-api/internal/apiv1/repr"
 	"kun-galgame-api/internal/galgame/client"
 	"kun-galgame-api/internal/galgame/model"
@@ -228,7 +227,7 @@ func (s *Service) worksPage(ctx context.Context, walk walkFunc, p WorksQuery) (r
 	if prob != nil {
 		return repr.PageList[workrepr.WorkSummary]{}, prob
 	}
-	total, relation := collect.ClampTotal(count)
+	total, relation := count, "eq"
 	return repr.NewPageList(items, total, relation), nil
 }
 
@@ -292,6 +291,6 @@ func (s *Service) listTaggedWorks(ctx context.Context, in *listTaggedWorksInput)
 	if prob != nil {
 		return nil, prob
 	}
-	total, relation := collect.ClampTotal(int(res.Total))
+	total, relation := int(res.Total), "eq"
 	return &workPageOutput{Body: repr.NewPageList(items, total, relation)}, nil
 }

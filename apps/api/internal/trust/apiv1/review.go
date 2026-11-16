@@ -112,7 +112,7 @@ func (s *Service) listReviewItems(ctx context.Context, in *listReviewItemsInput)
 		}
 		items = append(items, summary)
 	}
-	total, relation := collect.ClampTotal(int(page.Total))
+	total, relation := int(page.Total), "eq"
 	return &listReviewItemsOutput{Body: repr.NewPageList(items, total, relation)}, nil
 }
 

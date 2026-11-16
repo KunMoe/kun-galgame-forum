@@ -84,7 +84,7 @@ func (s *Service) listRatings(ctx context.Context, in *listRatingsInput) (*listR
 	if p != nil {
 		return nil, p
 	}
-	total, relation := collect.ClampTotal(count)
+	total, relation := count, "eq"
 	return &listRatingsOutput{Body: repr.NewPageList(items, total, relation)}, nil
 }
 

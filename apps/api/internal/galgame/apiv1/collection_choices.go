@@ -5,7 +5,6 @@ import (
 	"log/slog"
 	"sync"
 
-	"kun-galgame-api/internal/apiv1/collect"
 	"kun-galgame-api/internal/apiv1/repr"
 	"kun-galgame-api/internal/middleware"
 	"kun-galgame-api/pkg/catalogclient"
@@ -60,7 +59,7 @@ func (s *Service) listMyCollectionsForWork(ctx context.Context, in *listMyCollec
 		return nil, mapUserPlane(err, true)
 	}
 	sortFolders(folders)
-	n, rel := collect.ClampTotal(len(folders))
+	n, rel := len(folders), "eq"
 	page := pageOfFolders(folders, pg.Page, pg.Limit)
 	recent := s.recentWorkRefs(ctx, page)
 	notes := s.workNotes(ctx, token, page, contains, workID)

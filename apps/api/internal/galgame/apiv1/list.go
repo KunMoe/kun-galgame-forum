@@ -96,7 +96,7 @@ func (s *Service) listWorks(ctx context.Context, in *listWorksInput) (*workSumma
 	// The total is what the paginator divides into pages, so it must not depend
 	// on which page came back: subtracting the rows this page hid made the page
 	// count change every time the reader moved. Pages that lost rows are short.
-	n, rel := collect.ClampTotal(int(total))
+	n, rel := int(total), "eq"
 	return &workSummaryPageOutput{Body: repr.NewPageList(items, n, rel)}, nil
 }
 

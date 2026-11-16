@@ -68,7 +68,7 @@ func (s *Service) listPermissionChanges(ctx context.Context, in *listPermissionC
 		}
 		items = append(items, change)
 	}
-	total, relation := collect.ClampTotal(int(count))
+	total, relation := int(count), "eq"
 	return &listPermissionChangesOutput{Body: repr.NewPageList(items, total, relation)}, nil
 }
 

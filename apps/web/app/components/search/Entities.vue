@@ -87,7 +87,7 @@ const load = async () => {
   // reader can act on. 全部 has no paginator at all, so its only valid page is 1.
   const lastPage = isAll.value
     ? 1
-    : Math.max(1, Math.ceil((loaded[0]?.total ?? 0) / ENTITY_LIMIT_ONE))
+    : Math.max(1, pageCountOf(loaded[0]?.total ?? 0, ENTITY_LIMIT_ONE))
   if (page.value > lastPage) {
     page.value = lastPage
     return
@@ -121,7 +121,7 @@ const isEmpty = computed(
 // One family per request, so the single-family tab is the only one with a page
 // count to divide: 全部 is a preview of every family at once.
 const totalPage = computed(() =>
-  isAll.value ? 0 : Math.ceil((groups.value[0]?.total ?? 0) / ENTITY_LIMIT_ONE)
+  isAll.value ? 0 : pageCountOf(groups.value[0]?.total ?? 0, ENTITY_LIMIT_ONE)
 )
 </script>
 

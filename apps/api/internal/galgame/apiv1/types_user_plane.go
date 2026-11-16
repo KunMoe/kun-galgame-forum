@@ -34,7 +34,7 @@ type WorkPlaytimeList struct {
 	Object            string         `json:"object" enum:"list" maxLength:"4" doc:"Type discriminant. Always list."`
 	Items             []WorkPlaytime `json:"items" doc:"Members of this page. Empty array, never null."`
 	Total             int            `json:"total" minimum:"0" doc:"Members matching the filters, under the same predicate as items."`
-	TotalRelation     string         `json:"total_relation" enum:"eq,gte" maxLength:"3" doc:"eq when total is exact, gte when it stopped at the depth limit and there are at least that many."`
+	TotalRelation     string         `json:"total_relation" enum:"eq,gte" maxLength:"3" doc:"eq when total is exact, gte when the source could only count a lower bound and there are at least that many."`
 	TotalMinutes      int            `json:"total_minutes" minimum:"0" doc:"Sum of minutes on the same predicate as items."`
 	FinishedWorkCount int            `json:"finished_work_count" minimum:"0" doc:"Works on this predicate whose play_state is done_one_route, done_main or done_all."`
 	IsTruncated       bool           `json:"is_truncated" doc:"Whether the upstream sweep stopped at the 10×100 cap."`

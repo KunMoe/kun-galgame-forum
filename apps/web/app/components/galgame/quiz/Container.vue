@@ -78,24 +78,25 @@ const listQuery = computed(() => {
   return query
 })
 
-const { data, status, problem, pending, refresh } = useKunApi<PageListQuizSummary>(
-  () =>
-    activeTab.value === 'mine'
-      ? `me-answered-quizzes:${page.value}:${limit}`
-      : `quizzes:${JSON.stringify(listQuery.value)}`,
-  (api, { signal }) => {
-    if (activeTab.value === 'mine') {
-      return api.GET('/me/answered-quizzes', {
-        params: { query: { page: page.value, limit } },
+const { data, status, problem, pending, refresh } =
+  useKunApi<PageListQuizSummary>(
+    () =>
+      activeTab.value === 'mine'
+        ? `me-answered-quizzes:${page.value}:${limit}`
+        : `quizzes:${JSON.stringify(listQuery.value)}`,
+    (api, { signal }) => {
+      if (activeTab.value === 'mine') {
+        return api.GET('/me/answered-quizzes', {
+          params: { query: { page: page.value, limit } },
+          signal
+        })
+      }
+      return api.GET('/quizzes', {
+        params: { query: listQuery.value },
         signal
       })
     }
-    return api.GET('/quizzes', {
-      params: { query: listQuery.value },
-      signal
-    })
-  }
-)
+  )
 
 const tabItems: KunTabItem[] = [
   { value: 'all', textValue: '全部题库', icon: 'lucide:library-big' },
@@ -133,7 +134,8 @@ const revealList = useRevealListStart(
         <template #title><KunPageLabel :page="page" /></template>
         <template #description>
           <p class="text-default-500">
-            由 Galgame 爱好者共同建设的题库, 支持单选、多选、判断等题型。出题可获得萌萌点奖励。
+            由 Galgame 爱好者共同建设的题库,
+            支持单选、多选、判断等题型。出题可获得萌萌点奖励。
           </p>
         </template>
       </KunHeader>
@@ -205,7 +207,7 @@ const revealList = useRevealListStart(
     <KunPagination
       v-if="(data?.total || 0) > limit"
       v-model:current-page="page"
-      :total-page="Math.ceil((data?.total || 0) / limit)"
+      :total-page="pageCountOf(data?.total || 0, limit)"
       :is-loading="status === 'pending'"
       @update:current-page="revealList"
     />

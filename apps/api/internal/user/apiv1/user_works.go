@@ -87,7 +87,7 @@ func (s *Users) listUserWorks(ctx context.Context, in *listUserWorksInput) (*lis
 	if p != nil {
 		return nil, p
 	}
-	total, relation := collect.ClampTotal(count)
+	total, relation := count, "eq"
 	return &listUserWorksOutput{Body: repr.NewPageList(items, total, relation)}, nil
 }
 
@@ -106,7 +106,7 @@ func (s *Users) listContributedWorks(ctx context.Context, ownerID int, page coll
 	if p != nil {
 		return nil, p
 	}
-	total, relation := collect.ClampTotal(len(all))
+	total, relation := len(all), "eq"
 	return &listUserWorksOutput{Body: repr.NewPageList(pageOf(all, page), total, relation)}, nil
 }
 

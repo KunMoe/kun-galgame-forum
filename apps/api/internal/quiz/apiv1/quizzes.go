@@ -8,7 +8,6 @@ import (
 	"unicode/utf8"
 
 	v1 "kun-galgame-api/internal/apiv1"
-	"kun-galgame-api/internal/apiv1/collect"
 	"kun-galgame-api/internal/apiv1/repr"
 	"kun-galgame-api/internal/constants"
 	"kun-galgame-api/internal/galgame/model"
@@ -64,7 +63,7 @@ func (s *Service) listQuizzes(ctx context.Context, in *listQuizzesInput) (*listQ
 	if err != nil {
 		return nil, problem.Internal(err)
 	}
-	n, rel := collect.ClampTotal(total)
+	n, rel := total, "eq"
 	rows, err := s.store.List(filter, sort, pg.Offset(), pg.Limit)
 	if err != nil {
 		return nil, problem.Internal(err)

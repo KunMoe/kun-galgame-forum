@@ -44,7 +44,7 @@ const { data, problem, pending, status } = useKunApi(
 )
 
 const totalPage = computed(() =>
-  data.value ? Math.max(1, Math.ceil(data.value.total / limit)) : 1
+  data.value ? Math.max(1, pageCountOf(data.value.total, limit)) : 1
 )
 
 const counts = (fold: WorkMergeFold) =>

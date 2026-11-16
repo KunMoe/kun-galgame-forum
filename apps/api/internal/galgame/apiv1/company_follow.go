@@ -11,7 +11,6 @@ import (
 	"time"
 
 	v1 "kun-galgame-api/internal/apiv1"
-	"kun-galgame-api/internal/apiv1/collect"
 	"kun-galgame-api/internal/apiv1/repr"
 	"kun-galgame-api/internal/galgame/client"
 	"kun-galgame-api/internal/galgame/entityapiv1"
@@ -67,7 +66,7 @@ type FollowedCompanyList struct {
 	Object        string            `json:"object" enum:"list" maxLength:"4" doc:"Type discriminant. Always list."`
 	Items         []FollowedCompany `json:"items" doc:"Members of this page, newest follow first. Empty array, never null."`
 	Total         int               `json:"total" minimum:"0" doc:"Follows in the swept list, minus companies on this page that catalog no longer renders."`
-	TotalRelation string            `json:"total_relation" enum:"eq,gte" maxLength:"3" doc:"eq when total is exact, gte when it stopped at the depth limit and there are at least that many."`
+	TotalRelation string            `json:"total_relation" enum:"eq,gte" maxLength:"3" doc:"eq when total is exact, gte when the source could only count a lower bound and there are at least that many."`
 	IsTruncated   bool              `json:"is_truncated" doc:"Whether the upstream sweep stopped at the 10×100 cap."`
 }
 
@@ -288,7 +287,7 @@ func (s *Service) followedCompanies(ctx context.Context, in *listMyFollowedCompa
 			FollowedAt: followTimePtr(rec.CreatedAt),
 		})
 	}
-	total, rel := collect.ClampTotal(len(visible))
+	total, rel := len(visible), "eq"
 	if truncated {
 		rel = "gte"
 	}

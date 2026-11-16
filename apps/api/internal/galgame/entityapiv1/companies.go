@@ -8,7 +8,6 @@ import (
 	"strconv"
 	"time"
 
-	"kun-galgame-api/internal/apiv1/collect"
 	"kun-galgame-api/internal/apiv1/repr"
 	"kun-galgame-api/internal/galgame/client"
 	"kun-galgame-api/internal/galgame/workrepr"
@@ -326,7 +325,7 @@ func (s *Service) listCompanyWorks(ctx context.Context, in *listCompanyWorksInpu
 		}
 		items[i] = item
 	}
-	total, relation := collect.ClampTotal(count)
+	total, relation := count, "eq"
 	return &listCompanyWorksOutput{Body: repr.NewPageList(items, total, relation)}, nil
 }
 

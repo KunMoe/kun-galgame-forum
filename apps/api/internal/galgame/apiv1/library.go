@@ -7,7 +7,6 @@ import (
 	"strconv"
 	"strings"
 
-	"kun-galgame-api/internal/apiv1/collect"
 	"kun-galgame-api/internal/galgame/client"
 	"kun-galgame-api/internal/galgame/workrepr"
 	legacyErrors "kun-galgame-api/pkg/errors"
@@ -95,7 +94,7 @@ func (s *Service) listLibraryWorks(ctx context.Context, in *listLibraryWorksInpu
 	if p != nil {
 		return nil, p
 	}
-	n, rel := collect.ClampTotal(int(res.Total))
+	n, rel := int(res.Total), "eq"
 	facets := workrepr.NewWorkFacets(res.Facets.Tags(), res.Facets.Companies())
 	return &libraryWorkPageOutput{Body: workrepr.NewFacetedWorkPage(items, n, rel, facets)}, nil
 }

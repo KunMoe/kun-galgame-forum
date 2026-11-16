@@ -27,7 +27,7 @@ const page = usePageQuery()
 const top = useTemplateRef<HTMLElement>('top')
 
 const meta = computed(() => SEARCH_CATEGORY_MAP[props.type])
-const totalPage = computed(() => Math.ceil(total.value / PAGE_SIZE))
+const totalPage = computed(() => pageCountOf(total.value, PAGE_SIZE))
 
 const isGalgame = computed(() => props.type === 'galgame')
 
@@ -98,7 +98,7 @@ const load = async () => {
   // A link outlives the result set it was copied from. ?page=16 against a lane
   // that has since shrunk to 10 pages rendered "杂鱼杂鱼杂鱼~什么也没有搜索到"
   // under a header still reading 共 364 个话题, with no page marked current.
-  const lastPage = Math.max(1, Math.ceil(total.value / PAGE_SIZE))
+  const lastPage = Math.max(1, pageCountOf(total.value, PAGE_SIZE))
   if (page.value > lastPage) {
     page.value = lastPage
     return

@@ -188,7 +188,7 @@ func (s *Service) listRatedWorkRanking(ctx context.Context, in *ratedWorkRanking
 		}
 	}
 
-	n, rel := collect.ClampTotal(int(res.Total))
+	n, rel := int(res.Total), "eq"
 	body := RatedWorkRanking{
 		Object: "list", Items: items, Total: n, TotalRelation: rel,
 		Facets: workrepr.NewWorkFacets(res.Facets.Tags(), res.Facets.Companies()),

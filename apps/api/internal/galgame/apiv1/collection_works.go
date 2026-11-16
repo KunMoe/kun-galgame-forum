@@ -6,7 +6,6 @@ import (
 	"sort"
 	"strings"
 
-	"kun-galgame-api/internal/apiv1/collect"
 	"kun-galgame-api/internal/apiv1/repr"
 	"kun-galgame-api/internal/galgame/workrepr"
 	"kun-galgame-api/pkg/problem"
@@ -61,7 +60,7 @@ func (s *Service) listCollectionWorks(ctx context.Context, in *listCollectionWor
 		return nil, p
 	}
 	ordered := sortFolderMembers(population, in.Sort)
-	n, rel := collect.ClampTotal(len(ordered))
+	n, rel := len(ordered), "eq"
 	start := pg.Offset()
 	pageIDs := []int{}
 	if start < len(ordered) {

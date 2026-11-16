@@ -25,12 +25,3 @@ func (p PageNumber) CheckDepth() *problem.Problem {
 		problem.AtParameter("page", problem.ReasonOutOfRange, "page × limit may not exceed 10000",
 			&problem.FieldParams{Maximum: &last}))
 }
-
-// ClampTotal caps a count at MaxDepth, since nothing past it can be paged to,
-// and says whether the count is exact.
-func ClampTotal(n int) (int, string) {
-	if n > MaxDepth {
-		return MaxDepth, "gte"
-	}
-	return n, "eq"
-}

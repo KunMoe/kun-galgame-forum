@@ -5,8 +5,8 @@ import "encoding/json"
 type PageList[T any] struct {
 	Object        string `json:"object" enum:"list" maxLength:"4" doc:"Type discriminant. Always list."`
 	Items         []T    `json:"items" doc:"Members of this page. Empty array, never null."`
-	Total         int    `json:"total" minimum:"0" doc:"Members matching the filters, under the same predicate as items. Counted up to the depth limit when total_relation is gte."`
-	TotalRelation string `json:"total_relation" enum:"eq,gte" maxLength:"3" doc:"eq when total is exact, gte when it stopped at the depth limit and there are at least that many."`
+	Total         int    `json:"total" minimum:"0" doc:"Members matching the filters, under the same predicate as items. Exact unless total_relation is gte. page × limit may still not exceed 10000, so the last reachable page is min(ceil(total / limit), floor(10000 / limit))."`
+	TotalRelation string `json:"total_relation" enum:"eq,gte" maxLength:"3" doc:"eq when total is exact, gte when the source could only count a lower bound and there are at least that many."`
 }
 
 func NewPageList[T any](items []T, total int, relation string) PageList[T] {

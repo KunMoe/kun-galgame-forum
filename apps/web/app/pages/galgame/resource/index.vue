@@ -13,8 +13,7 @@ const input = ref(keywords.value)
 const { allowsNsfw, stanceKey } = useContentStance()
 
 const { data, status, problem, pending } = useKunApi<PageListGalgameResource>(
-  () =>
-    `galgame-resources:${page.value}:${keywords.value}:${stanceKey.value}`,
+  () => `galgame-resources:${page.value}:${keywords.value}:${stanceKey.value}`,
   (api, { signal }) =>
     api.GET('/galgame-resources', {
       params: {
@@ -106,7 +105,7 @@ const revealList = useRevealListStart(listStart, page, isPending)
     <KunPagination
       v-if="total > LIMIT"
       v-model:current-page="page"
-      :total-page="Math.ceil(total / LIMIT)"
+      :total-page="pageCountOf(total, LIMIT)"
       :is-loading="isPending"
       @update:current-page="revealList"
     />

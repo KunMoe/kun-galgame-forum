@@ -9,7 +9,6 @@ import (
 	"unicode/utf8"
 
 	v1 "kun-galgame-api/internal/apiv1"
-	"kun-galgame-api/internal/apiv1/collect"
 	"kun-galgame-api/internal/apiv1/repr"
 	"kun-galgame-api/internal/constants"
 	"kun-galgame-api/internal/infrastructure/markdown"
@@ -41,7 +40,7 @@ func (s *Service) listToolsets(ctx context.Context, in *listToolsetsInput) (*lis
 	if err != nil {
 		return nil, problem.Internal(err)
 	}
-	n, rel := collect.ClampTotal(total)
+	n, rel := total, "eq"
 	rows, err := s.store.List(filter, sort, pg.Offset(), pg.Limit)
 	if err != nil {
 		return nil, problem.Internal(err)
@@ -102,7 +101,7 @@ func (s *Service) listUserToolsets(ctx context.Context, in *listUserToolsetsInpu
 	if err != nil {
 		return nil, problem.Internal(err)
 	}
-	n, rel := collect.ClampTotal(total)
+	n, rel := total, "eq"
 	var rows []model.GalgameToolset
 	if in.Relation == "favorited" {
 		rows, err = s.store.ListFavorited(filter, pg.Offset(), pg.Limit)

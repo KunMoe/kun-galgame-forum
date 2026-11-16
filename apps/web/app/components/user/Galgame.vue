@@ -170,7 +170,7 @@ const revealList = useRevealListStart(
         <KunPagination
           v-if="galgameData.total > pageData.limit"
           v-model:current-page="pageData.page"
-          :total-page="Math.ceil(galgameData.total / pageData.limit)"
+          :total-page="pageCountOf(galgameData.total, pageData.limit)"
           :is-loading="galgameStatus === 'pending'"
           @update:current-page="revealList"
         />

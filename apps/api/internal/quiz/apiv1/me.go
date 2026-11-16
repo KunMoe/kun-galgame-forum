@@ -6,7 +6,6 @@ import (
 	"strings"
 
 	v1 "kun-galgame-api/internal/apiv1"
-	"kun-galgame-api/internal/apiv1/collect"
 	"kun-galgame-api/internal/apiv1/repr"
 	"kun-galgame-api/pkg/problem"
 )
@@ -35,7 +34,7 @@ func (s *Service) listMyAnsweredQuizzes(ctx context.Context, in *listMyAnsweredI
 	if err != nil {
 		return nil, problem.Internal(err)
 	}
-	n, rel := collect.ClampTotal(total)
+	n, rel := total, "eq"
 	rows, err := s.store.ListAnswered(user.ID, keep, pg.Offset(), pg.Limit)
 	if err != nil {
 		return nil, problem.Internal(err)

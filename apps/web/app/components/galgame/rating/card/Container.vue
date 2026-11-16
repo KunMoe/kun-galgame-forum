@@ -56,7 +56,10 @@ const query = computed<RatingsQuery>(() => {
     page: params.page,
     limit: params.limit,
     sort,
-    spoiler_level: known(params.spoiler_level, KUN_GALGAME_RATING_SPOILER_CONST),
+    spoiler_level: known(
+      params.spoiler_level,
+      KUN_GALGAME_RATING_SPOILER_CONST
+    ),
     play_status: known(params.play_status, KUN_GALGAME_PLAY_STATE_CONST),
     game_type: known(params.galgame_type, KUN_GALGAME_RATING_GAME_TYPE_CONST),
     include_nsfw: allowsNsfw.value
@@ -136,7 +139,7 @@ const revealList = useRevealListStart(
     <KunPagination
       v-if="(data?.total || 0) > params.limit"
       v-model:current-page="params.page"
-      :total-page="Math.ceil((data?.total || 0) / params.limit)"
+      :total-page="pageCountOf(data?.total || 0, params.limit)"
       :is-loading="status === 'pending'"
       @update:current-page="revealList"
     />

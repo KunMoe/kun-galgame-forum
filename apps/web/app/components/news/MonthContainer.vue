@@ -79,9 +79,7 @@ const partners = computed(() => {
 // a full 31-cell strip would be mostly dead cells.
 const days = computed(() => (summary.value?.days ?? []).filter((d) => d.count))
 const months = computed(() => archive.value?.months ?? [])
-const totalPage = computed(() =>
-  Math.ceil((data.value?.total ?? 0) / PAGE_SIZE)
-)
+const totalPage = computed(() => pageCountOf(data.value?.total ?? 0, PAGE_SIZE))
 
 const carried = () => {
   const query = new URLSearchParams()

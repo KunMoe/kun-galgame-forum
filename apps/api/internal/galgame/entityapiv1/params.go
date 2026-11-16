@@ -65,7 +65,7 @@ func pageOf[T any](rows []T, page, limit int) []T {
 }
 
 func pageList[T any](rows []T, page, limit int) repr.PageList[T] {
-	total, relation := collect.ClampTotal(len(rows))
+	total, relation := len(rows), "eq"
 	return repr.NewPageList(pageOf(rows, page, limit), total, relation)
 }
 

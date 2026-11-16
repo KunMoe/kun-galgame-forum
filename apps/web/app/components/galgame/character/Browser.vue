@@ -234,9 +234,7 @@ const { data, status, problem, pending } = useKunApi<CharacterPage>(
 
 const characters = computed(() => data.value?.items ?? [])
 const total = computed(() => data.value?.total ?? 0)
-const totalPage = computed(() =>
-  Math.min(Math.ceil(total.value / LIMIT), PAGE_MAX)
-)
+const totalPage = computed(() => pageCountOf(total.value, LIMIT))
 
 const needsNsfw = computed(() =>
   problem.value?.errors.some(
@@ -385,10 +383,10 @@ const revealList = useRevealListStart(
     </KunLoading>
 
     <p
-      v-if="data?.total_relation === 'gte'"
+      v-if="total > PAGE_MAX * LIMIT"
       class="text-default-400 text-center text-xs"
     >
-      符合条件的角色超过 {{ total.toLocaleString('en-US') }} 名, 只能翻到前
+      符合条件的角色共 {{ total.toLocaleString('en-US') }} 名, 只能翻到前
       {{ PAGE_MAX }} 页。加几个属性或输入名字可以缩小范围。
     </p>
 

@@ -246,6 +246,6 @@ func (s *Service) listNewsMonthItems(ctx context.Context, in *listNewsMonthItems
 	start := min(in.Offset(), len(items))
 	end := min(start+in.Limit, len(items))
 	page := s.newsItems(ctx, items[start:end])
-	total, relation := collect.ClampTotal(len(items))
+	total, relation := len(items), "eq"
 	return &listNewsMonthItemsOutput{Body: repr.NewPageList(page, total, relation)}, nil
 }

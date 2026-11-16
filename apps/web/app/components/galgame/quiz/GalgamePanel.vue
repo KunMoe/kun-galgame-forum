@@ -12,21 +12,22 @@ const emit = defineEmits<{
 const page = usePageQuery()
 const limit = 12
 
-const { data, status, problem, pending, refresh } = useKunApi<PageListQuizSummary>(
-  () => `quizzes-work:${workId.value}:${page.value}:${limit}`,
-  (api, { signal }) =>
-    api.GET('/quizzes', {
-      params: {
-        query: {
-          page: page.value,
-          limit,
-          work_id: workId.value,
-          include_nsfw: true
-        }
-      },
-      signal
-    })
-)
+const { data, status, problem, pending, refresh } =
+  useKunApi<PageListQuizSummary>(
+    () => `quizzes-work:${workId.value}:${page.value}:${limit}`,
+    (api, { signal }) =>
+      api.GET('/quizzes', {
+        params: {
+          query: {
+            page: page.value,
+            limit,
+            work_id: workId.value,
+            include_nsfw: true
+          }
+        },
+        signal
+      })
+  )
 watchEffect(() =>
   emit('update:loading', status.value === 'pending' && !pending.value)
 )
@@ -86,7 +87,7 @@ const revealList = useRevealListStart(
     <KunPagination
       v-if="(data?.total || 0) > limit"
       v-model:current-page="page"
-      :total-page="Math.ceil((data?.total || 0) / limit)"
+      :total-page="pageCountOf(data?.total || 0, limit)"
       :is-loading="status === 'pending'"
       @update:current-page="revealList"
     />

@@ -243,8 +243,8 @@ func TestV1SearchWorks(t *testing.T) {
 			}
 		}
 	}
-	if asInt(body["total"]) != 10000 || body["total_relation"] != "gte" {
-		t.Errorf("the index's count is clamped: %v %v", body["total"], body["total_relation"])
+	if asInt(body["total"]) != 12345 || body["total_relation"] != "eq" {
+		t.Errorf("the index's count passes through past the page depth: %v %v", body["total"], body["total_relation"])
 	}
 	q := f.catalog.query
 	for key, want := range map[string]string{

@@ -5,7 +5,6 @@ import (
 	"log/slog"
 	"sort"
 
-	"kun-galgame-api/internal/apiv1/collect"
 	"kun-galgame-api/internal/apiv1/repr"
 	"kun-galgame-api/internal/galgame/playstate"
 	"kun-galgame-api/internal/galgame/workrepr"
@@ -207,7 +206,7 @@ func (s *Service) listMyPlaytimes(ctx context.Context, in *listMyPlaytimesInput)
 			finished++
 		}
 	}
-	n, rel := collect.ClampTotal(len(visible))
+	n, rel := len(visible), "eq"
 	start := pg.Offset()
 	items := []WorkPlaytime{}
 	if start < len(visible) {

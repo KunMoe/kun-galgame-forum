@@ -3,7 +3,6 @@ package apiv1
 import (
 	"context"
 
-	"kun-galgame-api/internal/apiv1/collect"
 	"kun-galgame-api/internal/apiv1/repr"
 	"kun-galgame-api/internal/search/repository"
 	topicapiv1 "kun-galgame-api/internal/topic/apiv1"
@@ -56,7 +55,7 @@ func (s *Service) searchTopics(ctx context.Context, in *laneInput) (*topicsOutpu
 	if prob != nil {
 		return nil, prob
 	}
-	total, relation := collect.ClampTotal(int(count))
+	total, relation := int(count), "eq"
 	return &topicsOutput{Body: repr.NewPageList(items, total, relation)}, nil
 }
 
@@ -111,7 +110,7 @@ func (s *Service) searchReplies(ctx context.Context, in *laneInput) (*repliesOut
 			Author: s.authorRef(users, r.UserID), CreatedAt: repr.Timestamp(r.Created),
 		})
 	}
-	total, relation := collect.ClampTotal(int(count))
+	total, relation := int(count), "eq"
 	return &repliesOutput{Body: repr.NewPageList(items, total, relation)}, nil
 }
 
@@ -136,6 +135,6 @@ func (s *Service) searchComments(ctx context.Context, in *laneInput) (*commentsO
 			Author:  s.authorRef(users, r.UserID), CreatedAt: repr.Timestamp(r.Created),
 		})
 	}
-	total, relation := collect.ClampTotal(int(count))
+	total, relation := int(count), "eq"
 	return &commentsOutput{Body: repr.NewPageList(items, total, relation)}, nil
 }

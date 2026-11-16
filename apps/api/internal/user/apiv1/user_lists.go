@@ -121,7 +121,7 @@ func (s *Users) listUserTopics(ctx context.Context, in *listUserTopicsInput) (*l
 			CreatedAt: repr.Timestamp(row.Created),
 		})
 	}
-	total, relation := collect.ClampTotal(count)
+	total, relation := count, "eq"
 	return &listUserTopicsOutput{Body: repr.NewPageList(items, total, relation)}, nil
 }
 
@@ -161,7 +161,7 @@ func (s *Users) listUserReplies(ctx context.Context, in *listUserRepliesInput) (
 			CreatedAt:  repr.Timestamp(row.Created),
 		})
 	}
-	total, relation := collect.ClampTotal(count)
+	total, relation := count, "eq"
 	return &listUserRepliesOutput{Body: repr.NewPageList(items, total, relation)}, nil
 }
 
@@ -200,7 +200,7 @@ func (s *Users) listUserComments(ctx context.Context, in *listUserCommentsInput)
 			CreatedAt:  repr.Timestamp(row.Created),
 		})
 	}
-	total, relation := collect.ClampTotal(count)
+	total, relation := count, "eq"
 	return &listUserCommentsOutput{Body: repr.NewPageList(items, total, relation)}, nil
 }
 

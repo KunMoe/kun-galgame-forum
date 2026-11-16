@@ -4,7 +4,6 @@ import (
 	"context"
 	"errors"
 
-	"kun-galgame-api/internal/apiv1/collect"
 	"kun-galgame-api/internal/apiv1/repr"
 	"kun-galgame-api/pkg/catalogclient"
 	"kun-galgame-api/pkg/problem"
@@ -76,7 +75,7 @@ func (s *Service) listMyCollections(ctx context.Context, in *listMyCollectionsIn
 		}
 	}
 	sortFolders(folders)
-	n, rel := collect.ClampTotal(len(folders))
+	n, rel := len(folders), "eq"
 	pageFolders := pageOfFolders(folders, pg.Page, pg.Limit)
 	items, p := s.summariesOf(ctx, pageFolders, user, token, func(f catalogclient.Folder) viewerState {
 		return viewerState{hasWork: contains[f.ID]}
@@ -129,7 +128,7 @@ func (s *Service) listUserCollections(ctx context.Context, in *listUserCollectio
 		folders = got
 	}
 	sortFolders(folders)
-	n, rel := collect.ClampTotal(len(folders))
+	n, rel := len(folders), "eq"
 	pageFolders := pageOfFolders(folders, pg.Page, pg.Limit)
 	following := map[int64]bool{}
 	if !isOwner {

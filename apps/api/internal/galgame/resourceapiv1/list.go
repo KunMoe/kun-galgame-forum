@@ -5,7 +5,6 @@ import (
 	"strings"
 
 	v1 "kun-galgame-api/internal/apiv1"
-	"kun-galgame-api/internal/apiv1/collect"
 	"kun-galgame-api/internal/apiv1/repr"
 	"kun-galgame-api/internal/galgame/repository"
 	"kun-galgame-api/pkg/problem"
@@ -49,7 +48,7 @@ func (s *Service) listGalgameResources(ctx context.Context, in *listGalgameResou
 	if err != nil {
 		return nil, problem.Internal(err)
 	}
-	n, rel := collect.ClampTotal(total)
+	n, rel := total, "eq"
 	rows, err := s.store.List(filter, sort, pg.Offset(), pg.Limit)
 	if err != nil {
 		return nil, problem.Internal(err)
@@ -106,7 +105,7 @@ func (s *Service) listWorkResources(ctx context.Context, in *listWorkResourcesIn
 	if err != nil {
 		return nil, problem.Internal(err)
 	}
-	n, rel := collect.ClampTotal(total)
+	n, rel := total, "eq"
 	rows, err := s.store.List(filter, "work", pg.Offset(), pg.Limit)
 	if err != nil {
 		return nil, problem.Internal(err)
@@ -140,7 +139,7 @@ func (s *Service) ListForUser(ctx context.Context, filter repository.ResourceLis
 	if err != nil {
 		return none, problem.Internal(err)
 	}
-	n, rel := collect.ClampTotal(total)
+	n, rel := total, "eq"
 	rows, err := s.store.List(filter, "created_desc", pg.Offset(), pg.Limit)
 	if err != nil {
 		return none, problem.Internal(err)

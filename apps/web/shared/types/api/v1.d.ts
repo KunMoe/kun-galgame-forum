@@ -8422,10 +8422,10 @@ export interface components {
             object: "list";
             /**
              * Format: int64
-             * @description Members matching the filters, under the same predicate as items. Counted up to the depth limit when total_relation is gte.
+             * @description Members matching the filters, under the same predicate as items. Exact unless total_relation is gte. page × limit may still not exceed 10000, so the last reachable page is min(ceil(total / limit), floor(10000 / limit)).
              */
             total: number;
-            /** @description eq when total is exact, gte when it stopped at the depth limit and there are at least that many. */
+            /** @description eq when total is exact, gte when the source could only count a lower bound and there are at least that many. */
             total_relation: components["schemas"]["TotalRelation"];
         };
         FieldError: {
@@ -8521,7 +8521,7 @@ export interface components {
              * @description Follows in the swept list, minus companies on this page that catalog no longer renders.
              */
             total: number;
-            /** @description eq when total is exact, gte when it stopped at the depth limit and there are at least that many. */
+            /** @description eq when total is exact, gte when the source could only count a lower bound and there are at least that many. */
             total_relation: components["schemas"]["TotalRelation"];
         };
         FollowedWall: {
@@ -10833,10 +10833,10 @@ export interface components {
             object: "list";
             /**
              * Format: int64
-             * @description Members matching the filters, under the same predicate as items. Counted up to the depth limit when total_relation is gte.
+             * @description Members matching the filters, under the same predicate as items. Exact unless total_relation is gte. page × limit may still not exceed 10000, so the last reachable page is min(ceil(total / limit), floor(10000 / limit)).
              */
             total: number;
-            /** @description eq when total is exact, gte when it stopped at the depth limit and there are at least that many. */
+            /** @description eq when total is exact, gte when the source could only count a lower bound and there are at least that many. */
             total_relation: components["schemas"]["TotalRelation"];
         };
         PageListCollectionChoice: {
@@ -10849,10 +10849,10 @@ export interface components {
             object: "list";
             /**
              * Format: int64
-             * @description Members matching the filters, under the same predicate as items. Counted up to the depth limit when total_relation is gte.
+             * @description Members matching the filters, under the same predicate as items. Exact unless total_relation is gte. page × limit may still not exceed 10000, so the last reachable page is min(ceil(total / limit), floor(10000 / limit)).
              */
             total: number;
-            /** @description eq when total is exact, gte when it stopped at the depth limit and there are at least that many. */
+            /** @description eq when total is exact, gte when the source could only count a lower bound and there are at least that many. */
             total_relation: components["schemas"]["TotalRelation"];
         };
         PageListCollectionEntry: {
@@ -10865,10 +10865,10 @@ export interface components {
             object: "list";
             /**
              * Format: int64
-             * @description Members matching the filters, under the same predicate as items. Counted up to the depth limit when total_relation is gte.
+             * @description Members matching the filters, under the same predicate as items. Exact unless total_relation is gte. page × limit may still not exceed 10000, so the last reachable page is min(ceil(total / limit), floor(10000 / limit)).
              */
             total: number;
-            /** @description eq when total is exact, gte when it stopped at the depth limit and there are at least that many. */
+            /** @description eq when total is exact, gte when the source could only count a lower bound and there are at least that many. */
             total_relation: components["schemas"]["TotalRelation"];
         };
         PageListCollectionSummary: {
@@ -10881,10 +10881,10 @@ export interface components {
             object: "list";
             /**
              * Format: int64
-             * @description Members matching the filters, under the same predicate as items. Counted up to the depth limit when total_relation is gte.
+             * @description Members matching the filters, under the same predicate as items. Exact unless total_relation is gte. page × limit may still not exceed 10000, so the last reachable page is min(ceil(total / limit), floor(10000 / limit)).
              */
             total: number;
-            /** @description eq when total is exact, gte when it stopped at the depth limit and there are at least that many. */
+            /** @description eq when total is exact, gte when the source could only count a lower bound and there are at least that many. */
             total_relation: components["schemas"]["TotalRelation"];
         };
         PageListCommentSearchHit: {
@@ -10897,10 +10897,10 @@ export interface components {
             object: "list";
             /**
              * Format: int64
-             * @description Members matching the filters, under the same predicate as items. Counted up to the depth limit when total_relation is gte.
+             * @description Members matching the filters, under the same predicate as items. Exact unless total_relation is gte. page × limit may still not exceed 10000, so the last reachable page is min(ceil(total / limit), floor(10000 / limit)).
              */
             total: number;
-            /** @description eq when total is exact, gte when it stopped at the depth limit and there are at least that many. */
+            /** @description eq when total is exact, gte when the source could only count a lower bound and there are at least that many. */
             total_relation: components["schemas"]["TotalRelation"];
         };
         PageListCompanySummary: {
@@ -10913,10 +10913,10 @@ export interface components {
             object: "list";
             /**
              * Format: int64
-             * @description Members matching the filters, under the same predicate as items. Counted up to the depth limit when total_relation is gte.
+             * @description Members matching the filters, under the same predicate as items. Exact unless total_relation is gte. page × limit may still not exceed 10000, so the last reachable page is min(ceil(total / limit), floor(10000 / limit)).
              */
             total: number;
-            /** @description eq when total is exact, gte when it stopped at the depth limit and there are at least that many. */
+            /** @description eq when total is exact, gte when the source could only count a lower bound and there are at least that many. */
             total_relation: components["schemas"]["TotalRelation"];
         };
         PageListCompanyWork: {
@@ -10929,10 +10929,10 @@ export interface components {
             object: "list";
             /**
              * Format: int64
-             * @description Members matching the filters, under the same predicate as items. Counted up to the depth limit when total_relation is gte.
+             * @description Members matching the filters, under the same predicate as items. Exact unless total_relation is gte. page × limit may still not exceed 10000, so the last reachable page is min(ceil(total / limit), floor(10000 / limit)).
              */
             total: number;
-            /** @description eq when total is exact, gte when it stopped at the depth limit and there are at least that many. */
+            /** @description eq when total is exact, gte when the source could only count a lower bound and there are at least that many. */
             total_relation: components["schemas"]["TotalRelation"];
         };
         PageListCreditNameRef: {
@@ -10945,10 +10945,10 @@ export interface components {
             object: "list";
             /**
              * Format: int64
-             * @description Members matching the filters, under the same predicate as items. Counted up to the depth limit when total_relation is gte.
+             * @description Members matching the filters, under the same predicate as items. Exact unless total_relation is gte. page × limit may still not exceed 10000, so the last reachable page is min(ceil(total / limit), floor(10000 / limit)).
              */
             total: number;
-            /** @description eq when total is exact, gte when it stopped at the depth limit and there are at least that many. */
+            /** @description eq when total is exact, gte when the source could only count a lower bound and there are at least that many. */
             total_relation: components["schemas"]["TotalRelation"];
         };
         PageListEngine: {
@@ -10961,10 +10961,10 @@ export interface components {
             object: "list";
             /**
              * Format: int64
-             * @description Members matching the filters, under the same predicate as items. Counted up to the depth limit when total_relation is gte.
+             * @description Members matching the filters, under the same predicate as items. Exact unless total_relation is gte. page × limit may still not exceed 10000, so the last reachable page is min(ceil(total / limit), floor(10000 / limit)).
              */
             total: number;
-            /** @description eq when total is exact, gte when it stopped at the depth limit and there are at least that many. */
+            /** @description eq when total is exact, gte when the source could only count a lower bound and there are at least that many. */
             total_relation: components["schemas"]["TotalRelation"];
         };
         PageListGalgameResource: {
@@ -10977,10 +10977,10 @@ export interface components {
             object: "list";
             /**
              * Format: int64
-             * @description Members matching the filters, under the same predicate as items. Counted up to the depth limit when total_relation is gte.
+             * @description Members matching the filters, under the same predicate as items. Exact unless total_relation is gte. page × limit may still not exceed 10000, so the last reachable page is min(ceil(total / limit), floor(10000 / limit)).
              */
             total: number;
-            /** @description eq when total is exact, gte when it stopped at the depth limit and there are at least that many. */
+            /** @description eq when total is exact, gte when the source could only count a lower bound and there are at least that many. */
             total_relation: components["schemas"]["TotalRelation"];
         };
         PageListHiddenTopicSummary: {
@@ -10993,10 +10993,10 @@ export interface components {
             object: "list";
             /**
              * Format: int64
-             * @description Members matching the filters, under the same predicate as items. Counted up to the depth limit when total_relation is gte.
+             * @description Members matching the filters, under the same predicate as items. Exact unless total_relation is gte. page × limit may still not exceed 10000, so the last reachable page is min(ceil(total / limit), floor(10000 / limit)).
              */
             total: number;
-            /** @description eq when total is exact, gte when it stopped at the depth limit and there are at least that many. */
+            /** @description eq when total is exact, gte when the source could only count a lower bound and there are at least that many. */
             total_relation: components["schemas"]["TotalRelation"];
         };
         PageListNewsItem: {
@@ -11009,10 +11009,10 @@ export interface components {
             object: "list";
             /**
              * Format: int64
-             * @description Members matching the filters, under the same predicate as items. Counted up to the depth limit when total_relation is gte.
+             * @description Members matching the filters, under the same predicate as items. Exact unless total_relation is gte. page × limit may still not exceed 10000, so the last reachable page is min(ceil(total / limit), floor(10000 / limit)).
              */
             total: number;
-            /** @description eq when total is exact, gte when it stopped at the depth limit and there are at least that many. */
+            /** @description eq when total is exact, gte when the source could only count a lower bound and there are at least that many. */
             total_relation: components["schemas"]["TotalRelation"];
         };
         PageListPermissionChange: {
@@ -11025,10 +11025,10 @@ export interface components {
             object: "list";
             /**
              * Format: int64
-             * @description Members matching the filters, under the same predicate as items. Counted up to the depth limit when total_relation is gte.
+             * @description Members matching the filters, under the same predicate as items. Exact unless total_relation is gte. page × limit may still not exceed 10000, so the last reachable page is min(ceil(total / limit), floor(10000 / limit)).
              */
             total: number;
-            /** @description eq when total is exact, gte when it stopped at the depth limit and there are at least that many. */
+            /** @description eq when total is exact, gte when the source could only count a lower bound and there are at least that many. */
             total_relation: components["schemas"]["TotalRelation"];
         };
         PageListQuizSummary: {
@@ -11041,10 +11041,10 @@ export interface components {
             object: "list";
             /**
              * Format: int64
-             * @description Members matching the filters, under the same predicate as items. Counted up to the depth limit when total_relation is gte.
+             * @description Members matching the filters, under the same predicate as items. Exact unless total_relation is gte. page × limit may still not exceed 10000, so the last reachable page is min(ceil(total / limit), floor(10000 / limit)).
              */
             total: number;
-            /** @description eq when total is exact, gte when it stopped at the depth limit and there are at least that many. */
+            /** @description eq when total is exact, gte when the source could only count a lower bound and there are at least that many. */
             total_relation: components["schemas"]["TotalRelation"];
         };
         PageListRatingSummary: {
@@ -11057,10 +11057,10 @@ export interface components {
             object: "list";
             /**
              * Format: int64
-             * @description Members matching the filters, under the same predicate as items. Counted up to the depth limit when total_relation is gte.
+             * @description Members matching the filters, under the same predicate as items. Exact unless total_relation is gte. page × limit may still not exceed 10000, so the last reachable page is min(ceil(total / limit), floor(10000 / limit)).
              */
             total: number;
-            /** @description eq when total is exact, gte when it stopped at the depth limit and there are at least that many. */
+            /** @description eq when total is exact, gte when the source could only count a lower bound and there are at least that many. */
             total_relation: components["schemas"]["TotalRelation"];
         };
         PageListReplySearchHit: {
@@ -11073,10 +11073,10 @@ export interface components {
             object: "list";
             /**
              * Format: int64
-             * @description Members matching the filters, under the same predicate as items. Counted up to the depth limit when total_relation is gte.
+             * @description Members matching the filters, under the same predicate as items. Exact unless total_relation is gte. page × limit may still not exceed 10000, so the last reachable page is min(ceil(total / limit), floor(10000 / limit)).
              */
             total: number;
-            /** @description eq when total is exact, gte when it stopped at the depth limit and there are at least that many. */
+            /** @description eq when total is exact, gte when the source could only count a lower bound and there are at least that many. */
             total_relation: components["schemas"]["TotalRelation"];
         };
         PageListReviewItemSummary: {
@@ -11089,10 +11089,10 @@ export interface components {
             object: "list";
             /**
              * Format: int64
-             * @description Members matching the filters, under the same predicate as items. Counted up to the depth limit when total_relation is gte.
+             * @description Members matching the filters, under the same predicate as items. Exact unless total_relation is gte. page × limit may still not exceed 10000, so the last reachable page is min(ceil(total / limit), floor(10000 / limit)).
              */
             total: number;
-            /** @description eq when total is exact, gte when it stopped at the depth limit and there are at least that many. */
+            /** @description eq when total is exact, gte when the source could only count a lower bound and there are at least that many. */
             total_relation: components["schemas"]["TotalRelation"];
         };
         PageListSeriesSummary: {
@@ -11105,10 +11105,10 @@ export interface components {
             object: "list";
             /**
              * Format: int64
-             * @description Members matching the filters, under the same predicate as items. Counted up to the depth limit when total_relation is gte.
+             * @description Members matching the filters, under the same predicate as items. Exact unless total_relation is gte. page × limit may still not exceed 10000, so the last reachable page is min(ceil(total / limit), floor(10000 / limit)).
              */
             total: number;
-            /** @description eq when total is exact, gte when it stopped at the depth limit and there are at least that many. */
+            /** @description eq when total is exact, gte when the source could only count a lower bound and there are at least that many. */
             total_relation: components["schemas"]["TotalRelation"];
         };
         PageListTagSummary: {
@@ -11121,10 +11121,10 @@ export interface components {
             object: "list";
             /**
              * Format: int64
-             * @description Members matching the filters, under the same predicate as items. Counted up to the depth limit when total_relation is gte.
+             * @description Members matching the filters, under the same predicate as items. Exact unless total_relation is gte. page × limit may still not exceed 10000, so the last reachable page is min(ceil(total / limit), floor(10000 / limit)).
              */
             total: number;
-            /** @description eq when total is exact, gte when it stopped at the depth limit and there are at least that many. */
+            /** @description eq when total is exact, gte when the source could only count a lower bound and there are at least that many. */
             total_relation: components["schemas"]["TotalRelation"];
         };
         PageListToolsetSummary: {
@@ -11137,10 +11137,10 @@ export interface components {
             object: "list";
             /**
              * Format: int64
-             * @description Members matching the filters, under the same predicate as items. Counted up to the depth limit when total_relation is gte.
+             * @description Members matching the filters, under the same predicate as items. Exact unless total_relation is gte. page × limit may still not exceed 10000, so the last reachable page is min(ceil(total / limit), floor(10000 / limit)).
              */
             total: number;
-            /** @description eq when total is exact, gte when it stopped at the depth limit and there are at least that many. */
+            /** @description eq when total is exact, gte when the source could only count a lower bound and there are at least that many. */
             total_relation: components["schemas"]["TotalRelation"];
         };
         PageListTopicSummary: {
@@ -11153,10 +11153,10 @@ export interface components {
             object: "list";
             /**
              * Format: int64
-             * @description Members matching the filters, under the same predicate as items. Counted up to the depth limit when total_relation is gte.
+             * @description Members matching the filters, under the same predicate as items. Exact unless total_relation is gte. page × limit may still not exceed 10000, so the last reachable page is min(ceil(total / limit), floor(10000 / limit)).
              */
             total: number;
-            /** @description eq when total is exact, gte when it stopped at the depth limit and there are at least that many. */
+            /** @description eq when total is exact, gte when the source could only count a lower bound and there are at least that many. */
             total_relation: components["schemas"]["TotalRelation"];
         };
         PageListTraitSummary: {
@@ -11169,10 +11169,10 @@ export interface components {
             object: "list";
             /**
              * Format: int64
-             * @description Members matching the filters, under the same predicate as items. Counted up to the depth limit when total_relation is gte.
+             * @description Members matching the filters, under the same predicate as items. Exact unless total_relation is gte. page × limit may still not exceed 10000, so the last reachable page is min(ceil(total / limit), floor(10000 / limit)).
              */
             total: number;
-            /** @description eq when total is exact, gte when it stopped at the depth limit and there are at least that many. */
+            /** @description eq when total is exact, gte when the source could only count a lower bound and there are at least that many. */
             total_relation: components["schemas"]["TotalRelation"];
         };
         PageListUserCommentItem: {
@@ -11185,10 +11185,10 @@ export interface components {
             object: "list";
             /**
              * Format: int64
-             * @description Members matching the filters, under the same predicate as items. Counted up to the depth limit when total_relation is gte.
+             * @description Members matching the filters, under the same predicate as items. Exact unless total_relation is gte. page × limit may still not exceed 10000, so the last reachable page is min(ceil(total / limit), floor(10000 / limit)).
              */
             total: number;
-            /** @description eq when total is exact, gte when it stopped at the depth limit and there are at least that many. */
+            /** @description eq when total is exact, gte when the source could only count a lower bound and there are at least that many. */
             total_relation: components["schemas"]["TotalRelation"];
         };
         PageListUserReplyItem: {
@@ -11201,10 +11201,10 @@ export interface components {
             object: "list";
             /**
              * Format: int64
-             * @description Members matching the filters, under the same predicate as items. Counted up to the depth limit when total_relation is gte.
+             * @description Members matching the filters, under the same predicate as items. Exact unless total_relation is gte. page × limit may still not exceed 10000, so the last reachable page is min(ceil(total / limit), floor(10000 / limit)).
              */
             total: number;
-            /** @description eq when total is exact, gte when it stopped at the depth limit and there are at least that many. */
+            /** @description eq when total is exact, gte when the source could only count a lower bound and there are at least that many. */
             total_relation: components["schemas"]["TotalRelation"];
         };
         PageListUserSearchHit: {
@@ -11217,10 +11217,10 @@ export interface components {
             object: "list";
             /**
              * Format: int64
-             * @description Members matching the filters, under the same predicate as items. Counted up to the depth limit when total_relation is gte.
+             * @description Members matching the filters, under the same predicate as items. Exact unless total_relation is gte. page × limit may still not exceed 10000, so the last reachable page is min(ceil(total / limit), floor(10000 / limit)).
              */
             total: number;
-            /** @description eq when total is exact, gte when it stopped at the depth limit and there are at least that many. */
+            /** @description eq when total is exact, gte when the source could only count a lower bound and there are at least that many. */
             total_relation: components["schemas"]["TotalRelation"];
         };
         PageListUserTopicItem: {
@@ -11233,10 +11233,10 @@ export interface components {
             object: "list";
             /**
              * Format: int64
-             * @description Members matching the filters, under the same predicate as items. Counted up to the depth limit when total_relation is gte.
+             * @description Members matching the filters, under the same predicate as items. Exact unless total_relation is gte. page × limit may still not exceed 10000, so the last reachable page is min(ceil(total / limit), floor(10000 / limit)).
              */
             total: number;
-            /** @description eq when total is exact, gte when it stopped at the depth limit and there are at least that many. */
+            /** @description eq when total is exact, gte when the source could only count a lower bound and there are at least that many. */
             total_relation: components["schemas"]["TotalRelation"];
         };
         PageListWorkMergeFold: {
@@ -11249,10 +11249,10 @@ export interface components {
             object: "list";
             /**
              * Format: int64
-             * @description Members matching the filters, under the same predicate as items. Counted up to the depth limit when total_relation is gte.
+             * @description Members matching the filters, under the same predicate as items. Exact unless total_relation is gte. page × limit may still not exceed 10000, so the last reachable page is min(ceil(total / limit), floor(10000 / limit)).
              */
             total: number;
-            /** @description eq when total is exact, gte when it stopped at the depth limit and there are at least that many. */
+            /** @description eq when total is exact, gte when the source could only count a lower bound and there are at least that many. */
             total_relation: components["schemas"]["TotalRelation"];
         };
         PageListWorkSummary: {
@@ -11265,10 +11265,10 @@ export interface components {
             object: "list";
             /**
              * Format: int64
-             * @description Members matching the filters, under the same predicate as items. Counted up to the depth limit when total_relation is gte.
+             * @description Members matching the filters, under the same predicate as items. Exact unless total_relation is gte. page × limit may still not exceed 10000, so the last reachable page is min(ceil(total / limit), floor(10000 / limit)).
              */
             total: number;
-            /** @description eq when total is exact, gte when it stopped at the depth limit and there are at least that many. */
+            /** @description eq when total is exact, gte when the source could only count a lower bound and there are at least that many. */
             total_relation: components["schemas"]["TotalRelation"];
         };
         ParagraphNode: {
@@ -12141,10 +12141,10 @@ export interface components {
             object: "list";
             /**
              * Format: int64
-             * @description Works the ranking holds under these filters. Counted up to the depth limit when total_relation is gte.
+             * @description Works the ranking holds under these filters. Exact unless total_relation is gte. page × limit may still not exceed 10000, so the last reachable page is min(ceil(total / limit), floor(10000 / limit)).
              */
             total: number;
-            /** @description eq when total is exact, gte when it stopped at the depth limit and there are at least that many. */
+            /** @description eq when total is exact, gte when the source could only count a lower bound and there are at least that many. */
             total_relation: components["schemas"]["TotalRelation"];
         };
         RatedWorkRankingEntry: {
@@ -17241,7 +17241,7 @@ export interface components {
              * @description Sum of minutes on the same predicate as items.
              */
             total_minutes: number;
-            /** @description eq when total is exact, gte when it stopped at the depth limit and there are at least that many. */
+            /** @description eq when total is exact, gte when the source could only count a lower bound and there are at least that many. */
             total_relation: components["schemas"]["TotalRelation"];
         };
         WorkPreview: {

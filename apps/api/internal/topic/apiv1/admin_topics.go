@@ -135,7 +135,7 @@ func (a *AdminTopics) listHiddenTopics(ctx context.Context, in *listHiddenTopics
 			CreatedAt:  repr.Timestamp(row.Created),
 		})
 	}
-	total, relation := collect.ClampTotal(count)
+	total, relation := count, "eq"
 	return &listHiddenTopicsOutput{Body: repr.NewPageList(items, total, relation)}, nil
 }
 

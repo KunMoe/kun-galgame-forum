@@ -92,7 +92,7 @@ func (s *Service) listWorkMergeFolds(ctx context.Context, in *listWorkMergeFolds
 	for _, row := range rows {
 		items = append(items, foldOf(row))
 	}
-	total, relation := collect.ClampTotal(count)
+	total, relation := count, "eq"
 	return &listWorkMergeFoldsOutput{Body: repr.NewPageList(items, total, relation)}, nil
 }
 

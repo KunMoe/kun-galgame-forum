@@ -6271,14 +6271,14 @@
             "type": "string"
           },
           "total": {
-            "description": "Members matching the filters, under the same predicate as items. Counted up to the depth limit when total_relation is gte.",
+            "description": "Members matching the filters, under the same predicate as items. Exact unless total_relation is gte. page × limit may still not exceed 10000, so the last reachable page is min(ceil(total / limit), floor(10000 / limit)).",
             "format": "int64",
             "minimum": 0,
             "type": "integer"
           },
           "total_relation": {
             "$ref": "#/components/schemas/TotalRelation",
-            "description": "eq when total is exact, gte when it stopped at the depth limit and there are at least that many."
+            "description": "eq when total is exact, gte when the source could only count a lower bound and there are at least that many."
           }
         },
         "required": [
@@ -6487,7 +6487,7 @@
           },
           "total_relation": {
             "$ref": "#/components/schemas/TotalRelation",
-            "description": "eq when total is exact, gte when it stopped at the depth limit and there are at least that many."
+            "description": "eq when total is exact, gte when the source could only count a lower bound and there are at least that many."
           }
         },
         "required": [
@@ -12785,14 +12785,14 @@
             "type": "string"
           },
           "total": {
-            "description": "Members matching the filters, under the same predicate as items. Counted up to the depth limit when total_relation is gte.",
+            "description": "Members matching the filters, under the same predicate as items. Exact unless total_relation is gte. page × limit may still not exceed 10000, so the last reachable page is min(ceil(total / limit), floor(10000 / limit)).",
             "format": "int64",
             "minimum": 0,
             "type": "integer"
           },
           "total_relation": {
             "$ref": "#/components/schemas/TotalRelation",
-            "description": "eq when total is exact, gte when it stopped at the depth limit and there are at least that many."
+            "description": "eq when total is exact, gte when the source could only count a lower bound and there are at least that many."
           }
         },
         "required": [
@@ -12819,14 +12819,14 @@
             "type": "string"
           },
           "total": {
-            "description": "Members matching the filters, under the same predicate as items. Counted up to the depth limit when total_relation is gte.",
+            "description": "Members matching the filters, under the same predicate as items. Exact unless total_relation is gte. page × limit may still not exceed 10000, so the last reachable page is min(ceil(total / limit), floor(10000 / limit)).",
             "format": "int64",
             "minimum": 0,
             "type": "integer"
           },
           "total_relation": {
             "$ref": "#/components/schemas/TotalRelation",
-            "description": "eq when total is exact, gte when it stopped at the depth limit and there are at least that many."
+            "description": "eq when total is exact, gte when the source could only count a lower bound and there are at least that many."
           }
         },
         "required": [
@@ -12853,14 +12853,14 @@
             "type": "string"
           },
           "total": {
-            "description": "Members matching the filters, under the same predicate as items. Counted up to the depth limit when total_relation is gte.",
+            "description": "Members matching the filters, under the same predicate as items. Exact unless total_relation is gte. page × limit may still not exceed 10000, so the last reachable page is min(ceil(total / limit), floor(10000 / limit)).",
             "format": "int64",
             "minimum": 0,
             "type": "integer"
           },
           "total_relation": {
             "$ref": "#/components/schemas/TotalRelation",
-            "description": "eq when total is exact, gte when it stopped at the depth limit and there are at least that many."
+            "description": "eq when total is exact, gte when the source could only count a lower bound and there are at least that many."
           }
         },
         "required": [
@@ -12887,14 +12887,14 @@
             "type": "string"
           },
           "total": {
-            "description": "Members matching the filters, under the same predicate as items. Counted up to the depth limit when total_relation is gte.",
+            "description": "Members matching the filters, under the same predicate as items. Exact unless total_relation is gte. page × limit may still not exceed 10000, so the last reachable page is min(ceil(total / limit), floor(10000 / limit)).",
             "format": "int64",
             "minimum": 0,
             "type": "integer"
           },
           "total_relation": {
             "$ref": "#/components/schemas/TotalRelation",
-            "description": "eq when total is exact, gte when it stopped at the depth limit and there are at least that many."
+            "description": "eq when total is exact, gte when the source could only count a lower bound and there are at least that many."
           }
         },
         "required": [
@@ -12921,14 +12921,14 @@
             "type": "string"
           },
           "total": {
-            "description": "Members matching the filters, under the same predicate as items. Counted up to the depth limit when total_relation is gte.",
+            "description": "Members matching the filters, under the same predicate as items. Exact unless total_relation is gte. page × limit may still not exceed 10000, so the last reachable page is min(ceil(total / limit), floor(10000 / limit)).",
             "format": "int64",
             "minimum": 0,
             "type": "integer"
           },
           "total_relation": {
             "$ref": "#/components/schemas/TotalRelation",
-            "description": "eq when total is exact, gte when it stopped at the depth limit and there are at least that many."
+            "description": "eq when total is exact, gte when the source could only count a lower bound and there are at least that many."
           }
         },
         "required": [
@@ -12955,14 +12955,14 @@
             "type": "string"
           },
           "total": {
-            "description": "Members matching the filters, under the same predicate as items. Counted up to the depth limit when total_relation is gte.",
+            "description": "Members matching the filters, under the same predicate as items. Exact unless total_relation is gte. page × limit may still not exceed 10000, so the last reachable page is min(ceil(total / limit), floor(10000 / limit)).",
             "format": "int64",
             "minimum": 0,
             "type": "integer"
           },
           "total_relation": {
             "$ref": "#/components/schemas/TotalRelation",
-            "description": "eq when total is exact, gte when it stopped at the depth limit and there are at least that many."
+            "description": "eq when total is exact, gte when the source could only count a lower bound and there are at least that many."
           }
         },
         "required": [
@@ -12989,14 +12989,14 @@
             "type": "string"
           },
           "total": {
-            "description": "Members matching the filters, under the same predicate as items. Counted up to the depth limit when total_relation is gte.",
+            "description": "Members matching the filters, under the same predicate as items. Exact unless total_relation is gte. page × limit may still not exceed 10000, so the last reachable page is min(ceil(total / limit), floor(10000 / limit)).",
             "format": "int64",
             "minimum": 0,
             "type": "integer"
           },
           "total_relation": {
             "$ref": "#/components/schemas/TotalRelation",
-            "description": "eq when total is exact, gte when it stopped at the depth limit and there are at least that many."
+            "description": "eq when total is exact, gte when the source could only count a lower bound and there are at least that many."
           }
         },
         "required": [
@@ -13023,14 +13023,14 @@
             "type": "string"
           },
           "total": {
-            "description": "Members matching the filters, under the same predicate as items. Counted up to the depth limit when total_relation is gte.",
+            "description": "Members matching the filters, under the same predicate as items. Exact unless total_relation is gte. page × limit may still not exceed 10000, so the last reachable page is min(ceil(total / limit), floor(10000 / limit)).",
             "format": "int64",
             "minimum": 0,
             "type": "integer"
           },
           "total_relation": {
             "$ref": "#/components/schemas/TotalRelation",
-            "description": "eq when total is exact, gte when it stopped at the depth limit and there are at least that many."
+            "description": "eq when total is exact, gte when the source could only count a lower bound and there are at least that many."
           }
         },
         "required": [
@@ -13057,14 +13057,14 @@
             "type": "string"
           },
           "total": {
-            "description": "Members matching the filters, under the same predicate as items. Counted up to the depth limit when total_relation is gte.",
+            "description": "Members matching the filters, under the same predicate as items. Exact unless total_relation is gte. page × limit may still not exceed 10000, so the last reachable page is min(ceil(total / limit), floor(10000 / limit)).",
             "format": "int64",
             "minimum": 0,
             "type": "integer"
           },
           "total_relation": {
             "$ref": "#/components/schemas/TotalRelation",
-            "description": "eq when total is exact, gte when it stopped at the depth limit and there are at least that many."
+            "description": "eq when total is exact, gte when the source could only count a lower bound and there are at least that many."
           }
         },
         "required": [
@@ -13091,14 +13091,14 @@
             "type": "string"
           },
           "total": {
-            "description": "Members matching the filters, under the same predicate as items. Counted up to the depth limit when total_relation is gte.",
+            "description": "Members matching the filters, under the same predicate as items. Exact unless total_relation is gte. page × limit may still not exceed 10000, so the last reachable page is min(ceil(total / limit), floor(10000 / limit)).",
             "format": "int64",
             "minimum": 0,
             "type": "integer"
           },
           "total_relation": {
             "$ref": "#/components/schemas/TotalRelation",
-            "description": "eq when total is exact, gte when it stopped at the depth limit and there are at least that many."
+            "description": "eq when total is exact, gte when the source could only count a lower bound and there are at least that many."
           }
         },
         "required": [
@@ -13125,14 +13125,14 @@
             "type": "string"
           },
           "total": {
-            "description": "Members matching the filters, under the same predicate as items. Counted up to the depth limit when total_relation is gte.",
+            "description": "Members matching the filters, under the same predicate as items. Exact unless total_relation is gte. page × limit may still not exceed 10000, so the last reachable page is min(ceil(total / limit), floor(10000 / limit)).",
             "format": "int64",
             "minimum": 0,
             "type": "integer"
           },
           "total_relation": {
             "$ref": "#/components/schemas/TotalRelation",
-            "description": "eq when total is exact, gte when it stopped at the depth limit and there are at least that many."
+            "description": "eq when total is exact, gte when the source could only count a lower bound and there are at least that many."
           }
         },
         "required": [
@@ -13159,14 +13159,14 @@
             "type": "string"
           },
           "total": {
-            "description": "Members matching the filters, under the same predicate as items. Counted up to the depth limit when total_relation is gte.",
+            "description": "Members matching the filters, under the same predicate as items. Exact unless total_relation is gte. page × limit may still not exceed 10000, so the last reachable page is min(ceil(total / limit), floor(10000 / limit)).",
             "format": "int64",
             "minimum": 0,
             "type": "integer"
           },
           "total_relation": {
             "$ref": "#/components/schemas/TotalRelation",
-            "description": "eq when total is exact, gte when it stopped at the depth limit and there are at least that many."
+            "description": "eq when total is exact, gte when the source could only count a lower bound and there are at least that many."
           }
         },
         "required": [
@@ -13193,14 +13193,14 @@
             "type": "string"
           },
           "total": {
-            "description": "Members matching the filters, under the same predicate as items. Counted up to the depth limit when total_relation is gte.",
+            "description": "Members matching the filters, under the same predicate as items. Exact unless total_relation is gte. page × limit may still not exceed 10000, so the last reachable page is min(ceil(total / limit), floor(10000 / limit)).",
             "format": "int64",
             "minimum": 0,
             "type": "integer"
           },
           "total_relation": {
             "$ref": "#/components/schemas/TotalRelation",
-            "description": "eq when total is exact, gte when it stopped at the depth limit and there are at least that many."
+            "description": "eq when total is exact, gte when the source could only count a lower bound and there are at least that many."
           }
         },
         "required": [
@@ -13227,14 +13227,14 @@
             "type": "string"
           },
           "total": {
-            "description": "Members matching the filters, under the same predicate as items. Counted up to the depth limit when total_relation is gte.",
+            "description": "Members matching the filters, under the same predicate as items. Exact unless total_relation is gte. page × limit may still not exceed 10000, so the last reachable page is min(ceil(total / limit), floor(10000 / limit)).",
             "format": "int64",
             "minimum": 0,
             "type": "integer"
           },
           "total_relation": {
             "$ref": "#/components/schemas/TotalRelation",
-            "description": "eq when total is exact, gte when it stopped at the depth limit and there are at least that many."
+            "description": "eq when total is exact, gte when the source could only count a lower bound and there are at least that many."
           }
         },
         "required": [
@@ -13261,14 +13261,14 @@
             "type": "string"
           },
           "total": {
-            "description": "Members matching the filters, under the same predicate as items. Counted up to the depth limit when total_relation is gte.",
+            "description": "Members matching the filters, under the same predicate as items. Exact unless total_relation is gte. page × limit may still not exceed 10000, so the last reachable page is min(ceil(total / limit), floor(10000 / limit)).",
             "format": "int64",
             "minimum": 0,
             "type": "integer"
           },
           "total_relation": {
             "$ref": "#/components/schemas/TotalRelation",
-            "description": "eq when total is exact, gte when it stopped at the depth limit and there are at least that many."
+            "description": "eq when total is exact, gte when the source could only count a lower bound and there are at least that many."
           }
         },
         "required": [
@@ -13295,14 +13295,14 @@
             "type": "string"
           },
           "total": {
-            "description": "Members matching the filters, under the same predicate as items. Counted up to the depth limit when total_relation is gte.",
+            "description": "Members matching the filters, under the same predicate as items. Exact unless total_relation is gte. page × limit may still not exceed 10000, so the last reachable page is min(ceil(total / limit), floor(10000 / limit)).",
             "format": "int64",
             "minimum": 0,
             "type": "integer"
           },
           "total_relation": {
             "$ref": "#/components/schemas/TotalRelation",
-            "description": "eq when total is exact, gte when it stopped at the depth limit and there are at least that many."
+            "description": "eq when total is exact, gte when the source could only count a lower bound and there are at least that many."
           }
         },
         "required": [
@@ -13329,14 +13329,14 @@
             "type": "string"
           },
           "total": {
-            "description": "Members matching the filters, under the same predicate as items. Counted up to the depth limit when total_relation is gte.",
+            "description": "Members matching the filters, under the same predicate as items. Exact unless total_relation is gte. page × limit may still not exceed 10000, so the last reachable page is min(ceil(total / limit), floor(10000 / limit)).",
             "format": "int64",
             "minimum": 0,
             "type": "integer"
           },
           "total_relation": {
             "$ref": "#/components/schemas/TotalRelation",
-            "description": "eq when total is exact, gte when it stopped at the depth limit and there are at least that many."
+            "description": "eq when total is exact, gte when the source could only count a lower bound and there are at least that many."
           }
         },
         "required": [
@@ -13363,14 +13363,14 @@
             "type": "string"
           },
           "total": {
-            "description": "Members matching the filters, under the same predicate as items. Counted up to the depth limit when total_relation is gte.",
+            "description": "Members matching the filters, under the same predicate as items. Exact unless total_relation is gte. page × limit may still not exceed 10000, so the last reachable page is min(ceil(total / limit), floor(10000 / limit)).",
             "format": "int64",
             "minimum": 0,
             "type": "integer"
           },
           "total_relation": {
             "$ref": "#/components/schemas/TotalRelation",
-            "description": "eq when total is exact, gte when it stopped at the depth limit and there are at least that many."
+            "description": "eq when total is exact, gte when the source could only count a lower bound and there are at least that many."
           }
         },
         "required": [
@@ -13397,14 +13397,14 @@
             "type": "string"
           },
           "total": {
-            "description": "Members matching the filters, under the same predicate as items. Counted up to the depth limit when total_relation is gte.",
+            "description": "Members matching the filters, under the same predicate as items. Exact unless total_relation is gte. page × limit may still not exceed 10000, so the last reachable page is min(ceil(total / limit), floor(10000 / limit)).",
             "format": "int64",
             "minimum": 0,
             "type": "integer"
           },
           "total_relation": {
             "$ref": "#/components/schemas/TotalRelation",
-            "description": "eq when total is exact, gte when it stopped at the depth limit and there are at least that many."
+            "description": "eq when total is exact, gte when the source could only count a lower bound and there are at least that many."
           }
         },
         "required": [
@@ -13431,14 +13431,14 @@
             "type": "string"
           },
           "total": {
-            "description": "Members matching the filters, under the same predicate as items. Counted up to the depth limit when total_relation is gte.",
+            "description": "Members matching the filters, under the same predicate as items. Exact unless total_relation is gte. page × limit may still not exceed 10000, so the last reachable page is min(ceil(total / limit), floor(10000 / limit)).",
             "format": "int64",
             "minimum": 0,
             "type": "integer"
           },
           "total_relation": {
             "$ref": "#/components/schemas/TotalRelation",
-            "description": "eq when total is exact, gte when it stopped at the depth limit and there are at least that many."
+            "description": "eq when total is exact, gte when the source could only count a lower bound and there are at least that many."
           }
         },
         "required": [
@@ -13465,14 +13465,14 @@
             "type": "string"
           },
           "total": {
-            "description": "Members matching the filters, under the same predicate as items. Counted up to the depth limit when total_relation is gte.",
+            "description": "Members matching the filters, under the same predicate as items. Exact unless total_relation is gte. page × limit may still not exceed 10000, so the last reachable page is min(ceil(total / limit), floor(10000 / limit)).",
             "format": "int64",
             "minimum": 0,
             "type": "integer"
           },
           "total_relation": {
             "$ref": "#/components/schemas/TotalRelation",
-            "description": "eq when total is exact, gte when it stopped at the depth limit and there are at least that many."
+            "description": "eq when total is exact, gte when the source could only count a lower bound and there are at least that many."
           }
         },
         "required": [
@@ -13499,14 +13499,14 @@
             "type": "string"
           },
           "total": {
-            "description": "Members matching the filters, under the same predicate as items. Counted up to the depth limit when total_relation is gte.",
+            "description": "Members matching the filters, under the same predicate as items. Exact unless total_relation is gte. page × limit may still not exceed 10000, so the last reachable page is min(ceil(total / limit), floor(10000 / limit)).",
             "format": "int64",
             "minimum": 0,
             "type": "integer"
           },
           "total_relation": {
             "$ref": "#/components/schemas/TotalRelation",
-            "description": "eq when total is exact, gte when it stopped at the depth limit and there are at least that many."
+            "description": "eq when total is exact, gte when the source could only count a lower bound and there are at least that many."
           }
         },
         "required": [
@@ -13533,14 +13533,14 @@
             "type": "string"
           },
           "total": {
-            "description": "Members matching the filters, under the same predicate as items. Counted up to the depth limit when total_relation is gte.",
+            "description": "Members matching the filters, under the same predicate as items. Exact unless total_relation is gte. page × limit may still not exceed 10000, so the last reachable page is min(ceil(total / limit), floor(10000 / limit)).",
             "format": "int64",
             "minimum": 0,
             "type": "integer"
           },
           "total_relation": {
             "$ref": "#/components/schemas/TotalRelation",
-            "description": "eq when total is exact, gte when it stopped at the depth limit and there are at least that many."
+            "description": "eq when total is exact, gte when the source could only count a lower bound and there are at least that many."
           }
         },
         "required": [
@@ -13567,14 +13567,14 @@
             "type": "string"
           },
           "total": {
-            "description": "Members matching the filters, under the same predicate as items. Counted up to the depth limit when total_relation is gte.",
+            "description": "Members matching the filters, under the same predicate as items. Exact unless total_relation is gte. page × limit may still not exceed 10000, so the last reachable page is min(ceil(total / limit), floor(10000 / limit)).",
             "format": "int64",
             "minimum": 0,
             "type": "integer"
           },
           "total_relation": {
             "$ref": "#/components/schemas/TotalRelation",
-            "description": "eq when total is exact, gte when it stopped at the depth limit and there are at least that many."
+            "description": "eq when total is exact, gte when the source could only count a lower bound and there are at least that many."
           }
         },
         "required": [
@@ -13601,14 +13601,14 @@
             "type": "string"
           },
           "total": {
-            "description": "Members matching the filters, under the same predicate as items. Counted up to the depth limit when total_relation is gte.",
+            "description": "Members matching the filters, under the same predicate as items. Exact unless total_relation is gte. page × limit may still not exceed 10000, so the last reachable page is min(ceil(total / limit), floor(10000 / limit)).",
             "format": "int64",
             "minimum": 0,
             "type": "integer"
           },
           "total_relation": {
             "$ref": "#/components/schemas/TotalRelation",
-            "description": "eq when total is exact, gte when it stopped at the depth limit and there are at least that many."
+            "description": "eq when total is exact, gte when the source could only count a lower bound and there are at least that many."
           }
         },
         "required": [
@@ -13635,14 +13635,14 @@
             "type": "string"
           },
           "total": {
-            "description": "Members matching the filters, under the same predicate as items. Counted up to the depth limit when total_relation is gte.",
+            "description": "Members matching the filters, under the same predicate as items. Exact unless total_relation is gte. page × limit may still not exceed 10000, so the last reachable page is min(ceil(total / limit), floor(10000 / limit)).",
             "format": "int64",
             "minimum": 0,
             "type": "integer"
           },
           "total_relation": {
             "$ref": "#/components/schemas/TotalRelation",
-            "description": "eq when total is exact, gte when it stopped at the depth limit and there are at least that many."
+            "description": "eq when total is exact, gte when the source could only count a lower bound and there are at least that many."
           }
         },
         "required": [
@@ -13669,14 +13669,14 @@
             "type": "string"
           },
           "total": {
-            "description": "Members matching the filters, under the same predicate as items. Counted up to the depth limit when total_relation is gte.",
+            "description": "Members matching the filters, under the same predicate as items. Exact unless total_relation is gte. page × limit may still not exceed 10000, so the last reachable page is min(ceil(total / limit), floor(10000 / limit)).",
             "format": "int64",
             "minimum": 0,
             "type": "integer"
           },
           "total_relation": {
             "$ref": "#/components/schemas/TotalRelation",
-            "description": "eq when total is exact, gte when it stopped at the depth limit and there are at least that many."
+            "description": "eq when total is exact, gte when the source could only count a lower bound and there are at least that many."
           }
         },
         "required": [
@@ -13703,14 +13703,14 @@
             "type": "string"
           },
           "total": {
-            "description": "Members matching the filters, under the same predicate as items. Counted up to the depth limit when total_relation is gte.",
+            "description": "Members matching the filters, under the same predicate as items. Exact unless total_relation is gte. page × limit may still not exceed 10000, so the last reachable page is min(ceil(total / limit), floor(10000 / limit)).",
             "format": "int64",
             "minimum": 0,
             "type": "integer"
           },
           "total_relation": {
             "$ref": "#/components/schemas/TotalRelation",
-            "description": "eq when total is exact, gte when it stopped at the depth limit and there are at least that many."
+            "description": "eq when total is exact, gte when the source could only count a lower bound and there are at least that many."
           }
         },
         "required": [
@@ -16050,14 +16050,14 @@
             "type": "string"
           },
           "total": {
-            "description": "Works the ranking holds under these filters. Counted up to the depth limit when total_relation is gte.",
+            "description": "Works the ranking holds under these filters. Exact unless total_relation is gte. page × limit may still not exceed 10000, so the last reachable page is min(ceil(total / limit), floor(10000 / limit)).",
             "format": "int64",
             "minimum": 0,
             "type": "integer"
           },
           "total_relation": {
             "$ref": "#/components/schemas/TotalRelation",
-            "description": "eq when total is exact, gte when it stopped at the depth limit and there are at least that many."
+            "description": "eq when total is exact, gte when the source could only count a lower bound and there are at least that many."
           }
         },
         "required": [
@@ -29965,7 +29965,7 @@
           },
           "total_relation": {
             "$ref": "#/components/schemas/TotalRelation",
-            "description": "eq when total is exact, gte when it stopped at the depth limit and there are at least that many."
+            "description": "eq when total is exact, gte when the source could only count a lower bound and there are at least that many."
           }
         },
         "required": [

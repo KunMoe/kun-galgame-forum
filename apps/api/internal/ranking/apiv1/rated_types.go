@@ -44,8 +44,8 @@ type ratedWorkRankingInput struct {
 type RatedWorkRanking struct {
 	Object        string                  `json:"object" enum:"list" maxLength:"4" doc:"Type discriminant. Always list."`
 	Items         []RatedWorkRankingEntry `json:"items" doc:"Members of this page. Empty array, never null."`
-	Total         int                     `json:"total" minimum:"0" doc:"Works the ranking holds under these filters. Counted up to the depth limit when total_relation is gte."`
-	TotalRelation string                  `json:"total_relation" enum:"eq,gte" maxLength:"3" doc:"eq when total is exact, gte when it stopped at the depth limit and there are at least that many."`
+	Total         int                     `json:"total" minimum:"0" doc:"Works the ranking holds under these filters. Exact unless total_relation is gte. page × limit may still not exceed 10000, so the last reachable page is min(ceil(total / limit), floor(10000 / limit))."`
+	TotalRelation string                  `json:"total_relation" enum:"eq,gte" maxLength:"3" doc:"eq when total is exact, gte when the source could only count a lower bound and there are at least that many."`
 	Facets        workrepr.WorkFacets     `json:"facets" doc:"The tags and companies most common among the ranked works under these filters, not only this page."`
 	ModelFittedAt *repr.DateTime          `json:"model_fitted_at" doc:"When catalog last fitted the rating model behind every derived number here. It is refitted nightly. null when catalog did not say."`
 }
