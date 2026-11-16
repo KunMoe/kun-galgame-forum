@@ -63,12 +63,12 @@ type getCreditNameOutput struct {
 	Body CreditName
 }
 
-func (s *Service) creditName(ctx context.Context, rawID string, limit, offset int) (*client.CatalogName, *problem.Problem) {
+func (s *Service) creditName(ctx context.Context, rawID string, page client.SubfacePage) (*client.CatalogName, *problem.Problem) {
 	id, ok := pathID(rawID)
 	if !ok {
 		return nil, notFound()
 	}
-	n, found, movedTo, appErr := s.catalog.CatalogNameDetail(ctx, int64(id), limit, offset)
+	n, found, movedTo, appErr := s.catalog.CatalogNameDetail(ctx, int64(id), page)
 	if appErr != nil {
 		return nil, unavailable(appErr)
 	}
@@ -94,7 +94,7 @@ func (s *Service) getCreditName(ctx context.Context, in *creditNamePathInput) (*
 	if s == nil {
 		return nil, problem.Internal(errUnconfigured)
 	}
-	n, prob := s.creditName(ctx, in.CreditNameID, 1, 0)
+	n, prob := s.creditName(ctx, in.CreditNameID, client.SubfacePage{Limit: 1})
 	if prob != nil {
 		return nil, prob
 	}
@@ -148,6 +148,10 @@ type StreamQuery struct {
 
 const streamSort = "catalog"
 
+func (in StreamQuery) subfacePage(offset int, withTotal bool) client.SubfacePage {
+	return client.SubfacePage{Limit: in.Limit, Offset: offset, SFW: !in.IncludeNSFW, WithTotal: withTotal}
+}
+
 func (in StreamQuery) offset(family, id string) (int, *problem.Problem) {
 	fp := collect.Fingerprint(family, id, strconv.FormatBool(in.IncludeNSFW))
 	keys, prob := collect.DecodeCursor(in.Cursor, streamSort, fp)
@@ -177,10 +181,11 @@ func (in StreamQuery) next(family, id string, nextOffset *int) *string {
 type listCreditsInput struct {
 	CreditNameID string `path:"credit_name_id" pattern:"^[1-9][0-9]{0,18}$" maxLength:"19" doc:"Credit name id."`
 	StreamQuery
+	collect.Total
 }
 
 type listCreditsOutput struct {
-	Body repr.List[Credit]
+	Body repr.CountedList[Credit]
 }
 
 func (s *Service) listCreditNameCredits(ctx context.Context, in *listCreditsInput) (*listCreditsOutput, error) {
@@ -191,7 +196,7 @@ func (s *Service) listCreditNameCredits(ctx context.Context, in *listCreditsInpu
 	if prob != nil {
 		return nil, prob
 	}
-	n, prob := s.creditName(ctx, in.CreditNameID, in.Limit, offset)
+	n, prob := s.creditName(ctx, in.CreditNameID, in.subfacePage(offset, in.IncludeTotal))
 	if prob != nil {
 		return nil, prob
 	}
@@ -243,7 +248,7 @@ func (s *Service) listCreditNameCredits(ctx context.Context, in *listCreditsInpu
 		}
 		items = append(items, Credit{Object: "credit", WorkSummary: work, CreditRoles: roles, Characters: creditChars})
 	}
-	return &listCreditsOutput{Body: repr.NewList(items, in.next("credit_name", in.CreditNameID, n.NextOffset))}, nil
+	return &listCreditsOutput{Body: repr.NewCountedList(items, in.next("credit_name", in.CreditNameID, n.NextOffset), n.Total)}, nil
 }
 
 // visibleRows hydrates the works a credit or appearance page names, dropping the

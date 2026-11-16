@@ -338,6 +338,7 @@ func (c *GalgameClient) spliceV2Subface(
 	var page struct {
 		Items      []json.RawMessage `json:"items"`
 		NextCursor string            `json:"next_cursor"`
+		Total      json.RawMessage   `json:"total"`
 	}
 	if json.Unmarshal(raw, &page) != nil {
 		return doc
@@ -353,6 +354,9 @@ func (c *GalgameClient) spliceV2Subface(
 	parent[block] = items
 	if next, ok := decodeOffsetCursor(page.NextCursor); ok {
 		parent["next_offset"] = json.RawMessage(strconv.Itoa(next))
+	}
+	if len(page.Total) > 0 {
+		parent["total"] = page.Total
 	}
 	out, err := json.Marshal(parent)
 	if err != nil {

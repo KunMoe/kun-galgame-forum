@@ -30,7 +30,7 @@ const { allowsNsfw, stanceKey } = useContentStance()
 const appearancesQuery = (cursor?: string) => ({
   limit: PAGE_SIZE,
   include_nsfw: allowsNsfw.value,
-  ...(cursor ? { cursor } : {})
+  ...(cursor ? { cursor } : { include_total: true })
 })
 
 const { data: firstPage, pending: appearancesPending } =
@@ -167,8 +167,10 @@ const voices = computed(() => {
 const voiceTitle = (voices: GalgameDetailCharacterVoice[]) =>
   voices.map((v) => v.latin || v.name).join(' / ')
 
-const workCountText = computed(
-  () => `${works.value.length}${nextCursor.value !== null ? '+' : ''}`
+const workCountText = computed(() =>
+  firstPage.value?.total !== undefined
+    ? String(firstPage.value.total)
+    : `${works.value.length}${nextCursor.value !== null ? '+' : ''}`
 )
 
 const artImages = computed(() =>

@@ -243,7 +243,7 @@ func TestLiveV2DetailFaces(t *testing.T) {
 	if hits[0].EntityType != "name" {
 		t.Errorf("hit entity_type = %q, want name", hits[0].EntityType)
 	}
-	name, found, _, appErr := c.CatalogNameDetail(ctx, hits[0].ID, 50, 0)
+	name, found, _, appErr := c.CatalogNameDetail(ctx, hits[0].ID, SubfacePage{Limit: 50})
 	if appErr != nil || !found {
 		t.Fatalf("CatalogNameDetail(%d) = (%v, %v)", hits[0].ID, appErr, found)
 	}
@@ -258,7 +258,7 @@ func TestLiveV2DetailFaces(t *testing.T) {
 	if appErr != nil || len(chars) == 0 {
 		t.Fatalf("character search: err=%v hits=%d", appErr, len(chars))
 	}
-	ch, found, _, appErr := c.CatalogCharacterDetail(ctx, chars[0].ID, 50, 0, true)
+	ch, found, _, appErr := c.CatalogCharacterDetail(ctx, chars[0].ID, true, SubfacePage{Limit: 50})
 	if appErr != nil || !found {
 		t.Fatalf("CatalogCharacterDetail(%d) = (%v, %v)", chars[0].ID, appErr, found)
 	}

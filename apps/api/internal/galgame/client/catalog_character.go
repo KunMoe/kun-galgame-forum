@@ -31,6 +31,7 @@ type CatalogCharacter struct {
 		Voices []CatalogPerson `json:"voices"`
 	} `json:"works"`
 	NextOffset *int `json:"next_offset"`
+	Total      *int `json:"total"`
 }
 
 // CatalogCharacterTrait carries two generations of the same Chinese name. Wave
@@ -56,20 +57,12 @@ type CatalogCharacterTrait struct {
 }
 
 func (c *GalgameClient) CatalogCharacterDetail(
-	ctx context.Context, id int64, limit, offset int, withWorks bool,
+	ctx context.Context, id int64, withWorks bool, page SubfacePage,
 ) (*CatalogCharacter, bool, int64, *errors.AppError) {
-	if limit <= 0 || limit > catalogCharacterWorksCap {
-		limit = catalogCharacterWorksCap
-	}
-	q := url.Values{
-		"spoilers": {strconv.Itoa(catalogSpoilerCeiling)},
-		"limit":    {strconv.Itoa(limit)},
-		"offset":   {strconv.Itoa(max(offset, 0))},
-	}
+	q := page.query(url.Values{"spoilers": {strconv.Itoa(catalogSpoilerCeiling)}}, catalogCharacterWorksCap)
 	if withWorks {
 		q.Set("include", "works")
 	}
-	openPopulation(q)
 
 	data, found, movedTo, appErr := c.catalogGetRecord(ctx, "/catalog/characters/"+strconv.FormatInt(id, 10), q)
 	if appErr != nil || !found {

@@ -3,6 +3,7 @@ package entityapiv1
 import (
 	"cmp"
 	"context"
+	"kun-galgame-api/internal/apiv1/collect"
 	"strconv"
 
 	"kun-galgame-api/internal/apiv1/repr"
@@ -178,12 +179,12 @@ type getCharacterOutput struct {
 	Body Character
 }
 
-func (s *Service) character(ctx context.Context, rawID string, limit, offset int, withWorks bool) (*client.CatalogCharacter, *problem.Problem) {
+func (s *Service) character(ctx context.Context, rawID string, withWorks bool, page client.SubfacePage) (*client.CatalogCharacter, *problem.Problem) {
 	id, ok := pathID(rawID)
 	if !ok {
 		return nil, notFound()
 	}
-	ch, found, movedTo, appErr := s.catalog.CatalogCharacterDetail(ctx, int64(id), limit, offset, withWorks)
+	ch, found, movedTo, appErr := s.catalog.CatalogCharacterDetail(ctx, int64(id), withWorks, page)
 	if appErr != nil {
 		return nil, unavailable(appErr)
 	}
@@ -209,7 +210,7 @@ func (s *Service) getCharacter(ctx context.Context, in *characterPathInput) (*ge
 	if s == nil {
 		return nil, problem.Internal(errUnconfigured)
 	}
-	ch, prob := s.character(ctx, in.CharacterID, 1, 0, false)
+	ch, prob := s.character(ctx, in.CharacterID, false, client.SubfacePage{Limit: 1})
 	if prob != nil {
 		return nil, prob
 	}
@@ -252,10 +253,11 @@ func (s *Service) getCharacter(ctx context.Context, in *characterPathInput) (*ge
 type listAppearancesInput struct {
 	CharacterID string `path:"character_id" pattern:"^[1-9][0-9]{0,18}$" maxLength:"19" doc:"Character id."`
 	StreamQuery
+	collect.Total
 }
 
 type listAppearancesOutput struct {
-	Body repr.List[Appearance]
+	Body repr.CountedList[Appearance]
 }
 
 func (s *Service) listCharacterAppearances(ctx context.Context, in *listAppearancesInput) (*listAppearancesOutput, error) {
@@ -266,7 +268,7 @@ func (s *Service) listCharacterAppearances(ctx context.Context, in *listAppearan
 	if prob != nil {
 		return nil, prob
 	}
-	ch, prob := s.character(ctx, in.CharacterID, in.Limit, offset, true)
+	ch, prob := s.character(ctx, in.CharacterID, true, in.subfacePage(offset, in.IncludeTotal))
 	if prob != nil {
 		return nil, prob
 	}
@@ -290,5 +292,5 @@ func (s *Service) listCharacterAppearances(ctx context.Context, in *listAppearan
 		}
 		items = append(items, Appearance{Object: "appearance", WorkSummary: work, Voices: voices})
 	}
-	return &listAppearancesOutput{Body: repr.NewList(items, in.next("character", in.CharacterID, ch.NextOffset))}, nil
+	return &listAppearancesOutput{Body: repr.NewCountedList(items, in.next("character", in.CharacterID, ch.NextOffset), ch.Total)}, nil
 }

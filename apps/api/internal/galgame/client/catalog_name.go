@@ -238,20 +238,38 @@ type CatalogName struct {
 		} `json:"roles"`
 	} `json:"credits"`
 	NextOffset *int `json:"next_offset"`
+	Total      *int `json:"total"`
+}
+
+// SubfacePage asks for one page of a credit name's credits or a character's
+// appearances. SFW filters the page in catalog, so offsets and Total count
+// only the works an SFW reader sees; WithTotal adds Total.
+type SubfacePage struct {
+	Limit, Offset int
+	SFW           bool
+	WithTotal     bool
+}
+
+func (p SubfacePage) query(q url.Values, cap int) url.Values {
+	limit := p.Limit
+	if limit <= 0 || limit > cap {
+		limit = cap
+	}
+	q.Set("limit", strconv.Itoa(limit))
+	q.Set("offset", strconv.Itoa(max(p.Offset, 0)))
+	if p.SFW {
+		q.Set("content_limit", "sfw")
+	}
+	if p.WithTotal {
+		q.Set("include_total", "true")
+	}
+	return openPopulation(q)
 }
 
 func (c *GalgameClient) CatalogNameDetail(
-	ctx context.Context, id int64, limit, offset int,
+	ctx context.Context, id int64, page SubfacePage,
 ) (*CatalogName, bool, int64, *errors.AppError) {
-	if limit <= 0 || limit > catalogNameCreditsCap {
-		limit = catalogNameCreditsCap
-	}
-	q := url.Values{
-		"include": {"credits"},
-		"limit":   {strconv.Itoa(limit)},
-		"offset":  {strconv.Itoa(max(offset, 0))},
-	}
-	openPopulation(q)
+	q := page.query(url.Values{"include": {"credits"}}, catalogNameCreditsCap)
 
 	data, found, movedTo, appErr := c.catalogGetRecord(ctx, "/catalog/names/"+strconv.FormatInt(id, 10), q)
 	if appErr != nil || !found {

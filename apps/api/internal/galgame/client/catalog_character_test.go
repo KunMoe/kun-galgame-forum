@@ -46,7 +46,7 @@ func TestCatalogCharacter_WorksAreIncludeGatedOnTheWire(t *testing.T) {
 	calls.appearanceBody = `{"object":"list","items":[],"next_cursor":null}`
 	c := New(srv.URL, "nm_test_key", "")
 
-	if _, _, _, appErr := c.CatalogCharacterDetail(context.Background(), 5, 50, 0, false); appErr != nil {
+	if _, _, _, appErr := c.CatalogCharacterDetail(context.Background(), 5, false, SubfacePage{Limit: 50}); appErr != nil {
 		t.Fatalf("CatalogCharacterDetail: %v", appErr)
 	}
 	if calls.appearances != nil {
@@ -67,7 +67,7 @@ func TestCatalogCharacter_WorksAreIncludeGatedOnTheWire(t *testing.T) {
 		t.Errorf("nsfw = %q, want the population open", got)
 	}
 
-	if _, _, _, appErr := c.CatalogCharacterDetail(context.Background(), 5, 50, 0, true); appErr != nil {
+	if _, _, _, appErr := c.CatalogCharacterDetail(context.Background(), 5, true, SubfacePage{Limit: 50}); appErr != nil {
 		t.Fatalf("CatalogCharacterDetail(withWorks): %v", appErr)
 	}
 	if calls.appearances == nil {
@@ -103,7 +103,7 @@ func TestCatalogCharacter_BothArtsSurviveInTheirOwnFields(t *testing.T) {
 		"next_cursor":"cur_NTA"}`
 	c := New(srv.URL, "nm_test_key", "")
 
-	ch, found, movedTo, appErr := c.CatalogCharacterDetail(context.Background(), 7, 50, 0, true)
+	ch, found, movedTo, appErr := c.CatalogCharacterDetail(context.Background(), 7, true, SubfacePage{Limit: 50})
 	if appErr != nil || !found || movedTo != 0 {
 		t.Fatalf("CatalogCharacterDetail = (%v, %v, %d)", appErr, found, movedTo)
 	}
@@ -148,7 +148,7 @@ func TestCatalogCharacter_MergedIDRedirectsRatherThanRenders(t *testing.T) {
 		"code":"ENTITY_MERGED","object":"character","current_id":"91"}`)
 	c := New(srv.URL, "nm_test_key", "")
 
-	ch, found, movedTo, appErr := c.CatalogCharacterDetail(context.Background(), 3, 50, 0, true)
+	ch, found, movedTo, appErr := c.CatalogCharacterDetail(context.Background(), 3, true, SubfacePage{Limit: 50})
 	if appErr != nil {
 		t.Fatalf("CatalogCharacterDetail: %v", appErr)
 	}
@@ -164,11 +164,31 @@ func TestCatalogCharacter_UnknownIDIsAMiss(t *testing.T) {
 	srv, _ := characterStub(t, 4, http.StatusNotFound, `{"code":404,"message":"not found","data":null}`)
 	c := New(srv.URL, "nm_test_key", "")
 
-	_, found, movedTo, appErr := c.CatalogCharacterDetail(context.Background(), 4, 50, 0, true)
+	_, found, movedTo, appErr := c.CatalogCharacterDetail(context.Background(), 4, true, SubfacePage{Limit: 50})
 	if appErr != nil {
 		t.Fatalf("CatalogCharacterDetail: %v", appErr)
 	}
 	if found || movedTo != 0 {
 		t.Errorf("found = %v, movedTo = %d, want a clean miss", found, movedTo)
+	}
+}
+
+func TestCatalogCharacter_SFWPageAndTotalReachTheSubface(t *testing.T) {
+	srv, calls := characterStub(t, 8, http.StatusOK, `{"object":"character","id":"8","display_name":"x"}`)
+	calls.appearanceBody = `{"object":"list","items":[],"total":66}`
+	c := New(srv.URL, "nm_test_key", "")
+
+	ch, found, _, appErr := c.CatalogCharacterDetail(context.Background(), 8, true, SubfacePage{Limit: 50, SFW: true, WithTotal: true})
+	if appErr != nil || !found {
+		t.Fatalf("CatalogCharacterDetail = (%v, %v)", appErr, found)
+	}
+	if got := calls.appearances.Get("content_limit"); got != "sfw" {
+		t.Errorf("appearances content_limit = %q, want sfw so catalog pages and counts SFW works only", got)
+	}
+	if got := calls.appearances.Get("include_total"); got != "true" {
+		t.Errorf("appearances include_total = %q", got)
+	}
+	if ch.Total == nil || *ch.Total != 66 {
+		t.Errorf("Total = %v, want the sub-face's 66", ch.Total)
 	}
 }

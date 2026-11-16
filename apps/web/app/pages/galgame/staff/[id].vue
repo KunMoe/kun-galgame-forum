@@ -23,7 +23,7 @@ const { allowsNsfw, stanceKey } = useContentStance()
 const creditsQuery = (cursor?: string) => ({
   limit: PAGE_SIZE,
   include_nsfw: allowsNsfw.value,
-  ...(cursor ? { cursor } : {})
+  ...(cursor ? { cursor } : { include_total: true })
 })
 
 const { data: firstPage, pending: creditsPending } = useKunApi<CreditList>(
@@ -174,8 +174,10 @@ const subtitle = computed(() => {
 
 const isPhotoOpen = ref(false)
 
-const workCountText = computed(
-  () => `${works.value.length}${nextCursor.value !== null ? '+' : ''}`
+const workCountText = computed(() =>
+  firstPage.value?.total !== undefined
+    ? String(firstPage.value.total)
+    : `${works.value.length}${nextCursor.value !== null ? '+' : ''}`
 )
 
 useKunSeoMeta(() => {

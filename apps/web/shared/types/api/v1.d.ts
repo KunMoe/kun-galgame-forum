@@ -7825,6 +7825,38 @@ export interface components {
              */
             unread_count: number;
         };
+        CountedListAppearance: {
+            /** @description Members of this page. Empty array, never null. */
+            items: components["schemas"]["Appearance"][];
+            /** @description Opaque keyset cursor. Omitted on the last page. */
+            next_cursor?: string;
+            /**
+             * @description Type discriminant. Always list.
+             * @constant
+             */
+            object: "list";
+            /**
+             * Format: int64
+             * @description Present only when include_total=true. Same visibility gate as items.
+             */
+            total?: number;
+        };
+        CountedListCredit: {
+            /** @description Members of this page. Empty array, never null. */
+            items: components["schemas"]["Credit"][];
+            /** @description Opaque keyset cursor. Omitted on the last page. */
+            next_cursor?: string;
+            /**
+             * @description Type discriminant. Always list.
+             * @constant
+             */
+            object: "list";
+            /**
+             * Format: int64
+             * @description Present only when include_total=true. Same visibility gate as items.
+             */
+            total?: number;
+        };
         CountedListNewsItem: {
             /** @description Members of this page. Empty array, never null. */
             items: components["schemas"]["NewsItem"][];
@@ -9289,17 +9321,6 @@ export interface components {
              */
             object: "list";
         };
-        ListAppearance: {
-            /** @description Members of this page. Empty array, never null. */
-            items: components["schemas"]["Appearance"][];
-            /** @description Opaque keyset cursor. Omitted on the last page. */
-            next_cursor?: string;
-            /**
-             * @description Type discriminant. Always list.
-             * @constant
-             */
-            object: "list";
-        };
         ListCollectionSummary: {
             /** @description Members of this page. Empty array, never null. */
             items: components["schemas"]["CollectionSummary"][];
@@ -9325,17 +9346,6 @@ export interface components {
         ListConversation: {
             /** @description Members of this page. Empty array, never null. */
             items: components["schemas"]["Conversation"][];
-            /** @description Opaque keyset cursor. Omitted on the last page. */
-            next_cursor?: string;
-            /**
-             * @description Type discriminant. Always list.
-             * @constant
-             */
-            object: "list";
-        };
-        ListCredit: {
-            /** @description Members of this page. Empty array, never null. */
-            items: components["schemas"]["Credit"][];
             /** @description Opaque keyset cursor. Omitted on the last page. */
             next_cursor?: string;
             /**
@@ -22446,6 +22456,8 @@ export interface operations {
                 limit?: number;
                 /** @description When true, adult works are included. Default false. A cursor only continues the include_nsfw it was made with. */
                 include_nsfw?: boolean;
+                /** @description When true, the response includes total counted under the same predicate as items. */
+                include_total?: boolean;
             };
             header?: never;
             path: {
@@ -22462,7 +22474,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["ListAppearance"];
+                    "application/json": components["schemas"]["CountedListAppearance"];
                 };
             };
             /** @description INVALID_CURSOR when the cursor is broken or was made with another include_nsfw. */
@@ -25086,6 +25098,8 @@ export interface operations {
                 limit?: number;
                 /** @description When true, adult works are included. Default false. A cursor only continues the include_nsfw it was made with. */
                 include_nsfw?: boolean;
+                /** @description When true, the response includes total counted under the same predicate as items. */
+                include_total?: boolean;
             };
             header?: never;
             path: {
@@ -25102,7 +25116,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["ListCredit"];
+                    "application/json": components["schemas"]["CountedListCredit"];
                 };
             };
             /** @description INVALID_CURSOR when the cursor is broken or was made with another include_nsfw. */

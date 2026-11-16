@@ -434,7 +434,8 @@ func (f *fakeCatalog) LookupWikiLabel(_ context.Context, wikiID int) (int64, boo
 	return id, ok, nil
 }
 
-func (f *fakeCatalog) CatalogNameDetail(_ context.Context, id int64, limit, offset int) (*client.CatalogName, bool, int64, *legacyErrors.AppError) {
+func (f *fakeCatalog) CatalogNameDetail(_ context.Context, id int64, page client.SubfacePage) (*client.CatalogName, bool, int64, *legacyErrors.AppError) {
+	limit, offset := page.Limit, page.Offset
 	if e := f.err(); e != nil {
 		return nil, false, 0, e
 	}
@@ -448,6 +449,11 @@ func (f *fakeCatalog) CatalogNameDetail(_ context.Context, id int64, limit, offs
 	cp := *n
 	cp.Credits = n.Credits[min(offset, len(n.Credits)):min(offset+limit, len(n.Credits))]
 	cp.NextOffset = nil
+	cp.Total = nil
+	if page.WithTotal {
+		total := len(n.Credits)
+		cp.Total = &total
+	}
 	if offset+limit < len(n.Credits) {
 		next := offset + limit
 		cp.NextOffset = &next
@@ -455,7 +461,8 @@ func (f *fakeCatalog) CatalogNameDetail(_ context.Context, id int64, limit, offs
 	return &cp, true, 0, nil
 }
 
-func (f *fakeCatalog) CatalogCharacterDetail(_ context.Context, id int64, limit, offset int, withWorks bool) (*client.CatalogCharacter, bool, int64, *legacyErrors.AppError) {
+func (f *fakeCatalog) CatalogCharacterDetail(_ context.Context, id int64, withWorks bool, page client.SubfacePage) (*client.CatalogCharacter, bool, int64, *legacyErrors.AppError) {
+	limit, offset := page.Limit, page.Offset
 	if e := f.err(); e != nil {
 		return nil, false, 0, e
 	}
@@ -469,8 +476,13 @@ func (f *fakeCatalog) CatalogCharacterDetail(_ context.Context, id int64, limit,
 	cp := *c
 	cp.Works = nil
 	cp.NextOffset = nil
+	cp.Total = nil
 	if withWorks {
 		cp.Works = c.Works[min(offset, len(c.Works)):min(offset+limit, len(c.Works))]
+		if page.WithTotal {
+			total := len(c.Works)
+			cp.Total = &total
+		}
 		if offset+limit < len(c.Works) {
 			next := offset + limit
 			cp.NextOffset = &next

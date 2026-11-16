@@ -484,9 +484,17 @@ func TestV1EntityCreditNames(t *testing.T) {
 	if len(chars) != 2 || chars[0].(map[string]any)["character_id"] != "9201" || chars[1].(map[string]any)["character_id"] != nil {
 		t.Fatalf("characters %+v", chars)
 	}
+	if _, ok := body["total"]; ok {
+		t.Fatalf("total is sent only for include_total=true: %+v", body["total"])
+	}
 	next := body["next_cursor"].(string)
 	resp, body = f.get(t, path+"?limit=2&include_nsfw=true&cursor="+url.QueryEscape(next), spec)
 	geStatus(t, resp, body, http.StatusBadRequest, "INVALID_CURSOR")
+
+	_, body = f.get(t, path+"?limit=2&include_total=true", spec)
+	if asInt(body["total"]) != 4 {
+		t.Fatalf("the staff page reads its work count from catalog's total: %+v", body["total"])
+	}
 }
 
 func TestV1EntityCharacters(t *testing.T) {
@@ -542,6 +550,13 @@ func TestV1EntityCharacters(t *testing.T) {
 	_, body = f.get(t, path+"?limit=1", spec)
 	if v := body["items"].([]any)[0].(map[string]any)["voices"].([]any); len(v) != 1 || v[0].(map[string]any)["id"] != "9101" {
 		t.Fatalf("voices %+v", v)
+	}
+	if _, ok := body["total"]; ok {
+		t.Fatalf("total is sent only for include_total=true: %+v", body["total"])
+	}
+	_, body = f.get(t, path+"?limit=1&include_total=true", spec)
+	if _, ok := body["total"]; !ok {
+		t.Fatalf("include_total=true carries catalog's count: %+v", body)
 	}
 }
 

@@ -102,7 +102,7 @@ func (s *Service) CharacterPreviews(ctx context.Context, ids []int) (map[int]con
 	workIDs := map[int][]int{}
 	var mu sync.Mutex
 	out, err := fanOut(ctx, ids, func(ctx context.Context, id int) (content.CharacterPreview, bool, error) {
-		ch, found, movedTo, appErr := s.catalog.CatalogCharacterDetail(ctx, int64(id), previewWorks, 0, true)
+		ch, found, movedTo, appErr := s.catalog.CatalogCharacterDetail(ctx, int64(id), true, client.SubfacePage{Limit: previewWorks})
 		if appErr != nil {
 			return content.CharacterPreview{}, false, appErr
 		}
@@ -141,7 +141,7 @@ func (s *Service) CreditNamePreviews(ctx context.Context, ids []int) (map[int]co
 	workIDs := map[int][]int{}
 	var mu sync.Mutex
 	out, err := fanOut(ctx, ids, func(ctx context.Context, id int) (content.CreditNamePreview, bool, error) {
-		n, found, movedTo, appErr := s.catalog.CatalogNameDetail(ctx, int64(id), previewNameCredits, 0)
+		n, found, movedTo, appErr := s.catalog.CatalogNameDetail(ctx, int64(id), client.SubfacePage{Limit: previewNameCredits})
 		if appErr != nil {
 			return content.CreditNamePreview{}, false, appErr
 		}

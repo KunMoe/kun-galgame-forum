@@ -4685,6 +4685,74 @@
         ],
         "type": "object"
       },
+      "CountedListAppearance": {
+        "properties": {
+          "items": {
+            "description": "Members of this page. Empty array, never null.",
+            "items": {
+              "$ref": "#/components/schemas/Appearance"
+            },
+            "type": "array"
+          },
+          "next_cursor": {
+            "description": "Opaque keyset cursor. Omitted on the last page.",
+            "maxLength": 512,
+            "pattern": "^cur_[A-Za-z0-9_-]+$",
+            "type": "string"
+          },
+          "object": {
+            "const": "list",
+            "description": "Type discriminant. Always list.",
+            "maxLength": 4,
+            "type": "string"
+          },
+          "total": {
+            "description": "Present only when include_total=true. Same visibility gate as items.",
+            "format": "int64",
+            "minimum": 0,
+            "type": "integer"
+          }
+        },
+        "required": [
+          "object",
+          "items"
+        ],
+        "type": "object"
+      },
+      "CountedListCredit": {
+        "properties": {
+          "items": {
+            "description": "Members of this page. Empty array, never null.",
+            "items": {
+              "$ref": "#/components/schemas/Credit"
+            },
+            "type": "array"
+          },
+          "next_cursor": {
+            "description": "Opaque keyset cursor. Omitted on the last page.",
+            "maxLength": 512,
+            "pattern": "^cur_[A-Za-z0-9_-]+$",
+            "type": "string"
+          },
+          "object": {
+            "const": "list",
+            "description": "Type discriminant. Always list.",
+            "maxLength": 4,
+            "type": "string"
+          },
+          "total": {
+            "description": "Present only when include_total=true. Same visibility gate as items.",
+            "format": "int64",
+            "minimum": 0,
+            "type": "integer"
+          }
+        },
+        "required": [
+          "object",
+          "items"
+        ],
+        "type": "object"
+      },
       "CountedListNewsItem": {
         "properties": {
           "items": {
@@ -8727,34 +8795,6 @@
         ],
         "type": "object"
       },
-      "ListAppearance": {
-        "properties": {
-          "items": {
-            "description": "Members of this page. Empty array, never null.",
-            "items": {
-              "$ref": "#/components/schemas/Appearance"
-            },
-            "type": "array"
-          },
-          "next_cursor": {
-            "description": "Opaque keyset cursor. Omitted on the last page.",
-            "maxLength": 512,
-            "pattern": "^cur_[A-Za-z0-9_-]+$",
-            "type": "string"
-          },
-          "object": {
-            "const": "list",
-            "description": "Type discriminant. Always list.",
-            "maxLength": 4,
-            "type": "string"
-          }
-        },
-        "required": [
-          "object",
-          "items"
-        ],
-        "type": "object"
-      },
       "ListCollectionSummary": {
         "properties": {
           "items": {
@@ -8817,34 +8857,6 @@
             "description": "Members of this page. Empty array, never null.",
             "items": {
               "$ref": "#/components/schemas/Conversation"
-            },
-            "type": "array"
-          },
-          "next_cursor": {
-            "description": "Opaque keyset cursor. Omitted on the last page.",
-            "maxLength": 512,
-            "pattern": "^cur_[A-Za-z0-9_-]+$",
-            "type": "string"
-          },
-          "object": {
-            "const": "list",
-            "description": "Type discriminant. Always list.",
-            "maxLength": 4,
-            "type": "string"
-          }
-        },
-        "required": [
-          "object",
-          "items"
-        ],
-        "type": "object"
-      },
-      "ListCredit": {
-        "properties": {
-          "items": {
-            "description": "Members of this page. Empty array, never null.",
-            "items": {
-              "$ref": "#/components/schemas/Credit"
             },
             "type": "array"
           },
@@ -37909,6 +37921,16 @@
               "description": "When true, adult works are included. Default false. A cursor only continues the include_nsfw it was made with.",
               "type": "boolean"
             }
+          },
+          {
+            "description": "When true, the response includes total counted under the same predicate as items.",
+            "explode": false,
+            "in": "query",
+            "name": "include_total",
+            "schema": {
+              "description": "When true, the response includes total counted under the same predicate as items.",
+              "type": "boolean"
+            }
           }
         ],
         "responses": {
@@ -37916,7 +37938,7 @@
             "content": {
               "application/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/ListAppearance"
+                  "$ref": "#/components/schemas/CountedListAppearance"
                 }
               }
             },
@@ -41849,6 +41871,16 @@
               "description": "When true, adult works are included. Default false. A cursor only continues the include_nsfw it was made with.",
               "type": "boolean"
             }
+          },
+          {
+            "description": "When true, the response includes total counted under the same predicate as items.",
+            "explode": false,
+            "in": "query",
+            "name": "include_total",
+            "schema": {
+              "description": "When true, the response includes total counted under the same predicate as items.",
+              "type": "boolean"
+            }
           }
         ],
         "responses": {
@@ -41856,7 +41888,7 @@
             "content": {
               "application/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/ListCredit"
+                  "$ref": "#/components/schemas/CountedListCredit"
                 }
               }
             },
