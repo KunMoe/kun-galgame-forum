@@ -43,7 +43,7 @@ const spawnRows = computed(() =>
       <div
         v-for="(chain, index) in renameChains"
         :key="index"
-        class="flex items-center gap-2 overflow-x-auto pb-1"
+        class="flex flex-wrap items-center gap-2"
       >
         <template v-for="(item, step) in chain" :key="item.id">
           <KunIcon

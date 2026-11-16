@@ -1,105 +1,18 @@
 <script setup lang="ts">
-const { page, limit, query } = useEntityWorksQuery()
+const route = useRoute()
 
-const [
-  { officialId, data, pending },
-  { galgames, total, status, own, imprint, pending: worksPending }
-] = await Promise.all([
-  useGalgameOfficialDetail('/game'),
-  useCompanyWorks(Number((useRoute().params as { id: string }).id), () => query.value)
-])
-
-const { allowsNsfw } = useContentStance()
-const isSfwMode = computed(() => !allowsNsfw.value)
-
-useKunSeoMeta(() => {
-  const official = data.value
-  return official
-    ? {
-        title: `${official.name} 制作的 Galgame`,
-        description: `浏览会社 ${official.name} 制作的全部 Galgame, 可按类型 / 语言 / 平台 / 作品类型筛选与排序。`
-      }
-    : {}
-})
-
-const listStart = useTemplateRef('listStart')
-const revealList = useRevealListStart(
-  listStart,
-  page,
-  () => status.value === 'pending'
+await navigateTo(
+  {
+    path: taxonomyDetailPath(
+      'official',
+      Number((route.params as { id: string }).id)
+    ),
+    query: route.query
+  },
+  { redirectCode: 301, replace: true }
 )
 </script>
 
 <template>
-  <div>
-    <div v-if="data" class="flex flex-col gap-6">
-      <KunHeader
-        ref="listStart"
-        class="scroll-mt-20"
-        :name="`${data.name} 制作的 Galgame`"
-      >
-        <template #title><KunPageLabel :page="page" /></template>
-        <template v-if="data.logo" #headerEndContent>
-          <GalgameOfficialBrandMark
-            :src="data.logo"
-            :name="data.name"
-            size="md"
-          />
-        </template>
-
-        <template v-if="imprint" #endContent>
-          <div class="flex flex-wrap items-center gap-2">
-            <KunChip color="primary">自有 {{ own }}</KunChip>
-            <KunChip color="secondary"> 经旗下 {{ imprint }} </KunChip>
-          </div>
-        </template>
-      </KunHeader>
-
-      <GalgameOfficialDetailNav
-        :official-id="officialId"
-        :galgame-count="total"
-      />
-
-      <GalgameCardNav :is-show-advanced="false" />
-
-      <KunInfo
-        v-if="isSfwMode"
-        color="warning"
-        title="部分 Galgame 已隐藏"
-        description="当前为 SFW 模式，该会社含 NSFW 内容的 Galgame 不会显示。如需查看，请在设置面板开启 NSFW 开关。"
-      />
-
-      <GalgameCardGridSkeleton v-if="worksPending" />
-
-      <KunLoading v-else :loading="status === 'pending'">
-        <GalgameCard
-          :is-transparent="false"
-          v-if="galgames.length"
-          :galgames="galgames"
-          :hide-company="data.name"
-        >
-          <template #meta="{ galgame }">
-            <GalgameOfficialViaImprint
-              v-if="galgame.via_official"
-              :name="galgame.via_official.name"
-            />
-          </template>
-        </GalgameCard>
-
-        <GalgameOriginalLanguageNull
-          v-else
-          :description="`${data.name} 会社下暂无 Galgame`"
-        />
-      </KunLoading>
-
-      <KunPagination
-        v-if="total > limit"
-        v-model:current-page="page"
-        :total-page="Math.ceil(total / limit)"
-        :is-loading="status === 'pending'"
-        @update:current-page="revealList"
-      />
-    </div>
-    <GalgameEntityDetailSkeleton v-else-if="pending" />
-  </div>
+  <div />
 </template>

@@ -11,8 +11,13 @@ const logoSrc = computed(() =>
   props.official.logo ? withImageVariant(props.official.logo, 'mini') : ''
 )
 
-const roleText = computed(() =>
-  props.role ? (KUN_GALGAME_OFFICIAL_TREE_ROLE_MAP[props.role] ?? '') : ''
+const meta = computed(() =>
+  [
+    props.role ? (KUN_GALGAME_OFFICIAL_TREE_ROLE_MAP[props.role] ?? '') : '',
+    props.official.work_count > 0 ? `${props.official.work_count} 部` : ''
+  ]
+    .filter(Boolean)
+    .join(' · ')
 )
 </script>
 
@@ -23,7 +28,7 @@ const roleText = computed(() =>
     :href="isCurrent ? undefined : taxonomyDetailPath('official', official.id)"
     padding="sm"
     :class-name="cn('w-full', isCurrent && 'border-primary-500 bg-primary-50')"
-    content-class="flex-row items-center gap-2 sm:gap-3"
+    content-class="flex-row items-center gap-2"
   >
     <div v-if="logoSrc" class="bg-default-100 shrink-0 rounded-md p-1">
       <KunImage
@@ -31,37 +36,23 @@ const roleText = computed(() =>
         :alt="`${official.name} logo`"
         loading="lazy"
         object-fit="contain"
-        class-name="size-8 sm:size-10"
+        class-name="size-7"
       />
     </div>
 
-    <span
-      :class="
-        cn(
-          'min-w-0 truncate font-medium',
-          isCurrent ? 'text-primary-600' : 'text-foreground'
-        )
-      "
-    >
-      {{ official.name }}
-    </span>
-
-    <KunChip
-      v-if="roleText"
-      size="xs"
-      :color="isCurrent ? 'primary' : 'default'"
-      class-name="shrink-0"
-    >
-      {{ roleText }}
-    </KunChip>
-
-    <KunChip
-      v-if="official.work_count > 0"
-      size="xs"
-      color="success"
-      class-name="ml-auto shrink-0"
-    >
-      {{ `${official.work_count} 部` }}
-    </KunChip>
+    <div class="min-w-0 flex-1">
+      <p
+        :class="
+          cn(
+            'line-clamp-2 text-sm font-medium break-words',
+            isCurrent ? 'text-primary-600' : 'text-foreground'
+          )
+        "
+        :title="official.name"
+      >
+        {{ official.name }}
+      </p>
+      <p v-if="meta" class="text-default-500 text-xs">{{ meta }}</p>
+    </div>
   </KunCard>
 </template>

@@ -95,13 +95,17 @@ export const useGalgameOfficialDetail = async (subPath = '') => {
   return detail
 }
 
+export type CompanyWorksVia = 'own' | 'imprint'
+
 export const useCompanyWorks = async (
   officialId: number,
-  baseQuery: () => WorksQuery
+  listQuery: () => WorksQuery & { via?: CompanyWorksVia },
+  countQuery: () => WorksQuery
 ) => {
   const nameOf = useCatalogName()
   const { excludeQuery } = useTagBlocks()
-  const query = (): WorksQuery => ({ ...baseQuery(), ...excludeQuery.value })
+  const query = () => ({ ...listQuery(), ...excludeQuery.value })
+  const counted = (): WorksQuery => ({ ...countQuery(), ...excludeQuery.value })
   // Both reads start before either is awaited: a composable resumed after an
   // await has lost the Nuxt instance, so a second useKunApi there throws on SSR.
   const pageRead = useKunApi<CompanyWorkPage>(
@@ -114,15 +118,14 @@ export const useCompanyWorks = async (
   // Own and imprint are the same collection split by via=; a one-row page of
   // each carries its total.
   const splitRead = useKunApi<{ own: number; imprint: number }>(
-    () =>
-      `company-works-split:${officialId}:${JSON.stringify({ ...query(), page: 1 })}`,
+    () => `company-works-split:${officialId}:${JSON.stringify(counted())}`,
     async (client) => {
       const [own, imprint] = await Promise.all(
         (['own', 'imprint'] as const).map((via) =>
           client.GET('/companies/{company_id}/works', {
             params: {
               path: { company_id: String(officialId) },
-              query: { ...query(), via, page: 1, limit: 1 }
+              query: { ...counted(), via }
             }
           })
         )

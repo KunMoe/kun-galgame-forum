@@ -1,24 +1,18 @@
 <script setup lang="ts">
-withDefaults(
-  defineProps<{
-    src: string
-    name: string
-    size?: 'md' | 'lg'
-  }>(),
-  { size: 'lg' }
-)
+defineProps<{
+  src: string
+  name: string
+}>()
 </script>
 
 <template>
-  <div class="bg-default-100 shrink-0 rounded-lg p-2 sm:p-3">
+  <div class="bg-default-100 shrink-0 rounded-xl p-2 sm:p-3">
     <KunImage
       :src="src"
       :alt="`${name} logo`"
       loading="eager"
       object-fit="contain"
-      :class-name="
-        cn(size === 'lg' ? 'size-14 sm:size-20' : 'size-10 sm:size-14')
-      "
+      class-name="size-16 sm:size-28 lg:size-36"
     />
   </div>
 </template>

@@ -1,68 +1,62 @@
 <script setup lang="ts">
-import type { CompanyGraph } from '#shared/utils/api/schemas'
-import {
-  KUN_GALGAME_OFFICIAL_CATEGORY_MAP,
-  KUN_GALGAME_OFFICIAL_LANGUAGE_MAP
-} from '~/constants/galgameOfficial'
+import type { KunTabItem } from '@kungal/ui-vue'
 
-const route = useRoute()
+const routeOfficialId = Number((useRoute().params as { id: string }).id)
 
-const carriedFilters = Object.fromEntries(
-  Object.entries(route.query).filter(([key]) =>
-    (GALGAME_FILTER_QUERY_KEYS as readonly string[]).includes(key)
-  )
+const { page, limit, query } = useEntityWorksQuery()
+const { state: viaState, set: setViaQuery } = useQueryState(
+  {
+    page: queryPage(),
+    via: queryEnum(['', 'own', 'imprint'] as const, '')
+  },
+  { pageKey: 'page' }
 )
-if (Object.keys(carriedFilters).length) {
-  await navigateTo(
-    { path: `${route.path}/game`, query: route.query },
-    { replace: true }
-  )
-}
-
-const GALGAME_PREVIEW_LIMIT = 8
+const via = computed(() => viaState.value.via)
 
 const { allowsNsfw } = useContentStance()
 const isSfwMode = computed(() => !allowsNsfw.value)
 
-const routeOfficialId = Number((route.params as { id: string }).id)
-const { data: graph } = useKunApi<CompanyGraph>(
-  () => `company-graph:${routeOfficialId}`,
-  (api, { signal }) =>
-    api.GET('/companies/{company_id}/graph', {
-      params: { path: { company_id: String(routeOfficialId) } },
-      signal
-    })
-)
+const { graph, layout, hasRelations, relatedCount } =
+  useCompanyRelations(routeOfficialId)
 
 const [
   { officialId, data, pending },
-  { galgames, total, own, imprint, pending: worksPending }
+  { galgames, total, status, own, imprint, pending: worksPending }
 ] = await Promise.all([
   useGalgameOfficialDetail(),
-  useCompanyWorks(routeOfficialId, () => ({
-    page: 1,
-    limit: GALGAME_PREVIEW_LIMIT,
-    sort: 'resource_updated_desc',
-    include_nsfw: allowsNsfw.value
-  }))
+  useCompanyWorks(
+    routeOfficialId,
+    () => ({ ...query.value, ...(via.value ? { via: via.value } : {}) }),
+    () => ({
+      page: 1,
+      limit: 1,
+      sort: 'resource_updated_desc',
+      include_nsfw: query.value.include_nsfw,
+      include_all_original_languages: query.value.include_all_original_languages
+    })
+  )
 ])
 
-const gamePath = computed(
-  () => `${taxonomyDetailPath('official', officialId)}/game`
-)
+const viaTabs = computed<KunTabItem[]>(() => [
+  { value: '', textValue: `全部 ${own.value + imprint.value}` },
+  { value: 'own', textValue: `自有 ${own.value}` },
+  { value: 'imprint', textValue: `经旗下厂牌 ${imprint.value}` }
+])
+const isViaShown = computed(() => imprint.value > 0 || via.value !== '')
+const setVia = (value: string | number) =>
+  setViaQuery({ via: value as '' | 'own' | 'imprint' })
 
-const categoryText = (category: string) =>
-  KUN_GALGAME_OFFICIAL_CATEGORY_MAP[category] || category
-
-const INTRO_CLAMP_CHARS = 100
-const isIntroExpanded = ref(false)
-
-const worksDescription = computed(() => {
-  if (!total.value) return ''
-  if (!imprint.value) {
-    return `鲲 Galgame 论坛数据中有 ${total.value} 部, 下面是最近更新的几部。`
+const worksDescription = computed((previous?: string) => {
+  if (status.value === 'pending') {
+    return previous ?? ''
   }
-  return `鲲 Galgame 论坛数据中自有 ${own.value} 部 · 经旗下厂牌 ${imprint.value} 部, 下面是最近更新的几部。`
+  const expected =
+    via.value === 'own'
+      ? own.value
+      : via.value === 'imprint'
+        ? imprint.value
+        : own.value + imprint.value
+  return total.value === expected ? '' : `当前筛选条件下共 ${total.value} 部`
 })
 
 useKunSeoMeta(() => {
@@ -75,136 +69,117 @@ useKunSeoMeta(() => {
       }
     : {}
 })
+
+const listStart = useTemplateRef('listStart')
+const revealList = useRevealListStart(
+  listStart,
+  page,
+  () => status.value === 'pending'
+)
 </script>
 
 <template>
   <div>
-    <div v-if="data && !worksPending" class="space-y-6">
-      <KunHeader :name="data.name" :description="data.original">
-        <template v-if="data.logo" #headerEndContent>
-          <GalgameOfficialBrandMark :src="data.logo" :name="data.name" />
-        </template>
-
-        <template #endContent>
-          <div class="space-y-3">
-            <GalgameOfficialFollowButton
-              :company-id="data.id"
-              :follower-count="data.follower_count"
-            />
-
-            <div class="flex flex-wrap items-center gap-2">
-              <KunChip color="primary">{{
-                categoryText(data.category)
-              }}</KunChip>
-              <KunChip v-if="data.lang" color="secondary">
-                {{ KUN_GALGAME_OFFICIAL_LANGUAGE_MAP[data.lang] || data.lang }}
-              </KunChip>
-
-              <KunLink
-                v-for="link in data.links"
-                :key="link.url"
-                :is-show-anchor-icon="true"
-                target="_blank"
-                rel="noopener noreferrer"
-                underline="hover"
-                size="sm"
-                :to="link.url"
-              >
-                {{ link.name }}
-              </KunLink>
-            </div>
-
-            <div
-              v-if="data.alias.length"
-              class="text-default-500 flex flex-wrap items-center gap-2 text-sm"
-            >
-              别名
-              <KunChip size="xs" v-for="(a, index) in data.alias" :key="index">
-                {{ a }}
-              </KunChip>
-            </div>
-
-            <div v-if="data.description" class="space-y-1">
-              <p
-                :class="
-                  cn(
-                    'text-default-600 whitespace-pre-line',
-                    !isIntroExpanded && 'line-clamp-3'
-                  )
-                "
-              >
-                {{ data.description }}
-              </p>
-              <p
-                v-if="data.description_machine"
-                class="text-default-400 text-xs"
-              >
-                该简介由机器翻译生成
-              </p>
-              <KunButton
-                v-if="data.description.length > INTRO_CLAMP_CHARS"
-                variant="light"
-                size="sm"
-                color="primary"
-                @click="isIntroExpanded = !isIntroExpanded"
-              >
-                {{ isIntroExpanded ? '收起简介' : '展开简介' }}
-              </KunButton>
-            </div>
-          </div>
-        </template>
-      </KunHeader>
-
-      <GalgameOfficialDetailNav
-        :official-id="officialId"
-        :galgame-count="total"
+    <div v-if="data" class="space-y-6">
+      <GalgameOfficialHero
+        :company="data"
+        :work-count="own + imprint"
+        :related-count="relatedCount"
       />
 
-      <div class="space-y-3">
-        <KunHeader name="作品" :description="worksDescription" scale="h3" />
-
-        <GalgameCard
-          v-if="galgames.length"
-          :is-transparent="false"
-          :galgames="galgames"
-          :hide-company="data.name"
+      <div
+        :class="
+          cn(
+            'grid grid-cols-1 items-start gap-6',
+            hasRelations && 'lg:grid-cols-[20rem_minmax(0,1fr)]'
+          )
+        "
+      >
+        <aside
+          v-if="hasRelations && graph && layout"
+          class="order-last lg:sticky lg:top-20 lg:order-none lg:max-h-[calc(100dvh-6rem)] lg:overflow-y-auto"
         >
-          <template #meta="{ galgame }">
-            <GalgameOfficialViaImprint
-              v-if="galgame.via_official"
-              :name="galgame.via_official.name"
+          <GalgameOfficialRelationGraph
+            :official-id="officialId"
+            :graph="graph"
+            :layout="layout"
+            :related-count="relatedCount"
+          />
+        </aside>
+
+        <section class="flex min-w-0 flex-col gap-4">
+          <KunHeader
+            ref="listStart"
+            class="scroll-mt-20"
+            :name="`${data.name}制作的全部 Galgame 作品`"
+            :description="worksDescription"
+            scale="h2"
+          >
+            <template #title><KunPageLabel :page="page" /></template>
+          </KunHeader>
+
+          <div v-if="isViaShown" class="space-y-1">
+            <KunTab
+              :items="viaTabs"
+              :model-value="via"
+              variant="pills"
+              color="primary"
+              size="sm"
+              @update:model-value="setVia"
             />
-          </template>
-        </GalgameCard>
+            <p class="text-default-400 text-xs">
+              自有: 由 {{ data.name }} 直接制作发行; 经旗下厂牌: 由
+              {{ data.name }} 旗下的品牌制作发行。
+            </p>
+          </div>
 
-        <KunButton
-          v-if="total > GALGAME_PREVIEW_LIMIT"
-          variant="flat"
-          color="primary"
-          :full-width="true"
-          :href="gamePath"
-        >
-          <KunIcon name="lucide:layout-grid" />
-          浏览全部 {{ total }} 部作品
-        </KunButton>
+          <GalgameCardNav :is-show-advanced="false" />
 
-        <KunNull
-          v-if="!total"
-          :description="`${data.name} 会社下暂无 Galgame`"
-        />
+          <KunInfo
+            v-if="isSfwMode"
+            color="warning"
+            title="部分 Galgame 已隐藏"
+            description="当前为 SFW 模式，该会社含 NSFW 内容的 Galgame 不会显示，也不计入数量。如需查看，请在设置面板开启 NSFW 开关。"
+          />
+
+          <GalgameCardGridSkeleton v-if="worksPending" />
+
+          <KunLoading v-else :loading="status === 'pending'">
+            <GalgameCard
+              v-if="galgames.length"
+              :is-transparent="false"
+              :galgames="galgames"
+              :hide-company="data.name"
+            >
+              <template #meta="{ galgame }">
+                <GalgameOfficialViaImprint
+                  v-if="galgame.via_official"
+                  :name="galgame.via_official.name"
+                />
+              </template>
+            </GalgameCard>
+
+            <GalgameOriginalLanguageNull
+              v-else
+              :description="`${data.name} 会社下暂无 Galgame`"
+            />
+          </KunLoading>
+
+          <KunPagination
+            v-if="total > limit"
+            v-model:current-page="page"
+            :total-page="Math.ceil(total / limit)"
+            :is-loading="status === 'pending'"
+            @update:current-page="revealList"
+          />
+
+          <p class="text-default-400 text-xs">
+            资料来自 鲲 Galgame 论坛。如果有数据错误请
+            <KunLink to="/doc/contact" size="sm">联系我们</KunLink>。
+          </p>
+        </section>
       </div>
-
-      <GalgameOfficialRelationGraph :official-id="officialId" :company-graph="graph" />
-
-      <p class="text-default-400 text-xs">
-        本页展示该会社的作品, 资料来自 鲲 Galgame 论坛。<template
-          v-if="isSfwMode"
-          >当前为 SFW 模式, 该会社含 NSFW 内容的 Galgame
-          不计入上方数量。</template
-        >如果有数据错误请
-        <KunLink to="/doc/contact" size="sm">联系我们</KunLink>。
-      </p>
     </div>
-    <GalgameEntityDetailSkeleton v-else-if="pending || (data && worksPending)" />
+    <GalgameEntityDetailSkeleton v-else-if="pending" />
   </div>
 </template>

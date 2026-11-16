@@ -17,7 +17,7 @@ defineProps<{
         v-if="item.children.length"
         :nodes="item.children"
         :current-id="currentId"
-        class="border-default-200 ml-3 border-l pl-3 sm:ml-4 sm:pl-4"
+        class="border-default-200 ml-3 border-l pl-2"
       />
     </li>
   </ul>

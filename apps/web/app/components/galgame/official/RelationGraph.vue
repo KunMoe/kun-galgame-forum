@@ -1,115 +1,62 @@
 <script setup lang="ts">
-import type { KunTabItem } from '@kungal/ui-vue'
-import type { CompanyGraph } from '#shared/utils/api/schemas'
-
 const props = defineProps<{
   officialId: number
-  companyGraph?: CompanyGraph
+  graph: GalgameOfficialRelationGraph
+  layout: GalgameOfficialGraphLayout
+  relatedCount: number
 }>()
 
-const nameOf = useCatalogName()
-
-const v1Graph = computed(() => props.companyGraph)
-
-const data = computed<GalgameOfficialRelationGraph | undefined>(() =>
-  v1Graph.value
-    ? {
-        nodes: v1Graph.value.nodes.map((n) => ({
-          id: Number(n.id),
-          name: nameOf(n).name,
-          logo: n.logo?.url ?? '',
-          work_count: n.catalog_work_count
-        })),
-        edges: v1Graph.value.edges.map((e) => ({
-          from: Number(e.from_company_id),
-          to: Number(e.to_company_id),
-          relation: e.relation
-        }))
-      }
-    : undefined
-)
-
-const graph = computed(() =>
-  (data.value?.nodes.length ?? 0) > 1 ? data.value : null
-)
-
-const layout = computed(() =>
-  graph.value ? buildOfficialGraphLayout(graph.value) : null
-)
-
-const hasContent = computed(() => (layout.value?.edges.length ?? 0) > 0)
-
-const view = ref('graph')
-const tabs: KunTabItem[] = [
-  { value: 'graph', textValue: '关系图', icon: 'lucide:git-fork' },
-  { value: 'list', textValue: '列表', icon: 'lucide:list-tree' }
-]
-
+const isGraphOpen = ref(false)
 const selectedId = ref<number | null>(props.officialId)
 
-const isFullscreen = ref(false)
+const openGraph = () => {
+  selectedId.value = props.officialId
+  isGraphOpen.value = true
+}
 
 const open = (id: number) => {
-  isFullscreen.value = false
+  isGraphOpen.value = false
   return navigateTo(taxonomyDetailPath('official', id))
 }
 </script>
 
 <template>
-  <div v-if="hasContent && graph && layout" class="space-y-4">
-    <KunHeader
-      name="会社关系"
-      description="该会社所属的企业家族: 母公司、旗下品牌、更名沿革与拆分出的公司。资料来自 鲲 Galgame 论坛。"
-      scale="h3"
+  <KunCard
+    :is-transparent="false"
+    :is-hoverable="false"
+    padding="md"
+    content-class="gap-4 justify-start"
+  >
+    <div class="space-y-1">
+      <div class="flex items-center justify-between gap-2">
+        <h2 class="text-lg font-semibold">会社关系</h2>
+        <span class="text-default-400 text-xs">关联 {{ relatedCount }} 家</span>
+      </div>
+      <p class="text-default-500 text-xs">
+        母公司、旗下品牌、更名沿革与拆分出的公司
+      </p>
+    </div>
+
+    <KunButton
+      variant="flat"
+      color="primary"
+      size="sm"
+      :full-width="true"
+      @click="openGraph"
     >
-      <template #headerEndContent>
-        <KunTab v-model="view" :items="tabs" variant="light" size="sm" />
-      </template>
-    </KunHeader>
+      <KunIcon name="lucide:git-fork" />
+      查看关系图
+    </KunButton>
 
-    <KunTabPanels v-model="view">
-      <KunTabPanel
-        value="graph"
-        class-name="grid gap-3 lg:grid-cols-[minmax(0,1fr)_17rem]"
-      >
-        <ClientOnly>
-          <GalgameOfficialGraphCanvas
-            v-model:selected-id="selectedId"
-            :layout="layout"
-            :current-id="officialId"
-            @open="open"
-            @expand="isFullscreen = true"
-          />
-          <template #fallback>
-            <div
-              class="border-default-200 bg-default-50 h-48 rounded-xl border sm:h-[32rem]"
-            />
-          </template>
-        </ClientOnly>
-
-        <GalgameOfficialGraphInspector
-          :layout="layout"
-          :current-id="officialId"
-          :selected-id="selectedId"
-          @select="selectedId = $event"
-        />
-      </KunTabPanel>
-
-      <KunTabPanel value="list">
-        <GalgameOfficialRelationLanes
-          :graph="graph"
-          :official-id="officialId"
-        />
-      </KunTabPanel>
-    </KunTabPanels>
+    <GalgameOfficialRelationLanes :graph="graph" :official-id="officialId" />
 
     <KunModal
-      v-model="isFullscreen"
+      v-model="isGraphOpen"
       inner-class-name="w-[96vw] h-[92vh] max-w-none"
       aria-label="会社关系图"
     >
       <div
-        v-if="isFullscreen"
+        v-if="isGraphOpen"
         class="flex h-full flex-col gap-3 lg:flex-row lg:gap-4"
       >
         <div class="min-h-0 flex-1">
@@ -133,5 +80,5 @@ const open = (id: number) => {
         </div>
       </div>
     </KunModal>
-  </div>
+  </KunCard>
 </template>
