@@ -64,3 +64,11 @@ export const KUN_GALGAME_CHARACTER_SPOILER_MAP: Record<number, string> = {
   1: '轻微剧透',
   2: '严重剧透'
 }
+
+export const getGalgameCharacterVoiceLabel = (voice: {
+  name: string
+  lang?: string
+}) =>
+  voice.lang && voice.lang.toLowerCase() !== 'ja'
+    ? `${voice.name}（${getGalgameCharacterLangName(voice.lang)}）`
+    : voice.name

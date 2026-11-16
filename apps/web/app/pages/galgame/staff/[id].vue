@@ -172,6 +172,12 @@ const subtitle = computed(() => {
   return parts.join(' · ')
 })
 
+const isPhotoOpen = ref(false)
+
+const workCountText = computed(
+  () => `${works.value.length}${nextCursor.value !== null ? '+' : ''}`
+)
+
 useKunSeoMeta(() => {
   const staff = data.value
   return staff
@@ -189,124 +195,131 @@ useKunSeoMeta(() => {
 <template>
   <div>
     <div v-if="data" class="space-y-6">
-      <KunHeader :name="data.name" :description="subtitle">
-        <template v-if="data.photo" #headerEndContent>
-          <KunImage
-            :src="data.photo"
-            :alt="data.name"
-            loading="eager"
-            object-fit="cover"
-            class-name="w-28 shrink-0 rounded-lg sm:w-32"
-            :style="{ aspectRatio: '3/4' }"
+      <GalgameEntityHero :name="data.name" :subtitle="subtitle">
+        <template v-if="data.photo" #media>
+          <button
+            type="button"
+            class="block cursor-zoom-in"
+            :aria-label="`查看 ${data.name} 的照片`"
+            @click="isPhotoOpen = true"
+          >
+            <KunImage
+              :src="data.photo"
+              :alt="data.name"
+              loading="eager"
+              object-fit="cover"
+              class-name="w-20 shrink-0 rounded-xl sm:w-28 lg:w-36"
+              :style="{ aspectRatio: '3/4' }"
+            />
+          </button>
+          <KunLightbox
+            v-model:is-open="isPhotoOpen"
+            :images="[{ src: data.photo, alt: data.name }]"
           />
         </template>
 
-        <template #endContent>
-          <div class="space-y-3">
-            <div
-              v-if="genderText || birthdayText"
-              class="text-default-500 flex flex-wrap items-center gap-x-4 gap-y-1 text-sm"
-            >
-              <span v-if="genderText">性别 {{ genderText }}</span>
-              <span v-if="birthdayText">生日 {{ birthdayText }}</span>
-            </div>
-
-            <div v-if="data.intro" class="space-y-1">
-              <p class="text-default-600">{{ data.intro }}</p>
-              <p v-if="data.intro_machine" class="text-default-400 text-xs">
-                该简介由机器翻译生成
-              </p>
-            </div>
-
-            <div v-if="data.roles.length" class="flex flex-wrap gap-2">
-              <KunChip v-for="role in data.roles" :key="role" color="primary">
-                {{ role }}
-              </KunChip>
-            </div>
-
-            <div v-if="data.siblings.length" class="space-y-1">
-              <p class="text-default-500 text-sm">同一人的其他名义</p>
-              <div class="flex flex-wrap gap-x-4 gap-y-1">
-                <KunLink
-                  v-for="sibling in data.siblings"
-                  :key="sibling.id"
-                  :to="`/galgame/staff/${sibling.id}`"
-                  underline="none"
-                  class-name="text-foreground hover:text-primary font-medium"
-                >
-                  {{ sibling.name }}
-                </KunLink>
-              </div>
-            </div>
-
-            <div
-              v-if="data.links.length"
-              class="flex flex-wrap items-center gap-3"
-            >
-              <template v-for="link in data.links" :key="link.url">
-                <KunLink
-                  v-if="link.url"
-                  :to="link.url"
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  size="sm"
-                  color="default"
-                  class-name="text-default-500 hover:text-default-700"
-                >
-                  {{ link.name }}
-                  <KunIcon name="lucide:external-link" class="inline size-3" />
-                </KunLink>
-                <span v-else class="text-default-400 text-sm">{{
-                  link.name
-                }}</span>
-              </template>
-            </div>
-
-            <p class="text-default-500 text-sm">
-              资料来自 鲲 Galgame
-              论坛的署名图谱。本页是一个「署名名义」而非人物档案,
-              同一位创作者可能以多个名义署名。默认仅显示 SFW 的 Galgame, 查看
-              NSFW Galgame 请在设置面板打开 NSFW 开关。如果有数据错误请
-              <KunLink to="/doc/contact"> 联系我们 </KunLink>。
-            </p>
-          </div>
+        <template #meta>
+          <p>
+            <span class="text-foreground font-semibold tabular-nums">
+              {{ workCountText }}
+            </span>
+            部作品
+            <template v-if="genderText"> · 性别 {{ genderText }}</template>
+            <template v-if="birthdayText"> · 生日 {{ birthdayText }}</template>
+          </p>
         </template>
-      </KunHeader>
 
-      <GalgameCardGridSkeleton v-if="creditsPending" />
-
-      <GalgameCard
-        v-else-if="works.length"
-        :galgames="works"
-        :is-transparent="false"
-      >
-        <template #meta="{ galgame }">
-          <div class="mt-2 flex flex-wrap gap-1">
-            <KunChip v-for="role in galgame.roles" :key="role" size="xs">
+        <template v-if="data.roles.length || data.links.length" #actions>
+          <div v-if="data.roles.length" class="flex flex-wrap gap-2">
+            <KunChip v-for="role in data.roles" :key="role" color="primary">
               {{ role }}
             </KunChip>
           </div>
-
-          <p
-            v-if="galgame.characters?.length"
-            class="text-default-500 mt-1 line-clamp-2 text-xs"
-          >
-            {{ galgame.characters.join(' / ') }}
-          </p>
+          <GalgameEntityLinks :links="data.links" />
         </template>
-      </GalgameCard>
 
-      <KunNull v-else description="暂无该制作人员参与的 Galgame" />
+        <GalgameEntityIntro
+          v-if="data.intro"
+          :text="data.intro"
+          :note="data.intro_machine ? '该简介由机器翻译生成' : ''"
+        />
+      </GalgameEntityHero>
 
-      <div v-if="nextCursor !== null" class="flex justify-center">
-        <KunButton
-          variant="flat"
-          color="primary"
-          :is-loading="loadingMore"
-          @click="loadMore"
+      <div
+        :class="
+          cn(
+            'grid grid-cols-1 items-start gap-6',
+            data.siblings.length && 'lg:grid-cols-[20rem_minmax(0,1fr)]'
+          )
+        "
+      >
+        <aside
+          v-if="data.siblings.length"
+          class="order-last lg:sticky lg:top-20 lg:order-none lg:max-h-[calc(100dvh-6rem)] lg:overflow-y-auto"
         >
-          加载更多作品
-        </KunButton>
+          <GalgameStaffSiblings :siblings="data.siblings" />
+        </aside>
+
+        <section class="flex min-w-0 flex-col gap-4">
+          <KunHeader
+            :name="`${data.name}参与制作的全部 Galgame 作品`"
+            description=""
+            scale="h2"
+          />
+
+          <KunInfo
+            v-if="!allowsNsfw"
+            color="warning"
+            title="部分 Galgame 已隐藏"
+            description="当前为 SFW 模式，含 NSFW 内容的 Galgame 不会显示，也不计入数量。如需查看，请在设置面板开启 NSFW 开关。"
+          />
+
+          <GalgameCardGridSkeleton v-if="creditsPending" />
+
+          <GalgameCard
+            v-else-if="works.length"
+            :galgames="works"
+            :is-transparent="false"
+          >
+            <template #meta="{ galgame }">
+              <div class="mt-2 flex flex-wrap gap-1">
+                <KunChip v-for="role in galgame.roles" :key="role" size="xs">
+                  {{ role }}
+                </KunChip>
+              </div>
+
+              <p
+                v-if="galgame.characters?.length"
+                class="text-default-500 mt-1 line-clamp-2 text-xs"
+              >
+                {{ galgame.characters.join(' / ') }}
+              </p>
+            </template>
+          </GalgameCard>
+
+          <KunNull v-else description="暂无该制作人员参与的 Galgame" />
+
+          <div v-if="nextCursor !== null" class="flex justify-center">
+            <KunButton
+              variant="flat"
+              color="primary"
+              :is-loading="loadingMore"
+              @click="loadMore"
+            >
+              <KunIcon name="lucide:chevron-down" />
+              加载更多作品
+            </KunButton>
+          </div>
+
+          <p class="text-default-400 text-xs">
+            资料来自 鲲 Galgame 论坛的署名图谱。<template
+              v-if="!data.siblings.length"
+              >本页是一个「署名名义」而非人物档案,
+              同一位创作者可能以多个名义署名。</template
+            >如果有数据错误请
+            <KunLink to="/doc/contact" size="sm">联系我们</KunLink>。
+          </p>
+        </section>
       </div>
     </div>
     <GalgameEntityDetailSkeleton v-else-if="pending" />
