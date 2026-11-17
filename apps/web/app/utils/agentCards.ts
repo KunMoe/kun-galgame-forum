@@ -7,7 +7,11 @@ const ENTITY_TYPES: Record<string, EntityRefType> = {
   company: 'company',
   series: 'series',
   tag: 'tag',
-  'kungal:topic': 'topic'
+  'kungal:topic': 'topic',
+  'kungal:galgame': 'work',
+  'kungal:resource': 'galgame_resource',
+  'kungal:rating': 'rating',
+  'kungal:user': 'user'
 }
 
 const PAGES: Record<string, string> = {
@@ -17,7 +21,13 @@ const PAGES: Record<string, string> = {
   company: '/galgame/official',
   series: '/galgame/series',
   tag: '/galgame/tag',
-  'kungal:topic': '/topic'
+  'kungal:topic': '/topic',
+  'kungal:galgame': '/galgame',
+  'kungal:resource': '/galgame/resource',
+  'kungal:rating': '/galgame-rating',
+  'kungal:user': '/user',
+  'kungal:engine': '/galgame/engine',
+  'kungal:toolset': '/toolset'
 }
 
 const KIND_LABELS: Record<string, string> = {
@@ -27,7 +37,13 @@ const KIND_LABELS: Record<string, string> = {
   company: '会社',
   series: '系列',
   tag: '标签',
-  'kungal:topic': '话题'
+  'kungal:topic': '话题',
+  'kungal:galgame': '作品',
+  'kungal:resource': '资源',
+  'kungal:rating': '评价',
+  'kungal:user': '用户',
+  'kungal:engine': '引擎',
+  'kungal:toolset': 'Gal 工具'
 }
 
 export const agentCardKey = (c: Pick<AgentEntityCard, 'kind' | 'id'>) =>

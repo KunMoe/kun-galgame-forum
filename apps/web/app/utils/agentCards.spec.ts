@@ -60,6 +60,25 @@ describe('agentCardHref', () => {
     expect(agentCardIsWork(topic)).toBe(false)
   })
 
+  it('previews the forum cards through the forum previews', () => {
+    const work = card({ kind: 'kungal:galgame', id: '15' })
+    expect(agentCardEntity(work)).toEqual({ type: 'work', id: '15' })
+    expect(agentCardHref(work)).toBe('/galgame/15')
+    expect(
+      agentCardEntity(card({ kind: 'kungal:resource', id: '60883' }))
+    ).toEqual({ type: 'galgame_resource', id: '60883' })
+    expect(agentCardEntity(card({ kind: 'kungal:rating', id: '9' }))).toEqual({
+      type: 'rating',
+      id: '9'
+    })
+    const engine = card({ kind: 'kungal:engine', id: '11' })
+    expect(agentCardPreviewable(engine)).toBe(false)
+    expect(agentCardHref(engine)).toBe('/galgame/engine/11')
+    expect(agentCardHref(card({ kind: 'kungal:toolset', id: '131' }))).toBe(
+      '/toolset/131'
+    )
+  })
+
   it('names a person by its credit name', () => {
     expect(agentCardEntity(card({ kind: 'person', id: '5' }))).toEqual({
       type: 'credit_name',

@@ -151,6 +151,50 @@ describe('describeToolCall', () => {
     ).toBe('已阅读话题 #9')
   })
 
+  it('says what it looked up among the forum works, engines and tools', () => {
+    const found = (name: string, input: object, cards: number) => ({
+      ...withMeta(name, input, {}),
+      output: {
+        cards,
+        sources: 0,
+        entities: [],
+        links: [],
+        total: null,
+        meta: {}
+      }
+    })
+    expect(
+      describeToolCall(
+        found('kungal__search_galgames', { q: '千恋' }, 6),
+        new Map()
+      )
+    ).toBe('已搜索本站作品「千恋」 -> 6 部')
+    expect(
+      describeToolCall(
+        found('kungal__search_galgames', { mobile: true }, 0),
+        new Map()
+      )
+    ).toBe('已搜索本站作品（按条件筛选），没有找到')
+    expect(
+      describeToolCall(
+        withMeta('kungal__get_galgame', { id: 15 }, {}),
+        new Map([['kungal:galgame-15', '千恋＊万花']])
+      )
+    ).toBe('已查看本站作品「千恋＊万花」的资源与评价')
+    expect(
+      describeToolCall(
+        withMeta('kungal__get_engine', { id: 11, mobile: true }, {}),
+        new Map([['kungal:engine-11', 'KiriKiri']])
+      )
+    ).toBe('已查看引擎「KiriKiri」的作品')
+    expect(
+      describeToolCall(
+        found('kungal__search_toolsets', { q: '转区' }, 1),
+        new Map()
+      )
+    ).toBe('已搜索 Gal 工具「转区」 -> 1 个')
+  })
+
   it('names past conversations it searched and read', () => {
     const conversations = [
       { id: '41', title: '催泪作品推荐', updated_at: '2026-10-20T08:00:00Z' }

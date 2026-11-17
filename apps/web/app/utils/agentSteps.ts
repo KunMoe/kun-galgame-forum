@@ -210,6 +210,50 @@ export const describeToolCall = (
       if (!call.done || !out) return head
       return out.cards ? `${head} -> ${out.cards} 个` : `${head}，没有找到`
     }
+    case 'site:search_galgames': {
+      const head = `${state}搜索本站作品${quoted(input.q) || '（按条件筛选）'}`
+      if (!call.done || !out) return head
+      return out.cards ? `${head} -> ${out.cards} 部` : `${head}，没有找到`
+    }
+    case 'site:get_galgame': {
+      const id = String(input.id ?? '')
+      const title = quoted(
+        titles.get(agentCardKey({ kind: 'kungal:galgame', id }))
+      )
+      return `${state}查看本站作品${title || (id ? ` #${id}` : '')}的资源与评价`
+    }
+    case 'site:search_resources': {
+      const head = `${state}查看本站资源${quoted(input.q)}`
+      if (!call.done || !out) return head
+      return out.cards ? `${head} -> ${out.cards} 个` : `${head}，没有找到`
+    }
+    case 'site:search_ratings': {
+      const head = `${state}查看玩家评价`
+      if (!call.done || !out) return head
+      return out.cards ? `${head} -> ${out.cards} 篇` : `${head}，还没有评价`
+    }
+    case 'site:search_engines': {
+      const head = `${state}搜索游戏引擎${quoted(input.q)}`
+      if (!call.done || !out) return head
+      return out.cards ? `${head} -> ${out.cards} 个` : `${head}，没有找到`
+    }
+    case 'site:get_engine': {
+      const id = String(input.id ?? '')
+      const title = quoted(
+        titles.get(agentCardKey({ kind: 'kungal:engine', id }))
+      )
+      return `${state}查看引擎${title || (id ? ` #${id}` : '')}的作品`
+    }
+    case 'site:search_toolsets': {
+      const head = `${state}搜索 Gal 工具${quoted(input.q)}`
+      if (!call.done || !out) return head
+      return out.cards ? `${head} -> ${out.cards} 个` : `${head}，没有找到`
+    }
+    case 'site:search_users': {
+      const head = `${state}搜索论坛用户${quoted(input.q)}`
+      if (!call.done || !out) return head
+      return out.cards ? `${head} -> ${out.cards} 位` : `${head}，没有找到`
+    }
     case 'site:get_topic': {
       const id = String(input.topic_id ?? '')
       const title = quoted(
