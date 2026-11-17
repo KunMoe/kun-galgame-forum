@@ -61,6 +61,10 @@ export default defineNuxtConfig({
       // panel variable.
       chatEnabled: false,
 
+      // NUXT_PUBLIC_AGENT_ENABLED: the NextMoe AI assistant at /chat and its
+      // entrances. The compose feeds it from KUN_AGENT_ENABLED.
+      agentEnabled: false,
+
       KUN_GALGAME_URL: process.env.KUN_GALGAME_URL,
       KUN_VISUAL_NOVEL_FORUM_YANDEX_VERIFICATION:
         process.env.KUN_VISUAL_NOVEL_FORUM_YANDEX_VERIFICATION,

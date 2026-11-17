@@ -22,7 +22,7 @@ const {
 } = storeToRefs(useTempSettingStore())
 
 const isShowMessageDot = computed(() => messageStatus.value === 'new')
-const chatEnabled = useRuntimeConfig().public.chatEnabled
+const { chatEnabled, agentEnabled } = useRuntimeConfig().public
 const chat = useChatStore()
 
 const showCreatorApply = computed(() => !canModerate.value && !isCreator.value)
@@ -185,6 +185,16 @@ const openLogout = () => {
         v-if="chat.hasUnread"
         class="bg-secondary-500 ml-auto size-2 rounded-full"
       />
+    </NuxtLink>
+
+    <NuxtLink
+      v-if="agentEnabled"
+      to="/chat"
+      class="hover:bg-default-100 flex items-center gap-2 rounded-lg px-2 py-2 text-sm transition-colors"
+      @click="emit('close')"
+    >
+      <KunIcon class="size-4" name="lucide:bot-message-square" />
+      AI 对话
     </NuxtLink>
 
     <NuxtLink

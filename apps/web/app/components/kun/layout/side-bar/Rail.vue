@@ -2,10 +2,23 @@
 import { kunSidebarRail } from '~/constants/layout'
 
 const { hasReleaseToday } = useGalgameReleaseToday()
+const agentEnabled = useRuntimeConfig().public.agentEnabled
 </script>
 
 <template>
   <nav class="flex flex-col items-center gap-1">
+    <KunButton
+      v-if="agentEnabled"
+      variant="light"
+      color="default"
+      href="/chat"
+      aria-label="AI 对话"
+      class-name="text-foreground h-auto w-full flex-col gap-1 py-2"
+    >
+      <KunIcon name="lucide:bot-message-square" class="text-xl" />
+      <span class="text-[11px] leading-none">AI 对话</span>
+    </KunButton>
+
     <KunLayoutSideBarRailGroup
       v-for="group in kunSidebarRail"
       :key="group.name"

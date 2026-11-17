@@ -19,6 +19,7 @@ export default withNuxt(
     ignores: [
       'shared/utils/api/client.ts',
       'shared/utils/api/chat.ts',
+      'shared/utils/api/agent.ts',
       'shared/types/api/**'
     ],
     rules: {

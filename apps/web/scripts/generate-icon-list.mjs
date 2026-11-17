@@ -58,7 +58,16 @@ const SKIP_DIRS = new Set(['node_modules', '.nuxt', '.output', 'dist', '.git'])
 
 // Icons referenced indirectly (e.g. through props passed at runtime) that the
 // regex below cannot find. Add manually if you spot a missing icon at runtime.
-const MANUAL_ICONS = []
+// The agent's default suggestion groups and upload options name their icons
+// in the persona response; a site's own may name others, which load at runtime.
+const MANUAL_ICONS = [
+  'lucide:search',
+  'lucide:book-open',
+  'lucide:globe',
+  'lucide:image',
+  'lucide:file-text',
+  'lucide:file'
+]
 
 // Icon references are always quoted string literals — `name="lucide:x"`,
 // `:name="cond ? 'a:b' : 'c:d'"`, or map values like `icon: 'lucide:x'`.
