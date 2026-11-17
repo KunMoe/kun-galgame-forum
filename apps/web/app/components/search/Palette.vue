@@ -30,6 +30,7 @@ const { sectionLabel } = useTopicSections()
 const { allowsNsfw } = useContentStance()
 const { excludeQuery } = useTagBlocks()
 const workName = useWorkName()
+const { agentEnabled } = useRuntimeConfig().public
 
 const { searchHistory } = storeToRefs(usePersistKUNGalgameSearchStore())
 
@@ -144,6 +145,17 @@ const groups = computed<KunCommandGroup[]>(() => {
   if (!result.value) {
     return list
   }
+  if (agentEnabled) {
+    list[0]!.items = [
+      ...list[0]!.items,
+      {
+        value: `ai:${keywords.value}`,
+        label: `用 AI 帮找「${keywords.value}」`,
+        description: '想不起名字? 说说剧情, 角色或氛围, 让 AI 帮你找',
+        icon: 'lucide:sparkles'
+      }
+    ]
+  }
 
   const { topics, works, users, totals } = result.value
   if (topics.length) {
@@ -197,9 +209,13 @@ const rememberHistory = (value: string) => {
 
 // The palette never navigates while typing. The first row is always the search
 // action, so a bare Enter goes to the search page and only an explicitly moved
-// selection opens a single result.
+// selection opens a single result or the AI row.
 const handleSelect = (item: KunCommandItem) => {
   const value = String(item.value)
+  if (value.startsWith('ai:')) {
+    navigateTo(agentAskHref(value.slice(3)))
+    return
+  }
   if (!value.startsWith('q:')) {
     navigateTo(value)
     return

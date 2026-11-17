@@ -49,6 +49,7 @@ const overview = ref<SearchOverviewData | null>(null)
 const overviewPending = ref(!!keywords.value)
 const overviewFailed = ref(false)
 const { excludeQuery } = useTagBlocks()
+const { agentEnabled } = useRuntimeConfig().public
 
 let latest = 0
 
@@ -159,6 +160,12 @@ const setType = (value: SearchType) => {
       </div>
 
       <div class="min-w-0">
+        <SearchAiHint
+          v-if="agentEnabled && !overviewPending"
+          :keywords="keywords"
+          class="mb-6"
+        />
+
         <SearchOverview
           v-if="currentType === 'all'"
           :keywords="keywords"
