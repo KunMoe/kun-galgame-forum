@@ -44,6 +44,7 @@ type Card struct {
 	Facts        []Fact `json:"facts"`
 	URL          string `json:"url"`
 	ContentLimit string `json:"content_limit"`
+	SameAs       string `json:"same_as,omitempty"`
 }
 
 type Fact struct {

@@ -22,5 +22,6 @@ func (a *App) newAgentMCP() http.Handler {
 		Taxonomy: topicRepo.NewTopicTaxonomyRepository(a.DB),
 		Replies:  topicRepo.NewReplyRepository(a.DB),
 		Users:    a.UserClient,
+		API:      agentmcp.NewForumAPI("http://127.0.0.1:" + a.Config.Server.Port + "/api/v1"),
 	})
 }

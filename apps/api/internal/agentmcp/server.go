@@ -36,6 +36,7 @@ type Deps struct {
 	Taxonomy *topicRepo.TopicTaxonomyRepository
 	Replies  *topicRepo.ReplyRepository
 	Users    Users
+	API      *ForumAPI
 }
 
 type server struct{ Deps }
@@ -43,10 +44,22 @@ type server struct{ Deps }
 func Handler(d Deps) http.Handler {
 	s := &server{d}
 	srv := mcp.NewServer(&mcp.Implementation{Name: "kungal", Title: "鲲 Galgame 论坛", Version: "1"}, &mcp.ServerOptions{
-		Instructions: "鲲 Galgame 论坛（kungal）的话题：玩家讨论、攻略、评测、新作资讯、求助。只读，结果按提问用户在论坛里能看到的范围过滤。",
+		Instructions: "这些工具查的是鲲 Galgame 论坛（kungal，本站）自己的内容：Galgame 和它们的下载资源（游戏本体、汉化补丁、合集等）、玩家评价、" +
+			"话题（讨论、攻略、求助）、游戏引擎、Gal 工具和用户。只读，结果按提问用户在论坛里能看到的范围过滤。" +
+			"问本站有没有某部作品、能不能下载、有没有中文、手机能不能玩、用什么引擎、玩家口碑、用什么工具时先用这些工具；" +
+			"作品的剧情、角色、声优、画师、会社、系列、标签等资料，以及按题材找作品，用资料库工具（search_catalog、get_work、search_entities、get_entity、search_tags、browse_works），" +
+			"再用 search_galgames / get_galgame 补上本站的资源情况。两边的作品 id 是同一个数。",
 	})
+	mcp.AddTool(srv, searchGalgamesTool(), s.searchGalgames)
+	mcp.AddTool(srv, getGalgameTool(), s.getGalgame)
+	mcp.AddTool(srv, searchResourcesTool(), s.searchResources)
+	mcp.AddTool(srv, searchRatingsTool(), s.searchRatings)
 	mcp.AddTool(srv, searchTopicsTool(), s.searchTopics)
 	mcp.AddTool(srv, getTopicTool(), s.getTopic)
+	mcp.AddTool(srv, searchEnginesTool(), s.searchEngines)
+	mcp.AddTool(srv, getEngineTool(), s.getEngine)
+	mcp.AddTool(srv, searchToolsetsTool(), s.searchToolsets)
+	mcp.AddTool(srv, searchUsersTool(), s.searchUsers)
 	mux := http.NewServeMux()
 	mux.Handle(Path, mcp.NewStreamableHTTPHandler(
 		func(*http.Request) *mcp.Server { return srv },

@@ -210,7 +210,7 @@ func cardIDs(cards []Card) []string {
 func id(n int) string { return strconv.Itoa(n) }
 
 func TestToolsAreListedWithSchemas(t *testing.T) {
-	f := newFixture(t)
+	f, _ := newAPIFixture(t)
 	res, err := f.session(t, "bob").ListTools(context.Background(), nil)
 	if err != nil {
 		t.Fatal(err)
@@ -219,8 +219,14 @@ func TestToolsAreListedWithSchemas(t *testing.T) {
 	for _, tool := range res.Tools {
 		byName[tool.Name] = tool
 	}
-	if len(byName) != 2 || byName["search_topics"] == nil || byName["get_topic"] == nil {
-		t.Fatalf("tools: %v", byName)
+	for _, name := range []string{"search_galgames", "get_galgame", "search_resources", "search_ratings", "search_topics",
+		"get_topic", "search_engines", "get_engine", "search_toolsets", "search_users"} {
+		if byName[name] == nil {
+			t.Errorf("missing tool %s", name)
+		}
+	}
+	if len(byName) != 10 {
+		t.Errorf("tools: %d", len(byName))
 	}
 	for name, tool := range byName {
 		raw, _ := json.Marshal(tool.InputSchema)
