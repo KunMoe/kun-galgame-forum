@@ -75,43 +75,52 @@ const isGroupActive = computed(() => {
       </KunButton>
     </template>
 
-    <template
-      v-for="(section, si) in group.sections"
-      :key="`${group.name}-${si}`"
-    >
-      <div v-if="si > 0" class="border-default-200/60 my-1 border-t" />
-      <p
-        v-if="section.label"
-        class="text-default-500 px-2 pt-1 pb-0.5 text-xs select-none"
-      >
-        {{ section.label }}
-      </p>
-      <KunLink
-        v-for="link in section.items"
-        :key="link.router"
-        :to="link.router"
-        :target="link.external ? '_blank' : undefined"
-        underline="none"
-        color="default"
-        :class-name="
+    <div :class="cn(group.columns === 2 && 'grid grid-cols-2 gap-x-2')">
+      <div
+        v-for="(section, si) in group.sections"
+        :key="`${group.name}-${si}`"
+        :class="
           cn(
-            'hover:bg-default-100 flex items-center gap-2 rounded-md px-2 py-1.5 text-sm',
-            isLinkActive(link.router)
-              ? 'bg-accent text-primary'
-              : 'text-foreground'
+            si > 0 &&
+              !group.columns &&
+              'border-default-200/60 mt-1 border-t pt-1',
+            group.columns && si >= group.columns && 'mt-2'
           )
         "
       >
-        <KunIcon
-          v-if="link.icon"
-          :name="link.icon"
-          class="shrink-0 text-base"
-        />
-        <span class="whitespace-nowrap">{{ link.label }}</span>
-        <span v-if="link.hint" class="text-primary ml-auto text-xs">
-          {{ link.hint }}
-        </span>
-      </KunLink>
-    </template>
+        <p
+          v-if="section.label"
+          class="text-default-500 px-2 pt-1 pb-0.5 text-xs select-none"
+        >
+          {{ section.label }}
+        </p>
+        <KunLink
+          v-for="link in section.items"
+          :key="link.router"
+          :to="link.router"
+          :target="link.external ? '_blank' : undefined"
+          underline="none"
+          color="default"
+          :class-name="
+            cn(
+              'hover:bg-default-100 flex items-center gap-2 rounded-md px-2 py-1.5 text-sm',
+              isLinkActive(link.router)
+                ? 'bg-accent text-primary'
+                : 'text-foreground'
+            )
+          "
+        >
+          <KunIcon
+            v-if="link.icon"
+            :name="link.icon"
+            class="shrink-0 text-base"
+          />
+          <span class="whitespace-nowrap">{{ link.label }}</span>
+          <span v-if="link.hint" class="text-primary ml-auto text-xs">
+            {{ link.hint }}
+          </span>
+        </KunLink>
+      </div>
+    </div>
   </KunPopover>
 </template>

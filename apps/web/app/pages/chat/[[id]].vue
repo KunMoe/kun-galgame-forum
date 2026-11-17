@@ -11,7 +11,7 @@ if (!useRuntimeConfig().public.agentEnabled) {
 
 const route = useRoute()
 const agent = useAgentStore()
-useKunDisableSeo('AI 对话')
+useKunDisableSeo('AI 帮找')
 
 const openId = computed(() =>
   typeof route.params.id === 'string' && route.params.id
@@ -70,7 +70,7 @@ onMounted(() => void agent.init())
             <NuxtLink
               to="/chat"
               class="flex min-w-0 items-center gap-2"
-              :aria-label="`${kungal.titleShort} AI 对话`"
+              :aria-label="`${kungal.titleShort} AI 帮找`"
               @click="history = false"
             >
               <img src="/favicon.webp" alt="" class="size-7 rounded-lg" />

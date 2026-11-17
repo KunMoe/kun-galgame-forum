@@ -1,15 +1,5 @@
 <script setup lang="ts">
-import { kunLayoutItem, type KunLayoutItem } from '~/constants/layout'
-
-const agentItem: KunLayoutItem = {
-  name: 'agentChat',
-  icon: 'lucide:bot-message-square',
-  router: '/chat',
-  label: 'AI 对话'
-}
-const items = useRuntimeConfig().public.agentEnabled
-  ? [agentItem, ...kunLayoutItem]
-  : kunLayoutItem
+import { kunLayoutItem } from '~/constants/layout'
 
 const expandedItems = ref<string[]>(
   kunLayoutItem
@@ -30,7 +20,7 @@ const toggleExpand = (itemName: string) => {
 <template>
   <div class="flex flex-col justify-center gap-1 py-3">
     <KunLayoutSideBarNavItem
-      v-for="item in items"
+      v-for="item in kunLayoutItem"
       :key="item.name"
       :item="item"
       :expanded-items="expandedItems"

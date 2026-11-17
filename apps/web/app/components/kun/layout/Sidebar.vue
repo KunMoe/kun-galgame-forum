@@ -8,6 +8,7 @@ const props = withDefaults(
 )
 
 const isCollapsed = computed(() => !props.forceExpanded)
+const agentEnabled = useRuntimeConfig().public.agentEnabled
 
 const links = [
   {
@@ -50,13 +51,16 @@ const links = [
     <div class="space-y-3 p-3">
       <template v-if="!isCollapsed">
         <KunBrand :name="kungal.titleShort" />
-        <NuxtLink to="/galgame-quiz">
-          <div
-            class="bg-secondary/10 text-secondary-600 hover:bg-secondary/20 flex items-center gap-2 rounded-lg px-3 py-2 text-xs transition-colors"
-          >
-            <KunIcon name="lucide:party-popper" class="shrink-0 text-base" />
-            <span>Galgame 题库上线啦, 快来出题和回答问题吧</span>
-          </div>
+        <NuxtLink
+          v-if="agentEnabled"
+          to="/chat"
+          class="bg-primary/10 text-primary-600 hover:bg-primary/20 flex items-center gap-3 rounded-lg px-3 py-2 transition-colors"
+        >
+          <KunIcon name="lucide:bot-message-square" class="shrink-0 text-xl" />
+          <span class="flex flex-col">
+            <span class="text-sm font-medium">AI 帮找</span>
+            <span class="text-xs opacity-80">说说剧情或氛围, 帮你找作品</span>
+          </span>
         </NuxtLink>
       </template>
       <template v-else>

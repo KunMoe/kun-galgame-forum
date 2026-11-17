@@ -43,13 +43,19 @@ const isExpanded = computed(() => props.expandedItems.includes(props.item.name))
           v-show="isExpanded"
           class="ml-8 flex flex-col gap-1 transition-all"
         >
-          <KunLayoutSideBarNavItem
-            v-for="child in item.children"
-            :key="child.name"
-            :item="child"
-            :expanded-items="expandedItems"
-            @toggle-expand="$emit('toggle-expand', $event)"
-          />
+          <template v-for="(child, i) in item.children" :key="child.name">
+            <p
+              v-if="child.group && child.group !== item.children[i - 1]?.group"
+              class="text-default-500 px-4 pt-2 text-xs select-none"
+            >
+              {{ child.group }}
+            </p>
+            <KunLayoutSideBarNavItem
+              :item="child"
+              :expanded-items="expandedItems"
+              @toggle-expand="$emit('toggle-expand', $event)"
+            />
+          </template>
         </div>
       </div>
     </template>

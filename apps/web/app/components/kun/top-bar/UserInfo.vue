@@ -194,7 +194,7 @@ const openLogout = () => {
       @click="emit('close')"
     >
       <KunIcon class="size-4" name="lucide:bot-message-square" />
-      AI 对话
+      AI 帮找
     </NuxtLink>
 
     <NuxtLink

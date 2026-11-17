@@ -9,6 +9,7 @@ export interface KunLayoutItem {
   hintColor?: 'primary' | 'secondary' | 'danger'
   external?: boolean
   isCollapse?: boolean
+  group?: string
   children?: KunLayoutItem[]
 }
 
@@ -62,7 +63,15 @@ export const kunLayoutItem: KunLayoutItem[] = [
         name: 'galgame',
         icon: 'lucide:box',
         router: '/galgame',
-        label: 'Galgame'
+        label: '全部 Galgame',
+        group: '常用'
+      },
+      {
+        name: 'galgame-resource',
+        icon: 'lucide:download',
+        router: '/galgame/resource',
+        label: 'Gal 资源列表',
+        group: '常用'
       },
       {
         name: 'galgame-library',
@@ -70,14 +79,30 @@ export const kunLayoutItem: KunLayoutItem[] = [
         router: '/gallib',
         label: 'Galgame 数据库',
         hint: '新',
-        hintColor: 'danger'
+        hintColor: 'danger',
+        group: '常用'
       },
       {
         name: 'galgame-rating',
         icon: 'lucide:lollipop',
         router: '/galgame-rating',
         label: 'Galgame 评分',
-        hint: '最强!'
+        hint: '最强!',
+        group: '常用'
+      },
+      {
+        name: 'galgame-collection',
+        icon: 'lucide:folder-heart',
+        router: '/collection',
+        label: 'Galgame 收藏夹',
+        group: '常用'
+      },
+      {
+        name: 'galgame-calendar',
+        icon: 'lucide:calendar-days',
+        router: '/galgame-calendar',
+        label: 'Galgame 发售月历',
+        group: '发现'
       },
       {
         name: 'galgame-quiz',
@@ -85,81 +110,66 @@ export const kunLayoutItem: KunLayoutItem[] = [
         router: '/galgame-quiz',
         label: 'Galgame 题库',
         hint: '新',
-        hintColor: 'danger'
-      },
-      {
-        name: 'galgame-collection',
-        icon: 'lucide:folder-heart',
-        router: '/collection',
-        label: 'Galgame 收藏夹',
-        hint: '新',
-        hintColor: 'danger'
-      },
-      {
-        name: 'galgame-calendar',
-        icon: 'lucide:calendar-days',
-        router: '/galgame-calendar',
-        label: 'Galgame 发售月历',
-        hint: '新',
-        hintColor: 'danger'
+        hintColor: 'danger',
+        group: '发现'
       },
       {
         name: 'news',
         icon: 'lucide:newspaper',
         router: '/news',
         label: 'Galgame 情报',
-        hint: '新',
-        hintColor: 'danger'
+        group: '发现'
       },
       {
-        name: 'website',
-        icon: 'lucide:globe',
-        router: '/website',
-        label: 'Gal 网站资料库',
-        hint: '起飞!'
+        name: 'galgame-official',
+        icon: 'cuida:building-outline',
+        router: '/galgame/official',
+        label: 'Galgame 会社',
+        group: '资料'
+      },
+      {
+        name: 'galgame-character',
+        icon: 'lucide:drama',
+        router: '/galgame/character',
+        label: 'Galgame 角色',
+        group: '资料'
+      },
+      {
+        name: 'galgame-tag',
+        icon: 'lucide:tag',
+        router: '/galgame/tag',
+        label: 'Galgame 标签',
+        group: '资料'
+      },
+      {
+        name: 'galgame-series',
+        icon: 'lucide:layers',
+        router: '/galgame/series',
+        label: 'Galgame 系列',
+        group: '资料'
+      },
+      {
+        name: 'galgame-engine',
+        icon: 'carbon:ibm-engineering-lifecycle-mgmt',
+        router: '/galgame/engine',
+        label: 'Galgame 引擎',
+        group: '资料'
       },
       {
         name: 'toolset',
         icon: 'lucide:wrench',
         router: '/toolset',
         label: 'Gal 工具资源',
-        hint: '最实用!'
+        hint: '最实用!',
+        group: '工具与网站'
       },
       {
-        name: 'galgame-resource',
-        icon: 'lucide:download',
-        router: '/galgame/resource',
-        label: 'Gal 资源列表'
-      },
-      {
-        name: 'galgame-official',
-        icon: 'cuida:building-outline',
-        router: '/galgame/official',
-        label: 'Galgame 会社'
-      },
-      {
-        name: 'galgame-tag',
-        icon: 'lucide:tag',
-        router: '/galgame/tag',
-        label: 'Galgame 标签'
-      },
-      {
-        name: 'galgame-character',
-        icon: 'lucide:drama',
-        router: '/galgame/character',
-        label: 'Galgame 角色'
-      },
-      {
-        name: 'galgame-engine',
-        icon: 'carbon:ibm-engineering-lifecycle-mgmt',
-        router: '/galgame/engine',
-        label: 'Galgame 引擎'
-      },
-      {
-        name: 'galgame-series',
-        icon: 'lucide:layers',
-        router: '/galgame/series',
-        label: 'Galgame 系列'
+        name: 'website',
+        icon: 'lucide:globe',
+        router: '/website',
+        label: 'Gal 网站资料库',
+        hint: '起飞!',
+        group: '工具与网站'
       }
     ]
   },
@@ -321,6 +331,7 @@ export interface KunRailGroup {
   icon: string
   router?: string
   hint?: string
+  columns?: 2
   sections: KunRailSection[]
 }
 
@@ -375,10 +386,17 @@ export const kunSidebarRail: KunRailGroup[] = [
     label: 'Galgame',
     icon: 'lucide:gamepad-2',
     router: '/galgame',
+    columns: 2,
     sections: [
       {
+        label: '常用',
         items: [
-          { label: 'Galgame', router: '/galgame', icon: 'lucide:box' },
+          { label: '全部 Galgame', router: '/galgame', icon: 'lucide:box' },
+          {
+            label: 'Gal 资源列表',
+            router: '/galgame/resource',
+            icon: 'lucide:download'
+          },
           {
             label: 'Galgame 数据库',
             router: '/gallib',
@@ -390,53 +408,52 @@ export const kunSidebarRail: KunRailGroup[] = [
             icon: 'lucide:lollipop'
           },
           {
-            label: 'Galgame 题库',
-            router: '/galgame-quiz',
-            icon: 'lucide:brain'
-          },
-          {
             label: 'Galgame 收藏夹',
             router: '/collection',
             icon: 'lucide:folder-heart'
-          },
+          }
+        ]
+      },
+      {
+        label: '发现',
+        items: [
+          { label: '评分排行', router: '/ranking', icon: 'lucide:trophy' },
           {
-            label: 'Galgame 发售月历',
+            label: '发售月历',
             router: '/galgame-calendar',
             icon: 'lucide:calendar-days'
           },
+          { label: 'Gal 题库', router: '/galgame-quiz', icon: 'lucide:brain' },
+          { label: 'Gal 情报', router: '/news', icon: 'lucide:newspaper' }
+        ]
+      },
+      {
+        label: '资料',
+        items: [
           {
-            label: 'Galgame 情报',
-            router: '/news',
-            icon: 'lucide:newspaper'
-          },
-          { label: 'Gal 网站资料库', router: '/website', icon: 'lucide:globe' },
-          { label: 'Gal 工具资源', router: '/toolset', icon: 'lucide:wrench' },
-          {
-            label: 'Gal 资源列表',
-            router: '/galgame/resource',
-            icon: 'lucide:download'
-          },
-          {
-            label: 'Galgame 会社',
+            label: '会社',
             router: '/galgame/official',
             icon: 'cuida:building-outline'
           },
-          { label: 'Galgame 标签', router: '/galgame/tag', icon: 'lucide:tag' },
           {
-            label: 'Galgame 角色',
+            label: '角色',
             router: '/galgame/character',
             icon: 'lucide:drama'
           },
+          { label: '标签', router: '/galgame/tag', icon: 'lucide:tag' },
+          { label: '系列', router: '/galgame/series', icon: 'lucide:layers' },
           {
-            label: 'Galgame 引擎',
+            label: '引擎',
             router: '/galgame/engine',
             icon: 'carbon:ibm-engineering-lifecycle-mgmt'
-          },
-          {
-            label: 'Galgame 系列',
-            router: '/galgame/series',
-            icon: 'lucide:layers'
           }
+        ]
+      },
+      {
+        label: '工具与网站',
+        items: [
+          { label: 'Gal 工具资源', router: '/toolset', icon: 'lucide:wrench' },
+          { label: 'Gal 网站资料库', router: '/website', icon: 'lucide:globe' }
         ]
       }
     ]

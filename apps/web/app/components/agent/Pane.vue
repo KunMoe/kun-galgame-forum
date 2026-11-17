@@ -136,7 +136,7 @@ const switchTo = (messageId: string) => {
 </script>
 
 <template>
-  <div class="bg-background relative flex h-full min-h-0 flex-col">
+  <div class="relative flex h-full min-h-0 flex-col">
     <div
       :class="
         cn(
@@ -165,7 +165,10 @@ const switchTo = (messageId: string) => {
         />
       </template>
     </div>
-    <div v-if="props.id" class="hidden @3xl/kun-chat:block">
+    <div
+      v-if="props.id"
+      class="hidden @3xl/kun-chat:block [&_.kun-chat-header]:bg-transparent"
+    >
       <KunChatHeader :title="title" :subtitle="personaName" :avatar="avatar">
         <template v-if="conversation" #actions>
           <AgentIconAction
