@@ -209,6 +209,25 @@ func (s *server) searchGalgames(ctx context.Context, req *mcp.CallToolRequest, i
 			head, res.Total, sortLabels[in.sortKey("updated")], len(res.Items), text, detailHint)), Cards{Cards: cards}, nil
 	}
 
+	if in.CompanyID == 0 {
+		company, err := s.companyNamed(ctx, q)
+		if err != nil {
+			return nil, Cards{}, apiFail("company by name", err)
+		}
+		if company != nil {
+			id, _ := strconv.ParseInt(company.ID, 10, 64)
+			byCompany := in
+			byCompany.Query, byCompany.CompanyID = "", id
+			res, cards, err := s.searchGalgames(ctx, req, byCompany)
+			if err != nil || res == nil {
+				return res, cards, err
+			}
+			lead := fmt.Sprintf("「%s」是会社 %s（会社 #%s），下面是它的作品：\n", q, company.DisplayName, company.ID)
+			res.Content[0].(*mcp.TextContent).Text = lead + res.Content[0].(*mcp.TextContent).Text
+			return res, cards, nil
+		}
+	}
+
 	params := url.Values{"q": {q}, "limit": {"30"}, "sort": {"relevance_desc"}}
 	if key, ok := searchSorts[in.Sort]; ok {
 		params.Set("sort", key)
@@ -449,4 +468,27 @@ func aliasText(aliases []string, n int) string {
 		return ""
 	}
 	return "（别名：" + strings.Join(aliases[:min(n, len(aliases))], "、") + "）"
+}
+
+type company struct {
+	named
+	Aliases []string `json:"aliases"`
+}
+
+// companyNamed answers a q that is exactly a company's name or alias: weak
+// models put 柚子社 into q, and a title search for it lists unrelated works.
+func (s *server) companyNamed(ctx context.Context, q string) (*company, error) {
+	var res page[company]
+	if err := s.API.get(ctx, "/companies", url.Values{"q": {q}, "limit": {"3"}}, &res); err != nil {
+		return nil, err
+	}
+	for i, c := range res.Items {
+		names := append([]string{c.DisplayName, c.zhName()}, c.Aliases...)
+		for _, n := range names {
+			if strings.EqualFold(strings.TrimSpace(n), q) {
+				return &res.Items[i], nil
+			}
+		}
+	}
+	return nil, nil
 }

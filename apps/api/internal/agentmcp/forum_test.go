@@ -42,6 +42,7 @@ var forumPages = map[string]string{
 	"/api/v1/search/users":       `{"items":[{"id":"1","name":"kun","bio":"KUN","roles":["admin"],"topic_count":3,"reply_count":3}],"total":1}`,
 	"/api/v1/galgame-resources":  `{"items":[],"total":0}`,
 	"/api/v1/engines":            `{"items":[],"total":0}`,
+	"/api/v1/companies":          `{"items":[{"id":"5147","display_name":"ゆずソフト","localized":{"zh-Hans":{"value":"柚子软件"}},"aliases":["柚子社"]}],"total":1}`,
 }
 
 func newAPIFixture(t *testing.T) (*fixture, *apiLog) {
@@ -178,5 +179,32 @@ func TestSmallerListsCarryTheirOwnCards(t *testing.T) {
 	text, _, isErr := f.call(t, "bob", "search_engines", map[string]any{"q": "吉里吉里"})
 	if isErr || !strings.Contains(text, "KiriKiri") {
 		t.Errorf("an engine miss should point at the English name: %s", text)
+	}
+}
+
+func TestSearchGalgamesTreatsACompanyNameAsTheCompany(t *testing.T) {
+	f, log := newAPIFixture(t)
+	text, cards, isErr := f.call(t, "bob", "search_galgames", map[string]any{"q": "柚子社", "language": "zh-cn"})
+	if isErr || len(cards) != 1 || !strings.Contains(text, "会社 ゆずソフト（会社 #5147）") {
+		t.Fatalf("%v %+v %s", isErr, cards, text)
+	}
+	if q := log.last("/api/v1/works"); q.Get("company_id") != "5147" || q.Get("resource_languages") != "zh-cn" {
+		t.Errorf("query: %v", q)
+	}
+
+	_, _, _ = f.call(t, "bob", "search_galgames", map[string]any{"q": "千恋"})
+	if log.last("/api/v1/search/works").Get("q") != "千恋" {
+		t.Errorf("a title that is no company's name stays a title search")
+	}
+}
+
+func TestSearchRatingsFindsTheWorkByName(t *testing.T) {
+	f, log := newAPIFixture(t)
+	text, cards, isErr := f.call(t, "bob", "search_ratings", map[string]any{"work": "千恋"})
+	if isErr || len(cards) != 1 || !strings.Contains(text, "《千恋万花》（作品 #15）") {
+		t.Fatalf("%v %+v %s", isErr, cards, text)
+	}
+	if log.last("/api/v1/ratings").Get("work_id") != "15" {
+		t.Errorf("ratings query: %v", log.last("/api/v1/ratings"))
 	}
 }

@@ -25,6 +25,7 @@ type searchResourcesInput struct {
 }
 
 type searchRatingsInput struct {
+	Work   string `json:"work,omitempty"`
 	WorkID int64  `json:"work_id,omitempty"`
 	Sort   string `json:"sort,omitempty"`
 	Limit  int    `json:"limit,omitempty"`
@@ -64,7 +65,7 @@ func searchResourcesTool() *mcp.Tool {
 	}
 	p := schema.Properties
 	p["q"].Description = "在资源说明和作品名里搜索的关键词。不填就按排序列出全站资源。"
-	p["work_id"].Description = "只看这部作品的资源（作品 id）。问一部作品的资源时更推荐直接用 get_galgame。"
+	p["work_id"].Description = "只看这部作品的资源（作品 id），id 必须来自工具结果，不要猜。问一部作品的资源时更推荐直接用 get_galgame。"
 	enumOf(p["sort"], "newest", "downloads")
 	p["sort"].Description = "排序。newest=最新发布（默认），downloads=下载最多。填了 work_id 时按发布时间。"
 	limitSchema(p["limit"])
@@ -85,7 +86,8 @@ func searchRatingsTool() *mcp.Tool {
 		panic(err)
 	}
 	p := schema.Properties
-	p["work_id"].Description = "只看这部作品的评价（作品 id）。不填就是全站的评价。"
+	p["work"].Description = "只看这部作品的评价，填作品名（中文、日文名或简称都行）。只知道名字时用它，不要猜 work_id。"
+	p["work_id"].Description = "只看这部作品的评价（作品 id，必须来自工具结果）。work 和 work_id 都不填就是全站的评价。"
 	enumOf(p["sort"], "newest", "popular", "highest", "lowest")
 	p["sort"].Description = "排序。newest=最新（默认），popular=浏览最多，highest=总评最高，lowest=总评最低。"
 	limitSchema(p["limit"])
@@ -193,6 +195,20 @@ func (s *server) searchRatings(ctx context.Context, req *mcp.CallToolRequest, in
 	if !ok {
 		return nil, Cards{}, fmt.Errorf("不认识的排序 %q", in.Sort)
 	}
+	head := ""
+	if in.WorkID <= 0 && strings.TrimSpace(in.Work) != "" {
+		var hits page[workSummary]
+		find := url.Values{"q": {strings.TrimSpace(in.Work)}, "limit": {"1"}, "sort": {"relevance_desc"}}
+		if err := s.API.get(ctx, "/search/works", nsfwParam(find, v.includeNSFW), &hits); err != nil {
+			return nil, Cards{}, apiFail("rating work by name", err)
+		}
+		if len(hits.Items) == 0 {
+			return textResult("没有找到名字含「" + in.Work + "」的作品。"), Cards{Cards: []Card{}}, nil
+		}
+		w := hits.Items[0]
+		in.WorkID, _ = strconv.ParseInt(w.ID, 10, 64)
+		head = fmt.Sprintf("按名字找到作品《%s》（作品 #%s）。", w.zhName(), w.ID)
+	}
 	q := url.Values{"limit": {strconv.Itoa(workFilter{Limit: in.Limit}.limit())}, "sort": {sort}}
 	if in.WorkID > 0 {
 		q.Set("work_id", strconv.FormatInt(in.WorkID, 10))
@@ -202,10 +218,10 @@ func (s *server) searchRatings(ctx context.Context, req *mcp.CallToolRequest, in
 		return nil, Cards{}, apiFail("search ratings", err)
 	}
 	if len(res.Items) == 0 {
-		return textResult("还没有符合条件的玩家评价。"), Cards{Cards: []Card{}}, nil
+		return textResult(head + "还没有符合条件的玩家评价。"), Cards{Cards: []Card{}}, nil
 	}
 	var b strings.Builder
-	fmt.Fprintf(&b, "玩家评价共 %d 篇，列出 %d 篇：\n", res.Total, len(res.Items))
+	fmt.Fprintf(&b, "%s玩家评价共 %d 篇，列出 %d 篇：\n", head, res.Total, len(res.Items))
 	cards := make([]Card, 0, len(res.Items))
 	for _, r := range res.Items {
 		work := ""
