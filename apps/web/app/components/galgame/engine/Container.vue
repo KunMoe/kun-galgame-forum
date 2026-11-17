@@ -43,7 +43,7 @@ const data = computed(() => {
     : items
   const cards = matched.map((e) => engineItemOf(e, nameOf))
   return sort.value === 'popularity'
-    ? cards.toSorted((a, b) => b.rater_count - a.rater_count || a.id - b.id)
+    ? cards.sort((a, b) => b.rater_count - a.rater_count || a.id - b.id)
     : cards
 })
 </script>
