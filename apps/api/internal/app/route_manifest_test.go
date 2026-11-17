@@ -254,7 +254,15 @@ var mountedWrites = map[string]string{
 	"PUT /api/v1/chat/*":    chatRelayAuth,
 	"PATCH /api/v1/chat/*":  chatRelayAuth,
 	"DELETE /api/v1/chat/*": chatRelayAuth,
+
+	"POST /api/v1/agent/*":   agentRelayAuth,
+	"PUT /api/v1/agent/*":    agentRelayAuth,
+	"PATCH /api/v1/agent/*":  agentRelayAuth,
+	"DELETE /api/v1/agent/*": agentRelayAuth,
 }
+
+const agentRelayAuth = "the relay resolves the caller with apiv1.RequireIdentity before it forwards anything " +
+	"(TestAgentRelayRefusesAnonymousBeforeUpstream)"
 
 const chatRelayAuth = "the relay resolves the caller with apiv1.RequireIdentity before it forwards anything " +
 	"(TestChatRelayRefusesAnonymousBeforeUpstream)"

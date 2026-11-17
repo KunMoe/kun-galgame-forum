@@ -34,7 +34,7 @@ type Config struct {
 	Dlsite         DlsiteConfig
 	Lottery        LotteryConfig
 	Bearer         BearerConfig
-	AgentMCP       AgentMCPConfig
+	Agent          AgentConfig
 	AppRelease     AppReleaseConfig
 	Notification   NotificationConfig
 	AI             AIConfig
@@ -63,10 +63,12 @@ type BearerConfig struct {
 
 func (c BearerConfig) Enabled() bool { return len(c.ClientIDs) > 0 }
 
-// Addr is a listener of its own so that no public route reaches it: the
-// Dokploy domain points at SERVER_PORT.
-type AgentMCPConfig struct {
-	Addr string
+// APIBase reaches the NextMoe agent, which /api/v1/agent/* relays to under the
+// caller's own token. MCPAddr is a listener of its own so that no public route
+// reaches it: the Dokploy domain points at SERVER_PORT.
+type AgentConfig struct {
+	APIBase string
+	MCPAddr string
 }
 
 type AppReleaseConfig struct {
@@ -401,8 +403,9 @@ func Load() (*Config, error) {
 			JWKSURL:   envOrDefault("KUN_OIDC_JWKS_URL", oauthOrigin+"/oauth/jwks"),
 			ClientIDs: splitCSV(os.Getenv("KUN_BEARER_CLIENT_IDS")),
 		},
-		AgentMCP: AgentMCPConfig{
-			Addr: envOrDefault("KUN_AGENT_MCP_ADDR", "127.0.0.1:2335"),
+		Agent: AgentConfig{
+			APIBase: envOrDefault("KUN_AGENT_API_BASE", ""),
+			MCPAddr: envOrDefault("KUN_AGENT_MCP_ADDR", "127.0.0.1:2335"),
 		},
 		AppRelease:   appRelease,
 		Notification: loadNotification(),

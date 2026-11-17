@@ -6,6 +6,7 @@ DELETE /api/v1/admin/website-categories/:website_category_id cors.New → v1Head
 DELETE /api/v1/admin/website-tag-groups/:website_tag_group_id cors.New → v1Headers → fiberAdapter.Handle
 DELETE /api/v1/admin/website-tags/:website_tag_id     cors.New → v1Headers → fiberAdapter.Handle
 DELETE /api/v1/admin/websites/:website_id             cors.New → v1Headers → fiberAdapter.Handle
+DELETE /api/v1/agent/*                                cors.New → v1Headers → Relay.Forward
 DELETE /api/v1/chat/*                                 cors.New → v1Headers → Relay.Forward
 DELETE /api/v1/collections/:collection_id             cors.New → v1Headers → fiberAdapter.Handle
 DELETE /api/v1/collections/:collection_id/follow      cors.New → v1Headers → fiberAdapter.Handle
@@ -75,6 +76,9 @@ GET    /api/v1/admin/website-tag-groups/:website_tag_group_id cors.New → v1Hea
 GET    /api/v1/admin/website-tags/:website_tag_id     cors.New → v1Headers → fiberAdapter.Handle
 GET    /api/v1/admin/websites/:website_id             cors.New → v1Headers → fiberAdapter.Handle
 GET    /api/v1/admin/work-merge-folds                 cors.New → v1Headers → fiberAdapter.Handle
+GET    /api/v1/agent/*                                cors.New → v1Headers → Relay.Forward
+GET    /api/v1/agent/runs/:id/stream                  cors.New → v1Headers → Relay.Stream
+GET    /api/v1/agent/uploads/:id                      cors.New → v1Headers → Relay.Upload
 GET    /api/v1/app/version                            cors.New → v1Headers → fiberAdapter.Handle
 GET    /api/v1/characters                             cors.New → v1Headers → fiberAdapter.Handle
 GET    /api/v1/characters/:character_id               cors.New → v1Headers → fiberAdapter.Handle
@@ -284,6 +288,7 @@ PATCH  /api/v1/admin/website-categories/:website_category_id cors.New → v1Head
 PATCH  /api/v1/admin/website-tag-groups/:website_tag_group_id cors.New → v1Headers → fiberAdapter.Handle
 PATCH  /api/v1/admin/website-tags/:website_tag_id     cors.New → v1Headers → fiberAdapter.Handle
 PATCH  /api/v1/admin/websites/:website_id             cors.New → v1Headers → fiberAdapter.Handle
+PATCH  /api/v1/agent/*                                cors.New → v1Headers → Relay.Forward
 PATCH  /api/v1/chat/*                                 cors.New → v1Headers → Relay.Forward
 PATCH  /api/v1/collections/:collection_id             cors.New → v1Headers → fiberAdapter.Handle
 PATCH  /api/v1/collections/:collection_id/works/:work_id cors.New → v1Headers → fiberAdapter.Handle
@@ -317,6 +322,7 @@ POST   /api/v1/admin/website-categories               cors.New → v1Headers →
 POST   /api/v1/admin/website-tag-groups               cors.New → v1Headers → fiberAdapter.Handle
 POST   /api/v1/admin/website-tags                     cors.New → v1Headers → fiberAdapter.Handle
 POST   /api/v1/admin/websites                         cors.New → v1Headers → fiberAdapter.Handle
+POST   /api/v1/agent/*                                cors.New → v1Headers → Relay.Forward
 POST   /api/v1/chat/*                                 cors.New → v1Headers → Relay.Forward
 POST   /api/v1/collection-copies                      cors.New → v1Headers → fiberAdapter.Handle
 POST   /api/v1/collection-reports                     cors.New → v1Headers → fiberAdapter.Handle
@@ -362,6 +368,7 @@ PUT    /api/v1/admin/doc-order                        cors.New → v1Headers →
 PUT    /api/v1/admin/friend-link-order                cors.New → v1Headers → fiberAdapter.Handle
 PUT    /api/v1/admin/section-order                    cors.New → v1Headers → fiberAdapter.Handle
 PUT    /api/v1/admin/user-permissions/:user_id        cors.New → v1Headers → fiberAdapter.Handle
+PUT    /api/v1/agent/*                                cors.New → v1Headers → Relay.Forward
 PUT    /api/v1/chat/*                                 cors.New → v1Headers → Relay.Forward
 PUT    /api/v1/collections/:collection_id/follow      cors.New → v1Headers → fiberAdapter.Handle
 PUT    /api/v1/collections/:collection_id/read-marker cors.New → v1Headers → fiberAdapter.Handle

@@ -39,7 +39,7 @@ func main() {
 
 	application := app.New(cfg)
 
-	agentMCP := &http.Server{Addr: cfg.AgentMCP.Addr, Handler: application.AgentMCP, ReadHeaderTimeout: 10 * time.Second}
+	agentMCP := &http.Server{Addr: cfg.Agent.MCPAddr, Handler: application.AgentMCP, ReadHeaderTimeout: 10 * time.Second}
 	if agentMCP.Addr != "" {
 		go func() {
 			slog.Info("AI 助手站点工具 (MCP) 启动", "addr", agentMCP.Addr, "path", agentmcp.Path)

@@ -73,6 +73,11 @@ x-kungal-api-env: &kungal-api-env
   # no Dokploy domain reaches it: infra-agent calls http://kungal-api:2335/mcp on
   # dokploy-network with the asking user's token. Keep 2335 out of every domain.
   KUN_AGENT_MCP_ADDR: ":2335"
+  # The assistant's chat at /chat: /api/v1/agent/* relays here under the user's
+  # token and the forum stores nothing. KUN_AGENT_ENABLED only shows the web's
+  # entrances (NUXT_PUBLIC_AGENT_ENABLED below); infra also has to turn on
+  # agent.enabled for site 2, or every call answers 403 ASSISTANT_DISABLED.
+  KUN_AGENT_API_BASE: http://infra-agent:9287
   # ── comment areas on the community primitive (track 03) ──
   # Community is now the UNCONDITIONAL backend for the galgame + resource
   # (rating / website / toolset) comment areas: the legacy in-forum comment
@@ -295,6 +300,8 @@ services:
       NUXT_PUBLIC_OG_CARD_ENABLED: ${NUXT_PUBLIC_OG_CARD_ENABLED:-false}
       # Same panel variable as the API's KUN_CHAT_ENABLED; see there.
       NUXT_PUBLIC_CHAT_ENABLED: ${KUN_CHAT_ENABLED:-false}
+      # The AI assistant's /chat page and entrances; see KUN_AGENT_API_BASE.
+      NUXT_PUBLIC_AGENT_ENABLED: ${KUN_AGENT_ENABLED:-false}
       # Umami tracker and the AIFY short link. No default URL: unset means no
       # tracker and no AIFY banner. HOST is the origin only, without /script.js.
       NUXT_PUBLIC_UMAMI_HOST: ${NUXT_PUBLIC_UMAMI_HOST:-}

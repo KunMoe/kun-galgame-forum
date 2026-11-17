@@ -2,6 +2,7 @@ package app
 
 import (
 	activityapiv1 "kun-galgame-api/internal/activity/apiv1"
+	"kun-galgame-api/internal/agent"
 	"kun-galgame-api/internal/apiv1"
 	"kun-galgame-api/internal/apiv1/content"
 	"kun-galgame-api/internal/apiv1/entitypreview"
@@ -60,7 +61,12 @@ func (a *App) setupRoutes() {
 	if a.DB != nil {
 		deps.ProfileGate = userRepo.NewStateRepository(a.DB).ProfileSignInRequired
 	}
-	deps.Mount = chat.NewRelay(a.Config.Chat.BaseURL, deps.Resolver).Mount
+	chatRelay := chat.NewRelay(a.Config.Chat.BaseURL, deps.Resolver)
+	agentRelay := agent.NewRelay(a.Config.Agent.APIBase, deps.Resolver)
+	deps.Mount = func(v1 fiber.Router) {
+		chatRelay.Mount(v1)
+		agentRelay.Mount(v1)
+	}
 	topicReads := a.newTopicV1()
 	a.APIv1 = apiv1.Setup(a.Fiber, deps,
 		topicapiv1.Register(topicReads),
