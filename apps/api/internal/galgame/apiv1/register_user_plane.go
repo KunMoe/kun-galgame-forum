@@ -91,6 +91,49 @@ func (s *Service) registerUserPlane(api huma.API) {
 		}),
 	}), s.deleteWorkPlaytime)
 
+	sourceErrors := map[int]string{
+		403: "SCOPE_REQUIRED; ACCOUNT_BANNED; PERMISSION_REQUIRED when catalog answers the caller's app is not a first-party site client.",
+		404: "NOT_FOUND when the work does not exist or is hidden.",
+		503: "SERVICE_UNAVAILABLE when the catalog cannot be reached.",
+	}
+	huma.Register(api, v1.Required(huma.Operation{
+		OperationID: "listWorkPlaytimeSources",
+		Method:      http.MethodGet,
+		Path:        "/works/{work_id}/playtime/sources",
+		Summary:     "List every app's playtime report on a work",
+		Description: "One item per app that reported the caller's minutes on this work, most minutes first. The work's playtime is the most any of them reported, " +
+			"and is_self marks the row this site reported. Empty when nothing is recorded.",
+		Tags:        []string{"works"},
+		Middlewares: huma.Middlewares{withAccessToken},
+		Responses:   problemResponses(sourceErrors),
+	}), s.listWorkPlaytimeSources)
+
+	huma.Register(api, v1.Required(huma.Operation{
+		OperationID: "deleteWorkPlaytimeSource",
+		Method:      http.MethodDelete,
+		Path:        "/works/{work_id}/playtime/sources/{client}",
+		Summary:     "Delete one app's playtime report on a work",
+		Description: "Deletes the minutes the named app reported for the caller, whichever app that is. The response is read back from catalog: the most any remaining app reported.",
+		Tags:        []string{"works"},
+		Middlewares: huma.Middlewares{withAccessToken},
+		Responses: problemResponses(map[int]string{
+			403: sourceErrors[403],
+			404: "NOT_FOUND when the work does not exist or is hidden, or that app reported nothing on it.",
+			503: sourceErrors[503],
+		}),
+	}), s.deleteWorkPlaytimeSource)
+
+	huma.Register(api, v1.Required(huma.Operation{
+		OperationID: "deleteWorkPlaytimeSources",
+		Method:      http.MethodDelete,
+		Path:        "/works/{work_id}/playtime/sources",
+		Summary:     "Delete every app's playtime report on a work",
+		Description: "Deletes the caller's minutes on this work from every app that reported them; the play state stays. Repeating it is 200 with minutes 0.",
+		Tags:        []string{"works"},
+		Middlewares: huma.Middlewares{withAccessToken},
+		Responses:   problemResponses(sourceErrors),
+	}), s.deleteWorkPlaytimeSources)
+
 	huma.Register(api, v1.Required(huma.Operation{
 		OperationID: "listMyTagBlocks",
 		Method:      http.MethodGet,

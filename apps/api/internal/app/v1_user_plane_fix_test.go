@@ -525,6 +525,55 @@ func (u *g6User) DeleteMyPlaytime(_ context.Context, token string, workID int64)
 	}
 	return nil
 }
+
+const g6OtherApp = "timer-app"
+
+// The forum's own row is the one reported under the caller's token; otherApp
+// stands in for one more app's row on the same work.
+func (u *g6User) MyPlaytimeSources(_ context.Context, token string, workID int64) ([]catalogclient.PlaytimeSource, error) {
+	if err := u.gate(token); err != nil {
+		return nil, err
+	}
+	u.mu.Lock()
+	defer u.mu.Unlock()
+	var out []catalogclient.PlaytimeSource
+	if other, ok := u.otherApp[workID]; ok {
+		name := "计时器"
+		out = append(out, catalogclient.PlaytimeSource{ClientID: g6OtherApp, AppName: &name, Minutes: other})
+	}
+	if row, ok := u.play[token][workID]; ok {
+		out = append(out, catalogclient.PlaytimeSource{ClientID: "forum", Minutes: row.Minutes, Self: true})
+	}
+	return out, nil
+}
+func (u *g6User) DeleteMyPlaytimeSource(_ context.Context, token string, workID int64, clientID string) error {
+	if err := u.gate(token); err != nil {
+		return err
+	}
+	u.mu.Lock()
+	defer u.mu.Unlock()
+	switch _, own := u.play[token][workID]; {
+	case clientID == g6OtherApp && u.otherApp[workID] > 0:
+		delete(u.otherApp, workID)
+	case clientID == "forum" && own:
+		delete(u.play[token], workID)
+	default:
+		return catalogclient.ErrNotFound
+	}
+	return nil
+}
+func (u *g6User) DeleteMyPlaytimeSources(_ context.Context, token string, workID int64) error {
+	if err := u.gate(token); err != nil {
+		return err
+	}
+	u.mu.Lock()
+	defer u.mu.Unlock()
+	delete(u.otherApp, workID)
+	if u.play[token] != nil {
+		delete(u.play[token], workID)
+	}
+	return nil
+}
 func (u *g6User) ListMyPlaytime(_ context.Context, token, _ string, _ int) ([]catalogclient.PlaytimeRecord, string, error) {
 	if err := u.gate(token); err != nil {
 		return nil, "", err

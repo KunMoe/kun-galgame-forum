@@ -4,6 +4,7 @@ import { mountSuspended, mockNuxtImport } from '@nuxt/test-utils/runtime'
 import { flushPromises, type VueWrapper } from '@vue/test-utils'
 import { defineComponent, h } from 'vue'
 import type {
+  PlaytimeSource,
   RatingSummary,
   WorkRecord,
   WorkRecordPut
@@ -12,7 +13,7 @@ import RecordModal from './Modal.vue'
 import { usePersistEditGalgameRatingStore } from '~/store/modules/edit/rating'
 
 const { api, alert, message } = vi.hoisted(() => ({
-  api: { GET: vi.fn(), PUT: vi.fn() },
+  api: { GET: vi.fn(), PUT: vi.fn(), DELETE: vi.fn() },
   alert: vi.fn(),
   message: vi.fn()
 }))
@@ -82,8 +83,34 @@ const summaryProps = () =>
     variant: string
   }
 
-const mountWith = async (loaded: WorkRecord) => {
-  api.GET.mockResolvedValue(ok(loaded))
+const source = (
+  clientId: string,
+  minutes: number,
+  isSelf = false
+): PlaytimeSource =>
+  ({
+    object: 'playtime_source',
+    client_id: clientId,
+    app_name: isSelf ? '鲲 Galgame 论坛' : '计时器',
+    minutes,
+    last_played_at: null,
+    updated_at: '2026-11-18T00:00:00Z',
+    is_self: isSelf
+  }) as PlaytimeSource
+
+const mountWith = async (
+  loaded: WorkRecord,
+  sources: PlaytimeSource[] | 'unavailable' = loaded.minutes > 0
+    ? [source('forum', loaded.minutes, true)]
+    : []
+) => {
+  api.GET.mockImplementation(async (path: string) => {
+    if (!path.endsWith('/sources')) return ok(loaded)
+    if (sources === 'unavailable') {
+      return { error: {}, response: new Response(null, { status: 503 }) }
+    }
+    return ok({ object: 'list', items: sources })
+  })
   api.PUT.mockImplementation(async (_path: string, init: PutInit) =>
     ok(record(init.body.play_state ?? null))
   )
@@ -135,6 +162,7 @@ afterEach(() => {
   wrapper = undefined
   api.GET.mockReset()
   api.PUT.mockReset()
+  api.DELETE.mockReset()
   alert.mockReset()
   message.mockReset()
   usePersistEditGalgameRatingStore().shortSummary = ''
@@ -281,5 +309,55 @@ describe('the rating is the form', () => {
       expect.any(String)
     )
     expect(sent()).toEqual({ play_state: 'wish' })
+  })
+})
+
+describe("the playtime field holds this site's minutes only", () => {
+  const hoursInput = () =>
+    wrapper!.findComponent({ name: 'KunNumberInput' }).props() as {
+      modelValue: number
+    }
+
+  it("prefills this site's row, not the most any app reported", async () => {
+    await mountWith(record('doing', { minutes: 300 }), [
+      source('timer', 300),
+      source('forum', 60, true)
+    ])
+    expect(hoursInput().modelValue).toBe(1)
+    await save()
+    expect(sent()).toEqual({ play_state: 'doing', minutes: 60 })
+  })
+
+  it("does not re-report another app's minutes as this site's", async () => {
+    await mountWith(record('doing', { minutes: 300 }), [source('timer', 300)])
+    expect(hoursInput().modelValue).toBe(0)
+    await save()
+    expect(alert).not.toHaveBeenCalled()
+    expect(sent()).toEqual({ play_state: 'doing' })
+  })
+
+  it('edits the merged minutes when the per-app list cannot be read', async () => {
+    await mountWith(record('doing', { minutes: 300 }), 'unavailable')
+    expect(hoursInput().modelValue).toBe(5)
+    await save()
+    expect(sent()).toEqual({ play_state: 'doing', minutes: 300 })
+  })
+
+  it("deletes another app's minutes from the list", async () => {
+    api.DELETE.mockResolvedValue(ok({ minutes: 60, play_state: 'doing' }))
+    await mountWith(record('doing', { minutes: 300 }), [
+      source('timer', 300),
+      source('forum', 60, true)
+    ])
+    await click('删除')
+    expect(api.DELETE).toHaveBeenCalledWith(
+      '/works/{work_id}/playtime/sources/{client}',
+      { params: { path: { work_id: '7', client: 'timer' } } }
+    )
+    expect(
+      [...document.body.querySelectorAll('button')].some(
+        (button) => (button.textContent ?? '').trim() === '删除'
+      )
+    ).toBe(false)
   })
 })

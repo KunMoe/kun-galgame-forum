@@ -61,6 +61,9 @@ type CatalogUser interface {
 	UnvoteCover(ctx context.Context, token string, workID, coverID int64) (*catalogclient.CoverVoteResult, error)
 	ReportPlaytime(ctx context.Context, token string, workID int64, report catalogclient.PlaytimeReport) (*catalogclient.PlaytimeRecord, error)
 	DeleteMyPlaytime(ctx context.Context, token string, workID int64) error
+	MyPlaytimeSources(ctx context.Context, token string, workID int64) ([]catalogclient.PlaytimeSource, error)
+	DeleteMyPlaytimeSource(ctx context.Context, token string, workID int64, clientID string) error
+	DeleteMyPlaytimeSources(ctx context.Context, token string, workID int64) error
 	ListMyPlaytime(ctx context.Context, token, cursor string, limit int) ([]catalogclient.PlaytimeRecord, string, error)
 	PutWorkState(ctx context.Context, token string, workID int64, state string, completion *string) (*catalogclient.WorkStateRecord, error)
 	DeleteWorkState(ctx context.Context, token string, workID int64) error

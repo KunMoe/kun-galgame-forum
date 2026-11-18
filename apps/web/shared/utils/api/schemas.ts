@@ -221,6 +221,7 @@ export type WorkPlaytimeAggregate =
   components['schemas']['WorkPlaytimeAggregate']
 export type WorkViewer = components['schemas']['WorkViewer']
 export type WorkViewerPlaytime = components['schemas']['WorkViewerPlaytime']
+export type PlaytimeSource = components['schemas']['PlaytimeSource']
 export type PlayState = components['schemas']['PlayState']
 export type MyWork = components['schemas']['MyWork']
 export type MyWorkLibrary = components['schemas']['MyWorkLibrary']

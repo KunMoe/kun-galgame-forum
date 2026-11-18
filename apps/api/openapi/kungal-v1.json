@@ -9718,6 +9718,34 @@
         ],
         "type": "object"
       },
+      "ListPlaytimeSource": {
+        "properties": {
+          "items": {
+            "description": "Members of this page. Empty array, never null.",
+            "items": {
+              "$ref": "#/components/schemas/PlaytimeSource"
+            },
+            "type": "array"
+          },
+          "next_cursor": {
+            "description": "Opaque keyset cursor. Omitted on the last page.",
+            "maxLength": 512,
+            "pattern": "^cur_[A-Za-z0-9_-]+$",
+            "type": "string"
+          },
+          "object": {
+            "const": "list",
+            "description": "Type discriminant. Always list.",
+            "maxLength": 4,
+            "type": "string"
+          }
+        },
+        "required": [
+          "object",
+          "items"
+        ],
+        "type": "object"
+      },
       "ListPoll": {
         "properties": {
           "items": {
@@ -14304,6 +14332,69 @@
         "maxLength": 14,
         "type": "string",
         "x-vocabulary-closed": true
+      },
+      "PlaytimeSource": {
+        "properties": {
+          "app_name": {
+            "description": "That app's display name. null once the app is gone; show a localized label. Free text; never use it as a decision input.",
+            "maxLength": 128,
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "client_id": {
+            "description": "The OAuth client of the app that reported these minutes.",
+            "maxLength": 128,
+            "pattern": "^[A-Za-z0-9._~-]+$",
+            "type": "string"
+          },
+          "is_self": {
+            "description": "Whether this site reported the row. Writing a playtime here changes only this row.",
+            "type": "boolean"
+          },
+          "last_played_at": {
+            "description": "When that app last saw the game played. null when it did not say.",
+            "format": "date-time",
+            "maxLength": 20,
+            "minLength": 20,
+            "pattern": "^[0-9]{4}-[0-9]{2}-[0-9]{2}T[0-9]{2}:[0-9]{2}:[0-9]{2}Z$",
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "minutes": {
+            "description": "Minutes that app reported.",
+            "format": "int64",
+            "minimum": 0,
+            "type": "integer"
+          },
+          "object": {
+            "const": "playtime_source",
+            "description": "Type discriminant. Always playtime_source.",
+            "maxLength": 15,
+            "type": "string"
+          },
+          "updated_at": {
+            "description": "When that app last reported.",
+            "format": "date-time",
+            "maxLength": 20,
+            "minLength": 20,
+            "pattern": "^[0-9]{4}-[0-9]{2}-[0-9]{2}T[0-9]{2}:[0-9]{2}:[0-9]{2}Z$",
+            "type": "string"
+          }
+        },
+        "required": [
+          "object",
+          "client_id",
+          "app_name",
+          "minutes",
+          "last_played_at",
+          "updated_at",
+          "is_self"
+        ],
+        "type": "object"
       },
       "Poll": {
         "properties": {
@@ -80162,6 +80253,328 @@
           }
         ],
         "summary": "Set the caller's playtime on a work",
+        "tags": [
+          "works"
+        ]
+      }
+    },
+    "/works/{work_id}/playtime/sources": {
+      "delete": {
+        "description": "Deletes the caller's minutes on this work from every app that reported them; the play state stays. Repeating it is 200 with minutes 0.",
+        "operationId": "deleteWorkPlaytimeSources",
+        "parameters": [
+          {
+            "description": "Work id.",
+            "in": "path",
+            "name": "work_id",
+            "required": true,
+            "schema": {
+              "description": "Work id.",
+              "maxLength": 19,
+              "pattern": "^[1-9][0-9]{0,18}$",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/WorkViewerPlaytime"
+                }
+              }
+            },
+            "description": "OK"
+          },
+          "400": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            },
+            "description": "Bad Request"
+          },
+          "401": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            },
+            "description": "Unauthorized"
+          },
+          "403": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            },
+            "description": "SCOPE_REQUIRED; ACCOUNT_BANNED; PERMISSION_REQUIRED when catalog answers the caller's app is not a first-party site client."
+          },
+          "404": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            },
+            "description": "NOT_FOUND when the work does not exist or is hidden."
+          },
+          "500": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            },
+            "description": "Internal Server Error"
+          },
+          "503": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            },
+            "description": "SERVICE_UNAVAILABLE when the catalog cannot be reached."
+          }
+        },
+        "security": [
+          {
+            "session": []
+          },
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "Delete every app's playtime report on a work",
+        "tags": [
+          "works"
+        ]
+      },
+      "get": {
+        "description": "One item per app that reported the caller's minutes on this work, most minutes first. The work's playtime is the most any of them reported, and is_self marks the row this site reported. Empty when nothing is recorded.",
+        "operationId": "listWorkPlaytimeSources",
+        "parameters": [
+          {
+            "description": "Work id.",
+            "in": "path",
+            "name": "work_id",
+            "required": true,
+            "schema": {
+              "description": "Work id.",
+              "maxLength": 19,
+              "pattern": "^[1-9][0-9]{0,18}$",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ListPlaytimeSource"
+                }
+              }
+            },
+            "description": "OK"
+          },
+          "400": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            },
+            "description": "Bad Request"
+          },
+          "401": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            },
+            "description": "Unauthorized"
+          },
+          "403": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            },
+            "description": "SCOPE_REQUIRED; ACCOUNT_BANNED; PERMISSION_REQUIRED when catalog answers the caller's app is not a first-party site client."
+          },
+          "404": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            },
+            "description": "NOT_FOUND when the work does not exist or is hidden."
+          },
+          "500": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            },
+            "description": "Internal Server Error"
+          },
+          "503": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            },
+            "description": "SERVICE_UNAVAILABLE when the catalog cannot be reached."
+          }
+        },
+        "security": [
+          {
+            "session": []
+          },
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "List every app's playtime report on a work",
+        "tags": [
+          "works"
+        ]
+      }
+    },
+    "/works/{work_id}/playtime/sources/{client}": {
+      "delete": {
+        "description": "Deletes the minutes the named app reported for the caller, whichever app that is. The response is read back from catalog: the most any remaining app reported.",
+        "operationId": "deleteWorkPlaytimeSource",
+        "parameters": [
+          {
+            "description": "Work id.",
+            "in": "path",
+            "name": "work_id",
+            "required": true,
+            "schema": {
+              "description": "Work id.",
+              "maxLength": 19,
+              "pattern": "^[1-9][0-9]{0,18}$",
+              "type": "string"
+            }
+          },
+          {
+            "description": "client_id of the app whose minutes to delete.",
+            "in": "path",
+            "name": "client",
+            "required": true,
+            "schema": {
+              "description": "client_id of the app whose minutes to delete.",
+              "maxLength": 128,
+              "pattern": "^[A-Za-z0-9._~-]+$",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/WorkViewerPlaytime"
+                }
+              }
+            },
+            "description": "OK"
+          },
+          "400": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            },
+            "description": "Bad Request"
+          },
+          "401": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            },
+            "description": "Unauthorized"
+          },
+          "403": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            },
+            "description": "SCOPE_REQUIRED; ACCOUNT_BANNED; PERMISSION_REQUIRED when catalog answers the caller's app is not a first-party site client."
+          },
+          "404": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            },
+            "description": "NOT_FOUND when the work does not exist or is hidden, or that app reported nothing on it."
+          },
+          "500": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            },
+            "description": "Internal Server Error"
+          },
+          "503": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            },
+            "description": "SERVICE_UNAVAILABLE when the catalog cannot be reached."
+          }
+        },
+        "security": [
+          {
+            "session": []
+          },
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "Delete one app's playtime report on a work",
         "tags": [
           "works"
         ]

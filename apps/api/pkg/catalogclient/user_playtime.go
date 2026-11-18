@@ -8,6 +8,7 @@ import (
 	"net/http"
 	"net/url"
 	"strconv"
+	"time"
 )
 
 // Catalog refuses anything above this, and its aggregate job ignores anything
@@ -115,5 +116,61 @@ func (c *Client) DeleteMyPlaytime(ctx context.Context, accessToken string, workI
 	if err != nil && errors.Is(err, ErrNotFound) {
 		return nil
 	}
+	return err
+}
+
+// PlaytimeSource is one app's report on a work. Self marks the row the calling
+// app reported; AppName is nil once that OAuth client is gone.
+type PlaytimeSource struct {
+	ClientID     string
+	AppName      *string
+	Minutes      int
+	LastPlayedAt *time.Time
+	UpdatedAt    time.Time
+	Self         bool
+}
+
+type v2PlaytimeSource struct {
+	ClientID     string     `json:"client_id"`
+	AppName      *string    `json:"app_name"`
+	Minutes      int        `json:"minutes"`
+	LastPlayedAt *time.Time `json:"last_played_at"`
+	UpdatedAt    time.Time  `json:"updated_at"`
+	Self         bool       `json:"self"`
+}
+
+func playtimeSourcesPath(workID int64) string {
+	return "/v2/me/playtimes/" + strconv.FormatInt(workID, 10) + "/sources"
+}
+
+// MyPlaytimeSources lists every app's report on the work, most minutes first.
+// Catalog answers it only to a first-party site client.
+func (c *Client) MyPlaytimeSources(ctx context.Context, accessToken string, workID int64) ([]PlaytimeSource, error) {
+	var out v2List[v2PlaytimeSource]
+	if err := c.userV2JSON(ctx, http.MethodGet, accessToken, playtimeSourcesPath(workID), nil, &out, nil); err != nil {
+		return nil, err
+	}
+	rows := out.rows()
+	items := make([]PlaytimeSource, 0, len(rows))
+	for _, r := range rows {
+		items = append(items, PlaytimeSource{
+			ClientID: r.ClientID, AppName: r.AppName, Minutes: r.Minutes,
+			LastPlayedAt: r.LastPlayedAt, UpdatedAt: r.UpdatedAt, Self: r.Self,
+		})
+	}
+	return items, nil
+}
+
+// DeleteMyPlaytimeSource deletes one app's report; ErrNotFound when that app
+// has none on the work.
+func (c *Client) DeleteMyPlaytimeSource(ctx context.Context, accessToken string, workID int64, clientID string) error {
+	path := playtimeSourcesPath(workID) + "/" + url.PathEscape(clientID)
+	_, _, err := c.userV2Do(ctx, http.MethodDelete, accessToken, path, nil, nil)
+	return err
+}
+
+// DeleteMyPlaytimeSources deletes every app's report on the work.
+func (c *Client) DeleteMyPlaytimeSources(ctx context.Context, accessToken string, workID int64) error {
+	_, _, err := c.userV2Do(ctx, http.MethodDelete, accessToken, playtimeSourcesPath(workID), nil, nil)
 	return err
 }

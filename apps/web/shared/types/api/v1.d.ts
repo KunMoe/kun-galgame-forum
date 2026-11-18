@@ -6161,6 +6161,50 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/works/{work_id}/playtime/sources": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * List every app's playtime report on a work
+         * @description One item per app that reported the caller's minutes on this work, most minutes first. The work's playtime is the most any of them reported, and is_self marks the row this site reported. Empty when nothing is recorded.
+         */
+        get: operations["listWorkPlaytimeSources"];
+        put?: never;
+        post?: never;
+        /**
+         * Delete every app's playtime report on a work
+         * @description Deletes the caller's minutes on this work from every app that reported them; the play state stays. Repeating it is 200 with minutes 0.
+         */
+        delete: operations["deleteWorkPlaytimeSources"];
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/works/{work_id}/playtime/sources/{client}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post?: never;
+        /**
+         * Delete one app's playtime report on a work
+         * @description Deletes the minutes the named app reported for the caller, whichever app that is. The response is read back from catalog: the most any remaining app reported.
+         */
+        delete: operations["deleteWorkPlaytimeSource"];
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/works/{work_id}/record": {
         parameters: {
             query?: never;
@@ -9739,6 +9783,17 @@ export interface components {
              */
             object: "list";
         };
+        ListPlaytimeSource: {
+            /** @description Members of this page. Empty array, never null. */
+            items: components["schemas"]["PlaytimeSource"][];
+            /** @description Opaque keyset cursor. Omitted on the last page. */
+            next_cursor?: string;
+            /**
+             * @description Type discriminant. Always list.
+             * @constant
+             */
+            object: "list";
+        };
         ListPoll: {
             /** @description Members of this page. Empty array, never null. */
             items: components["schemas"]["Poll"][];
@@ -11539,6 +11594,34 @@ export interface components {
         PlayState: "wish" | "doing" | "done_one_route" | "done_main" | "done_all" | "on_hold" | "dropped" | "done";
         /** @enum {string} */
         PlayStatus: "wish" | "doing" | "done_one_route" | "done_main" | "done_all" | "on_hold" | "dropped";
+        PlaytimeSource: {
+            /** @description That app's display name. null once the app is gone; show a localized label. Free text; never use it as a decision input. */
+            app_name: string | null;
+            /** @description The OAuth client of the app that reported these minutes. */
+            client_id: string;
+            /** @description Whether this site reported the row. Writing a playtime here changes only this row. */
+            is_self: boolean;
+            /**
+             * Format: date-time
+             * @description When that app last saw the game played. null when it did not say.
+             */
+            last_played_at: string | null;
+            /**
+             * Format: int64
+             * @description Minutes that app reported.
+             */
+            minutes: number;
+            /**
+             * @description Type discriminant. Always playtime_source.
+             * @constant
+             */
+            object: "playtime_source";
+            /**
+             * Format: date-time
+             * @description When that app last reported.
+             */
+            updated_at: string;
+        };
         Poll: {
             /** @description The user who created the poll. */
             author: components["schemas"]["UserRef"];
@@ -50552,6 +50635,239 @@ export interface operations {
                 };
             };
             /** @description NOT_FOUND when the work does not exist or is hidden. */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Internal Server Error */
+            500: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description SERVICE_UNAVAILABLE when the catalog cannot be reached. */
+            503: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+        };
+    };
+    listWorkPlaytimeSources: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description Work id. */
+                work_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ListPlaytimeSource"];
+                };
+            };
+            /** @description Bad Request */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Unauthorized */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description SCOPE_REQUIRED; ACCOUNT_BANNED; PERMISSION_REQUIRED when catalog answers the caller's app is not a first-party site client. */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description NOT_FOUND when the work does not exist or is hidden. */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Internal Server Error */
+            500: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description SERVICE_UNAVAILABLE when the catalog cannot be reached. */
+            503: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+        };
+    };
+    deleteWorkPlaytimeSources: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description Work id. */
+                work_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["WorkViewerPlaytime"];
+                };
+            };
+            /** @description Bad Request */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Unauthorized */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description SCOPE_REQUIRED; ACCOUNT_BANNED; PERMISSION_REQUIRED when catalog answers the caller's app is not a first-party site client. */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description NOT_FOUND when the work does not exist or is hidden. */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Internal Server Error */
+            500: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description SERVICE_UNAVAILABLE when the catalog cannot be reached. */
+            503: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+        };
+    };
+    deleteWorkPlaytimeSource: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description Work id. */
+                work_id: string;
+                /** @description client_id of the app whose minutes to delete. */
+                client: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["WorkViewerPlaytime"];
+                };
+            };
+            /** @description Bad Request */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Unauthorized */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description SCOPE_REQUIRED; ACCOUNT_BANNED; PERMISSION_REQUIRED when catalog answers the caller's app is not a first-party site client. */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description NOT_FOUND when the work does not exist or is hidden, or that app reported nothing on it. */
             404: {
                 headers: {
                     [name: string]: unknown;

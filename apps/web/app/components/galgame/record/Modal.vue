@@ -22,9 +22,11 @@ import {
   type KunGalgameDim
 } from '~/constants/galgame-rating'
 import type {
+  PlaytimeSource,
   RecordRating,
   WorkRecord,
-  WorkRecordPut
+  WorkRecordPut,
+  WorkViewerPlaytime
 } from '#shared/utils/api/schemas'
 import { settle } from '#shared/utils/api/problem'
 import { galgameRatingFormSchema } from '~/validations/galgame-rating'
@@ -56,6 +58,20 @@ const { setPlaytime } = useMyGalgameInteractions()
 const loading = ref(false)
 const pending = ref(false)
 const loaded = ref<WorkRecord | null>(null)
+// null when the per-app list could not be read; the form then edits the
+// merged minutes as it did before the list existed.
+const sources = ref<PlaytimeSource[] | null>(null)
+const otherSources = computed(
+  () => sources.value?.filter((source) => !source.is_self) ?? []
+)
+// The record replaces this site's row only, so the field holds this site's
+// minutes: prefilled with the merged total, an untouched save re-reported
+// another app's minutes as the forum's own.
+const selfMinutes = computed(() =>
+  sources.value
+    ? (sources.value.find((source) => source.is_self)?.minutes ?? 0)
+    : (loaded.value?.minutes ?? 0)
+)
 
 const baseState = ref<KunGalgamePlayStateBase | ''>('')
 const completion = ref<KunGalgamePlayCompletion>('')
@@ -179,7 +195,7 @@ const fill = (record: WorkRecord) => {
       ? (record.play_state as KunGalgamePlayCompletion)
       : ''
   hours.value =
-    record.minutes > 0 ? Math.round((record.minutes / 60) * 10) / 10 : 0
+    selfMinutes.value > 0 ? Math.round((selfMinutes.value / 60) * 10) / 10 : 0
   fillRating(record.rating_summary)
   openedWith.value = ratingSnapshot()
 }
@@ -187,19 +203,34 @@ const fill = (record: WorkRecord) => {
 watch(open, async (isOpen) => {
   if (!isOpen) return
   loading.value = true
-  const result = await settle(
-    api.GET('/works/{work_id}/record', {
-      params: { path: { work_id: String(props.workId) } }
-    })
-  )
+  const path = { work_id: String(props.workId) }
+  const [result, listed] = await Promise.all([
+    settle(api.GET('/works/{work_id}/record', { params: { path } })),
+    settle(api.GET('/works/{work_id}/playtime/sources', { params: { path } }))
+  ])
   loading.value = false
   if (!result.ok) {
     reportProblem(result.problem)
     open.value = false
     return
   }
+  sources.value = listed.ok ? listed.data.items : null
   fill(result.data)
 })
+
+const onSourceRemoved = (clientId: string, left: WorkViewerPlaytime) => {
+  sources.value =
+    sources.value?.filter((source) => source.client_id !== clientId) ?? null
+  if (loaded.value) {
+    loaded.value = { ...loaded.value, minutes: left.minutes }
+  }
+  setPlaytime(
+    props.workId,
+    left.play_state || left.minutes > 0
+      ? { minutes: left.minutes, play_state: left.play_state }
+      : null
+  )
+}
 
 watch(shortSummary, (value) => {
   if (!hadRating.value) {
@@ -255,8 +286,7 @@ const save = async () => {
   }
 
   const losingRating = hadRating.value && !body.rating_input
-  const losingPlaytime =
-    (loaded.value?.minutes ?? 0) > 0 && body.minutes === undefined
+  const losingPlaytime = selfMinutes.value > 0 && body.minutes === undefined
   if (losingRating || losingPlaytime) {
     const ok = await useComponentMessageStore().alert(
       losingRating ? '保存后会删除你的评分' : '保存后会撤回你的游玩时长',
@@ -370,6 +400,11 @@ const save = async () => {
             <p v-if="tooShort" class="text-warning text-sm">
               不足 10 分钟的记录不会计入统计
             </p>
+            <GalgameRecordPlaytimeSources
+              :work-id="workId"
+              :sources="otherSources"
+              @removed="onSourceRemoved"
+            />
           </template>
         </div>
 

@@ -170,3 +170,45 @@ func TestV1ListMyPlaytimesReusesTheSweepUntilTheForumWrites(t *testing.T) {
 		t.Errorf("the write is missing from the next read: %+v", after["items"])
 	}
 }
+
+func TestV1PlaytimeSourcesListAndDelete(t *testing.T) {
+	f := newG6Fix(t)
+	f.user.mu.Lock()
+	f.user.otherApp = map[int64]int{g6WorkLive: 300}
+	f.user.mu.Unlock()
+	sources := g6Path(g6WorkLive) + "/playtime/sources"
+	resp, body := f.call(t, http.MethodPut, g6Path(g6WorkLive)+"/playtime", "/works/{work_id}/playtime", "sess-alice", "", map[string]any{"minutes": 120})
+	if resp.StatusCode != http.StatusOK || asInt(body["minutes"]) != 300 {
+		t.Fatalf("put %d %+v", resp.StatusCode, body)
+	}
+
+	resp, body = f.call(t, http.MethodGet, sources, "/works/{work_id}/playtime/sources", "sess-alice", "", nil)
+	items, _ := body["items"].([]any)
+	if resp.StatusCode != http.StatusOK || len(items) != 2 {
+		t.Fatalf("list %d %+v", resp.StatusCode, body)
+	}
+	other, own := items[0].(map[string]any), items[1].(map[string]any)
+	if other["client_id"] != g6OtherApp || other["app_name"] != "计时器" || other["is_self"] != false || asInt(other["minutes"]) != 300 ||
+		own["is_self"] != true || own["app_name"] != nil || asInt(own["minutes"]) != 120 {
+		t.Errorf("sources %+v", items)
+	}
+
+	resp, body = f.call(t, http.MethodDelete, sources+"/"+g6OtherApp, "/works/{work_id}/playtime/sources/{client}", "sess-alice", "", nil)
+	if resp.StatusCode != http.StatusOK || asInt(body["minutes"]) != 120 {
+		t.Fatalf("deleting the other app leaves the forum's 120: %d %+v", resp.StatusCode, body)
+	}
+	resp, body = f.call(t, http.MethodDelete, sources+"/"+g6OtherApp, "/works/{work_id}/playtime/sources/{client}", "sess-alice", "", nil)
+	wantCode(t, resp, body, http.StatusNotFound, problem.CodeNotFound)
+
+	resp, body = f.call(t, http.MethodDelete, sources, "/works/{work_id}/playtime/sources", "sess-alice", "", nil)
+	if resp.StatusCode != http.StatusOK || asInt(body["minutes"]) != 0 {
+		t.Fatalf("delete all %d %+v", resp.StatusCode, body)
+	}
+	resp, body = f.call(t, http.MethodGet, sources, "/works/{work_id}/playtime/sources", "sess-alice", "", nil)
+	if items, _ := body["items"].([]any); resp.StatusCode != http.StatusOK || len(items) != 0 {
+		t.Fatalf("after delete all %d %+v", resp.StatusCode, body)
+	}
+
+	resp, body = f.call(t, http.MethodGet, sources, "/works/{work_id}/playtime/sources", "sess-noscope", "", nil)
+	wantCode(t, resp, body, http.StatusForbidden, problem.CodeScopeRequired)
+}

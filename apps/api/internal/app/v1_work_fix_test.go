@@ -154,6 +154,15 @@ func (f *fakeCatalogUser) ReportPlaytime(context.Context, string, int64, catalog
 func (f *fakeCatalogUser) DeleteMyPlaytime(context.Context, string, int64) error {
 	return nil
 }
+func (f *fakeCatalogUser) MyPlaytimeSources(context.Context, string, int64) ([]catalogclient.PlaytimeSource, error) {
+	return nil, nil
+}
+func (f *fakeCatalogUser) DeleteMyPlaytimeSource(context.Context, string, int64, string) error {
+	return catalogclient.ErrNotFound
+}
+func (f *fakeCatalogUser) DeleteMyPlaytimeSources(context.Context, string, int64) error {
+	return nil
+}
 func (f *fakeCatalogUser) ListMyPlaytime(context.Context, string, string, int) ([]catalogclient.PlaytimeRecord, string, error) {
 	return nil, "", nil
 }
