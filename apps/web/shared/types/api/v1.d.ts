@@ -13621,8 +13621,10 @@ export interface components {
              * @description Days a read notification is kept before the daily job deletes it; unread ones are never deleted. 0 keeps them all.
              */
             notification_retention_days: number;
-            /** @description Model id sent to the endpoint. */
-            topic_ai_model: string;
+            /** @description Model or gateway scene that picks a topic's section. */
+            topic_ai_classify_model: string;
+            /** @description Model or gateway scene that writes topic summaries. */
+            topic_ai_summary_model: string;
             /**
              * Format: int64
              * @description How long publishing waits for the model before it falls back to the author's section.
@@ -13681,7 +13683,9 @@ export interface components {
              */
             notification_retention_days?: number;
             /** @description New value. */
-            topic_ai_model?: string;
+            topic_ai_classify_model?: string;
+            /** @description New value. */
+            topic_ai_summary_model?: string;
             /**
              * Format: int64
              * @description New value.

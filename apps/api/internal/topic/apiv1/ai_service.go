@@ -51,7 +51,9 @@ func (a *TopicAI) SummaryEnabled() bool {
 	return a != nil && a.client != nil && a.settings.Bool(setting.TopicAISummaryEnabled)
 }
 
-func (a *TopicAI) model() string { return a.settings.String(setting.TopicAIModel) }
+func (a *TopicAI) classifyModel() string { return a.settings.String(setting.TopicAIClassifyModel) }
+
+func (a *TopicAI) summaryModel() string { return a.settings.String(setting.TopicAISummaryModel) }
 
 func (a *TopicAI) choices() ([]ai.SectionChoice, error) {
 	rows, err := a.repo.SectionChoices()
@@ -74,7 +76,7 @@ func (a *TopicAI) Classify(ctx context.Context, title, body string) (ai.Verdict,
 	}
 	ctx, cancel := context.WithTimeout(ctx, time.Duration(a.settings.Int(setting.TopicAITimeoutMs))*time.Millisecond)
 	defer cancel()
-	return ai.Classify(ctx, a.client, a.model(), choices, title, body)
+	return ai.Classify(ctx, a.client, a.classifyModel(), choices, title, body)
 }
 
 func textDigest(title, body string) []byte {
@@ -157,11 +159,11 @@ func (a *TopicAI) AfterEdit(topic *model.Topic, drift int, title, body string) {
 }
 
 func (a *TopicAI) summarizeNow(ctx context.Context, topicID int, title, body string) error {
-	summary, err := ai.Summarize(ctx, a.client, a.model(), title, body)
+	summary, err := ai.Summarize(ctx, a.client, a.summaryModel(), title, body)
 	if err != nil {
 		return err
 	}
-	return a.repo.SetSummary(topicID, &summary, a.model())
+	return a.repo.SetSummary(topicID, &summary, a.summaryModel())
 }
 
 // editDrift counts the runes an edit inserted plus the runes it deleted,

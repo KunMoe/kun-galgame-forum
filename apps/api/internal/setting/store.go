@@ -14,7 +14,8 @@ import (
 const (
 	TopicAIClassifyEnabled          = "topic_ai.classify_enabled"
 	TopicAISummaryEnabled           = "topic_ai.summary_enabled"
-	TopicAIModel                    = "topic_ai.model"
+	TopicAIClassifyModel            = "topic_ai.classify_model"
+	TopicAISummaryModel             = "topic_ai.summary_model"
 	TopicAITimeoutMs                = "topic_ai.timeout_ms"
 	TopicSummaryMinLength           = "topic_summary.min_length"
 	TopicSummaryRegenerateThreshold = "topic_summary.regenerate_threshold"
@@ -42,7 +43,8 @@ const (
 var defaults = map[string]any{
 	TopicAIClassifyEnabled:          false,
 	TopicAISummaryEnabled:           false,
-	TopicAIModel:                    "@cf/deepseek-ai/deepseek-v4.1-flash-1017",
+	TopicAIClassifyModel:            "forum.topic-classify",
+	TopicAISummaryModel:             "forum.topic-summary",
 	TopicAITimeoutMs:                10000,
 	TopicSummaryMinLength:           500,
 	TopicSummaryRegenerateThreshold: 300,

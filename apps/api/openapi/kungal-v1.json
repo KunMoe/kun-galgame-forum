@@ -20065,8 +20065,14 @@
             "minimum": 0,
             "type": "integer"
           },
-          "topic_ai_model": {
-            "description": "Model id sent to the endpoint.",
+          "topic_ai_classify_model": {
+            "description": "Model or gateway scene that picks a topic's section.",
+            "maxLength": 120,
+            "pattern": "^[A-Za-z0-9@_./:-]+$",
+            "type": "string"
+          },
+          "topic_ai_summary_model": {
+            "description": "Model or gateway scene that writes topic summaries.",
             "maxLength": 120,
             "pattern": "^[A-Za-z0-9@_./:-]+$",
             "type": "string"
@@ -20097,7 +20103,8 @@
           "is_ai_configured",
           "is_topic_classify_enabled",
           "is_topic_summary_enabled",
-          "topic_ai_model",
+          "topic_ai_classify_model",
+          "topic_ai_summary_model",
           "topic_ai_timeout_ms",
           "topic_summary_min_length",
           "topic_summary_regenerate_threshold",
@@ -20215,7 +20222,14 @@
             "minimum": 0,
             "type": "integer"
           },
-          "topic_ai_model": {
+          "topic_ai_classify_model": {
+            "description": "New value.",
+            "maxLength": 120,
+            "minLength": 1,
+            "pattern": "^[A-Za-z0-9@_./:-]+$",
+            "type": "string"
+          },
+          "topic_ai_summary_model": {
             "description": "New value.",
             "maxLength": 120,
             "minLength": 1,

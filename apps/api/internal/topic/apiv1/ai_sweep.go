@@ -48,7 +48,7 @@ func (a *TopicAI) recheck(ctx context.Context) {
 		}
 		err = a.repo.DB().Transaction(func(tx *gorm.DB) error {
 			if err := a.repo.SaveClassification(tx, repository.TopicClassification{
-				TopicID: t.ID, Section: verdict.Section, Source: "model", Model: a.model(), Reason: verdict.Reason,
+				TopicID: t.ID, Section: verdict.Section, Source: "model", Model: a.classifyModel(), Reason: verdict.Reason,
 			}); err != nil {
 				return err
 			}
@@ -80,7 +80,7 @@ func (a *TopicAI) backfillSummaries(ctx context.Context) {
 	}
 	for _, t := range topics {
 		if !a.wantsSummary(t.Content) {
-			if err := a.repo.SetSummary(t.ID, nil, a.model()); err != nil {
+			if err := a.repo.SetSummary(t.ID, nil, a.summaryModel()); err != nil {
 				slog.Warn("topic summary sweep: write failed", "topic_id", t.ID, "error", err)
 			}
 			continue

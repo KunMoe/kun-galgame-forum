@@ -21,7 +21,8 @@ type Settings struct {
 	IsAIConfigured                  bool   `json:"is_ai_configured" doc:"Whether the server has a model endpoint (KUN_AI_BASE_URL and KUN_AI_TOKEN). Without one the two switches below have no effect."`
 	IsTopicClassifyEnabled          bool   `json:"is_topic_classify_enabled" doc:"Whether the model decides a new topic's section. Off, the author picks one."`
 	IsTopicSummaryEnabled           bool   `json:"is_topic_summary_enabled" doc:"Whether the model writes summaries for long topics."`
-	TopicAIModel                    string `json:"topic_ai_model" maxLength:"120" pattern:"^[A-Za-z0-9@_./:-]+$" doc:"Model id sent to the endpoint."`
+	TopicAIClassifyModel            string `json:"topic_ai_classify_model" maxLength:"120" pattern:"^[A-Za-z0-9@_./:-]+$" doc:"Model or gateway scene that picks a topic's section."`
+	TopicAISummaryModel             string `json:"topic_ai_summary_model" maxLength:"120" pattern:"^[A-Za-z0-9@_./:-]+$" doc:"Model or gateway scene that writes topic summaries."`
 	TopicAITimeoutMs                int    `json:"topic_ai_timeout_ms" minimum:"1000" maximum:"60000" doc:"How long publishing waits for the model before it falls back to the author's section."`
 	TopicSummaryMinLength           int    `json:"topic_summary_min_length" minimum:"0" maximum:"100000" doc:"A body needs at least this many characters of text to get a summary."`
 	TopicSummaryRegenerateThreshold int    `json:"topic_summary_regenerate_threshold" minimum:"1" maximum:"100000" doc:"Characters inserted plus deleted by edits since the summary was written before it is written again."`
@@ -49,7 +50,8 @@ type Settings struct {
 type SettingsPatch struct {
 	IsTopicClassifyEnabled          *bool   `json:"is_topic_classify_enabled,omitempty" doc:"New value."`
 	IsTopicSummaryEnabled           *bool   `json:"is_topic_summary_enabled,omitempty" doc:"New value."`
-	TopicAIModel                    *string `json:"topic_ai_model,omitempty" minLength:"1" maxLength:"120" pattern:"^[A-Za-z0-9@_./:-]+$" doc:"New value."`
+	TopicAIClassifyModel            *string `json:"topic_ai_classify_model,omitempty" minLength:"1" maxLength:"120" pattern:"^[A-Za-z0-9@_./:-]+$" doc:"New value."`
+	TopicAISummaryModel             *string `json:"topic_ai_summary_model,omitempty" minLength:"1" maxLength:"120" pattern:"^[A-Za-z0-9@_./:-]+$" doc:"New value."`
 	TopicAITimeoutMs                *int    `json:"topic_ai_timeout_ms,omitempty" minimum:"1000" maximum:"60000" doc:"New value."`
 	TopicSummaryMinLength           *int    `json:"topic_summary_min_length,omitempty" minimum:"0" maximum:"100000" doc:"New value."`
 	TopicSummaryRegenerateThreshold *int    `json:"topic_summary_regenerate_threshold,omitempty" minimum:"1" maximum:"100000" doc:"New value."`
@@ -148,7 +150,8 @@ func (s *Service) current() Settings {
 		IsAIConfigured:                  s.aiConfigured,
 		IsTopicClassifyEnabled:          s.store.Bool(setting.TopicAIClassifyEnabled),
 		IsTopicSummaryEnabled:           s.store.Bool(setting.TopicAISummaryEnabled),
-		TopicAIModel:                    s.store.String(setting.TopicAIModel),
+		TopicAIClassifyModel:            s.store.String(setting.TopicAIClassifyModel),
+		TopicAISummaryModel:             s.store.String(setting.TopicAISummaryModel),
 		TopicAITimeoutMs:                s.store.Int(setting.TopicAITimeoutMs),
 		TopicSummaryMinLength:           s.store.Int(setting.TopicSummaryMinLength),
 		TopicSummaryRegenerateThreshold: s.store.Int(setting.TopicSummaryRegenerateThreshold),
@@ -178,7 +181,8 @@ func (s *Service) patchSettings(ctx context.Context, in *patchSettingsInput) (*s
 	}
 	put(setting.TopicAIClassifyEnabled, deref(b.IsTopicClassifyEnabled), b.IsTopicClassifyEnabled != nil)
 	put(setting.TopicAISummaryEnabled, deref(b.IsTopicSummaryEnabled), b.IsTopicSummaryEnabled != nil)
-	put(setting.TopicAIModel, deref(b.TopicAIModel), b.TopicAIModel != nil)
+	put(setting.TopicAIClassifyModel, deref(b.TopicAIClassifyModel), b.TopicAIClassifyModel != nil)
+	put(setting.TopicAISummaryModel, deref(b.TopicAISummaryModel), b.TopicAISummaryModel != nil)
 	put(setting.TopicAITimeoutMs, deref(b.TopicAITimeoutMs), b.TopicAITimeoutMs != nil)
 	put(setting.TopicSummaryMinLength, deref(b.TopicSummaryMinLength), b.TopicSummaryMinLength != nil)
 	put(setting.TopicSummaryRegenerateThreshold, deref(b.TopicSummaryRegenerateThreshold), b.TopicSummaryRegenerateThreshold != nil)

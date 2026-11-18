@@ -107,7 +107,7 @@ func (w *Writes) createTopic(ctx context.Context, in *createTopicInput) (*create
 		if decision.source != "" {
 			if err := w.ai.repo.SaveClassification(tx, repository.TopicClassification{
 				TopicID: topic.ID, Section: decision.section, Source: decision.source,
-				Model: w.ai.model(), Reason: decision.reason,
+				Model: w.ai.classifyModel(), Reason: decision.reason,
 			}); err != nil {
 				return err
 			}

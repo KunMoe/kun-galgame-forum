@@ -2,7 +2,8 @@
 const { data, problem, pending, form, isSaving, save } = useAdminSettingsForm({
   is_topic_classify_enabled: false,
   is_topic_summary_enabled: false,
-  topic_ai_model: '',
+  topic_ai_classify_model: '',
+  topic_ai_summary_model: '',
   topic_ai_timeout_ms: 10000,
   topic_summary_min_length: 500,
   topic_summary_regenerate_threshold: 300
@@ -44,7 +45,14 @@ const { data, problem, pending, form, isSaving, save } = useAdminSettingsForm({
     </div>
 
     <div class="grid gap-4 sm:grid-cols-2">
-      <KunInput v-model="form.topic_ai_model" label="模型 ID" />
+      <KunInput
+        v-model="form.topic_ai_classify_model"
+        label="分区判断的模型或网关场景"
+      />
+      <KunInput
+        v-model="form.topic_ai_summary_model"
+        label="摘要的模型或网关场景"
+      />
       <KunInput
         v-model="form.topic_ai_timeout_ms"
         type="number"
