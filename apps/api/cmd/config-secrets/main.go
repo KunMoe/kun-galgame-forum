@@ -84,7 +84,7 @@ func run(in io.Reader, out io.Writer, keys string, apply bool) error {
 		case has:
 			verb = "replace"
 		}
-		fmt.Fprintf(out, "%s %s = %s\n", verb, kv.name, store.Shown(kv.name, kv.value))
+		_, _ = fmt.Fprintf(out, "%s %s = %s\n", verb, kv.name, store.Shown(kv.name, kv.value))
 		if apply && verb != "same   " {
 			if _, err := store.Set(ctx, kv.name, kv.value, note, envconfig.ActionImport, nil); err != nil {
 				return fmt.Errorf("%s: %w", kv.name, err)
@@ -92,7 +92,7 @@ func run(in io.Reader, out io.Writer, keys string, apply bool) error {
 		}
 	}
 	if !apply {
-		fmt.Fprintln(out, "dry run: nothing written; run again with -apply")
+		_, _ = fmt.Fprintln(out, "dry run: nothing written; run again with -apply")
 	}
 	return nil
 }
