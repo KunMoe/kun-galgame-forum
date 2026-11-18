@@ -50,15 +50,8 @@ func main() {
 	logger.Init(cfg.Server.Mode)
 	db := database.NewPostgres(cfg.Database, cfg.Server.Mode)
 
-	clientID, clientSecret := cfg.Community.ClientID, cfg.Community.ClientSecret
-	if clientID == "" {
-		clientID = cfg.OAuth.ClientID
-	}
-	if clientSecret == "" {
-		clientSecret = cfg.OAuth.ClientSecret
-	}
 	community := communityclient.New(communityclient.Config{
-		BaseURL: cfg.Community.BaseURL, ClientID: clientID, ClientSecret: clientSecret,
+		BaseURL: cfg.Community.BaseURL, ClientID: cfg.Community.ClientID, ClientSecret: cfg.Community.ClientSecret,
 	})
 
 	svc := service.NewPurgeService(repository.NewPurgeRepository(db), nil, community, nil)

@@ -28,7 +28,6 @@ func (a *App) newToolsetV1() *toolsetapiv1.Service {
 		a.TrustCheck,
 		a.TrustScan,
 		a.Artifact,
-		a.FileStorage,
 		award,
 		cdn,
 	)

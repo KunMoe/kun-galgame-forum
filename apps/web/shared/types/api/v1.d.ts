@@ -456,6 +456,70 @@ export interface paths {
         patch: operations["updateAdminSettings"];
         trace?: never;
     };
+    "/admin/settings/env": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Read the environment variables and the config store
+         * @description Every variable the running API read with where its value came from, every stored value, and what needs doing about each. Secrets appear only as a fingerprint and their last characters. Needs setting.manage.
+         */
+        get: operations["getAdminEnvConfig"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/admin/settings/env/changes": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * List changes to the config store
+         * @description Every write and delete, newest first. Needs setting.manage.
+         */
+        get: operations["listAdminEnvChanges"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/admin/settings/env/variables/{variable}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        /**
+         * Store an environment variable
+         * @description Seals the value into the config store and records the change. The API reads the store when it starts, so the value takes effect on the next restart, and only while the environment does not set the same variable. Needs setting.manage.
+         */
+        put: operations["putAdminEnvVariable"];
+        post?: never;
+        /**
+         * Remove a stored environment variable
+         * @description Deletes the stored value and records the change. After the next restart the variable falls back to the environment, then the code default. Needs setting.manage.
+         */
+        delete: operations["deleteAdminEnvVariable"];
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/admin/topics/{topic_id}": {
         parameters: {
             query?: never;
@@ -749,7 +813,7 @@ export interface paths {
         };
         /**
          * Get the app version gate
-         * @description The app's version gate: an install older than min_version must update before it runs. Read from configuration that is validated at startup, so the versions are always well formed and ordered.
+         * @description The app's version gate: an install older than min_version must update before it runs. Read from the site settings, which are validated when an admin writes them, so the versions are always well formed and ordered.
          */
         get: operations["getAppVersion"];
         put?: never;
@@ -4180,6 +4244,26 @@ export interface paths {
          * @description Works for any offer id, including one no longer sold. Unsubscribing when not subscribed is a no-op that answers the same.
          */
         delete: operations["unsubscribeShopRestock"];
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/site/features": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Read which site features are on
+         * @description Switches the platform owns for this site, as NextMoe's config center last published them. The API polls them every minute, so a change shows within about a minute.
+         */
+        get: operations["getSiteFeatures"];
+        put?: never;
+        post?: never;
+        delete?: never;
         options?: never;
         head?: never;
         patch?: never;
@@ -8440,6 +8524,102 @@ export interface components {
         EntityTarget: components["schemas"]["TopicPreview"] | components["schemas"]["WorkPreview"] | components["schemas"]["GalgameResourcePreview"] | components["schemas"]["UserRef"] | components["schemas"]["CharacterPreview"] | components["schemas"]["CompanyPreview"] | components["schemas"]["TagPreview"] | components["schemas"]["SeriesPreview"] | components["schemas"]["CreditNamePreview"] | components["schemas"]["RatingPreview"] | components["schemas"]["UnavailableEntity"];
         /** @enum {string} */
         EntityType: "topic" | "work" | "galgame_resource" | "character" | "company" | "tag" | "series" | "credit_name" | "rating";
+        EnvChange: {
+            /** @description import is a value copied from the running container by the config-secrets tool. */
+            change_kind: components["schemas"]["EnvChangeKind"];
+            /** @description Why the change was made; empty when no reason was given. Free text; never use it as a decision input. */
+            change_note: string;
+            /** @description Who made the change. null for the import tool. */
+            changed_by: components["schemas"]["UserRef"] | null;
+            /**
+             * Format: date-time
+             * @description When the change was made.
+             */
+            created_at: string;
+            /** @description Change id. JSON string of a decimal integer. */
+            id: string;
+            /**
+             * @description Type discriminant. Always env_change.
+             * @constant
+             */
+            object: "env_change";
+            /** @description The new value shown the same way; empty for a delete. Free text; never use it as a decision input. */
+            shown_after: string;
+            /** @description The previous value, a secret as fingerprint and last characters; empty when there was none. Free text; never use it as a decision input. */
+            shown_before: string;
+            /** @description The environment variable's name. */
+            variable: string;
+        };
+        /** @enum {string} */
+        EnvChangeKind: "set" | "delete" | "import";
+        EnvConfig: {
+            /** @description Whether this API process started with KUN_CONFIG_KEK. Without it the store is neither read nor writable. */
+            is_store_enabled: boolean;
+            /**
+             * Format: date-time
+             * @description When this API process read the store. A stored value changed after it takes effect on the next restart.
+             */
+            loaded_at: string;
+            /**
+             * @description Type discriminant. Always env_config.
+             * @constant
+             */
+            object: "env_config";
+            /** @description Variables in the API container's environment that nothing read: a compose line whose consumer is gone, or a misspelled name. */
+            unread_variables: string[];
+            /** @description Every variable the running API read, and every stored one, by name. */
+            variables: components["schemas"]["EnvVariable"][];
+        };
+        EnvValue: {
+            /** @description HMAC of a secret under the store key, equal for equal values. null for a non-secret or an empty value. */
+            fingerprint: string | null;
+            /** @description The last characters of a secret. null for a non-secret or an empty value. Free text; never use it as a decision input. */
+            hint: string | null;
+            /** @description Whether the value is non-empty. */
+            is_set: boolean;
+            /** @description The value itself. null for a secret. Free text; never use it as a decision input. */
+            plain: string | null;
+        };
+        EnvVariable: {
+            /** @description The code default. null for a secret or a variable the API never read. Free text; never use it as a decision input. */
+            default_value: string | null;
+            /** @description Whether the variable may be stored. */
+            is_storable: boolean;
+            /** @description What needs doing about the variable. Empty when nothing does. */
+            issues: components["schemas"]["EnvVariableIssue"][];
+            /**
+             * @description Type discriminant. Always env_variable.
+             * @constant
+             */
+            object: "env_variable";
+            /** @description Where the running API took the value from. null when it never read this variable. */
+            resolved_from: components["schemas"]["EnvVariableSource"] | null;
+            /** @description The value the running API uses. null when it never read this variable. */
+            running: components["schemas"]["EnvValue"] | null;
+            /** @description The value in the config store. null when nothing is stored. */
+            stored: components["schemas"]["EnvValue"] | null;
+            /**
+             * Format: date-time
+             * @description When the stored value was written. null when nothing is stored.
+             */
+            stored_at: string | null;
+            /** @description The environment variable's name. */
+            variable: string;
+            /** @description bootstrap and topology stay in the compose file and cannot be stored. A secret is shown only by fingerprint and last characters. */
+            variable_kind: components["schemas"]["EnvVariableKind"];
+        };
+        /** @enum {string} */
+        EnvVariableIssue: "panel_redundant" | "panel_overrides_store" | "restart_pending";
+        /** @enum {string} */
+        EnvVariableKind: "bootstrap" | "topology" | "secret" | "plain";
+        /** @enum {string} */
+        EnvVariableSource: "env" | "store" | "default";
+        EnvVariableWrite: {
+            /** @description Why the change is made. Free text; never use it as a decision input. */
+            change_note?: string;
+            /** @description The value to store. Free text; never use it as a decision input. */
+            value: string;
+        };
         /** @enum {string} */
         ExpiryVerdict: "alive" | "partial" | "dead" | "unchecked";
         FacetedWorkPage: {
@@ -10977,6 +11157,22 @@ export interface components {
             /** @description eq when total is exact, gte when the source could only count a lower bound and there are at least that many. */
             total_relation: components["schemas"]["TotalRelation"];
         };
+        PageListEnvChange: {
+            /** @description Members of this page. Empty array, never null. */
+            items: components["schemas"]["EnvChange"][];
+            /**
+             * @description Type discriminant. Always list.
+             * @constant
+             */
+            object: "list";
+            /**
+             * Format: int64
+             * @description Members matching the filters, under the same predicate as items. Exact unless total_relation is gte. page × limit may still not exceed 10000, so the last reachable page is min(ceil(total / limit), floor(10000 / limit)).
+             */
+            total: number;
+            /** @description eq when total is exact, gte when the source could only count a lower bound and there are at least that many. */
+            total_relation: components["schemas"]["TotalRelation"];
+        };
         PageListGalgameResource: {
             /** @description Members of this page. Empty array, never null. */
             items: components["schemas"]["GalgameResource"][];
@@ -13383,12 +13579,48 @@ export interface components {
             notify: components["schemas"]["FollowNotifyLevel"];
         };
         Settings: {
+            /** @description Android download; empty for the download page. */
+            app_android_download_url: string;
+            /** @description SHA-256 of that .apk, lowercase hex; empty for none. */
+            app_android_package_sha256: string;
+            /**
+             * Format: int64
+             * @description Byte length of that .apk; 0 for none.
+             */
+            app_android_package_size: number;
+            /** @description The .apk of app_latest_version for the App's in-place update; empty for none. Set together with app_android_package_size and app_android_package_sha256. */
+            app_android_package_url: string;
+            /** @description iOS download; empty for the download page. */
+            app_ios_download_url: string;
+            /** @description Newest published App version. MAJOR.MINOR.PATCH. */
+            app_latest_version: string;
+            /** @description Linux download; empty for the download page. */
+            app_linux_download_url: string;
+            /** @description Oldest App version still allowed to run. MAJOR.MINOR.PATCH, never above app_latest_version. */
+            app_min_version: string;
+            /** @description Release notes of the latest version; empty for none. Free text; never use it as a decision input. */
+            app_release_notes: string;
+            /** @description Windows download; empty for the download page. */
+            app_windows_download_url: string;
+            /** @description Standing coupon landing page, shown while the store face reports no campaign; empty for none. */
+            dlsite_coupon_url: string;
+            /** @description DLsite affiliate link with {workno} in place of the work number, used until a short link is minted; empty turns the purchase link off. */
+            dlsite_link_template: string;
             /** @description Whether the server has a model endpoint (KUN_AI_BASE_URL and KUN_AI_TOKEN). Without one the two switches below have no effect. */
             is_ai_configured: boolean;
             /** @description Whether the model decides a new topic's section. Off, the author picks one. */
             is_topic_classify_enabled: boolean;
             /** @description Whether the model writes summaries for long topics. */
             is_topic_summary_enabled: boolean;
+            /** @description Whether user text is checked against the word list before it is written. */
+            is_trust_check_enabled: boolean;
+            /** @description Whether user text is sent for a scan after it is written. */
+            is_trust_scan_enabled: boolean;
+            /**
+             * Format: int64
+             * @description Days a read notification is kept before the daily job deletes it; unread ones are never deleted. 0 keeps them all.
+             */
+            notification_retention_days: number;
             /** @description Model id sent to the endpoint. */
             topic_ai_model: string;
             /**
@@ -13409,9 +13641,45 @@ export interface components {
         };
         SettingsPatch: {
             /** @description New value. */
+            app_android_download_url?: string;
+            /** @description New value. */
+            app_android_package_sha256?: string;
+            /**
+             * Format: int64
+             * @description New value.
+             */
+            app_android_package_size?: number;
+            /** @description New value. */
+            app_android_package_url?: string;
+            /** @description New value. */
+            app_ios_download_url?: string;
+            /** @description New value. */
+            app_latest_version?: string;
+            /** @description New value. */
+            app_linux_download_url?: string;
+            /** @description New value. */
+            app_min_version?: string;
+            /** @description New value. Free text; never use it as a decision input. */
+            app_release_notes?: string;
+            /** @description New value. */
+            app_windows_download_url?: string;
+            /** @description New value. */
+            dlsite_coupon_url?: string;
+            /** @description New value. */
+            dlsite_link_template?: string;
+            /** @description New value. */
             is_topic_classify_enabled?: boolean;
             /** @description New value. */
             is_topic_summary_enabled?: boolean;
+            /** @description New value. */
+            is_trust_check_enabled?: boolean;
+            /** @description New value. */
+            is_trust_scan_enabled?: boolean;
+            /**
+             * Format: int64
+             * @description New value.
+             */
+            notification_retention_days?: number;
             /** @description New value. */
             topic_ai_model?: string;
             /**
@@ -13672,6 +13940,15 @@ export interface components {
         ShopScope: "everywhere" | "this_site";
         /** @enum {string} */
         ShopSlot: "avatar_frame" | "profile_background";
+        SiteFeatures: {
+            /** @description Whether NextMoe has turned the AI assistant on for this site. Off, clients hide the assistant's entrances and its calls are refused. */
+            is_agent_enabled: boolean;
+            /**
+             * @description Type discriminant. Always site_features.
+             * @constant
+             */
+            object: "site_features";
+        };
         SiteRating: {
             /**
              * Format: double
@@ -20184,6 +20461,318 @@ export interface operations {
                 };
             };
             /** @description Service Unavailable */
+            503: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+        };
+    };
+    getAdminEnvConfig: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["EnvConfig"];
+                };
+            };
+            /** @description Unauthorized */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description PERMISSION_REQUIRED without setting.manage, which a Bearer request never carries. */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Internal Server Error */
+            500: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Service Unavailable */
+            503: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+        };
+    };
+    listAdminEnvChanges: {
+        parameters: {
+            query?: {
+                /** @description 1-based page number. page × limit may not exceed 10000. */
+                page?: number;
+                /** @description Page size. 1–100, default 20. Values above 100 are rejected, not clamped. */
+                limit?: number;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["PageListEnvChange"];
+                };
+            };
+            /** @description Bad Request */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Unauthorized */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description PERMISSION_REQUIRED without setting.manage, which a Bearer request never carries. */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Internal Server Error */
+            500: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Service Unavailable */
+            503: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+        };
+    };
+    putAdminEnvVariable: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description The environment variable's name. */
+                variable: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["EnvVariableWrite"];
+            };
+        };
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["EnvVariable"];
+                };
+            };
+            /** @description Bad Request */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Unauthorized */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description PERMISSION_REQUIRED without setting.manage, which a Bearer request never carries. */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Not Found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Request Entity Too Large */
+            413: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Unsupported Media Type */
+            415: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description VALIDATION_FAILED at the variable parameter for a bootstrap or topology variable, which stays in the compose file. */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Internal Server Error */
+            500: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description SERVICE_UNAVAILABLE when the API started without the store key. */
+            503: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+        };
+    };
+    deleteAdminEnvVariable: {
+        parameters: {
+            query?: {
+                /** @description Why the value is removed. Free text; never use it as a decision input. */
+                note?: string;
+            };
+            header?: never;
+            path: {
+                /** @description The environment variable's name. */
+                variable: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description No Content */
+            204: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Bad Request */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Unauthorized */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description PERMISSION_REQUIRED without setting.manage, which a Bearer request never carries. */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description NOT_FOUND when nothing is stored for the variable. */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Internal Server Error */
+            500: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description SERVICE_UNAVAILABLE when the API started without the store key. */
             503: {
                 headers: {
                     [name: string]: unknown;
@@ -39350,6 +39939,35 @@ export interface operations {
             };
             /** @description SERVICE_UNAVAILABLE when the account service cannot be reached. */
             503: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+        };
+    };
+    getSiteFeatures: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SiteFeatures"];
+                };
+            };
+            /** @description Internal Server Error */
+            500: {
                 headers: {
                     [name: string]: unknown;
                 };

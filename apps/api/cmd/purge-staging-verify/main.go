@@ -283,8 +283,8 @@ func verifyRestore(db *gorm.DB, fail func(string, ...any), receipt repository.Pu
 
 func verifyCommunityPurge(fail func(string, ...any), userID int) {
 	base := os.Getenv("KUN_COMMUNITY_API_BASE")
-	clientID := firstNonEmpty(os.Getenv("KUN_COMMUNITY_CLIENT_ID"), os.Getenv("OAUTH_CLIENT_ID"))
-	clientSecret := firstNonEmpty(os.Getenv("KUN_COMMUNITY_CLIENT_SECRET"), os.Getenv("OAUTH_CLIENT_SECRET"))
+	clientID := os.Getenv("OAUTH_CLIENT_ID")
+	clientSecret := os.Getenv("OAUTH_CLIENT_SECRET")
 	if base == "" || clientID == "" || clientSecret == "" {
 		fmt.Println("    SKIP — community S2S not configured (set KUN_COMMUNITY_API_BASE + client creds)")
 		return
@@ -312,13 +312,4 @@ func verifyCommunityPurge(fail func(string, ...any), userID int) {
 		return
 	}
 	fmt.Println("    OK — author has 0 visible community posts")
-}
-
-func firstNonEmpty(vals ...string) string {
-	for _, v := range vals {
-		if v != "" {
-			return v
-		}
-	}
-	return ""
 }

@@ -49,7 +49,7 @@ const overview = ref<SearchOverviewData | null>(null)
 const overviewPending = ref(!!keywords.value)
 const overviewFailed = ref(false)
 const { excludeQuery } = useTagBlocks()
-const { agentEnabled } = useRuntimeConfig().public
+const { agentEnabled } = useSiteFeatures()
 
 let latest = 0
 

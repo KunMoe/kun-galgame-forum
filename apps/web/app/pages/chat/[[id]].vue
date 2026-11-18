@@ -5,7 +5,7 @@ definePageMeta({
   pageTransition: false
 })
 
-if (!useRuntimeConfig().public.agentEnabled) {
+if (!useSiteFeatures().agentEnabled.value) {
   throw createError({ statusCode: 404, statusMessage: 'Page Not Found' })
 }
 

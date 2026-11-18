@@ -2,10 +2,6 @@ package config
 
 import (
 	"fmt"
-	"net/url"
-	"os"
-	"regexp"
-	"slices"
 	"strconv"
 	"strings"
 
@@ -17,7 +13,6 @@ type Config struct {
 	Database       DatabaseConfig
 	Redis          RedisConfig
 	OAuth          OAuthConfig
-	FileStorage    S3Config
 	CORS           CORSConfig
 	NextMoeAPI     NextMoeAPIConfig
 	NewsAPI        NewsAPIConfig
@@ -35,8 +30,6 @@ type Config struct {
 	Lottery        LotteryConfig
 	Bearer         BearerConfig
 	Agent          AgentConfig
-	AppRelease     AppReleaseConfig
-	Notification   NotificationConfig
 	AI             AIConfig
 }
 
@@ -45,10 +38,6 @@ type Config struct {
 type AIConfig struct {
 	BaseURL string
 	Token   string
-}
-
-type NotificationConfig struct {
-	RetentionDays int
 }
 
 // ClientIDs is the allow-list of OAuth clients whose user access tokens may
@@ -69,27 +58,6 @@ func (c BearerConfig) Enabled() bool { return len(c.ClientIDs) > 0 }
 type AgentConfig struct {
 	APIBase string
 	MCPAddr string
-}
-
-type AppReleaseConfig struct {
-	MinVersion     string
-	LatestVersion  string
-	Notes          string
-	Downloads      AppDownloads
-	AndroidPackage *AndroidPackage
-}
-
-type AndroidPackage struct {
-	URL    string
-	Size   int64
-	SHA256 string
-}
-
-type AppDownloads struct {
-	Android string
-	IOS     string
-	Windows string
-	Linux   string
 }
 
 // CodeKey seals the escrowed lottery activation codes (AES-256-GCM, 64 hex
@@ -122,8 +90,6 @@ type TrustConfig struct {
 	BaseURL        string
 	CallbackSecret string
 	Site           string
-	CheckEnabled   bool
-	ScanEnabled    bool
 }
 
 type ArtifactClientConfig struct {
@@ -139,6 +105,8 @@ type LinkCheckerConfig struct {
 	CFAccessClientSecret string
 }
 
+// Image, artifact and community authenticate the forum by its own OAuth
+// client, so their ClientID/ClientSecret are always the OAuth pair.
 type ImageClientConfig struct {
 	BaseURL      string
 	ClientID     string
@@ -189,15 +157,6 @@ type StickerAPIConfig struct {
 	APIKey  string
 }
 
-// The affiliate link is assembled SERVER-side and shipped as a ready URL: the
-// affiliate id stays out of the browser bundle, and this project's frontend
-// build cannot be trusted with env vars (NUXT_PUBLIC_* / process.env.* come out
-// undefined in the generic prod image), so a template baked into the frontend
-// would silently produce broken links in production.
-//
-// LinkTemplate is a whole template, not assembled parts: DLsite's affiliate path
-// differs per site segment, so a path change stays an env edit.
-//
 // StoreAPIKey reaches infra's /v2/store face, which mints the per-site short
 // link that carries click attribution. It is a THIRD developer key, separate
 // from the catalog and news ones: the face is gated on the scope store:read and
@@ -205,13 +164,9 @@ type StickerAPIConfig struct {
 // the catalogue's minute budget. The links belong to the OAuth client rather
 // than the key, so a separate key does not split attribution.
 type DlsiteConfig struct {
-	LinkTemplate string
-	CouponURL    string
 	StoreAPIBase string
 	StoreAPIKey  string
 }
-
-func (c DlsiteConfig) Configured() bool { return c.LinkTemplate != "" }
 
 func (c DlsiteConfig) StoreConfigured() bool { return c.StoreAPIBase != "" && c.StoreAPIKey != "" }
 
@@ -239,15 +194,6 @@ type OAuthConfig struct {
 	ClientID     string
 	ClientSecret string
 	RedirectURI  string
-	JWTSecret    string
-}
-
-type S3Config struct {
-	Endpoint  string
-	Region    string
-	Bucket    string
-	AccessKey string
-	SecretKey string
 }
 
 type CORSConfig struct {
@@ -255,9 +201,12 @@ type CORSConfig struct {
 }
 
 func Load() (*Config, error) {
-	dbURL, err := requireEnv("KUN_DATABASE_URL")
-	if err != nil {
+	if err := loadStore(); err != nil {
 		return nil, err
+	}
+	dbURL := lookupEnvOnly(DatabaseURLEnv)
+	if dbURL == "" {
+		return nil, fmt.Errorf("环境变量 %s 未设置", DatabaseURLEnv)
 	}
 	oauthServerURL, err := requireEnv("OAUTH_SERVER_URL")
 	if err != nil {
@@ -287,11 +236,6 @@ func Load() (*Config, error) {
 
 	oauthOrigin := oauthOriginOf(oauthServerURL)
 
-	appRelease, err := loadAppRelease()
-	if err != nil {
-		return nil, err
-	}
-
 	return &Config{
 		Server: ServerConfig{
 			Port: envOrDefault("SERVER_PORT", "2334"),
@@ -314,14 +258,6 @@ func Load() (*Config, error) {
 			ClientID:     oauthClientID,
 			ClientSecret: oauthClientSecret,
 			RedirectURI:  oauthRedirectURI,
-			JWTSecret:    envOrDefault("JWT_SECRET", ""),
-		},
-		FileStorage: S3Config{
-			Endpoint:  envOrDefault("FILE_STORAGE_ENDPOINT", ""),
-			Region:    envOrDefault("FILE_STORAGE_REGION", ""),
-			Bucket:    envOrDefault("FILE_STORAGE_BUCKET", ""),
-			AccessKey: envOrDefault("FILE_STORAGE_ACCESS_KEY", ""),
-			SecretKey: envOrDefault("FILE_STORAGE_SECRET_KEY", ""),
 		},
 		CORS: CORSConfig{
 			AllowOrigins: envOrDefault(
@@ -352,13 +288,13 @@ func Load() (*Config, error) {
 		},
 		ImageClient: ImageClientConfig{
 			BaseURL:      envOrDefault("KUN_IMAGE_CLIENT_BASE_URL", "http://127.0.0.1:9278"),
-			ClientID:     envOrDefault("KUN_IMAGE_CLIENT_ID", ""),
-			ClientSecret: envOrDefault("KUN_IMAGE_CLIENT_SECRET", ""),
+			ClientID:     oauthClientID,
+			ClientSecret: oauthClientSecret,
 		},
 		ArtifactClient: ArtifactClientConfig{
 			BaseURL:      envOrDefault("KUN_ARTIFACT_CLIENT_BASE_URL", "http://127.0.0.1:9279"),
-			ClientID:     envOrDefault("KUN_ARTIFACT_CLIENT_ID", ""),
-			ClientSecret: envOrDefault("KUN_ARTIFACT_CLIENT_SECRET", ""),
+			ClientID:     oauthClientID,
+			ClientSecret: oauthClientSecret,
 		},
 		LinkChecker: LinkCheckerConfig{
 			BaseURL:              envOrDefault("LINK_CHECKER_BASE_URL", ""),
@@ -370,8 +306,6 @@ func Load() (*Config, error) {
 			BaseURL:        envOrDefault("KUN_TRUST_BASE_URL", "http://127.0.0.1:9283"),
 			CallbackSecret: envOrDefault("KUN_TRUST_CALLBACK_SECRET", ""),
 			Site:           envOrDefault("KUN_TRUST_SITE", "kungal"),
-			CheckEnabled:   envOrDefaultBool("KUN_TRUST_CHECK_ENABLED", false),
-			ScanEnabled:    envOrDefaultBool("KUN_TRUST_SCAN_ENABLED", false),
 		},
 		Catalog: CatalogClientConfig{
 			BaseURL: envOrDefault("KUN_CATALOG_API_BASE", "http://127.0.0.1:9281"),
@@ -385,35 +319,27 @@ func Load() (*Config, error) {
 		},
 		Community: CommunityConfig{
 			BaseURL:      envOrDefault("KUN_COMMUNITY_API_BASE", ""),
-			ClientID:     envOrDefault("KUN_COMMUNITY_CLIENT_ID", ""),
-			ClientSecret: envOrDefault("KUN_COMMUNITY_CLIENT_SECRET", ""),
+			ClientID:     oauthClientID,
+			ClientSecret: oauthClientSecret,
 		},
 		Chat: ChatConfig{
 			BaseURL: envOrDefault("KUN_CHAT_API_BASE", "http://127.0.0.1:9285"),
 			Enabled: envOrDefaultBool("KUN_CHAT_ENABLED", false),
 		},
 		Dlsite: DlsiteConfig{
-			LinkTemplate: envOrDefault("KUN_DLSITE_LINK_TEMPLATE", ""),
-			CouponURL:    envOrDefault("KUN_DLSITE_COUPON_URL", ""),
 			StoreAPIBase: envOrDefault("KUN_STORE_API_BASE", nextMoeBase),
 			StoreAPIKey:  envOrDefault("KUN_STORE_API_KEY", ""),
 		},
 		Bearer: BearerConfig{
 			Issuer:    envOrDefault("KUN_OIDC_ISSUER", oauthOrigin),
 			JWKSURL:   envOrDefault("KUN_OIDC_JWKS_URL", oauthOrigin+"/oauth/jwks"),
-			ClientIDs: splitCSV(os.Getenv("KUN_BEARER_CLIENT_IDS")),
+			ClientIDs: splitCSV(lookup("KUN_BEARER_CLIENT_IDS", "")),
 		},
 		Agent: AgentConfig{
 			APIBase: envOrDefault("KUN_AGENT_API_BASE", ""),
 			MCPAddr: envOrDefault("KUN_AGENT_MCP_ADDR", "127.0.0.1:2335"),
 		},
-		AppRelease:   appRelease,
-		Notification: loadNotification(),
 	}, nil
-}
-
-func loadNotification() NotificationConfig {
-	return NotificationConfig{RetentionDays: envOrDefaultInt("KUN_NOTIFICATION_RETENTION_DAYS", 365)}
 }
 
 func oauthOriginOf(serverURL string) string {
@@ -424,79 +350,6 @@ func oauthOriginOf(serverURL string) string {
 		}
 	}
 	return s
-}
-
-const appDownloadPage = "https://www.kungal.com/app"
-
-var releaseVersionRe = regexp.MustCompile(`^(\d+)\.(\d+)\.(\d+)$`)
-
-// A malformed or inverted pair is refused at boot: the App force-updates any
-// install below min_version, so min above latest would send every user to a
-// build that does not exist.
-func loadAppRelease() (AppReleaseConfig, error) {
-	cfg := AppReleaseConfig{
-		MinVersion:    envOrDefault("KUN_APP_MIN_VERSION", "0.1.0"),
-		LatestVersion: envOrDefault("KUN_APP_LATEST_VERSION", "0.1.0"),
-		Notes:         envOrDefault("KUN_APP_RELEASE_NOTES", ""),
-		Downloads: AppDownloads{
-			Android: envOrDefault("KUN_APP_DOWNLOAD_ANDROID", appDownloadPage),
-			IOS:     envOrDefault("KUN_APP_DOWNLOAD_IOS", appDownloadPage),
-			Windows: envOrDefault("KUN_APP_DOWNLOAD_WINDOWS", appDownloadPage),
-			Linux:   envOrDefault("KUN_APP_DOWNLOAD_LINUX", appDownloadPage),
-		},
-	}
-	minV, err := parseReleaseVersion("KUN_APP_MIN_VERSION", cfg.MinVersion)
-	if err != nil {
-		return cfg, err
-	}
-	latestV, err := parseReleaseVersion("KUN_APP_LATEST_VERSION", cfg.LatestVersion)
-	if err != nil {
-		return cfg, err
-	}
-	if slices.Compare(minV, latestV) > 0 {
-		return cfg, fmt.Errorf("KUN_APP_MIN_VERSION=%s 高于 KUN_APP_LATEST_VERSION=%s", cfg.MinVersion, cfg.LatestVersion)
-	}
-	cfg.AndroidPackage, err = loadAndroidPackage()
-	return cfg, err
-}
-
-var sha256HexRe = regexp.MustCompile(`^[0-9a-f]{64}$`)
-
-func loadAndroidPackage() (*AndroidPackage, error) {
-	rawURL := os.Getenv("KUN_APP_ANDROID_PACKAGE_URL")
-	rawSize := os.Getenv("KUN_APP_ANDROID_PACKAGE_SIZE")
-	sum := os.Getenv("KUN_APP_ANDROID_PACKAGE_SHA256")
-	if rawURL == "" && rawSize == "" && sum == "" {
-		return nil, nil
-	}
-	u, err := url.Parse(rawURL)
-	if err != nil || u.Scheme != "https" || u.Host == "" || len(rawURL) > 512 {
-		return nil, fmt.Errorf("KUN_APP_ANDROID_PACKAGE_URL=%q 不是 512 字符以内的 https 链接", rawURL)
-	}
-	size, err := strconv.ParseInt(rawSize, 10, 64)
-	if err != nil || size <= 0 {
-		return nil, fmt.Errorf("KUN_APP_ANDROID_PACKAGE_SIZE=%q 不是正整数字节数", rawSize)
-	}
-	if !sha256HexRe.MatchString(sum) {
-		return nil, fmt.Errorf("KUN_APP_ANDROID_PACKAGE_SHA256=%q 不是 64 位小写十六进制", sum)
-	}
-	return &AndroidPackage{URL: rawURL, Size: size, SHA256: sum}, nil
-}
-
-func parseReleaseVersion(key, v string) ([]int, error) {
-	m := releaseVersionRe.FindStringSubmatch(v)
-	if m == nil {
-		return nil, fmt.Errorf("%s=%q 不是 MAJOR.MINOR.PATCH 形式的版本号", key, v)
-	}
-	out := make([]int, 3)
-	for i, part := range m[1:] {
-		n, err := strconv.Atoi(part)
-		if err != nil {
-			return nil, fmt.Errorf("%s=%q: %w", key, v, err)
-		}
-		out[i] = n
-	}
-	return out, nil
 }
 
 func splitCSV(s string) []string {
@@ -510,34 +363,27 @@ func splitCSV(s string) []string {
 }
 
 func requireEnv(key string) (string, error) {
-	val := os.Getenv(key)
+	val := lookup(key, "")
 	if val == "" {
-		return "", fmt.Errorf("环境变量 %s 未设置", key)
+		return "", fmt.Errorf("%s 未设置 (环境变量与配置中心都没有)", key)
 	}
 	return val, nil
 }
 
 func envOrDefault(key, fallback string) string {
-	if val := os.Getenv(key); val != "" {
-		return val
-	}
-	return fallback
+	return lookup(key, fallback)
 }
 
 func envOrDefaultInt(key string, fallback int) int {
-	if val := os.Getenv(key); val != "" {
-		if n, err := strconv.Atoi(val); err == nil {
-			return n
-		}
+	if n, err := strconv.Atoi(lookup(key, strconv.Itoa(fallback))); err == nil {
+		return n
 	}
 	return fallback
 }
 
 func envOrDefaultBool(key string, fallback bool) bool {
-	if val := os.Getenv(key); val != "" {
-		if b, err := strconv.ParseBool(val); err == nil {
-			return b
-		}
+	if b, err := strconv.ParseBool(lookup(key, strconv.FormatBool(fallback))); err == nil {
+		return b
 	}
 	return fallback
 }

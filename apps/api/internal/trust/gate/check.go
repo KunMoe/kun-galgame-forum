@@ -22,13 +22,22 @@ type Checker interface {
 
 type CheckService struct {
 	ck Checker
+	on func() bool
 }
 
 func NewCheckService(ck Checker) *CheckService {
 	return &CheckService{ck: ck}
 }
 
-func (s *CheckService) Enabled() bool { return s != nil && s.ck != nil }
+// Switched turns the gate on and off with on, read per call.
+func (s *CheckService) Switched(on func() bool) *CheckService {
+	s.on = on
+	return s
+}
+
+func (s *CheckService) Enabled() bool {
+	return s != nil && s.ck != nil && (s.on == nil || s.on())
+}
 
 // Verdict is the synchronous check's answer. Skipped means the check failed
 // and the content was let through unchecked; the follow-up scan must say so,

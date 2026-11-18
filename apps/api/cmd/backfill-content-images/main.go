@@ -57,10 +57,6 @@ func main() {
 	}
 	logger.Init(cfg.Server.Mode)
 
-	if !*dryRun && (cfg.ImageClient.ClientID == "" || cfg.ImageClient.ClientSecret == "") {
-		slog.Error("image_service 未配置 (KUN_IMAGE_CLIENT_ID / KUN_IMAGE_CLIENT_SECRET), 无法上传")
-		os.Exit(1)
-	}
 	imgCli := imageclient.New(imageclient.Config{
 		BaseURL:      cfg.ImageClient.BaseURL,
 		CDNBase:      cfg.NextMoeAPI.ImageCDNBase,

@@ -17,10 +17,7 @@ func TestExpireReadNotificationsFollowsRetentionDays(t *testing.T) {
 	t.Cleanup(clean)
 	repo := msgRepo.NewMessageRepository(db)
 
-	if expireReadNotifications(repo, 0) != nil || expireReadNotifications(repo, -1) != nil {
-		t.Fatal("a retention of 0 or less must leave the job unregistered")
-	}
-
+	days := func(n int) func() int { return func() int { return n } }
 	now := time.Now()
 	for _, age := range []int{40, 20} {
 		at := now.AddDate(0, 0, -age)
@@ -29,11 +26,16 @@ func TestExpireReadNotificationsFollowsRetentionDays(t *testing.T) {
 			t.Fatal(err)
 		}
 	}
-	job := expireReadNotifications(repo, 30)
-	if job == nil {
-		t.Fatal("a 30-day retention registered no job")
+	count := func() int64 {
+		var n int64
+		db.Raw(`SELECT COUNT(*) FROM message WHERE receiver_id = ?`, receiver).Scan(&n)
+		return n
 	}
-	job()
+	expireReadNotifications(repo, days(0))()
+	if got := count(); got != 2 {
+		t.Fatalf("a retention of 0 deleted rows: %d left, want 2", got)
+	}
+	expireReadNotifications(repo, days(30))()
 	var left []string
 	if err := db.Raw(`SELECT content FROM message WHERE receiver_id = ? ORDER BY id`, receiver).Scan(&left).Error; err != nil {
 		t.Fatal(err)

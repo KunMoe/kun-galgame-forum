@@ -22,9 +22,7 @@
     "test": "vitest run",
     "test:watch": "vitest",
     "up": "pnpm update --latest",
-    "build:friend": "esno scripts/generateFriendSiteCapture.ts",
-    "deploy:install": "esno scripts/deployInstall.ts",
-    "deploy:build": "esno scripts/deployBuild.ts"
+    "build:friend": "esno scripts/generateFriendSiteCapture.ts"
   },
   "devDependencies": {
     "@nuxt/eslint": "^1.12.1",
@@ -96,7 +94,6 @@
     "codemirror": "^6.0.2",
     "date-fns": "^4.1.0",
     "dompurify": "^3.4.18",
-    "dotenv": "^17.2.3",
     "feed": "^5.1.0",
     "js-cookie": "^3.0.5",
     "katex": "^0.16.27",

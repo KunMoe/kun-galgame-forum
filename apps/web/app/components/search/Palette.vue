@@ -30,7 +30,7 @@ const { sectionLabel } = useTopicSections()
 const { allowsNsfw } = useContentStance()
 const { excludeQuery } = useTagBlocks()
 const workName = useWorkName()
-const { agentEnabled } = useRuntimeConfig().public
+const { agentEnabled } = useSiteFeatures()
 
 const { searchHistory } = storeToRefs(usePersistKUNGalgameSearchStore())
 
@@ -145,7 +145,7 @@ const groups = computed<KunCommandGroup[]>(() => {
   if (!result.value) {
     return list
   }
-  if (agentEnabled) {
+  if (agentEnabled.value) {
     list[0]!.items = [
       ...list[0]!.items,
       {

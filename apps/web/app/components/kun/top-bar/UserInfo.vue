@@ -22,7 +22,8 @@ const {
 } = storeToRefs(useTempSettingStore())
 
 const isShowMessageDot = computed(() => messageStatus.value === 'new')
-const { chatEnabled, agentEnabled } = useRuntimeConfig().public
+const { chatEnabled } = useRuntimeConfig().public
+const { agentEnabled } = useSiteFeatures()
 const chat = useChatStore()
 
 const showCreatorApply = computed(() => !canModerate.value && !isCreator.value)

@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 	"net/http"
 	"net/http/httptest"
+	"strings"
 	"sync"
 	"testing"
 	"time"
@@ -298,6 +299,22 @@ func TestV1AdminSettings(t *testing.T) {
 		map[string]any{"topic_ai_timeout_ms": 10})
 	if resp.StatusCode != http.StatusUnprocessableEntity {
 		t.Fatalf("out of range timeout: %d", resp.StatusCode)
+	}
+
+	if got["is_trust_scan_enabled"] != false || got["notification_retention_days"] != float64(365) ||
+		got["dlsite_coupon_url"] != "" || !strings.Contains(got["dlsite_link_template"].(string), "{workno}") {
+		t.Fatalf("defaults of the moved settings %v", got)
+	}
+	resp, got = f.callJSON(t, http.MethodPatch, "/api/v1/admin/settings", "/admin/settings", "sess-admin", "",
+		map[string]any{"is_trust_scan_enabled": true, "dlsite_coupon_url": "https://kun.s.gy/x", "notification_retention_days": 0})
+	if resp.StatusCode != http.StatusOK || got["is_trust_scan_enabled"] != true || got["dlsite_coupon_url"] != "https://kun.s.gy/x" ||
+		got["notification_retention_days"] != float64(0) {
+		t.Fatalf("patch moved settings %d %v", resp.StatusCode, got)
+	}
+	resp, _ = f.callJSON(t, http.MethodPatch, "/api/v1/admin/settings", "/admin/settings", "sess-admin", "",
+		map[string]any{"dlsite_link_template": "https://dlaf.jp/no-placeholder"})
+	if resp.StatusCode != http.StatusUnprocessableEntity {
+		t.Fatalf("template without {workno}: %d", resp.StatusCode)
 	}
 }
 

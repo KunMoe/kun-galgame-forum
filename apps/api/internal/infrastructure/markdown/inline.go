@@ -2,7 +2,6 @@ package markdown
 
 import (
 	"bytes"
-	"os"
 	"regexp"
 	"slices"
 	"strings"
@@ -22,22 +21,7 @@ var (
 	inlineSanitizer = newInlineSanitizePolicy()
 )
 
-var allowedImageHosts = resolveAllowedImageHosts()
-
-func resolveAllowedImageHosts() []string {
-	if v := strings.TrimSpace(os.Getenv("KUNGAL_MESSAGE_IMAGE_HOSTS")); v != "" {
-		var hosts []string
-		for p := range strings.SplitSeq(v, ",") {
-			if h := strings.TrimSpace(p); h != "" {
-				hosts = append(hosts, h)
-			}
-		}
-		if len(hosts) > 0 {
-			return hosts
-		}
-	}
-	return append(slices.Clone(imageclient.KnownHosts), "sticker.kungal.com")
-}
+var allowedImageHosts = append(slices.Clone(imageclient.KnownHosts), "sticker.kungal.com")
 
 var messageImageSrcPattern = buildImageSrcPattern(allowedImageHosts)
 

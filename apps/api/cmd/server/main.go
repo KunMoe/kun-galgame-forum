@@ -22,11 +22,7 @@ import (
 func main() {
 	_ = godotenv.Load()
 
-	serverPort := os.Getenv("SERVER_PORT")
-	if serverPort == "" {
-		serverPort = "2334"
-	}
-	port, _ := strconv.Atoi(serverPort)
+	port, _ := strconv.Atoi(config.Env("SERVER_PORT", "2334"))
 	health.MaybeProbe(port, "/healthz")
 
 	cfg, err := config.Load()

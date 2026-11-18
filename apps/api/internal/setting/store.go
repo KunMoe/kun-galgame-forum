@@ -18,6 +18,25 @@ const (
 	TopicAITimeoutMs                = "topic_ai.timeout_ms"
 	TopicSummaryMinLength           = "topic_summary.min_length"
 	TopicSummaryRegenerateThreshold = "topic_summary.regenerate_threshold"
+
+	AppMinVersion           = "app.min_version"
+	AppLatestVersion        = "app.latest_version"
+	AppReleaseNotes         = "app.release_notes"
+	AppAndroidDownloadURL   = "app.android_download_url"
+	AppIOSDownloadURL       = "app.ios_download_url"
+	AppWindowsDownloadURL   = "app.windows_download_url"
+	AppLinuxDownloadURL     = "app.linux_download_url"
+	AppAndroidPackageURL    = "app.android_package_url"
+	AppAndroidPackageSize   = "app.android_package_size"
+	AppAndroidPackageSHA256 = "app.android_package_sha256"
+
+	TrustCheckEnabled = "trust.check_enabled"
+	TrustScanEnabled  = "trust.scan_enabled"
+
+	NotificationRetentionDays = "notification.retention_days"
+
+	DlsiteLinkTemplate = "dlsite.link_template"
+	DlsiteCouponURL    = "dlsite.coupon_url"
 )
 
 var defaults = map[string]any{
@@ -27,6 +46,25 @@ var defaults = map[string]any{
 	TopicAITimeoutMs:                10000,
 	TopicSummaryMinLength:           500,
 	TopicSummaryRegenerateThreshold: 300,
+
+	AppMinVersion:           "0.1.0",
+	AppLatestVersion:        "0.1.0",
+	AppReleaseNotes:         "",
+	AppAndroidDownloadURL:   "",
+	AppIOSDownloadURL:       "",
+	AppWindowsDownloadURL:   "",
+	AppLinuxDownloadURL:     "",
+	AppAndroidPackageURL:    "",
+	AppAndroidPackageSize:   0,
+	AppAndroidPackageSHA256: "",
+
+	TrustCheckEnabled: false,
+	TrustScanEnabled:  false,
+
+	NotificationRetentionDays: 365,
+
+	DlsiteLinkTemplate: "https://dlaf.jp/soft/dlaf/=/t/s/link/work/aid/kungal/locale/zh_CN/id/{workno}.html/?locale=zh_CN",
+	DlsiteCouponURL:    "",
 }
 
 const ttl = 30 * time.Second

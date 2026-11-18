@@ -8,7 +8,7 @@ const props = withDefaults(
 )
 
 const isCollapsed = computed(() => !props.forceExpanded)
-const agentEnabled = useRuntimeConfig().public.agentEnabled
+const { agentEnabled } = useSiteFeatures()
 
 const links = [
   {

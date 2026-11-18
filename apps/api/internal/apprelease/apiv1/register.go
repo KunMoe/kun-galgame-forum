@@ -6,7 +6,7 @@ import (
 	"net/http"
 
 	v1 "kun-galgame-api/internal/apiv1"
-	"kun-galgame-api/pkg/config"
+	"kun-galgame-api/internal/setting"
 	"kun-galgame-api/pkg/problem"
 
 	"github.com/danielgtaylor/huma/v2"
@@ -38,24 +38,33 @@ type appVersionOutput struct {
 	Body AppVersion
 }
 
-var errUnconfigured = errors.New("apiv1 app version: no release configuration")
+var errUnconfigured = errors.New("apiv1 app version: no settings store")
+
+const downloadPage = "https://www.kungal.com/app"
 
 type Service struct {
-	release *config.AppReleaseConfig
+	settings *setting.Store
 }
 
-func New(release *config.AppReleaseConfig) *Service {
-	return &Service{release: release}
+func New(settings *setting.Store) *Service {
+	return &Service{settings: settings}
+}
+
+func orDownloadPage(url string) string {
+	if url == "" {
+		return downloadPage
+	}
+	return url
 }
 
 func (s *Service) getAppVersion(_ context.Context, _ *struct{}) (*appVersionOutput, error) {
-	if s == nil || s.release == nil {
+	if s == nil || s.settings == nil {
 		return nil, problem.Internal(errUnconfigured)
 	}
-	r := s.release
+	r := s.settings.AppRelease()
 	var pkg *AndroidPackage
-	if p := r.AndroidPackage; p != nil {
-		pkg = &AndroidPackage{URL: p.URL, FileSize: p.Size, SHA256: p.SHA256}
+	if r.AndroidPackageURL != "" {
+		pkg = &AndroidPackage{URL: r.AndroidPackageURL, FileSize: int64(r.AndroidPackageSize), SHA256: r.AndroidPackageSHA256}
 	}
 	return &appVersionOutput{Body: AppVersion{
 		Object:        "app_version",
@@ -63,10 +72,10 @@ func (s *Service) getAppVersion(_ context.Context, _ *struct{}) (*appVersionOutp
 		LatestVersion: r.LatestVersion,
 		Notes:         r.Notes,
 		Downloads: AppDownloads{
-			Android: r.Downloads.Android,
-			IOS:     r.Downloads.IOS,
-			Windows: r.Downloads.Windows,
-			Linux:   r.Downloads.Linux,
+			Android: orDownloadPage(r.AndroidDownloadURL),
+			IOS:     orDownloadPage(r.IOSDownloadURL),
+			Windows: orDownloadPage(r.WindowsDownloadURL),
+			Linux:   orDownloadPage(r.LinuxDownloadURL),
 		},
 		AndroidPackage: pkg,
 	}}, nil
@@ -80,7 +89,7 @@ func Register(s *Service) func(huma.API) {
 			Path:        "/app/version",
 			Summary:     "Get the app version gate",
 			Description: "The app's version gate: an install older than min_version must update before it runs. " +
-				"Read from configuration that is validated at startup, so the versions are always well formed and ordered.",
+				"Read from the site settings, which are validated when an admin writes them, so the versions are always well formed and ordered.",
 			Tags: []string{"app"},
 		}), s.getAppVersion)
 	}

@@ -2,7 +2,7 @@
 import { kunSidebarRail } from '~/constants/layout'
 
 const { hasReleaseToday } = useGalgameReleaseToday()
-const agentEnabled = useRuntimeConfig().public.agentEnabled
+const { agentEnabled } = useSiteFeatures()
 </script>
 
 <template>

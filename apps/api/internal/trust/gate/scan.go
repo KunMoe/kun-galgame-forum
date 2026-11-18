@@ -32,13 +32,22 @@ type Scanner interface {
 
 type ScanService struct {
 	sc Scanner
+	on func() bool
 }
 
 func NewScanService(sc Scanner) *ScanService {
 	return &ScanService{sc: sc}
 }
 
-func (s *ScanService) Enabled() bool { return s != nil && s.sc != nil }
+// Switched turns the scan on and off with on, read per call.
+func (s *ScanService) Switched(on func() bool) *ScanService {
+	s.on = on
+	return s
+}
+
+func (s *ScanService) Enabled() bool {
+	return s != nil && s.sc != nil && (s.on == nil || s.on())
+}
 
 func (s *ScanService) ScanBg(subjectKind, subjectID, text string, authorID int64, checkSkipped bool) {
 	if !s.Enabled() {

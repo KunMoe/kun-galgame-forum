@@ -260,7 +260,7 @@ func dropDeletedLikers(ctx context.Context, store *relocation.Store, uc *usercli
 }
 
 func letmoeFromEnv() (*relocation.LetMoe, error) {
-	url, key := os.Getenv("KUN_LETMOE_IMPORT_URL"), os.Getenv("KUN_LETMOE_IMPORT_KEY")
+	url, key := config.Env("KUN_LETMOE_IMPORT_URL", ""), config.Env("KUN_LETMOE_IMPORT_KEY", "")
 	if url == "" || key == "" {
 		return nil, fmt.Errorf("KUN_LETMOE_IMPORT_URL and KUN_LETMOE_IMPORT_KEY must both be set")
 	}

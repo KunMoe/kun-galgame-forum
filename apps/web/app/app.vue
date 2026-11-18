@@ -42,11 +42,7 @@ useHead({
       name: 'image',
       content: kungal.images[0] ? kungal.images[0].fullUrl : '/kungalgame.webp'
     },
-    { property: 'og:image:type', content: 'image/webp' },
-    {
-      name: 'yandex-verification',
-      content: config.public.KUN_VISUAL_NOVEL_FORUM_YANDEX_VERIFICATION
-    }
+    { property: 'og:image:type', content: 'image/webp' }
   ],
   templateParams: {
     schemaOrg: {

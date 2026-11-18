@@ -1,6 +1,8 @@
 package app
 
 import (
+	"kun-galgame-api/internal/envconfig"
+	envconfigapiv1 "kun-galgame-api/internal/envconfig/apiv1"
 	msgRepo "kun-galgame-api/internal/message/repository"
 	msgService "kun-galgame-api/internal/message/service"
 	"kun-galgame-api/internal/setting"
@@ -9,6 +11,7 @@ import (
 	topicRepo "kun-galgame-api/internal/topic/repository"
 	"kun-galgame-api/internal/trust/gate"
 	userRepo "kun-galgame-api/internal/user/repository"
+	"kun-galgame-api/pkg/config"
 )
 
 func (a *App) newTopicV1Writes(reads *topicapiv1.Service) *topicapiv1.Writes {
@@ -48,5 +51,16 @@ func (a *App) newSettingV1() *settingapiv1.Service {
 	if a.DB == nil {
 		return nil
 	}
-	return settingapiv1.New(a.settingsStore(), a.Config != nil && a.Config.AI.BaseURL != "" && a.Config.AI.Token != "")
+	return settingapiv1.New(a.settingsStore(), a.Config != nil && a.Config.AI.BaseURL != "" && a.Config.AI.Token != "", a.Platform)
+}
+
+func (a *App) newEnvConfigV1() *envconfigapiv1.Service {
+	if a.DB == nil {
+		return nil
+	}
+	cdn := ""
+	if a.Config != nil {
+		cdn = a.Config.NextMoeAPI.ImageCDNBase
+	}
+	return envconfigapiv1.New(envconfig.New(a.DB, config.StoreKey()), a.UserClient, cdn)
 }

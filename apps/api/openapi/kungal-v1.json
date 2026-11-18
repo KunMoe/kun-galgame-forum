@@ -6308,6 +6308,325 @@
         "type": "string",
         "x-vocabulary-closed": true
       },
+      "EnvChange": {
+        "properties": {
+          "change_kind": {
+            "$ref": "#/components/schemas/EnvChangeKind",
+            "description": "import is a value copied from the running container by the config-secrets tool."
+          },
+          "change_note": {
+            "description": "Why the change was made; empty when no reason was given. Free text; never use it as a decision input.",
+            "maxLength": 200,
+            "type": "string"
+          },
+          "changed_by": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/UserRef"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "Who made the change. null for the import tool."
+          },
+          "created_at": {
+            "description": "When the change was made.",
+            "format": "date-time",
+            "maxLength": 20,
+            "minLength": 20,
+            "pattern": "^[0-9]{4}-[0-9]{2}-[0-9]{2}T[0-9]{2}:[0-9]{2}:[0-9]{2}Z$",
+            "type": "string"
+          },
+          "id": {
+            "description": "Change id. JSON string of a decimal integer.",
+            "maxLength": 20,
+            "minLength": 1,
+            "pattern": "^[0-9]+$",
+            "type": "string"
+          },
+          "object": {
+            "const": "env_change",
+            "description": "Type discriminant. Always env_change.",
+            "maxLength": 10,
+            "type": "string"
+          },
+          "shown_after": {
+            "description": "The new value shown the same way; empty for a delete. Free text; never use it as a decision input.",
+            "maxLength": 4096,
+            "type": "string"
+          },
+          "shown_before": {
+            "description": "The previous value, a secret as fingerprint and last characters; empty when there was none. Free text; never use it as a decision input.",
+            "maxLength": 4096,
+            "type": "string"
+          },
+          "variable": {
+            "description": "The environment variable's name.",
+            "maxLength": 128,
+            "pattern": "^[A-Z][A-Z0-9_]*$",
+            "type": "string"
+          }
+        },
+        "required": [
+          "object",
+          "id",
+          "variable",
+          "change_kind",
+          "shown_before",
+          "shown_after",
+          "change_note",
+          "changed_by",
+          "created_at"
+        ],
+        "type": "object"
+      },
+      "EnvChangeKind": {
+        "enum": [
+          "set",
+          "delete",
+          "import"
+        ],
+        "maxLength": 6,
+        "type": "string",
+        "x-vocabulary-closed": true
+      },
+      "EnvConfig": {
+        "properties": {
+          "is_store_enabled": {
+            "description": "Whether this API process started with KUN_CONFIG_KEK. Without it the store is neither read nor writable.",
+            "type": "boolean"
+          },
+          "loaded_at": {
+            "description": "When this API process read the store. A stored value changed after it takes effect on the next restart.",
+            "format": "date-time",
+            "maxLength": 20,
+            "minLength": 20,
+            "pattern": "^[0-9]{4}-[0-9]{2}-[0-9]{2}T[0-9]{2}:[0-9]{2}:[0-9]{2}Z$",
+            "type": "string"
+          },
+          "object": {
+            "const": "env_config",
+            "description": "Type discriminant. Always env_config.",
+            "maxLength": 10,
+            "type": "string"
+          },
+          "unread_variables": {
+            "description": "Variables in the API container's environment that nothing read: a compose line whose consumer is gone, or a misspelled name.",
+            "items": {
+              "maxLength": 128,
+              "pattern": "^[A-Z][A-Z0-9_]*$",
+              "type": "string"
+            },
+            "maxItems": 200,
+            "type": "array"
+          },
+          "variables": {
+            "description": "Every variable the running API read, and every stored one, by name.",
+            "items": {
+              "$ref": "#/components/schemas/EnvVariable"
+            },
+            "maxItems": 500,
+            "type": "array"
+          }
+        },
+        "required": [
+          "object",
+          "is_store_enabled",
+          "loaded_at",
+          "variables",
+          "unread_variables"
+        ],
+        "type": "object"
+      },
+      "EnvValue": {
+        "properties": {
+          "fingerprint": {
+            "description": "HMAC of a secret under the store key, equal for equal values. null for a non-secret or an empty value.",
+            "maxLength": 12,
+            "pattern": "^[0-9a-f]{12}$",
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "hint": {
+            "description": "The last characters of a secret. null for a non-secret or an empty value. Free text; never use it as a decision input.",
+            "maxLength": 8,
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "is_set": {
+            "description": "Whether the value is non-empty.",
+            "type": "boolean"
+          },
+          "plain": {
+            "description": "The value itself. null for a secret. Free text; never use it as a decision input.",
+            "maxLength": 4096,
+            "type": [
+              "string",
+              "null"
+            ]
+          }
+        },
+        "required": [
+          "is_set",
+          "plain",
+          "fingerprint",
+          "hint"
+        ],
+        "type": "object"
+      },
+      "EnvVariable": {
+        "properties": {
+          "default_value": {
+            "description": "The code default. null for a secret or a variable the API never read. Free text; never use it as a decision input.",
+            "maxLength": 4096,
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "is_storable": {
+            "description": "Whether the variable may be stored.",
+            "type": "boolean"
+          },
+          "issues": {
+            "description": "What needs doing about the variable. Empty when nothing does.",
+            "items": {
+              "$ref": "#/components/schemas/EnvVariableIssue",
+              "description": "panel_redundant: the environment holds the stored value, so the panel copy can go. panel_overrides_store: the environment holds a different value and wins. restart_pending: the stored value changed after the API started."
+            },
+            "maxItems": 3,
+            "type": "array"
+          },
+          "object": {
+            "const": "env_variable",
+            "description": "Type discriminant. Always env_variable.",
+            "maxLength": 12,
+            "type": "string"
+          },
+          "resolved_from": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/EnvVariableSource"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "Where the running API took the value from. null when it never read this variable."
+          },
+          "running": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/EnvValue"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "The value the running API uses. null when it never read this variable."
+          },
+          "stored": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/EnvValue"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "The value in the config store. null when nothing is stored."
+          },
+          "stored_at": {
+            "description": "When the stored value was written. null when nothing is stored.",
+            "format": "date-time",
+            "maxLength": 20,
+            "minLength": 20,
+            "pattern": "^[0-9]{4}-[0-9]{2}-[0-9]{2}T[0-9]{2}:[0-9]{2}:[0-9]{2}Z$",
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "variable": {
+            "description": "The environment variable's name.",
+            "maxLength": 128,
+            "pattern": "^[A-Z][A-Z0-9_]*$",
+            "type": "string"
+          },
+          "variable_kind": {
+            "$ref": "#/components/schemas/EnvVariableKind",
+            "description": "bootstrap and topology stay in the compose file and cannot be stored. A secret is shown only by fingerprint and last characters."
+          }
+        },
+        "required": [
+          "object",
+          "variable",
+          "variable_kind",
+          "resolved_from",
+          "running",
+          "default_value",
+          "stored",
+          "stored_at",
+          "issues",
+          "is_storable"
+        ],
+        "type": "object"
+      },
+      "EnvVariableIssue": {
+        "enum": [
+          "panel_redundant",
+          "panel_overrides_store",
+          "restart_pending"
+        ],
+        "maxLength": 21,
+        "type": "string",
+        "x-vocabulary-closed": true
+      },
+      "EnvVariableKind": {
+        "enum": [
+          "bootstrap",
+          "topology",
+          "secret",
+          "plain"
+        ],
+        "maxLength": 9,
+        "type": "string",
+        "x-vocabulary-closed": true
+      },
+      "EnvVariableSource": {
+        "enum": [
+          "env",
+          "store",
+          "default"
+        ],
+        "maxLength": 7,
+        "type": "string",
+        "x-vocabulary-closed": true
+      },
+      "EnvVariableWrite": {
+        "properties": {
+          "change_note": {
+            "description": "Why the change is made. Free text; never use it as a decision input.",
+            "maxLength": 200,
+            "type": "string"
+          },
+          "value": {
+            "description": "The value to store. Free text; never use it as a decision input.",
+            "maxLength": 4096,
+            "minLength": 1,
+            "type": "string"
+          }
+        },
+        "required": [
+          "value"
+        ],
+        "type": "object"
+      },
       "ExpiryVerdict": {
         "enum": [
           "alive",
@@ -13087,6 +13406,40 @@
         ],
         "type": "object"
       },
+      "PageListEnvChange": {
+        "properties": {
+          "items": {
+            "description": "Members of this page. Empty array, never null.",
+            "items": {
+              "$ref": "#/components/schemas/EnvChange"
+            },
+            "type": "array"
+          },
+          "object": {
+            "const": "list",
+            "description": "Type discriminant. Always list.",
+            "maxLength": 4,
+            "type": "string"
+          },
+          "total": {
+            "description": "Members matching the filters, under the same predicate as items. Exact unless total_relation is gte. page × limit may still not exceed 10000, so the last reachable page is min(ceil(total / limit), floor(10000 / limit)).",
+            "format": "int64",
+            "minimum": 0,
+            "type": "integer"
+          },
+          "total_relation": {
+            "$ref": "#/components/schemas/TotalRelation",
+            "description": "eq when total is exact, gte when the source could only count a lower bound and there are at least that many."
+          }
+        },
+        "required": [
+          "object",
+          "items",
+          "total",
+          "total_relation"
+        ],
+        "type": "object"
+      },
       "PageListGalgameResource": {
         "properties": {
           "items": {
@@ -19614,6 +19967,77 @@
       },
       "Settings": {
         "properties": {
+          "app_android_download_url": {
+            "description": "Android download; empty for the download page.",
+            "maxLength": 512,
+            "pattern": "^(https://\\S+)?$",
+            "type": "string"
+          },
+          "app_android_package_sha256": {
+            "description": "SHA-256 of that .apk, lowercase hex; empty for none.",
+            "maxLength": 64,
+            "pattern": "^([0-9a-f]{64})?$",
+            "type": "string"
+          },
+          "app_android_package_size": {
+            "description": "Byte length of that .apk; 0 for none.",
+            "format": "int64",
+            "minimum": 0,
+            "type": "integer"
+          },
+          "app_android_package_url": {
+            "description": "The .apk of app_latest_version for the App's in-place update; empty for none. Set together with app_android_package_size and app_android_package_sha256.",
+            "maxLength": 512,
+            "pattern": "^(https://\\S+)?$",
+            "type": "string"
+          },
+          "app_ios_download_url": {
+            "description": "iOS download; empty for the download page.",
+            "maxLength": 512,
+            "pattern": "^(https://\\S+)?$",
+            "type": "string"
+          },
+          "app_latest_version": {
+            "description": "Newest published App version. MAJOR.MINOR.PATCH.",
+            "maxLength": 32,
+            "pattern": "^[0-9]+\\.[0-9]+\\.[0-9]+$",
+            "type": "string"
+          },
+          "app_linux_download_url": {
+            "description": "Linux download; empty for the download page.",
+            "maxLength": 512,
+            "pattern": "^(https://\\S+)?$",
+            "type": "string"
+          },
+          "app_min_version": {
+            "description": "Oldest App version still allowed to run. MAJOR.MINOR.PATCH, never above app_latest_version.",
+            "maxLength": 32,
+            "pattern": "^[0-9]+\\.[0-9]+\\.[0-9]+$",
+            "type": "string"
+          },
+          "app_release_notes": {
+            "description": "Release notes of the latest version; empty for none. Free text; never use it as a decision input.",
+            "maxLength": 2000,
+            "type": "string"
+          },
+          "app_windows_download_url": {
+            "description": "Windows download; empty for the download page.",
+            "maxLength": 512,
+            "pattern": "^(https://\\S+)?$",
+            "type": "string"
+          },
+          "dlsite_coupon_url": {
+            "description": "Standing coupon landing page, shown while the store face reports no campaign; empty for none.",
+            "maxLength": 512,
+            "pattern": "^(https://\\S+)?$",
+            "type": "string"
+          },
+          "dlsite_link_template": {
+            "description": "DLsite affiliate link with {workno} in place of the work number, used until a short link is minted; empty turns the purchase link off.",
+            "maxLength": 512,
+            "pattern": "^(https://\\S*\\{workno\\}\\S*)?$",
+            "type": "string"
+          },
           "is_ai_configured": {
             "description": "Whether the server has a model endpoint (KUN_AI_BASE_URL and KUN_AI_TOKEN). Without one the two switches below have no effect.",
             "type": "boolean"
@@ -19625,6 +20049,21 @@
           "is_topic_summary_enabled": {
             "description": "Whether the model writes summaries for long topics.",
             "type": "boolean"
+          },
+          "is_trust_check_enabled": {
+            "description": "Whether user text is checked against the word list before it is written.",
+            "type": "boolean"
+          },
+          "is_trust_scan_enabled": {
+            "description": "Whether user text is sent for a scan after it is written.",
+            "type": "boolean"
+          },
+          "notification_retention_days": {
+            "description": "Days a read notification is kept before the daily job deletes it; unread ones are never deleted. 0 keeps them all.",
+            "format": "int64",
+            "maximum": 3650,
+            "minimum": 0,
+            "type": "integer"
           },
           "topic_ai_model": {
             "description": "Model id sent to the endpoint.",
@@ -19661,12 +20100,98 @@
           "topic_ai_model",
           "topic_ai_timeout_ms",
           "topic_summary_min_length",
-          "topic_summary_regenerate_threshold"
+          "topic_summary_regenerate_threshold",
+          "app_min_version",
+          "app_latest_version",
+          "app_release_notes",
+          "app_android_download_url",
+          "app_ios_download_url",
+          "app_windows_download_url",
+          "app_linux_download_url",
+          "app_android_package_url",
+          "app_android_package_size",
+          "app_android_package_sha256",
+          "is_trust_check_enabled",
+          "is_trust_scan_enabled",
+          "notification_retention_days",
+          "dlsite_link_template",
+          "dlsite_coupon_url"
         ],
         "type": "object"
       },
       "SettingsPatch": {
         "properties": {
+          "app_android_download_url": {
+            "description": "New value.",
+            "maxLength": 512,
+            "pattern": "^(https://\\S+)?$",
+            "type": "string"
+          },
+          "app_android_package_sha256": {
+            "description": "New value.",
+            "maxLength": 64,
+            "pattern": "^([0-9a-f]{64})?$",
+            "type": "string"
+          },
+          "app_android_package_size": {
+            "description": "New value.",
+            "format": "int64",
+            "minimum": 0,
+            "type": "integer"
+          },
+          "app_android_package_url": {
+            "description": "New value.",
+            "maxLength": 512,
+            "pattern": "^(https://\\S+)?$",
+            "type": "string"
+          },
+          "app_ios_download_url": {
+            "description": "New value.",
+            "maxLength": 512,
+            "pattern": "^(https://\\S+)?$",
+            "type": "string"
+          },
+          "app_latest_version": {
+            "description": "New value.",
+            "maxLength": 32,
+            "pattern": "^[0-9]+\\.[0-9]+\\.[0-9]+$",
+            "type": "string"
+          },
+          "app_linux_download_url": {
+            "description": "New value.",
+            "maxLength": 512,
+            "pattern": "^(https://\\S+)?$",
+            "type": "string"
+          },
+          "app_min_version": {
+            "description": "New value.",
+            "maxLength": 32,
+            "pattern": "^[0-9]+\\.[0-9]+\\.[0-9]+$",
+            "type": "string"
+          },
+          "app_release_notes": {
+            "description": "New value. Free text; never use it as a decision input.",
+            "maxLength": 2000,
+            "type": "string"
+          },
+          "app_windows_download_url": {
+            "description": "New value.",
+            "maxLength": 512,
+            "pattern": "^(https://\\S+)?$",
+            "type": "string"
+          },
+          "dlsite_coupon_url": {
+            "description": "New value.",
+            "maxLength": 512,
+            "pattern": "^(https://\\S+)?$",
+            "type": "string"
+          },
+          "dlsite_link_template": {
+            "description": "New value.",
+            "maxLength": 512,
+            "pattern": "^(https://\\S*\\{workno\\}\\S*)?$",
+            "type": "string"
+          },
           "is_topic_classify_enabled": {
             "description": "New value.",
             "type": "boolean"
@@ -19674,6 +20199,21 @@
           "is_topic_summary_enabled": {
             "description": "New value.",
             "type": "boolean"
+          },
+          "is_trust_check_enabled": {
+            "description": "New value.",
+            "type": "boolean"
+          },
+          "is_trust_scan_enabled": {
+            "description": "New value.",
+            "type": "boolean"
+          },
+          "notification_retention_days": {
+            "description": "New value.",
+            "format": "int64",
+            "maximum": 3650,
+            "minimum": 0,
+            "type": "integer"
           },
           "topic_ai_model": {
             "description": "New value.",
@@ -20351,6 +20891,25 @@
         "maxLength": 18,
         "type": "string",
         "x-vocabulary-closed": true
+      },
+      "SiteFeatures": {
+        "properties": {
+          "is_agent_enabled": {
+            "description": "Whether NextMoe has turned the AI assistant on for this site. Off, clients hide the assistant's entrances and its calls are refused.",
+            "type": "boolean"
+          },
+          "object": {
+            "const": "site_features",
+            "description": "Type discriminant. Always site_features.",
+            "maxLength": 13,
+            "type": "string"
+          }
+        },
+        "required": [
+          "object",
+          "is_agent_enabled"
+        ],
+        "type": "object"
       },
       "SiteRating": {
         "properties": {
@@ -34791,6 +35350,435 @@
         ]
       }
     },
+    "/admin/settings/env": {
+      "get": {
+        "description": "Every variable the running API read with where its value came from, every stored value, and what needs doing about each. Secrets appear only as a fingerprint and their last characters. Needs setting.manage.",
+        "operationId": "getAdminEnvConfig",
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/EnvConfig"
+                }
+              }
+            },
+            "description": "OK"
+          },
+          "401": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            },
+            "description": "Unauthorized"
+          },
+          "403": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            },
+            "description": "PERMISSION_REQUIRED without setting.manage, which a Bearer request never carries."
+          },
+          "500": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            },
+            "description": "Internal Server Error"
+          },
+          "503": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            },
+            "description": "Service Unavailable"
+          }
+        },
+        "security": [
+          {
+            "session": []
+          },
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "Read the environment variables and the config store",
+        "tags": [
+          "admin"
+        ]
+      }
+    },
+    "/admin/settings/env/changes": {
+      "get": {
+        "description": "Every write and delete, newest first. Needs setting.manage.",
+        "operationId": "listAdminEnvChanges",
+        "parameters": [
+          {
+            "description": "1-based page number. page × limit may not exceed 10000.",
+            "explode": false,
+            "in": "query",
+            "name": "page",
+            "schema": {
+              "default": 1,
+              "description": "1-based page number. page × limit may not exceed 10000.",
+              "format": "int64",
+              "minimum": 1,
+              "type": "integer"
+            }
+          },
+          {
+            "description": "Page size. 1–100, default 20. Values above 100 are rejected, not clamped.",
+            "explode": false,
+            "in": "query",
+            "name": "limit",
+            "schema": {
+              "default": 20,
+              "description": "Page size. 1–100, default 20. Values above 100 are rejected, not clamped.",
+              "format": "int64",
+              "maximum": 100,
+              "minimum": 1,
+              "type": "integer"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PageListEnvChange"
+                }
+              }
+            },
+            "description": "OK"
+          },
+          "400": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            },
+            "description": "Bad Request"
+          },
+          "401": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            },
+            "description": "Unauthorized"
+          },
+          "403": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            },
+            "description": "PERMISSION_REQUIRED without setting.manage, which a Bearer request never carries."
+          },
+          "500": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            },
+            "description": "Internal Server Error"
+          },
+          "503": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            },
+            "description": "Service Unavailable"
+          }
+        },
+        "security": [
+          {
+            "session": []
+          },
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "List changes to the config store",
+        "tags": [
+          "admin"
+        ]
+      }
+    },
+    "/admin/settings/env/variables/{variable}": {
+      "delete": {
+        "description": "Deletes the stored value and records the change. After the next restart the variable falls back to the environment, then the code default. Needs setting.manage.",
+        "operationId": "deleteAdminEnvVariable",
+        "parameters": [
+          {
+            "description": "The environment variable's name.",
+            "in": "path",
+            "name": "variable",
+            "required": true,
+            "schema": {
+              "description": "The environment variable's name.",
+              "maxLength": 128,
+              "pattern": "^[A-Z][A-Z0-9_]*$",
+              "type": "string"
+            }
+          },
+          {
+            "description": "Why the value is removed. Free text; never use it as a decision input.",
+            "explode": false,
+            "in": "query",
+            "name": "note",
+            "schema": {
+              "description": "Why the value is removed. Free text; never use it as a decision input.",
+              "maxLength": 200,
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "204": {
+            "description": "No Content"
+          },
+          "400": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            },
+            "description": "Bad Request"
+          },
+          "401": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            },
+            "description": "Unauthorized"
+          },
+          "403": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            },
+            "description": "PERMISSION_REQUIRED without setting.manage, which a Bearer request never carries."
+          },
+          "404": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            },
+            "description": "NOT_FOUND when nothing is stored for the variable."
+          },
+          "500": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            },
+            "description": "Internal Server Error"
+          },
+          "503": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            },
+            "description": "SERVICE_UNAVAILABLE when the API started without the store key."
+          }
+        },
+        "security": [
+          {
+            "session": []
+          },
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "Remove a stored environment variable",
+        "tags": [
+          "admin"
+        ]
+      },
+      "put": {
+        "description": "Seals the value into the config store and records the change. The API reads the store when it starts, so the value takes effect on the next restart, and only while the environment does not set the same variable. Needs setting.manage.",
+        "operationId": "putAdminEnvVariable",
+        "parameters": [
+          {
+            "description": "The environment variable's name.",
+            "in": "path",
+            "name": "variable",
+            "required": true,
+            "schema": {
+              "description": "The environment variable's name.",
+              "maxLength": 128,
+              "pattern": "^[A-Z][A-Z0-9_]*$",
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/EnvVariableWrite"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/EnvVariable"
+                }
+              }
+            },
+            "description": "OK"
+          },
+          "400": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            },
+            "description": "Bad Request"
+          },
+          "401": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            },
+            "description": "Unauthorized"
+          },
+          "403": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            },
+            "description": "PERMISSION_REQUIRED without setting.manage, which a Bearer request never carries."
+          },
+          "404": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            },
+            "description": "Not Found"
+          },
+          "413": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            },
+            "description": "Request Entity Too Large"
+          },
+          "415": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            },
+            "description": "Unsupported Media Type"
+          },
+          "422": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            },
+            "description": "VALIDATION_FAILED at the variable parameter for a bootstrap or topology variable, which stays in the compose file."
+          },
+          "500": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            },
+            "description": "Internal Server Error"
+          },
+          "503": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            },
+            "description": "SERVICE_UNAVAILABLE when the API started without the store key."
+          }
+        },
+        "security": [
+          {
+            "session": []
+          },
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "Store an environment variable",
+        "tags": [
+          "admin"
+        ]
+      }
+    },
     "/admin/topics/{topic_id}": {
       "delete": {
         "description": "Deletes the topic for good, with its replies, comments, polls, lotteries, favorites, view buckets and the notifications that link to it. An open lottery's escrowed moemoepoint goes back to its author first. Hiding is the reversible alternative. It needs the topic.delete_any permission.",
@@ -37596,7 +38584,7 @@
     },
     "/app/version": {
       "get": {
-        "description": "The app's version gate: an install older than min_version must update before it runs. Read from configuration that is validated at startup, so the versions are always well formed and ordered.",
+        "description": "The app's version gate: an install older than min_version must update before it runs. Read from the site settings, which are validated when an admin writes them, so the versions are always well formed and ordered.",
         "operationId": "getAppVersion",
         "responses": {
           "200": {
@@ -63224,6 +64212,38 @@
         "summary": "Ask to be told when an offer is back on sale",
         "tags": [
           "shop"
+        ]
+      }
+    },
+    "/site/features": {
+      "get": {
+        "description": "Switches the platform owns for this site, as NextMoe's config center last published them. The API polls them every minute, so a change shows within about a minute.",
+        "operationId": "getSiteFeatures",
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/SiteFeatures"
+                }
+              }
+            },
+            "description": "OK"
+          },
+          "500": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            },
+            "description": "Internal Server Error"
+          }
+        },
+        "summary": "Read which site features are on",
+        "tags": [
+          "meta"
         ]
       }
     },

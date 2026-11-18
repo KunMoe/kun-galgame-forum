@@ -7,7 +7,6 @@ import (
 	"strings"
 	"testing"
 
-	"kun-galgame-api/pkg/config"
 	"kun-galgame-api/pkg/perm"
 )
 
@@ -273,29 +272,62 @@ func TestV1FriendLinkOrderReplacesTheShelf(t *testing.T) {
 }
 
 func TestV1AppVersion(t *testing.T) {
-	f := newWriteFix(t, nil)
-	f.Config.AppRelease.MinVersion = "1.2.0"
-	f.Config.AppRelease.LatestVersion = "1.3.4"
-	f.Config.AppRelease.Downloads.Android = "https://www.kungal.com/app"
-	f.Config.AppRelease.Downloads.IOS = "https://www.kungal.com/app"
-	f.Config.AppRelease.Downloads.Windows = "https://dl.example/kungal.exe"
-	f.Config.AppRelease.Downloads.Linux = "https://www.kungal.com/app"
-	resp, body := f.docCall(t, http.MethodGet, "/api/v1/app/version", "/app/version", "", "", nil, nil)
+	f, _ := newTopicAIFix(t, false)
+	patch := func(body map[string]any) (*http.Response, map[string]any) {
+		return f.callJSON(t, http.MethodPatch, "/api/v1/admin/settings", "/admin/settings", "sess-admin", "", body)
+	}
+	version := func() map[string]any {
+		resp, body := f.docCall(t, http.MethodGet, "/api/v1/app/version", "/app/version", "", "", nil, nil)
+		if resp.StatusCode != http.StatusOK || body["object"] != "app_version" {
+			t.Fatalf("app version %d %+v", resp.StatusCode, body)
+		}
+		return body
+	}
+
+	body := version()
 	downloads, _ := body["downloads"].(map[string]any)
-	if resp.StatusCode != http.StatusOK || body["object"] != "app_version" || body["min_version"] != "1.2.0" ||
-		body["latest_version"] != "1.3.4" || downloads["windows"] != "https://dl.example/kungal.exe" {
-		t.Errorf("app version %d %+v", resp.StatusCode, body)
+	if body["min_version"] != "0.1.0" || body["latest_version"] != "0.1.0" || downloads["android"] != "https://www.kungal.com/app" {
+		t.Errorf("defaults %+v", body)
+	}
+
+	if resp, got := patch(map[string]any{
+		"app_min_version": "1.2.0", "app_latest_version": "1.3.4", "app_windows_download_url": "https://dl.example/kungal.exe",
+	}); resp.StatusCode != http.StatusOK {
+		t.Fatalf("publish 1.3.4: %d %+v", resp.StatusCode, got)
+	}
+	body = version()
+	downloads, _ = body["downloads"].(map[string]any)
+	if body["min_version"] != "1.2.0" || body["latest_version"] != "1.3.4" ||
+		downloads["windows"] != "https://dl.example/kungal.exe" || downloads["ios"] != "https://www.kungal.com/app" {
+		t.Errorf("after publish %+v", body)
 	}
 	if pkg, has := body["android_package"]; !has || pkg != nil {
 		t.Errorf("android_package = %v (present %v), want null while none is published", pkg, has)
 	}
 
+	resp, got := patch(map[string]any{"app_min_version": "1.4.0"})
+	if e := firstFieldError(got); resp.StatusCode != http.StatusUnprocessableEntity || e["reason"] != "INCONSISTENT_WITH" || e["pointer"] != "/app_min_version" {
+		t.Errorf("min above latest %d %+v", resp.StatusCode, got)
+	}
+	resp, got = patch(map[string]any{"app_android_package_url": "https://dl.example/kungal-1.3.4.apk"})
+	if e := firstFieldError(got); resp.StatusCode != http.StatusUnprocessableEntity || e["reason"] != "REQUIRED" || e["pointer"] != "/app_android_package_size" {
+		t.Errorf("partial package %d %+v", resp.StatusCode, got)
+	}
 	sum := strings.Repeat("ab", 32)
-	f.Config.AppRelease.AndroidPackage = &config.AndroidPackage{URL: "https://dl.example/kungal-1.3.4.apk", Size: 52428800, SHA256: sum}
-	resp, body = f.docCall(t, http.MethodGet, "/api/v1/app/version", "/app/version", "", "", nil, nil)
-	pkg, _ := body["android_package"].(map[string]any)
-	if resp.StatusCode != http.StatusOK || pkg["url"] != "https://dl.example/kungal-1.3.4.apk" ||
-		pkg["file_size"] != float64(52428800) || pkg["sha256"] != sum {
-		t.Errorf("android package %d %+v", resp.StatusCode, body)
+	if resp, got := patch(map[string]any{"app_android_package_sha256": strings.ToUpper(sum)}); resp.StatusCode != http.StatusUnprocessableEntity {
+		t.Errorf("uppercase hash %d %+v", resp.StatusCode, got)
+	}
+	if body := version(); body["min_version"] != "1.2.0" || body["android_package"] != nil {
+		t.Errorf("a refused patch wrote: %+v", body)
+	}
+
+	if resp, got := patch(map[string]any{
+		"app_android_package_url": "https://dl.example/kungal-1.3.4.apk", "app_android_package_size": 52428800, "app_android_package_sha256": sum,
+	}); resp.StatusCode != http.StatusOK {
+		t.Fatalf("package %d %+v", resp.StatusCode, got)
+	}
+	pkg, _ := version()["android_package"].(map[string]any)
+	if pkg["url"] != "https://dl.example/kungal-1.3.4.apk" || pkg["file_size"] != float64(52428800) || pkg["sha256"] != sum {
+		t.Errorf("android package %+v", pkg)
 	}
 }

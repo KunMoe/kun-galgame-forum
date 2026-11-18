@@ -363,25 +363,13 @@ func (s *Service) deleteToolset(ctx context.Context, in *toolsetIDInput) (*noCon
 
 func (s *Service) deleteFileObjects(ctx context.Context, files []model.GalgameToolsetResource) *problem.Problem {
 	for _, r := range files {
-		if r.Type != "s3" {
+		if r.Type != "s3" || r.ArtifactUUID == "" {
 			continue
 		}
-		if r.ArtifactUUID != "" {
-			if nilIface(s.artifact) {
-				return problem.Unavailable(errUnconfigured)
-			}
-			if err := s.artifact.Delete(ctx, r.ArtifactUUID); err != nil {
-				return problem.Unavailable(err)
-			}
-			continue
-		}
-		if r.Code == "" {
-			continue
-		}
-		if nilIface(s.blobs) {
+		if nilIface(s.artifact) {
 			return problem.Unavailable(errUnconfigured)
 		}
-		if err := s.blobs.Delete(ctx, r.Code); err != nil {
+		if err := s.artifact.Delete(ctx, r.ArtifactUUID); err != nil {
 			return problem.Unavailable(err)
 		}
 	}

@@ -21,10 +21,6 @@ import (
 
 var errUnconfigured = errors.New("apiv1 toolset: service is not configured")
 
-type blobStore interface {
-	Delete(ctx context.Context, key string) error
-}
-
 type artifactAPI interface {
 	InitUpload(ctx context.Context, req artifactclient.InitUploadRequest) (*artifactclient.InitUploadResponse, error)
 	CompleteUpload(ctx context.Context, uuid string, req artifactclient.CompleteUploadRequest) (*artifactclient.ArtifactResponse, error)
@@ -42,7 +38,6 @@ type Service struct {
 	check    *gate.CheckService
 	scan     *gate.ScanService
 	artifact artifactAPI
-	blobs    blobStore
 	award    AwardFunc
 	cdn      string
 }
@@ -54,7 +49,6 @@ func New(
 	check *gate.CheckService,
 	scan *gate.ScanService,
 	artifact artifactAPI,
-	blobs blobStore,
 	award AwardFunc,
 	cdn string,
 ) *Service {
@@ -69,7 +63,7 @@ func New(
 	}
 	return &Service{
 		store: store, users: users, convert: convert,
-		check: check, scan: scan, artifact: artifact, blobs: blobs,
+		check: check, scan: scan, artifact: artifact,
 		award: award, cdn: cdn,
 	}
 }

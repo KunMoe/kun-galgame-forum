@@ -32,21 +32,33 @@ func (Link) TableName() string { return "dlsite_store_link" }
 type Options struct {
 	DB     *gorm.DB
 	Client *storeclient.Client
-	// LinkTemplate is the bare affiliate template (KUN_DLSITE_LINK_TEMPLATE).
-	// It stays the fallback for every product with no short link yet, and the
-	// whole feature when the store face is unconfigured or refuses.
-	LinkTemplate string
-	// StaticCoupon (KUN_DLSITE_COUPON_URL) is shown when the store face reports
-	// no running campaign. It is an independent landing page, not a campaign, so
-	// "no campaign" must not blank out the coupon the site already offers.
-	StaticCoupon string
+	// LinkTemplate is the bare affiliate template (site setting
+	// dlsite.link_template), read per call. It stays the fallback for every
+	// product with no short link yet, and the whole feature when the store face
+	// is unconfigured or refuses.
+	LinkTemplate func() string
+	// StaticCoupon (site setting dlsite.coupon_url) is shown when the store
+	// face reports no running campaign. It is an independent landing page, not a
+	// campaign, so "no campaign" must not blank out the coupon the site already
+	// offers.
+	StaticCoupon func() string
+}
+
+// Fixed is an Options value that never changes.
+func Fixed(v string) func() string { return func() string { return v } }
+
+func read(f func() string) string {
+	if f == nil {
+		return ""
+	}
+	return f()
 }
 
 type Resolver struct {
 	db           *gorm.DB
 	client       *storeclient.Client
-	tmpl         string
-	staticCoupon string
+	tmpl         func() string
+	staticCoupon func() string
 
 	mu       sync.RWMutex
 	links    map[string]string
@@ -98,7 +110,7 @@ func (r *Resolver) Resolve(workID int, refsWorkno string) Links {
 	out := Links{CouponURL: r.coupon, CampaignName: r.campaign}
 	r.mu.RUnlock()
 	if out.CouponURL == "" {
-		out.CouponURL, out.CampaignName = r.staticCoupon, ""
+		out.CouponURL, out.CampaignName = read(r.staticCoupon), ""
 	}
 
 	switch {
@@ -106,7 +118,7 @@ func (r *Resolver) Resolve(workID int, refsWorkno string) Links {
 		out.PurchaseURL = short
 	default:
 		r.enqueue(workno)
-		out.PurchaseURL = dlsite.Link(r.tmpl, workno)
+		out.PurchaseURL = dlsite.Link(read(r.tmpl), workno)
 	}
 	if out.PurchaseURL == "" {
 		return Links{}

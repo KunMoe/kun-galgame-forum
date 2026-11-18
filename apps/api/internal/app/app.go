@@ -30,7 +30,6 @@ import (
 	cronPkg "kun-galgame-api/internal/infrastructure/cron"
 	"kun-galgame-api/internal/infrastructure/database"
 	"kun-galgame-api/internal/infrastructure/markdown"
-	"kun-galgame-api/internal/infrastructure/storage"
 	"kun-galgame-api/internal/infrastructure/storelink"
 	msgRepo "kun-galgame-api/internal/message/repository"
 	msgService "kun-galgame-api/internal/message/service"
@@ -69,6 +68,7 @@ import (
 	"kun-galgame-api/pkg/linkcheck"
 	"kun-galgame-api/pkg/moyuclient"
 	"kun-galgame-api/pkg/newsclient"
+	"kun-galgame-api/pkg/platformsettings"
 	"kun-galgame-api/pkg/response"
 	"kun-galgame-api/pkg/secretbox"
 	"kun-galgame-api/pkg/stickerclient"
@@ -127,7 +127,6 @@ type App struct {
 	ImagesV1               *imageapiv1.Service
 	StickersV1             *stickerapiv1.Service
 	Artifact               *artifactclient.Client
-	FileStorage            *storage.S3Client
 	CronStop               func()
 	RolePermStop           func()
 	StoreLinkStop          func()
@@ -137,6 +136,8 @@ type App struct {
 	AnchorPresentationStop func()
 	APIv1                  huma.API
 	Settings               *setting.Store
+	Platform               *platformsettings.Client
+	PlatformStop           func()
 	TopicAI                *topicapiv1.TopicAI
 	AgentMCP               http.Handler
 
@@ -147,10 +148,8 @@ type App struct {
 func New(cfg *config.Config) *App {
 	db := database.NewPostgres(cfg.Database, cfg.Server.Mode)
 	rdb := cache.NewRedis(cfg.Redis)
-	fileStorageClient := storage.NewS3(cfg.FileStorage)
-	if fileStorageClient == nil {
-		slog.Warn("FILE_STORAGE_* 未配置, 删除历史 s3 工具集资源将不可用")
-	}
+	settings := setting.NewStore(db)
+	platform := platformsettings.New(cfg.OAuth.ServerURL, cfg.OAuth.ClientID, cfg.OAuth.ClientSecret)
 
 	markdown.SetContentImageCDNBase(cfg.NextMoeAPI.ImageCDNBase)
 
@@ -231,21 +230,13 @@ func New(cfg *config.Config) *App {
 
 		gc.SetImageMetaResolver(imageMeta.Resolve)
 	} else {
-		slog.Warn("image_service client NOT configured; /image/galgame upload will return 未配置 — set KUN_IMAGE_CLIENT_ID / KUN_IMAGE_CLIENT_SECRET")
+		slog.Warn("image_service client NOT configured; /image/galgame upload will return 未配置 — set OAUTH_CLIENT_ID / OAUTH_CLIENT_SECRET")
 	}
 
-	artClientID := cfg.ArtifactClient.ClientID
-	if artClientID == "" {
-		artClientID = cfg.OAuth.ClientID
-	}
-	artClientSecret := cfg.ArtifactClient.ClientSecret
-	if artClientSecret == "" {
-		artClientSecret = cfg.OAuth.ClientSecret
-	}
 	artCli := artifactclient.New(artifactclient.Config{
 		BaseURL:      cfg.ArtifactClient.BaseURL,
-		ClientID:     artClientID,
-		ClientSecret: artClientSecret,
+		ClientID:     cfg.ArtifactClient.ClientID,
+		ClientSecret: cfg.ArtifactClient.ClientSecret,
 	})
 	if artCli.Configured() {
 		slog.Info("artifact service client configured", "base_url", cfg.ArtifactClient.BaseURL)
@@ -288,26 +279,16 @@ func New(cfg *config.Config) *App {
 	}
 
 	var trustChecker gate.Checker
-	if cfg.Trust.CheckEnabled && trustCli.Configured() {
-		trustChecker = trustCli
-	}
-	trustCheck := gate.NewCheckService(trustChecker)
-	if trustCheck.Enabled() {
-		slog.Info("trust check gate enabled (synchronous word-list gate on all forum user-text writes)")
-	} else {
-		slog.Info("trust check gate disabled (KUN_TRUST_CHECK_ENABLED off or trust client unconfigured)")
-	}
-
 	var trustScanner gate.Scanner
-	if cfg.Trust.ScanEnabled && trustCli.Configured() {
-		trustScanner = trustCli
+	if trustCli.Configured() {
+		trustChecker, trustScanner = trustCli, trustCli
 	}
-	trustScan := gate.NewScanService(trustScanner)
-	if trustScan.Enabled() {
-		slog.Info("trust shadow scan enabled (async post-commit scan on all forum user-text writes)")
-	} else {
-		slog.Info("trust shadow scan disabled (KUN_TRUST_SCAN_ENABLED off or trust client unconfigured)")
-	}
+	trustCheck := gate.NewCheckService(trustChecker).Switched(func() bool { return settings.Bool(setting.TrustCheckEnabled) })
+	trustScan := gate.NewScanService(trustScanner).Switched(func() bool { return settings.Bool(setting.TrustScanEnabled) })
+	slog.Info("trust check gate and shadow scan follow the site settings trust.check_enabled / trust.scan_enabled",
+		"trust_configured", trustCli.Configured(),
+		"check_enabled", trustCheck.Enabled(),
+		"scan_enabled", trustScan.Enabled())
 
 	catalogCli := catalogclient.New(catalogclient.Config{
 		BaseURL: cfg.Catalog.BaseURL,
@@ -319,18 +300,10 @@ func New(cfg *config.Config) *App {
 		slog.Warn("catalog service client NOT configured; galgame edit review returns 未启用 — set KUN_CATALOG_API_BASE + KUN_NEXTMOE_API_KEY")
 	}
 
-	commClientID := cfg.Community.ClientID
-	if commClientID == "" {
-		commClientID = cfg.OAuth.ClientID
-	}
-	commClientSecret := cfg.Community.ClientSecret
-	if commClientSecret == "" {
-		commClientSecret = cfg.OAuth.ClientSecret
-	}
 	communityCli := communityclient.New(communityclient.Config{
 		BaseURL:      cfg.Community.BaseURL,
-		ClientID:     commClientID,
-		ClientSecret: commClientSecret,
+		ClientID:     cfg.Community.ClientID,
+		ClientSecret: cfg.Community.ClientSecret,
 	})
 	if communityCli.Configured() {
 		slog.Info("community comment backend configured", "base_url", cfg.Community.BaseURL)
@@ -349,18 +322,14 @@ func New(cfg *config.Config) *App {
 	storeLinks := storelink.New(storelink.Options{
 		DB:           db,
 		Client:       storeCli,
-		LinkTemplate: cfg.Dlsite.LinkTemplate,
-		StaticCoupon: cfg.Dlsite.CouponURL,
+		LinkTemplate: func() string { return settings.String(setting.DlsiteLinkTemplate) },
+		StaticCoupon: func() string { return settings.String(setting.DlsiteCouponURL) },
 	})
-	if cfg.Dlsite.Configured() || storeLinks.Configured() {
-		slog.Info("dlsite purchase link configured",
-			"verified_whitelist", dlsite.VerifiedCount(),
-			"short_links", storeLinks.Configured(),
-			"template_fallback", cfg.Dlsite.Configured(),
-			"static_coupon", cfg.Dlsite.CouponURL != "")
-	} else {
-		slog.Info("dlsite purchase link off (KUN_DLSITE_LINK_TEMPLATE and KUN_STORE_API_KEY both unset); 补票提示 renders its plain form")
-	}
+	slog.Info("dlsite purchase link",
+		"verified_whitelist", dlsite.VerifiedCount(),
+		"short_links", storeLinks.Configured(),
+		"template_fallback", settings.String(setting.DlsiteLinkTemplate) != "",
+		"static_coupon", settings.String(setting.DlsiteCouponURL) != "")
 	communityBooster := communitytrust.New(communityCli, rdb, db)
 
 	var bearerVerifier middleware.AccessTokenVerifier
@@ -513,7 +482,6 @@ func New(cfg *config.Config) *App {
 		stickerPackRefresh = stickersV1.Refresh
 	}
 
-	settings := setting.NewStore(db)
 	topicAI := topicapiv1.NewTopicAI(aiclient.New(cfg.AI.BaseURL, cfg.AI.Token), settings, topicRepo.NewAIRepository(db))
 
 	app := &App{
@@ -560,7 +528,6 @@ func New(cfg *config.Config) *App {
 		ImagesV1:           imageapiv1.New(imgCli, catalogCli, db, cfg.NextMoeAPI.ImageCDNBase),
 		StickersV1:         stickersV1,
 		Artifact:           artCli,
-		FileStorage:        fileStorageClient,
 		CronStop: cronPkg.Start(db, rdb, imgCli, cronPkg.Jobs{
 			GalgameClaimSync:           galgameClaimSync.Run,
 			GalgameRevisionSync:        galgameRevisionSync.Run,
@@ -574,10 +541,12 @@ func New(cfg *config.Config) *App {
 			TopicMiniAppDeadlines:      lotteryDrawer.Run,
 			UserPurgeArchiveExpiry:     expirePurgeArchive(adminPurgeRepo),
 			StickerPackRefresh:         stickerPackRefresh,
-			NotificationRetention:      expireReadNotifications(messageRepository, cfg.Notification.RetentionDays),
+			NotificationRetention:      expireReadNotifications(messageRepository, func() int { return settings.Int(setting.NotificationRetentionDays) }),
 			TopicAISweep:               topicAI.Sweep,
 		}),
 		StoreLinkStop:       storeLinks.Start(),
+		Platform:            platform,
+		PlatformStop:        platform.Start(),
 		CommunityNotifyStop: communitynotify.New(communityCli, messageRepository, anchorResolver, rdb).Start(),
 	}
 	app.LetmoeChangesStop = galgameV1.StartLetmoeChanges()

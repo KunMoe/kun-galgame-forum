@@ -7,14 +7,24 @@
 # vs docker-compose.yml (dev): `image:` not `build:`, `expose:` not `ports:`,
 # and **NO `env_file`** — all config is inline `environment:` so Dokploy needs no
 # `docker/*.env` on disk. Non-secret/domains are literal; secrets come from the
-# kungal app's **Dokploy Environment** via ${VAR}.
+# kungal app's **Dokploy Environment** via ${VAR}. A panel variable reaches a
+# container ONLY through a ${VAR} line below; one without a line here is inert.
+# A variable whose value equals the code default is left out.
 #
-# Set in kungal's Dokploy Environment:
-#   POSTGRES_PASSWORD  OAUTH_CLIENT_SECRET  JWT_SECRET
-#   (optional) KUN_IMAGE_CLIENT_ID/SECRET  FILE_STORAGE_* (B2 工具集)  MAIL_*
-# These MUST match infra's: POSTGRES_PASSWORD = infra POSTGRES_PASSWORD;
-# OAUTH_CLIENT_SECRET = 注册论坛 client 的明文.
-# (JWT_SECRET here is kungal's OWN session secret — need NOT match infra.)
+# Set in kungal's Dokploy Environment (nothing else):
+#   POSTGRES_PASSWORD  KUN_CONFIG_KEK  NUXT_OG_SITE_KEY
+# POSTGRES_PASSWORD = infra POSTGRES_PASSWORD. KUN_CONFIG_KEK opens the config
+# store (`openssl rand -base64 32`, set once, never rotated in place): every
+# other API secret lives there, sealed in the kungalgame database, edited at
+# /admin/setting/env and read once when the API starts. The environment still
+# wins over a stored value. The web is Nuxt and does not read the store, so
+# its og signing key stays in the panel.
+#
+# Until the one-time import has run (cmd/config-secrets), the panel still holds
+#   OAUTH_CLIENT_SECRET  KUN_NEXTMOE_API_KEY  KUN_NEWS_API_KEY  KUN_STORE_API_KEY
+#   LINK_CHECKER_BASE_URL  LINK_CHECKER_API_KEY  CF_ACCESS_CLIENT_ID  CF_ACCESS_CLIENT_SECRET
+#   KUN_TRUST_CALLBACK_SECRET  KUN_LOTTERY_CODE_KEY  KUN_AI_BASE_URL  KUN_AI_TOKEN
+# and the ${VAR:-} lines below carry them.
 #
 #   docker compose -f docker-compose.prod.yml pull
 #   docker compose -f docker-compose.prod.yml up -d      # migrate auto-runs (gated) before kungal-api
@@ -46,37 +56,35 @@ x-kungal-api-env: &kungal-api-env
   CORS_ALLOW_ORIGINS: https://www.kungal.com,https://kungal.com
   # ⚠ POSTGRES_PASSWORD 直接拼进 DSN → 必须 URL-safe(字母数字;勿含 @ : / # % ? &,否则 URL 解析坏)
   KUN_DATABASE_URL: postgresql://postgres:${POSTGRES_PASSWORD:?set POSTGRES_PASSWORD in Dokploy}@postgres:5432/kungalgame
-  DB_MAX_OPEN_CONNS: "25"
-  DB_MAX_IDLE_CONNS: "10"
-  DB_CONN_MAX_LIFETIME: "300"
+  KUN_CONFIG_KEK: ${KUN_CONFIG_KEK:-}
   REDIS_HOST: redis
   REDIS_PORT: "6379"
-  REDIS_PASSWORD: ${REDIS_PASSWORD:-}
-  REDIS_DB: "0"
   OAUTH_SERVER_URL: http://oauth:9277/api/v1
   OAUTH_CLIENT_ID: 4ed9bc99ec0a789a4796b83e22bd84c5
-  OAUTH_CLIENT_SECRET: ${OAUTH_CLIENT_SECRET:?set OAUTH_CLIENT_SECRET in Dokploy (论坛 client 注册时的明文)}
+  # 论坛 client 注册时的明文; the API refuses to start when neither the
+  # environment nor the config store has it.
+  OAUTH_CLIENT_SECRET: ${OAUTH_CLIENT_SECRET:-}
   OAUTH_REDIRECT_URI: https://www.kungal.com/auth/callback
   # ── App direct access (refs/docs/proj/app-direct-api.md) ──
   # A first-party client's user access token (ES256 JWT) may call /api/* as
   # `Authorization: Bearer`. ISSUER must be the OP's PUBLIC origin — that is what
   # it stamps into `iss`; deriving it from OAUTH_SERVER_URL above would give
-  # http://oauth:9277 and 401 every App request. JWKS is fetched in-network.
+  # http://oauth:9277 and 401 every App request. JWKS is fetched in-network:
+  # its default is OAUTH_SERVER_URL's origin + /oauth/jwks.
   # CLIENT_IDS is the allow-list (comma separated); empty closes the channel.
   # Both are public clients infra registered 2026-09-17 (site_id=2,
   # catalog_site=kungal, no owner): kungal-app = Android/iOS, kungal-app-desktop
   # = Windows/Linux loopback. A client missing here 401s every one of its users.
   KUN_OIDC_ISSUER: https://account.nextmoe.com
-  KUN_OIDC_JWKS_URL: http://oauth:9277/oauth/jwks
   KUN_BEARER_CLIENT_IDS: kungal-app,kungal-app-desktop
   # NextMoe AI assistant site tools (MCP, read-only topic search). Its own port so
   # no Dokploy domain reaches it: infra-agent calls http://kungal-api:2335/mcp on
   # dokploy-network with the asking user's token. Keep 2335 out of every domain.
   KUN_AGENT_MCP_ADDR: ":2335"
   # The assistant's chat at /chat: /api/v1/agent/* relays here under the user's
-  # token and the forum stores nothing. KUN_AGENT_ENABLED only shows the web's
-  # entrances (NUXT_PUBLIC_AGENT_ENABLED below); infra also has to turn on
-  # agent.enabled for site 2, or every call answers 403 ASSISTANT_DISABLED.
+  # token and the forum stores nothing. Its on switch is infra's agent.enabled
+  # for site 2 (admin.nextmoe.dev config center): the API polls infra's
+  # settings face and the web shows the entrances only while it is on.
   KUN_AGENT_API_BASE: http://infra-agent:9287
   # ── comment areas on the community primitive (track 03) ──
   # Community is now the UNCONDITIONAL backend for the galgame + resource
@@ -90,24 +98,15 @@ x-kungal-api-env: &kungal-api-env
   KUN_COMMUNITY_API_BASE: http://community:9282/api/v1/community
   # ── direct messages on NextMoe chat ──
   # /api/v1/chat/* relays to chat under the user's own token (scopes chat:read
-  # chat:write, granted to this client). KUN_CHAT_ENABLED is the cutover and
-  # also feeds the web's NUXT_PUBLIC_CHAT_ENABLED below, so one panel variable
-  # flips both halves in one redeploy: the new /messages pages and entrances,
-  # the old pages redirecting, the old DM writes answering 410
-  # DIRECT_MESSAGES_MOVED, and /me no longer counting old DMs. The old tables
-  # stay (read-only for the App). Right after the flip, tell infra to run the
-  # import sweep for messages sent on the old face since 2026-09-27 22:34 CST.
+  # chat:write, granted to this client). KUN_CHAT_ENABLED is the cutover, which
+  # production has made: the /messages pages and entrances, the old pages
+  # redirecting, the old DM writes answering 410 DIRECT_MESSAGES_MOVED, and /me
+  # no longer counting old DMs. The web's NUXT_PUBLIC_CHAT_ENABLED must stay
+  # equal to it. The old tables stay (read-only for the App).
   KUN_CHAT_API_BASE: http://chat:9285
-  KUN_CHAT_ENABLED: ${KUN_CHAT_ENABLED:-false}
-  # ── DLsite 联盟补票链接 (合作公告 topic/3867) ──
-  # {workno} 由 catalog 的 refs.dlsite 原样替换。整段模板走 env 而非拼装:
-  # DLsite 的联盟路径可能按站点段不同 (/soft/ 是 pro/VJ 路径), 换路径只改这里。
-  # 空模板 = 功能关闭, 补票提示回落成原来的纯文案。
-  KUN_DLSITE_LINK_TEMPLATE: ${KUN_DLSITE_LINK_TEMPLATE:-https://dlaf.jp/soft/dlaf/=/t/s/link/work/aid/kungal/locale/zh_CN/id/{workno}.html/?locale=zh_CN}
-  # 优惠券落地页。必须是短链 (合作方要求, 防网络审查拦截)。这条是常设落地页,
-  # 不是 campaign; store 面报告有活动时会被 coupon_url 顶掉, 没有活动时仍然展示。
-  # No default URL: an empty KUN_DLSITE_COUPON_URL hides the standing coupon page.
-  KUN_DLSITE_COUPON_URL: ${KUN_DLSITE_COUPON_URL:-}
+  KUN_CHAT_ENABLED: "true"
+  # ── DLsite 补票 (合作公告 topic/3867) ──
+  # 联盟模板与优惠券落地页是 /admin/setting 里的站点设置 (dlsite.*)。
   # infra 的 /v2/store 面。给出 key 后购买按钮改用它铸的本站专属短链 —— 短链背后
   # 的点击计数就是结算依据, 直链虽然照样能买但这笔销售 infra 看不见。
   # 第三把 developer key (scope 只要 store:read), 不与 catalog/news 共用: v2 限流
@@ -115,20 +114,6 @@ x-kungal-api-env: &kungal-api-env
   # 所以另开一把 key 不会拆散归因。空 = 只用上面的联盟直链模板, 站点行为不变。
   # KUN_STORE_API_BASE 默认取 KUN_NEXTMOE_API_BASE (同一个 catalog 进程)。
   KUN_STORE_API_KEY: ${KUN_STORE_API_KEY:-}
-  JWT_SECRET: ${JWT_SECRET:?set JWT_SECRET in Dokploy (kungal 自己的会话密钥)}
-  # toolset archive uploads (Backblaze B2). 空则上传路由仍注册、调用 500(应用只 warn 不拦);要开 toolset 上传就填全 5 个
-  # (内嵌/内容图不走这里 — 全部经 image_service,详见 KUN_IMAGE_CLIENT_*)
-  FILE_STORAGE_ENDPOINT: ${FILE_STORAGE_ENDPOINT:-}
-  FILE_STORAGE_REGION: ${FILE_STORAGE_REGION:-}
-  FILE_STORAGE_BUCKET: ${FILE_STORAGE_BUCKET:-}
-  FILE_STORAGE_ACCESS_KEY: ${FILE_STORAGE_ACCESS_KEY:-}
-  FILE_STORAGE_SECRET_KEY: ${FILE_STORAGE_SECRET_KEY:-}
-  # mail (blank → disabled)
-  MAIL_HOST: ${MAIL_HOST:-}
-  MAIL_PORT: ${MAIL_PORT:-587}
-  MAIL_USER: ${MAIL_USER:-}
-  MAIL_PASSWORD: ${MAIL_PASSWORD:-}
-  MAIL_FROM: ${MAIL_FROM:-}
   # NextMoe catalog galgame read surface (host base with no path suffix): the
   # client calls {base}/v2/catalog/* with Authorization: Bearer nmk_… . The /v1
   # family is being retired upstream, so no suffix belongs on this value.
@@ -154,31 +139,15 @@ x-kungal-api-env: &kungal-api-env
   # catalog read proxy (step 36): credits / entity reverse-lookups. Reuses the
   # OAuth client pair for S2S Basic auth; unset → those routes degrade to 503.
   KUN_CATALOG_API_BASE: http://catalog:9281
-  # image_service; the domain is x-image-public-base above
+  # image_service; the domain is x-image-public-base above. image, artifact and
+  # community authenticate the forum by its OAuth client (OAUTH_CLIENT_ID/SECRET
+  # above; image_service then checks image_enabled + image_site_key=kungal +
+  # image_allowed_presets on the infra oauth_clients row), so they take no
+  # credentials of their own.
   KUN_IMAGE_PUBLIC_BASE_URL: *image-public-base
   KUN_IMAGE_CLIENT_BASE_URL: http://image:9278
-  # kungal's image_service client IS its own OAuth client (same id/secret as the
-  # login client above): image_service authenticates uploads via HTTP Basic
-  # (client_id:client_secret), then checks image_enabled + image_site_key +
-  # image_allowed_presets on the infra oauth_clients row (set to enabled /
-  # site_key=kungal / [topic, galgame_banner]). So reuse the OAuth creds rather
-  # than a separate Dokploy var.
-  KUN_IMAGE_CLIENT_ID: 4ed9bc99ec0a789a4796b83e22bd84c5
-  KUN_IMAGE_CLIENT_SECRET: ${OAUTH_CLIENT_SECRET:?set OAUTH_CLIENT_SECRET in Dokploy}
-  # artifact service (toolset archive upload/download). Same pattern as the image
-  # client: kungal's artifact "site" IS its OAuth client, so the artifact client
-  # creds fall back to OAUTH_CLIENT_ID/SECRET (no separate Dokploy var). Only the
-  # base URL is needed — and it MUST be wired here in the anchor (a Dokploy panel
-  # var alone never reaches the container, the moyu lesson). At prod cutover the
-  # infra oauth_clients row must also have artifact_enabled + site_key=kungal.
+  # artifact service (toolset archive upload/download)
   KUN_ARTIFACT_CLIENT_BASE_URL: http://artifact:9279
-  # LetMoe's import face, read only by `tools relocate-resources push` (moving
-  # the resources of works whose original language is not ja / zh). The key is
-  # the same value as LetMoe's LETMOE_FORUM_IMPORT_KEY panel variable; unset, the
-  # push step refuses to run and nothing else is affected. Remove both after the
-  # relocation window.
-  KUN_LETMOE_IMPORT_URL: ${KUN_LETMOE_IMPORT_URL:-https://www.letmoe.com/api/v1/import/forum-resources}
-  KUN_LETMOE_IMPORT_KEY: ${KUN_LETMOE_IMPORT_KEY:-}
   # kungal-link-live-checker — the "report resource expired" gate (dead→失效 /
   # alive→驳回误报 / unknown→旧流程). Set all 4 in Dokploy to enable it; the
   # checker is behind Cloudflare Access so the CF service-token headers are
@@ -190,11 +159,9 @@ x-kungal-api-env: &kungal-api-env
   CF_ACCESS_CLIENT_ID: ${CF_ACCESS_CLIENT_ID:-}
   CF_ACCESS_CLIENT_SECRET: ${CF_ACCESS_CLIENT_SECRET:-}
   # Trust & Safety (doc 18): report intake (kungal → trust) + enforcement
-  # callback verification (trust → kungal). BASE_URL/SITE are non-secret
-  # structural values → literal, like the sibling service URLs above (a Dokploy
-  # panel var alone never reaches the container — the moyu/image lesson). The Go
-  # defaults (127.0.0.1:9283 / kungal) are WRONG in-container for BASE_URL, so
-  # pin the dokploy-network name (infra exposes the trust service as `trust`).
+  # callback verification (trust → kungal). The Go default 127.0.0.1:9283 is
+  # WRONG in-container for BASE_URL, so pin the dokploy-network name (infra
+  # exposes the trust service as `trust`); KUN_TRUST_SITE defaults to kungal.
   # ⚠ With BASE_URL set, report intake goes LIVE the moment kungal deploys — so
   # infra's trust service + kungal's 6 subject_kind rows + the subject_url column
   # must be up FIRST, else reports 403 (catalog_site unbound) / 422 (kind
@@ -202,21 +169,15 @@ x-kungal-api-env: &kungal-api-env
   # the inbound enforcement callback: empty → callbacks fail-closed 401 while
   # reports still flow, so enforcement stays off until you set it to the SAME
   # secret registered on kungal's subject_kind rows in the trust registry.
+  # The check gate and the shadow scan are switched in /admin/setting
+  # (trust.check_enabled / trust.scan_enabled), not here.
+  KUN_TRUST_BASE_URL: http://trust:9283
+  KUN_TRUST_CALLBACK_SECRET: ${KUN_TRUST_CALLBACK_SECRET:-}
   # Topic classification and summaries (OpenAI-compatible endpoint, e.g.
   # Cloudflare Workers AI .../ai/v1). Empty turns both off; the admin settings
   # page switches them on once these are set.
   KUN_AI_BASE_URL: ${KUN_AI_BASE_URL:-}
   KUN_AI_TOKEN: ${KUN_AI_TOKEN:-}
-  KUN_TRUST_BASE_URL: http://trust:9283
-  KUN_TRUST_SITE: kungal
-  KUN_TRUST_CALLBACK_SECRET: ${KUN_TRUST_CALLBACK_SECRET:-}
-  # Two INDEPENDENT wave-1 moderation switches for topic/reply create+edit, both
-  # default off (never keyed off client presence). CHECK = synchronous pre-write
-  # word-list gate (deny blocks / hold publishes+logs / fail-open ≤500ms); SCAN =
-  # async post-commit shadow scan (best-effort). Flip to true only AFTER infra
-  # mints kungal's S2S client + registers the forum_topic/forum_reply kinds.
-  KUN_TRUST_CHECK_ENABLED: ${KUN_TRUST_CHECK_ENABLED:-false}
-  KUN_TRUST_SCAN_ENABLED: ${KUN_TRUST_SCAN_ENABLED:-false}
   # Seals lottery redemption codes at rest (AES-256-GCM, `openssl rand -hex 32`).
   # Unset → the lottery refuses code prizes rather than storing codes in clear.
   # ROTATING IT makes every sealed code unreadable forever — winners get a 500
@@ -224,30 +185,8 @@ x-kungal-api-env: &kungal-api-env
   # only reaches the container because this line names it: it sat set in the
   # panel for a day on 2026-09-23 while the API kept logging "未设置".
   KUN_LOTTERY_CODE_KEY: ${KUN_LOTTERY_CODE_KEY:-}
-  # Days a READ notification is kept before the daily 03:45 job deletes it;
-  # unread ones are never deleted. Unset = 365; 0 turns the job off. Like every
-  # panel var above, it reaches the container only because this line names it.
-  KUN_NOTIFICATION_RETENTION_DAYS: ${KUN_NOTIFICATION_RETENTION_DAYS:-}
-  # ── App version gate: GET /api/app/version ──
-  # The App force-updates every install below MIN_VERSION, so this pair is the
-  # kill switch for the direct-download channel. Versions are MAJOR.MINOR.PATCH;
-  # a malformed value or MIN above LATEST fails the boot rather than stranding
-  # users on a build that does not exist. An unset download falls back to the
-  # https://www.kungal.com/app page, which then shows that platform as 即将推出.
-  # Changing any of these needs a kungal-api restart.
-  KUN_APP_MIN_VERSION: ${KUN_APP_MIN_VERSION:-0.1.0}
-  KUN_APP_LATEST_VERSION: ${KUN_APP_LATEST_VERSION:-0.1.0}
-  KUN_APP_RELEASE_NOTES: ${KUN_APP_RELEASE_NOTES:-}
-  KUN_APP_DOWNLOAD_ANDROID: ${KUN_APP_DOWNLOAD_ANDROID:-}
-  KUN_APP_DOWNLOAD_IOS: ${KUN_APP_DOWNLOAD_IOS:-}
-  KUN_APP_DOWNLOAD_WINDOWS: ${KUN_APP_DOWNLOAD_WINDOWS:-}
-  KUN_APP_DOWNLOAD_LINUX: ${KUN_APP_DOWNLOAD_LINUX:-}
-  # The .apk of KUN_APP_LATEST_VERSION for the App's in-place update: all three
-  # or none. Bump them together with KUN_APP_LATEST_VERSION, or the App refuses
-  # the file as the wrong version and shows the user an error.
-  KUN_APP_ANDROID_PACKAGE_URL: ${KUN_APP_ANDROID_PACKAGE_URL:-}
-  KUN_APP_ANDROID_PACKAGE_SIZE: ${KUN_APP_ANDROID_PACKAGE_SIZE:-}
-  KUN_APP_ANDROID_PACKAGE_SHA256: ${KUN_APP_ANDROID_PACKAGE_SHA256:-}
+  # The App version gate, read-notification retention and the DLsite links are
+  # site settings in /admin/setting, read when used; they need no restart.
 
 services:
   # ───────────────────────────── Go API (distroless) ─────────────────────────
@@ -297,16 +236,15 @@ services:
       # or every page advertises a 1200x630 og:image that cannot be produced.
       NUXT_OG_BASE_URL: https://og.nextmoe.dev
       NUXT_OG_SITE_KEY: ${NUXT_OG_SITE_KEY:-}
-      NUXT_PUBLIC_OG_CARD_ENABLED: ${NUXT_PUBLIC_OG_CARD_ENABLED:-false}
-      # Same panel variable as the API's KUN_CHAT_ENABLED; see there.
-      NUXT_PUBLIC_CHAT_ENABLED: ${KUN_CHAT_ENABLED:-false}
-      # The AI assistant's /chat page and entrances; see KUN_AGENT_API_BASE.
-      NUXT_PUBLIC_AGENT_ENABLED: ${KUN_AGENT_ENABLED:-false}
-      # Umami tracker and the AIFY short link. No default URL: unset means no
-      # tracker and no AIFY banner. HOST is the origin only, without /script.js.
-      NUXT_PUBLIC_UMAMI_HOST: ${NUXT_PUBLIC_UMAMI_HOST:-}
-      NUXT_PUBLIC_UMAMI_ID: ${NUXT_PUBLIC_UMAMI_ID:-}
-      NUXT_PUBLIC_AIFY_LINK: ${NUXT_PUBLIC_AIFY_LINK:-}
+      NUXT_PUBLIC_OG_CARD_ENABLED: "true"
+      # Equal to the API's KUN_CHAT_ENABLED; see there.
+      NUXT_PUBLIC_CHAT_ENABLED: "true"
+      # Umami tracker and the AIFY short link. Both are public (every page
+      # carries them); empty would mean no tracker and no AIFY banner. HOST is
+      # the origin only, without /script.js.
+      NUXT_PUBLIC_UMAMI_HOST: https://umami.kungal.org
+      NUXT_PUBLIC_UMAMI_ID: 2fc714ed-ed3b-459a-b52c-65f7e1621834
+      NUXT_PUBLIC_AIFY_LINK: https://kun.s.gy/rcNy9Q
     expose: ["7777"]
     depends_on:
       kungal-api: { condition: service_healthy }

@@ -18,8 +18,5 @@ func (a *App) newFriendLinkV1() *friendlinkapiv1.Service {
 }
 
 func (a *App) newAppReleaseV1() *appreleaseapiv1.Service {
-	if a.Config == nil {
-		return appreleaseapiv1.New(nil)
-	}
-	return appreleaseapiv1.New(&a.Config.AppRelease)
+	return appreleaseapiv1.New(a.settingsStore())
 }

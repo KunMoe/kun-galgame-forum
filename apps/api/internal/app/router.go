@@ -10,6 +10,7 @@ import (
 	authapiv1 "kun-galgame-api/internal/auth/apiv1"
 	"kun-galgame-api/internal/chat"
 	docapiv1 "kun-galgame-api/internal/doc/apiv1"
+	envconfigapiv1 "kun-galgame-api/internal/envconfig/apiv1"
 	friendlinkapiv1 "kun-galgame-api/internal/friendlink/apiv1"
 	galgameapiv1 "kun-galgame-api/internal/galgame/apiv1"
 	calendarapiv1 "kun-galgame-api/internal/galgame/calendarapiv1"
@@ -102,6 +103,7 @@ func (a *App) setupRoutes() {
 		overviewapiv1.Register(a.OverviewV1),
 		sectionapiv1.Register(a.newSectionV1()),
 		settingapiv1.Register(a.newSettingV1()),
+		envconfigapiv1.Register(a.newEnvConfigV1()),
 		authapiv1.Register(a.newAuthV1()),
 		newsapiv1.Register(a.NewsV1),
 		imageapiv1.Register(a.ImagesV1),

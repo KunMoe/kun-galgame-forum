@@ -23,6 +23,8 @@ type UserColumn struct {
 var UserColumns = []UserColumn{
 	{"activity_push_sent", "actor_id", HandlingKeep, "sync bookkeeping: a tombstone needs the author id after the content is gone"},
 	{"chat_message", "receiver_id", HandlingDelete, "the private room goes with its sender"},
+	{"config_secret", "updated_by", HandlingKeep, "operator record of who stored a deployment secret"},
+	{"config_secret_audit", "user_id", HandlingKeep, "operator audit of the config store"},
 	{"chat_message", "sender_id", HandlingDelete, ""},
 	{"chat_message_read_by", "user_id", HandlingDelete, ""},
 	{"chat_room", "last_message_sender_id", HandlingRelease, "recomputed from the messages left in the room"},
