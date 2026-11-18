@@ -196,7 +196,8 @@ const emptyText = computed(() => {
         </KunLink>
       </p>
 
-      <div v-if="stats.length" class="grid grid-cols-3 gap-3">
+      <UserLibrarySkeleton v-if="pending && !head" part="stats" />
+      <div v-else-if="stats.length" class="grid grid-cols-3 gap-3">
         <div
           v-for="stat in stats"
           :key="stat.label"

@@ -1,3 +1,12 @@
+<script setup lang="ts">
+const route = useRoute()
+const tab = computed(() => {
+  const path = route.path.replace(/\/+$/, '')
+  if (path.endsWith('/library')) return 'library'
+  return /^\/user\/\d+(\/activity)?$/.test(path) ? 'activity' : 'list'
+})
+</script>
+
 <template>
   <div
     class="grid grid-cols-1 items-start gap-4 lg:grid-cols-[18rem_minmax(0,1fr)] lg:gap-6"
@@ -24,7 +33,9 @@
 
     <div class="min-w-0 space-y-4">
       <KunSkeleton height="2.25rem" rounded="lg" />
-      <UserListSkeleton :rows="4" />
+      <UserLibrarySkeleton v-if="tab === 'library'" />
+      <UserTimelineSkeleton v-else-if="tab === 'activity'" />
+      <UserListSkeleton v-else :rows="4" />
     </div>
   </div>
 </template>

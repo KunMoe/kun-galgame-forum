@@ -66,7 +66,7 @@ const { loadNext } = useAutoLoadMore(sentinel, {
       scrollable
     />
 
-    <UserListSkeleton v-if="pending" shape="media" />
+    <UserTimelineSkeleton v-if="pending" />
 
     <KunInfo
       v-else-if="problem && !items.length"

@@ -11,8 +11,7 @@ export const useUserPlaytimeTotal = (userId: MaybeRefOrGetter<string>) => {
           query: { include_nsfw: allowsNsfw.value }
         },
         signal
-      }),
-    { server: false }
+      })
   )
   return computed(() => data.value?.total_playtime_minutes || null)
 }
