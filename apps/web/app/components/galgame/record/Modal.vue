@@ -187,8 +187,25 @@ const fillRating = (r: WorkRecord['rating_summary']) => {
 
 const restoreRating = () => fillRating(loaded.value?.rating_summary ?? null)
 
+// Set by 删除状态和游玩时长 and carried out on save, like every other field:
+// the record drops this site's row, then each other app's row is deleted.
+const dropOtherPlaytime = ref(false)
+const hasPlayRecord = computed(
+  () =>
+    !!baseState.value ||
+    minutes.value > 0 ||
+    (!dropOtherPlaytime.value && otherSources.value.length > 0)
+)
+const clearPlayRecord = () => {
+  baseState.value = ''
+  completion.value = ''
+  hours.value = 0
+  dropOtherPlaytime.value = true
+}
+
 const fill = (record: WorkRecord) => {
   loaded.value = record
+  dropOtherPlaytime.value = false
   baseState.value = kunPlayStateBase(record.play_state) ?? ''
   completion.value =
     kunPlayStateIsDone(record.play_state) && record.play_state !== 'done'
@@ -286,17 +303,24 @@ const save = async () => {
   }
 
   const losingRating = hadRating.value && !body.rating_input
-  const losingPlaytime = selfMinutes.value > 0 && body.minutes === undefined
+  const droppingOthers =
+    dropOtherPlaytime.value &&
+    (otherSources.value.length > 0 ||
+      (sources.value === null && body.minutes === undefined))
+  const losingPlaytime =
+    (selfMinutes.value > 0 && body.minutes === undefined) || droppingOthers
   if (losingRating || losingPlaytime) {
     const ok = await useComponentMessageStore().alert(
-      losingRating ? '保存后会删除你的评分' : '保存后会撤回你的游玩时长',
+      losingRating ? '保存后会删除你的评分' : '保存后会删除你的游玩时长',
       [
         losingRating
           ? '评分在所有 NextMoe 站点共用, 删除后其它站点上也会一起消失。'
           : '',
-        losingPlaytime
-          ? '本站上报的游玩时长会撤回, 其它应用上报的不受影响。'
-          : ''
+        droppingOthers
+          ? '你在所有应用记录的游玩时长都会删除。'
+          : losingPlaytime
+            ? '本站上报的游玩时长会撤回, 其它应用上报的不受影响。'
+            : ''
       ].join('')
     )
     if (!ok) return
@@ -318,15 +342,58 @@ const save = async () => {
   if (saved.rating_summary && !hadRating.value) {
     summaryDraft.value = ''
   }
+  let left: WorkViewerPlaytime = {
+    minutes: saved.minutes,
+    play_state: saved.play_state
+  }
+  if (droppingOthers) {
+    const dropped = await deleteOtherPlaytime()
+    if (!dropped) return
+    left = dropped
+  }
   setPlaytime(
     props.workId,
-    saved.play_state || saved.minutes > 0
-      ? { minutes: saved.minutes, play_state: saved.play_state }
+    left.play_state || left.minutes > 0
+      ? { minutes: left.minutes, play_state: left.play_state }
       : null
   )
-  emits('saved', saved)
+  emits('saved', { ...saved, minutes: left.minutes })
   open.value = false
   useMessage('已保存', 'success')
+}
+
+// Each other app's row by name, so a minutes value typed after clearing
+// survives as this site's row; delete-all only when the list is unknown and
+// this site reports nothing.
+const deleteOtherPlaytime = async (): Promise<WorkViewerPlaytime | null> => {
+  const path = { work_id: String(props.workId) }
+  pending.value = true
+  let left: WorkViewerPlaytime | null = null
+  const calls =
+    sources.value === null
+      ? [
+          () =>
+            api.DELETE('/works/{work_id}/playtime/sources', {
+              params: { path }
+            })
+        ]
+      : otherSources.value.map(
+          (source) => () =>
+            api.DELETE('/works/{work_id}/playtime/sources/{client}', {
+              params: { path: { ...path, client: source.client_id } }
+            })
+        )
+  for (const call of calls) {
+    const result = await settle(call())
+    if (!result.ok) {
+      pending.value = false
+      reportProblem(result.problem)
+      return null
+    }
+    left = result.data
+  }
+  pending.value = false
+  return left
 }
 </script>
 
@@ -356,13 +423,13 @@ const save = async () => {
           <div class="flex items-center justify-between gap-2">
             <span class="font-medium">游玩记录</span>
             <KunButton
-              v-if="baseState"
+              v-if="hasPlayRecord"
               size="sm"
               variant="light"
-              color="default"
-              @click="baseState = ''"
+              color="danger"
+              @click="clearPlayRecord"
             >
-              清除状态
+              删除状态和游玩时长
             </KunButton>
           </div>
           <KunRadioGroup
@@ -400,7 +467,14 @@ const save = async () => {
             <p v-if="tooShort" class="text-warning text-sm">
               不足 10 分钟的记录不会计入统计
             </p>
+            <p
+              v-if="dropOtherPlaytime && otherSources.length"
+              class="text-default-500 text-xs"
+            >
+              保存后会一并删除其它应用记录的时长
+            </p>
             <GalgameRecordPlaytimeSources
+              v-else
               :work-id="workId"
               :sources="otherSources"
               @removed="onSourceRemoved"

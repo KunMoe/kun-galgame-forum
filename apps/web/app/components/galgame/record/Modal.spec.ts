@@ -343,6 +343,44 @@ describe("the playtime field holds this site's minutes only", () => {
     expect(sent()).toEqual({ play_state: 'doing', minutes: 300 })
   })
 
+  it("deletes the state and every app's minutes on save", async () => {
+    api.DELETE.mockResolvedValue(ok({ minutes: 0, play_state: null }))
+    await mountWith(record('doing', { minutes: 300 }), [
+      source('timer', 300),
+      source('forum', 60, true)
+    ])
+    await click('删除状态和游玩时长')
+    expect(api.DELETE).not.toHaveBeenCalled()
+
+    await save()
+    expect(alert).toHaveBeenCalledWith(
+      '保存后会删除你的游玩时长',
+      expect.stringContaining('所有应用')
+    )
+    expect(sent()).toEqual({})
+    expect(api.DELETE).toHaveBeenCalledTimes(1)
+    expect(api.DELETE).toHaveBeenCalledWith(
+      '/works/{work_id}/playtime/sources/{client}',
+      { params: { path: { work_id: '7', client: 'timer' } } }
+    )
+  })
+
+  it("keeps minutes typed after clearing as this site's row", async () => {
+    api.DELETE.mockResolvedValue(ok({ minutes: 120, play_state: null }))
+    await mountWith(record('doing', { minutes: 300 }), [
+      source('timer', 300),
+      source('forum', 60, true)
+    ])
+    await click('删除状态和游玩时长')
+    await emitFrom('KunNumberInput', 2)
+    await save()
+    expect(sent()).toEqual({ minutes: 120 })
+    expect(api.DELETE).toHaveBeenCalledTimes(1)
+    expect(api.DELETE.mock.calls[0]![0]).toBe(
+      '/works/{work_id}/playtime/sources/{client}'
+    )
+  })
+
   it("deletes another app's minutes from the list", async () => {
     api.DELETE.mockResolvedValue(ok({ minutes: 60, play_state: 'doing' }))
     await mountWith(record('doing', { minutes: 300 }), [
