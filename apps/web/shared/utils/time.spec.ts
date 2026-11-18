@@ -4,6 +4,7 @@ import {
   hourDiff,
   formatDate,
   formatDurationMinutes,
+  compactDurationMinutes,
   toYMD,
   getReleaseDateText
 } from './time'
@@ -163,6 +164,23 @@ describe('getReleaseDateText', () => {
   it('trims whitespace-only date strings', () => {
     expect(getReleaseDateText('   ', false)).toBe('未公布')
     expect(getReleaseDateText('   ', true)).toBe('未定 (TBA)')
+  })
+})
+
+describe('compactDurationMinutes', () => {
+  it('null for nothing to show', () => {
+    expect(compactDurationMinutes(0)).toBeNull()
+    expect(compactDurationMinutes(undefined)).toBeNull()
+  })
+
+  it('minutes below an hour, one decimal below 100 hours, whole hours above', () => {
+    expect(compactDurationMinutes(45)).toEqual({ value: '45', unit: '分钟' })
+    expect(compactDurationMinutes(60)).toEqual({ value: '1', unit: '小时' })
+    expect(compactDurationMinutes(750)).toEqual({ value: '12.5', unit: '小时' })
+    expect(compactDurationMinutes(74096)).toEqual({
+      value: '1235',
+      unit: '小时'
+    })
   })
 })
 

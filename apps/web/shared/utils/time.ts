@@ -60,6 +60,27 @@ export const formatDurationMinutes = (minutes?: number | null): string => {
   return rest ? `${hours} 小时 ${rest} 分钟` : `${hours} 小时`
 }
 
+// For a narrow stat cell: one number and its unit, never "N 小时 M 分钟".
+export const compactDurationMinutes = (
+  minutes?: number | null
+): { value: string; unit: '分钟' | '小时' } | null => {
+  if (!Number.isFinite(minutes) || (minutes as number) <= 0) {
+    return null
+  }
+  const total = Math.round(minutes as number)
+  if (total < 60) {
+    return { value: String(total), unit: '分钟' }
+  }
+  const hours = total / 60
+  return {
+    value:
+      hours < 100
+        ? String(Math.round(hours * 10) / 10)
+        : String(Math.round(hours)),
+    unit: '小时'
+  }
+}
+
 export const formatDate = (
   time: Date | string | number,
   config?: { isShowYear?: boolean; isPrecise?: boolean }

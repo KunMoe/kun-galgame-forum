@@ -104,11 +104,14 @@ const stats = computed(() => {
   if (!counts || !totalOf(counts)) {
     return []
   }
+  const compact = compactDurationMinutes(playtime.value)
   return [
     { label: '部作品', value: String(totalOf(counts)) },
     {
       label: '合计时长',
-      value: playtime.value ? formatDurationMinutes(playtime.value) : '—'
+      value: compact?.value ?? '—',
+      unit: compact?.unit,
+      title: formatDurationMinutes(playtime.value) || undefined
     },
     { label: '部玩过', value: String(counts.done) }
   ]
@@ -197,9 +200,19 @@ const emptyText = computed(() => {
         <div
           v-for="stat in stats"
           :key="stat.label"
-          class="bg-default-100 rounded-lg px-4 py-3"
+          class="bg-default-100 min-w-0 rounded-lg px-3 py-3 sm:px-4"
+          :title="stat.title"
         >
-          <p class="text-2xl font-bold tabular-nums">{{ stat.value }}</p>
+          <p
+            class="text-xl font-bold whitespace-nowrap tabular-nums sm:text-2xl"
+          >
+            {{ stat.value
+            }}<span
+              v-if="stat.unit"
+              class="text-default-500 ms-0.5 text-sm font-normal"
+              >{{ stat.unit }}</span
+            >
+          </p>
           <p class="text-default-500 text-sm">{{ stat.label }}</p>
         </div>
       </div>
