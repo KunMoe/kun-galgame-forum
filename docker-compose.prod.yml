@@ -6,25 +6,19 @@
 #
 # vs docker-compose.yml (dev): `image:` not `build:`, `expose:` not `ports:`,
 # and **NO `env_file`** — all config is inline `environment:` so Dokploy needs no
-# `docker/*.env` on disk. Non-secret/domains are literal; secrets come from the
-# kungal app's **Dokploy Environment** via ${VAR}. A panel variable reaches a
-# container ONLY through a ${VAR} line below; one without a line here is inert.
-# A variable whose value equals the code default is left out.
+# `docker/*.env` on disk. Non-secret/domains are literal. A panel variable
+# reaches a container ONLY through a ${VAR} line below; one without a line here
+# is inert. A variable whose value equals the code default is left out.
 #
 # Set in kungal's Dokploy Environment (nothing else):
 #   POSTGRES_PASSWORD  KUN_CONFIG_KEK  NUXT_OG_SITE_KEY
 # POSTGRES_PASSWORD = infra POSTGRES_PASSWORD. KUN_CONFIG_KEK opens the config
 # store (`openssl rand -base64 32`, set once, never rotated in place): every
 # other API secret lives there, sealed in the kungalgame database, edited at
-# /admin/setting/env and read once when the API starts. The environment still
-# wins over a stored value. The web is Nuxt and does not read the store, so
+# /admin/setting (环境变量与密钥) and read once when the API starts; the
+# "in the config store" lines below name them. A variable set here as well
+# wins over the stored value. The web is Nuxt and does not read the store, so
 # its og signing key stays in the panel.
-#
-# Until the one-time import has run (cmd/config-secrets), the panel still holds
-#   OAUTH_CLIENT_SECRET  KUN_NEXTMOE_API_KEY  KUN_NEWS_API_KEY  KUN_STORE_API_KEY
-#   LINK_CHECKER_BASE_URL  LINK_CHECKER_API_KEY  CF_ACCESS_CLIENT_ID  CF_ACCESS_CLIENT_SECRET
-#   KUN_TRUST_CALLBACK_SECRET  KUN_LOTTERY_CODE_KEY  KUN_AI_BASE_URL  KUN_AI_TOKEN
-# and the ${VAR:-} lines below carry them.
 #
 #   docker compose -f docker-compose.prod.yml pull
 #   docker compose -f docker-compose.prod.yml up -d      # migrate auto-runs (gated) before kungal-api
@@ -56,14 +50,13 @@ x-kungal-api-env: &kungal-api-env
   CORS_ALLOW_ORIGINS: https://www.kungal.com,https://kungal.com
   # ⚠ POSTGRES_PASSWORD 直接拼进 DSN → 必须 URL-safe(字母数字;勿含 @ : / # % ? &,否则 URL 解析坏)
   KUN_DATABASE_URL: postgresql://postgres:${POSTGRES_PASSWORD:?set POSTGRES_PASSWORD in Dokploy}@postgres:5432/kungalgame
-  KUN_CONFIG_KEK: ${KUN_CONFIG_KEK:-}
+  KUN_CONFIG_KEK: ${KUN_CONFIG_KEK:?set KUN_CONFIG_KEK in Dokploy}
   REDIS_HOST: redis
   REDIS_PORT: "6379"
   OAUTH_SERVER_URL: http://oauth:9277/api/v1
   OAUTH_CLIENT_ID: 4ed9bc99ec0a789a4796b83e22bd84c5
-  # 论坛 client 注册时的明文; the API refuses to start when neither the
-  # environment nor the config store has it.
-  OAUTH_CLIENT_SECRET: ${OAUTH_CLIENT_SECRET:-}
+  # 论坛 client 注册时的明文; the API refuses to start without it.
+  # in the config store: OAUTH_CLIENT_SECRET
   OAUTH_REDIRECT_URI: https://www.kungal.com/auth/callback
   # ── App direct access (refs/docs/proj/app-direct-api.md) ──
   # A first-party client's user access token (ES256 JWT) may call /api/* as
@@ -113,29 +106,26 @@ x-kungal-api-env: &kungal-api-env
   # 按 key 分桶, 铸链不能吃掉目录读的每分钟预算; 而短链归属按 OAuth client 算,
   # 所以另开一把 key 不会拆散归因。空 = 只用上面的联盟直链模板, 站点行为不变。
   # KUN_STORE_API_BASE 默认取 KUN_NEXTMOE_API_BASE (同一个 catalog 进程)。
-  KUN_STORE_API_KEY: ${KUN_STORE_API_KEY:-}
+  # in the config store: KUN_STORE_API_KEY
   # NextMoe catalog galgame read surface (host base with no path suffix): the
   # client calls {base}/v2/catalog/* with Authorization: Bearer nmk_… . The /v1
   # family is being retired upstream, so no suffix belongs on this value.
   KUN_NEXTMOE_API_BASE: http://catalog:9281
   # Developer API key for the read face (nmk_ Bearer). REQUIRED whenever a base
-  # is set: an empty key fails fast at config load. Set in Dokploy; plaintext in
-  # kungal-neo /root/phase2-internal-keys.env (kungal-forum-internal-s2s).
+  # is set: an empty key fails fast at config load. Plaintext also in kungal-neo
+  # /root/phase2-internal-keys.env (kungal-forum-internal-s2s).
   # The same key also reads the moyu patch face through the public gateway
   # (KUN_MOYU_API_BASE, default https://api.nextmoe.dev): catalog:9281 does not
   # serve /v2/moyu, and the face takes any valid key.
-  KUN_NEXTMOE_API_KEY: ${KUN_NEXTMOE_API_KEY:-}
+  # in the config store: KUN_NEXTMOE_API_KEY
   # NextMoe news face (/v2/news) — the home page's Gal 情报 tab. A SECOND key,
   # NOT the catalog one above: the face is gated on scope news:read, which the
   # catalog key does not carry, so a leak of this one cannot reach the
   # catalogue's write endpoints. Empty → /news answers 503 情报服务未配置 and
-  # only that tab is affected.
-  # ⚠ This line is what makes the Dokploy panel var reach the container. The tab
-  # shipped without it and answered 503 in prod even with KUN_NEWS_API_KEY set in
-  # the panel — the same moyu/image lesson as LINK_CHECKER_* and KUN_TRUST_* above.
-  # KUN_NEWS_API_BASE is deliberately unset: it defaults to KUN_NEXTMOE_API_BASE,
-  # and /v2/news is served by the same catalog process.
-  KUN_NEWS_API_KEY: ${KUN_NEWS_API_KEY:-}
+  # only that tab is affected. KUN_NEWS_API_BASE is deliberately unset: it
+  # defaults to KUN_NEXTMOE_API_BASE, and /v2/news is served by the same
+  # catalog process.
+  # in the config store: KUN_NEWS_API_KEY
   # catalog read proxy (step 36): credits / entity reverse-lookups. Reuses the
   # OAuth client pair for S2S Basic auth; unset → those routes degrade to 503.
   KUN_CATALOG_API_BASE: http://catalog:9281
@@ -149,15 +139,11 @@ x-kungal-api-env: &kungal-api-env
   # artifact service (toolset archive upload/download)
   KUN_ARTIFACT_CLIENT_BASE_URL: http://artifact:9279
   # kungal-link-live-checker — the "report resource expired" gate (dead→失效 /
-  # alive→驳回误报 / unknown→旧流程). Set all 4 in Dokploy to enable it; the
+  # alive→驳回误报 / unknown→旧流程). All 4 are needed to enable it; the
   # checker is behind Cloudflare Access so the CF service-token headers are
-  # required alongside the Bearer key. Any unset → gate OFF (legacy flow). These
-  # MUST be wired here — a Dokploy panel var only reaches the container when the
-  # compose env references it, which is exactly why the gate stayed off before.
-  LINK_CHECKER_BASE_URL: ${LINK_CHECKER_BASE_URL:-}
-  LINK_CHECKER_API_KEY: ${LINK_CHECKER_API_KEY:-}
-  CF_ACCESS_CLIENT_ID: ${CF_ACCESS_CLIENT_ID:-}
-  CF_ACCESS_CLIENT_SECRET: ${CF_ACCESS_CLIENT_SECRET:-}
+  # required alongside the Bearer key. Any unset → gate OFF (legacy flow).
+  # in the config store: LINK_CHECKER_BASE_URL, LINK_CHECKER_API_KEY,
+  #   CF_ACCESS_CLIENT_ID, CF_ACCESS_CLIENT_SECRET
   # Trust & Safety (doc 18): report intake (kungal → trust) + enforcement
   # callback verification (trust → kungal). The Go default 127.0.0.1:9283 is
   # WRONG in-container for BASE_URL, so pin the dokploy-network name (infra
@@ -165,26 +151,24 @@ x-kungal-api-env: &kungal-api-env
   # ⚠ With BASE_URL set, report intake goes LIVE the moment kungal deploys — so
   # infra's trust service + kungal's 6 subject_kind rows + the subject_url column
   # must be up FIRST, else reports 403 (catalog_site unbound) / 422 (kind
-  # unregistered or pre-subject_url schema). CALLBACK_SECRET (panel) gates ONLY
+  # unregistered or pre-subject_url schema). CALLBACK_SECRET gates ONLY
   # the inbound enforcement callback: empty → callbacks fail-closed 401 while
   # reports still flow, so enforcement stays off until you set it to the SAME
   # secret registered on kungal's subject_kind rows in the trust registry.
   # The check gate and the shadow scan are switched in /admin/setting
   # (trust.check_enabled / trust.scan_enabled), not here.
   KUN_TRUST_BASE_URL: http://trust:9283
-  KUN_TRUST_CALLBACK_SECRET: ${KUN_TRUST_CALLBACK_SECRET:-}
-  # Topic classification and summaries (OpenAI-compatible endpoint, e.g.
-  # Cloudflare Workers AI .../ai/v1). Empty turns both off; the admin settings
-  # page switches them on once these are set.
-  KUN_AI_BASE_URL: ${KUN_AI_BASE_URL:-}
-  KUN_AI_TOKEN: ${KUN_AI_TOKEN:-}
+  # in the config store: KUN_TRUST_CALLBACK_SECRET
+  # Topic classification and summaries go through the infra LLM gateway
+  # (http://ai:9284/v1, access key `forum`, scenes forum.topic-classify and
+  # forum.topic-summary); a direct Cloudflare token answers 403 on the free
+  # plan. Empty turns both off.
+  # in the config store: KUN_AI_BASE_URL, KUN_AI_TOKEN
   # Seals lottery redemption codes at rest (AES-256-GCM, `openssl rand -hex 32`).
   # Unset → the lottery refuses code prizes rather than storing codes in clear.
   # ROTATING IT makes every sealed code unreadable forever — winners get a 500
-  # on reveal. Set once in Dokploy and leave it. Like every panel var above, it
-  # only reaches the container because this line names it: it sat set in the
-  # panel for a day on 2026-09-23 while the API kept logging "未设置".
-  KUN_LOTTERY_CODE_KEY: ${KUN_LOTTERY_CODE_KEY:-}
+  # on reveal. Set once and leave it.
+  # in the config store: KUN_LOTTERY_CODE_KEY
   # The App version gate, read-notification retention and the DLsite links are
   # site settings in /admin/setting, read when used; they need no restart.
 

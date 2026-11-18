@@ -109,14 +109,15 @@ func (s *Store) Set(ctx context.Context, key, value, note, action string, userID
 		if old != nil && *old == value {
 			return nil
 		}
-		row := secretRow{Key: key, Cipher: sealed, UpdatedBy: userID, Updated: time.Now()}
+		now := time.Now()
+		row := secretRow{Key: key, Cipher: sealed, UpdatedBy: userID, Updated: now}
 		if err := tx.Clauses(clause.OnConflict{UpdateAll: true}).Create(&row).Error; err != nil {
 			return err
 		}
 		changed = true
 		return tx.Create(&AuditRow{
 			Key: key, Action: action, OldShown: s.Shown(key, deref(old)), NewShown: s.Shown(key, value),
-			Note: note, UserID: userID,
+			Note: note, UserID: userID, Created: now,
 		}).Error
 	})
 	return changed, err
@@ -139,6 +140,7 @@ func (s *Store) Delete(ctx context.Context, key, note string, userID *int) (bool
 		deleted = true
 		return tx.Create(&AuditRow{
 			Key: key, Action: ActionDelete, OldShown: s.Shown(key, *old), Note: note, UserID: userID,
+			Created: time.Now(),
 		}).Error
 	})
 	return deleted, err

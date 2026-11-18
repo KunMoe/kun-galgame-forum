@@ -5,6 +5,7 @@ import (
 	"context"
 	"strings"
 	"testing"
+	"time"
 
 	"kun-galgame-api/internal/testdb"
 	"kun-galgame-api/pkg/config"
@@ -68,6 +69,9 @@ func TestStoreSealsAuditsAndDeletes(t *testing.T) {
 	for _, r := range rows {
 		if strings.Contains(r.OldShown+r.NewShown, "nmk_live") {
 			t.Errorf("audit shows a secret in the clear: %+v", r)
+		}
+		if time.Since(r.Created) > time.Minute {
+			t.Errorf("audit row written at %s, not now: %+v", r.Created, r)
 		}
 	}
 	rotate := rows[1]
