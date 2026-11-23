@@ -51,11 +51,16 @@ const baseLanguageText = computed(() =>
 const patchLanguageText = (c: Composite) =>
   joinLabels(c.patch_languages, (t) => SUPPORTED_LANGUAGE_MAP[t] ?? t)
 
+// letmoe offers merged downloads only for a resource its publisher declared
+// unpatched; without them a hosted file is often a translated or ported build,
+// and calling it 原版 told readers a patched game had no patch.
+const isBaseRaw = computed(() => props.composites.length > 0)
+
 const options = computed(() => [
   ...props.hosted.map((m, i) => ({
     value: `m${m.id}`,
-    label: `原版${baseLanguageText.value ? ` · ${baseLanguageText.value}` : ''}${props.hosted.length > 1 ? ` #${i + 1}` : ''}`,
-    description: ['不含补丁', props.baseSize, m.note ?? '']
+    label: `${isBaseRaw.value ? '原版' : '直链'}${baseLanguageText.value ? ` · ${baseLanguageText.value}` : ''}${props.hosted.length > 1 ? ` #${i + 1}` : ''}`,
+    description: [isBaseRaw.value && '不含补丁', props.baseSize, m.note ?? '']
       .filter(Boolean)
       .join(' · ')
   })),
@@ -110,7 +115,9 @@ const currentSize = computed(() =>
       :title="
         currentComposite
           ? `本体已打好「${currentComposite.patch_name}」，解压即可游玩`
-          : '游戏原版，不含任何补丁'
+          : isBaseRaw
+            ? '游戏原版，不含任何补丁'
+            : '发布者上传的文件，内容以发布者备注为准'
       "
     >
       <div class="space-y-3">
